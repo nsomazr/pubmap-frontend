@@ -1,0 +1,146 @@
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { MessageSquare } from "lucide-react";
+import { Link } from "react-router-dom";
+import api from "../lib/api";
+import { ForumCategoryCard } from "../components/forum/ForumCategoryCard";
+import { DefaultBanner } from "../components/ui/DefaultBanner";
+import { PublicPageLayout } from "../components/layout/PublicPageLayout";
+import type { Category, SubCategory, Topic } from "../types";
+
+export function ForumPage() {
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  const { data: categories = [], isLoading: catsLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data } = await api.get<Category[] | { results: Category[] }>("/categories/");
+      return Array.isArray(data) ? data : (data.results ?? []);
+    },
+  });
+
+  const { data: subcategories = [], isLoading: subsLoading } = useQuery({
+    queryKey: ["subcategories"],
+    queryFn: async () => {
+      const { data } = await api.get<SubCategory[] | { results: SubCategory[] }>(
+        "/subcategories/",
+      );
+      const list = Array.isArray(data) ? data : (data.results ?? []);
+      return list.filter((s) => s.status === "active");
+    },
+  });
+
+  const filtered = useMemo(() => {
+    if (categoryFilter === "all") return subcategories;
+    return subcategories.filter((s) => s.category_id === Number(categoryFilter));
+  }, [subcategories, categoryFilter]);
+
+  const { data: recentTopics = [] } = useQuery({
+    queryKey: ["forum-recent"],
+    queryFn: async () => {
+      const { data } = await api.get<Topic[] | { results: Topic[] }>("/forum/topics/");
+      const list = Array.isArray(data) ? data : (data.results ?? []);
+      return list.slice(0, 3);
+    },
+  });
+
+  const isLoading = catsLoading || subsLoading;
+
+  return (
+    <PublicPageLayout
+      compactHero
+      wide
+      accent="blue"
+      badge="Discussions"
+      title="Forum Discussions"
+      subtitle="Choose a research area to browse topics and join the conversation."
+      crumbs={[{ label: "Home", to: "/" }, { label: "Forum" }]}
+    >
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setCategoryFilter("all")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              categoryFilter === "all"
+                ? "gre-gradient-bar text-white shadow-md shadow-brand-600/25"
+                : "bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-brand-200"
+            }`}
+          >
+            All fields
+          </button>
+          {categories.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setCategoryFilter(String(c.id))}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                categoryFilter === String(c.id)
+                  ? "gre-gradient-bar text-white shadow-md shadow-brand-600/25"
+                  : "bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-brand-200"
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+        <p className="flex items-center gap-2 text-sm text-slate-500">
+          <MessageSquare className="h-4 w-4 text-brand-600" />
+          {filtered.length} forums available
+        </p>
+      </div>
+
+      {isLoading ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-[5.5rem] animate-pulse rounded-2xl bg-slate-200/70" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-10 text-center">
+          <MessageSquare className="mx-auto h-10 w-10 text-brand-300" />
+          <p className="mt-3 font-medium text-slate-600">No forums in this category</p>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((sub) => (
+            <ForumCategoryCard key={sub.id} sub={sub} />
+          ))}
+        </div>
+      )}
+
+      {recentTopics.length > 0 && (
+        <section className="mt-12">
+          <h2 className="text-lg font-semibold text-ink">Recent discussions</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Latest topics across all research areas. Replies are stored in the database.
+          </p>
+          <ul className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200/80">
+            {recentTopics.map((t) => (
+              <li key={t.id}>
+                <Link
+                  to={`/forum/topic/${t.id}`}
+                  className="flex items-center gap-4 px-5 py-4 transition hover:bg-brand-50/50"
+                >
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
+                    <DefaultBanner kind="forum" seed={t.id} compact />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-ink">{t.topic}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {t.sub_category_name}
+                      {t.author?.full_name && ` · ${t.author.full_name}`}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-xs text-slate-400">
+                    {t.replies_count ?? 0} replies · {t.views_count ?? 0} views
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </PublicPageLayout>
+  );
+}
