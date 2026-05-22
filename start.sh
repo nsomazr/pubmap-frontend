@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-PORT="${PORT:-3009}"
+PORT="${PORT:-3099}"
 
 if [ ! -f ".env" ]; then
   cp .env.example .env

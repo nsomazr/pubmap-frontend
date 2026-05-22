@@ -3,7 +3,7 @@
 React + Vite frontend for **Global Research Exchange**.
 
 - **Production URL:** https://gre.nileagi.com
-- **Port:** 3009 (development)
+- **Port:** 3099 (development)
 - **API:** https://api.gre.nileagi.com/api
 
 ## Quick start
@@ -14,7 +14,7 @@ chmod +x start.sh
 ./start.sh
 ```
 
-Open http://localhost:3009
+Open http://localhost:3099
 
 ## Deploy
 

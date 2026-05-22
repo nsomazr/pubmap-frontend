@@ -130,7 +130,7 @@ export function HomePage() {
               Cannot load the map. Start the API (
               <code className="text-xs">pubmap-backend ./start.sh</code>). For ngrok, use{" "}
               <code className="text-xs">VITE_API_URL=/api</code> and tunnel port{" "}
-              <code className="text-xs">3009</code>.
+              <code className="text-xs">3099</code>.
               <button
                 type="button"
                 className="mt-2 block w-full rounded-lg bg-white/20 py-1.5 text-xs font-semibold hover:bg-white/30"
