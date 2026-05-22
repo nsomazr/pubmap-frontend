@@ -96,6 +96,23 @@ function parseBlocks(raw: string): Block[] {
       continue;
     }
 
+    const summaryLabel = trimmed.match(
+      /^(Key findings|Why it matters):\s*(.*)$/i
+    );
+    if (summaryLabel) {
+      const labelName = summaryLabel[1]
+        .split(/\s+/)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(" ");
+      const body = stripHtml(summaryLabel[2]);
+      blocks.push({ type: "heading", level: 4, text: labelName });
+      if (body) {
+        blocks.push({ type: "paragraph", lines: inlineFormat(body) });
+      }
+      i += 1;
+      continue;
+    }
+
     const labelInline = trimmed.match(/^([A-Za-z][A-Za-z\s]{0,40}):\s*(.+)$/);
     if (labelInline) {
       const labelName = labelInline[1].trim();
@@ -115,6 +132,27 @@ function parseBlocks(raw: string): Block[] {
     const label = trimmed.match(/^([A-Za-z][A-Za-z\s]{0,40}):\s*$/);
     if (label) {
       const labelName = label[1].trim();
+      if (/^key findings$/i.test(labelName) || /^why it matters$/i.test(labelName)) {
+        blocks.push({
+          type: "heading",
+          level: 4,
+          text: labelName
+            .split(/\s+/)
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+            .join(" "),
+        });
+        i += 1;
+        const nextLines: string[] = [];
+        while (i < lines.length && lines[i].trim() && !/^([A-Za-z][A-Za-z\s]{0,40}):\s*/.test(lines[i].trim())) {
+          nextLines.push(lines[i].trim());
+          i += 1;
+        }
+        const merged = stripHtml(nextLines.join(" "));
+        if (merged) {
+          blocks.push({ type: "paragraph", lines: inlineFormat(merged) });
+        }
+        continue;
+      }
       if (!SKIPPED_LABELS.test(labelName)) {
         blocks.push({
           type: "heading",
