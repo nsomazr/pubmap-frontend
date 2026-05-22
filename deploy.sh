@@ -14,6 +14,17 @@ LOCK_HASH_FILE="${DEPLOY_DIR}/package-lock.sha"
 ECOSYSTEM="${ROOT}/ecosystem.config.cjs"
 
 log() { printf '[deploy] %s\n' "$*"; }
+
+load_env_file() {
+  local file="$1"
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    line="${line%%$'\r'}"
+    [[ -z "${line//[[:space:]]}" || "${line}" =~ ^[[:space:]]*# ]] && continue
+    [[ "${line}" == *"="* ]] || continue
+    export "${line?}"
+  done < "${file}"
+}
+
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
     echo "Missing required command: $1" >&2
@@ -40,11 +51,8 @@ fi
 
 mkdir -p "${DEPLOY_DIR}"
 
-# Export Vite build-time variables
-set -a
-# shellcheck disable=SC1091
-source .env.production
-set +a
+log "Loading .env.production…"
+load_env_file .env.production
 
 log "Installing dependencies (skipped when package-lock.json unchanged)…"
 LOCK_HASH="$(sha256sum package-lock.json 2>/dev/null | awk '{print $1}' || shasum -a 256 package-lock.json | awk '{print $1}')"
