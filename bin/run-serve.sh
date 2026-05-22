@@ -17,4 +17,4 @@ if [[ ! -f dist/index.html ]]; then
   exit 1
 fi
 
-exec node "${SERVE_MAIN}" -s dist -l "${PORT}"
+exec node "${SERVE_MAIN}" -s dist -l "127.0.0.1:${PORT}"
