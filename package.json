@@ -7,7 +7,7 @@
     "dev": "vite --port 3099 --host",
     "build": "tsc -b && vite build",
     "preview": "vite preview --port 3099 --host",
-    "start:prod": "serve -s dist -l 3099"
+    "start:prod": "serve -s dist -l tcp://127.0.0.1:3099"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.66.9",
