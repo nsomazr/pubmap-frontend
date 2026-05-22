@@ -18,13 +18,15 @@ Open http://localhost:3099
 
 ## Deploy
 
+Requires [PM2](https://pm2.keymetrics.io/) (`npm install -g pm2`).
+
 ```bash
 cp .env.production.example .env.production
 chmod +x deploy.sh
 ./deploy.sh
 ```
 
-Serve the `dist/` folder behind Nginx with TLS for `gre.nileagi.com`.
+Builds `dist/`, serves it on port **3099** via PM2 (`gre-frontend`). Put Nginx in front for TLS — see `deploy/nginx-frontend.example.conf`.
 
 ## Features
 
