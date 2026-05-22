@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthScreen, AuthScreenLoading } from "./components/auth/AuthScreen";
@@ -6,30 +7,68 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
 import { OnboardingPage } from "./pages/auth/OnboardingPage";
-import { PublicationDetailPage } from "./pages/PublicationDetailPage";
-import { ForumPage } from "./pages/ForumPage";
-import { ForumCategoryPage } from "./pages/ForumCategoryPage";
-import { ForumTopicPage } from "./pages/ForumTopicPage";
-import { EventsPage } from "./pages/EventsPage";
-import { EventDetailPage } from "./pages/EventDetailPage";
-import { AboutPage } from "./pages/AboutPage";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
-import { DashboardHome } from "./pages/dashboard/DashboardHome";
-import { PublicationsPage } from "./pages/dashboard/PublicationsPage";
-import { PublicationManagePage } from "./pages/dashboard/PublicationManagePage";
-import { AccountPage } from "./pages/dashboard/AccountPage";
-import { MessagesPage } from "./pages/dashboard/MessagesPage";
-import { AdminReviewPage } from "./pages/dashboard/AdminReviewPage";
-import { AuthorsPage } from "./pages/dashboard/AuthorsPage";
-import { CategoriesPage } from "./pages/dashboard/CategoriesPage";
-import { EventsAdminPage } from "./pages/dashboard/EventsAdminPage";
-import { AdsPage } from "./pages/dashboard/AdsPage";
-import { AdminOperationsPage } from "./pages/dashboard/AdminOperationsPage";
 import { GreAssistant } from "./components/assistant/GreAssistant";
+
+const PublicationDetailPage = lazy(() =>
+  import("./pages/PublicationDetailPage").then((m) => ({ default: m.PublicationDetailPage }))
+);
+const ForumPage = lazy(() => import("./pages/ForumPage").then((m) => ({ default: m.ForumPage })));
+const ForumCategoryPage = lazy(() =>
+  import("./pages/ForumCategoryPage").then((m) => ({ default: m.ForumCategoryPage }))
+);
+const ForumTopicPage = lazy(() =>
+  import("./pages/ForumTopicPage").then((m) => ({ default: m.ForumTopicPage }))
+);
+const EventsPage = lazy(() => import("./pages/EventsPage").then((m) => ({ default: m.EventsPage })));
+const EventDetailPage = lazy(() =>
+  import("./pages/EventDetailPage").then((m) => ({ default: m.EventDetailPage }))
+);
+const AboutPage = lazy(() => import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })));
+
+const DashboardHome = lazy(() =>
+  import("./pages/dashboard/DashboardHome").then((m) => ({ default: m.DashboardHome }))
+);
+const PublicationsPage = lazy(() =>
+  import("./pages/dashboard/PublicationsPage").then((m) => ({ default: m.PublicationsPage }))
+);
+const PublicationManagePage = lazy(() =>
+  import("./pages/dashboard/PublicationManagePage").then((m) => ({ default: m.PublicationManagePage }))
+);
+const AccountPage = lazy(() =>
+  import("./pages/dashboard/AccountPage").then((m) => ({ default: m.AccountPage }))
+);
+const MessagesPage = lazy(() =>
+  import("./pages/dashboard/MessagesPage").then((m) => ({ default: m.MessagesPage }))
+);
+const AdminReviewPage = lazy(() =>
+  import("./pages/dashboard/AdminReviewPage").then((m) => ({ default: m.AdminReviewPage }))
+);
+const AuthorsPage = lazy(() =>
+  import("./pages/dashboard/AuthorsPage").then((m) => ({ default: m.AuthorsPage }))
+);
+const CategoriesPage = lazy(() =>
+  import("./pages/dashboard/CategoriesPage").then((m) => ({ default: m.CategoriesPage }))
+);
+const EventsAdminPage = lazy(() =>
+  import("./pages/dashboard/EventsAdminPage").then((m) => ({ default: m.EventsAdminPage }))
+);
+const AdsPage = lazy(() => import("./pages/dashboard/AdsPage").then((m) => ({ default: m.AdsPage })));
+const AdminOperationsPage = lazy(() =>
+  import("./pages/dashboard/AdminOperationsPage").then((m) => ({ default: m.AdminOperationsPage }))
+);
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
 });
+
+function RouteFallback() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center text-slate-500">
+      Loading…
+    </div>
+  );
+}
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, onboardingRequired } = useAuth();
@@ -73,47 +112,49 @@ function OnboardingRoute() {
 
 function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route element={<AuthRoute />}>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-      </Route>
-      <Route element={<OnboardingRoute />}>
-        <Route path="/onboarding" element={<OnboardingPage />} />
-      </Route>
-      <Route path="/publication/:id" element={<PublicationDetailPage />} />
-      <Route path="/forum" element={<ForumPage />} />
-      <Route path="/forum/category/:id" element={<ForumCategoryPage />} />
-      <Route path="/forum/topic/:id" element={<ForumTopicPage />} />
-      <Route path="/events" element={<EventsPage />} />
-      <Route path="/events/:id" element={<EventDetailPage />} />
-      <Route path="/about" element={<AboutPage />} />
-      <Route path="/contact" element={<AboutPage />} />
-      <Route
-        path="/dashboard"
-        element={
-          <PrivateRoute>
-            <DashboardLayout />
-          </PrivateRoute>
-        }
-      >
-        <Route index element={<DashboardHome />} />
-        <Route path="publications" element={<PublicationsPage />} />
-        <Route path="publications/new" element={<PublicationManagePage />} />
-        <Route path="publications/:id" element={<PublicationManagePage />} />
-        <Route path="account" element={<AccountPage />} />
-        <Route path="messages" element={<MessagesPage />} />
-        <Route path="review" element={<AdminReviewPage />} />
-        <Route path="authors" element={<AuthorsPage />} />
-        <Route path="categories" element={<CategoriesPage />} />
-        <Route path="events" element={<EventsAdminPage />} />
-        <Route path="ads" element={<AdsPage />} />
-        <Route path="operations" element={<AdminOperationsPage />} />
-        <Route path="cms" element={<Navigate to="/dashboard/operations" replace />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route element={<AuthRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
+        <Route element={<OnboardingRoute />}>
+          <Route path="/onboarding" element={<OnboardingPage />} />
+        </Route>
+        <Route path="/publication/:id" element={<PublicationDetailPage />} />
+        <Route path="/forum" element={<ForumPage />} />
+        <Route path="/forum/category/:id" element={<ForumCategoryPage />} />
+        <Route path="/forum/topic/:id" element={<ForumTopicPage />} />
+        <Route path="/events" element={<EventsPage />} />
+        <Route path="/events/:id" element={<EventDetailPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<AboutPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <DashboardLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<DashboardHome />} />
+          <Route path="publications" element={<PublicationsPage />} />
+          <Route path="publications/new" element={<PublicationManagePage />} />
+          <Route path="publications/:id" element={<PublicationManagePage />} />
+          <Route path="account" element={<AccountPage />} />
+          <Route path="messages" element={<MessagesPage />} />
+          <Route path="review" element={<AdminReviewPage />} />
+          <Route path="authors" element={<AuthorsPage />} />
+          <Route path="categories" element={<CategoriesPage />} />
+          <Route path="events" element={<EventsAdminPage />} />
+          <Route path="ads" element={<AdsPage />} />
+          <Route path="operations" element={<AdminOperationsPage />} />
+          <Route path="cms" element={<Navigate to="/dashboard/operations" replace />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

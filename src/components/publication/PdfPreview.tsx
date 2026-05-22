@@ -229,6 +229,14 @@ export function PdfPreview({
     return <PdfLoadFailed className={className} openUrl={remoteUrl} />;
   }
 
+  if (!src) {
+    return (
+      <div className={`flex items-center justify-center rounded-2xl bg-slate-100 ${className}`}>
+        <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+      </div>
+    );
+  }
+
   const panel = (
     <div
       className={`flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}
