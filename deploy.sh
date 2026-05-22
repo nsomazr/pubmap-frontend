@@ -1,28 +1,40 @@
 #!/usr/bin/env bash
 # Production deploy: build SPA + serve dist/ via PM2 (gre-frontend).
 # Prereqs: Node 20+, npm, PM2 (`npm i -g pm2`).
-# Optional: Nginx TLS proxy to PORT (see deploy/nginx-frontend.example.conf).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
+# shellcheck source=scripts/load-env.sh
+source "${ROOT}/scripts/load-env.sh"
 
 APP_NAME="${PM2_APP_NAME:-gre-frontend}"
 PORT="${PORT:-3099}"
 DEPLOY_DIR="${ROOT}/.deploy"
 LOCK_HASH_FILE="${DEPLOY_DIR}/package-lock.sha"
 ECOSYSTEM="${ROOT}/ecosystem.config.cjs"
+SERVE_BIN="${ROOT}/bin/run-serve.sh"
 
 log() { printf '[deploy] %s\n' "$*"; }
 
-load_env_file() {
-  local file="$1"
-  while IFS= read -r line || [[ -n "${line}" ]]; do
-    line="${line%%$'\r'}"
-    [[ -z "${line//[[:space:]]}" || "${line}" =~ ^[[:space:]]*# ]] && continue
-    [[ "${line}" == *"="* ]] || continue
-    export "${line?}"
-  done < "${file}"
+pm2_start_or_restart() {
+  local status
+  status="$(pm2 jlist 2>/dev/null | node -e "
+const name = process.argv[1];
+let apps = [];
+try { apps = JSON.parse(require('fs').readFileSync(0, 'utf8')); } catch { process.exit(0); }
+const app = apps.find((a) => a.name === name);
+if (app) console.log(app.pm2_env?.status || 'unknown');
+" "${APP_NAME}" 2>/dev/null || echo "missing")"
+
+  if [[ "${status}" == "online" ]]; then
+    log "  → reloading ${APP_NAME}"
+    pm2 reload "${ECOSYSTEM}" --update-env
+  else
+    log "  → starting ${APP_NAME} (status was: ${status})"
+    pm2 delete "${APP_NAME}" 2>/dev/null || true
+    pm2 start "${ECOSYSTEM}"
+  fi
 }
 
 need_cmd() {
@@ -44,11 +56,12 @@ if [[ ! -f .env.production ]]; then
   exit 1
 fi
 
-if [[ ! -f "${ECOSYSTEM}" ]]; then
-  echo "Missing ${ECOSYSTEM}" >&2
+if [[ ! -f "${ECOSYSTEM}" ]] || [[ ! -f "${SERVE_BIN}" ]]; then
+  echo "Missing ecosystem.config.cjs or bin/run-serve.sh" >&2
   exit 1
 fi
 
+chmod +x "${SERVE_BIN}"
 mkdir -p "${DEPLOY_DIR}"
 
 log "Loading .env.production…"
@@ -67,6 +80,11 @@ else
   echo "${LOCK_HASH}" > "${LOCK_HASH_FILE}"
 fi
 
+if [[ ! -f node_modules/serve/build/main.js ]]; then
+  echo "Missing serve package. Run npm ci." >&2
+  exit 1
+fi
+
 log "Building production bundle…"
 export NODE_ENV=production
 npm run build
@@ -78,11 +96,7 @@ fi
 
 export PORT PM2_APP_NAME="${APP_NAME}"
 log "Starting / reloading PM2 app '${APP_NAME}' on port ${PORT}…"
-if pm2 describe "${APP_NAME}" >/dev/null 2>&1; then
-  pm2 reload "${ECOSYSTEM}" --update-env
-else
-  pm2 start "${ECOSYSTEM}"
-fi
+pm2_start_or_restart
 pm2 save
 
 ELAPSED=$(( $(date +%s) - START ))
