@@ -8,7 +8,8 @@ module.exports = {
     {
       name: process.env.PM2_APP_NAME || "gre-frontend",
       cwd: __dirname,
-      script: path.join(__dirname, "node_modules", ".bin", "serve"),
+      interpreter: "node",
+      script: path.join(__dirname, "node_modules", "serve", "build", "main.js"),
       args: ["-s", "dist", "-l", String(port)],
       env: {
         NODE_ENV: "production",
