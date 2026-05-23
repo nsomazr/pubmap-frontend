@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight, MessageSquare, Reply, Send, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { greFormPanelClass, greFormPanelNestedClass } from "../../lib/formStyles";
+import { greFormPanelNestedClass } from "../../lib/formStyles";
 import { Button } from "../ui/Button";
 import { Textarea } from "../ui/Textarea";
 import {
@@ -9,6 +9,7 @@ import {
   replyById,
   type ReplyTreeNode,
 } from "../../lib/forumReplyTree";
+import { UserAvatar } from "../ui/UserAvatar";
 import type { TopicReply, User } from "../../types";
 
 const PREVIEW_CHARS = 240;
@@ -68,7 +69,7 @@ function ReplyComposer({
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-white/80"
+          className="gre-interactive inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white/80"
         >
           <X className="h-4 w-4" />
           Cancel
@@ -124,12 +125,7 @@ function ReplyNode({
           </p>
         )}
         <div className="flex gap-3">
-          <div
-            className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-100 to-teal-100 text-xs font-bold text-brand-700"
-            aria-hidden
-          >
-            {authorLabel(node.author).charAt(0).toUpperCase()}
-          </div>
+          <UserAvatar user={node.author} size="sm" className="h-9 w-9 border-2 text-xs" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
               <span className="text-sm font-semibold text-slate-900">
@@ -153,7 +149,7 @@ function ReplyNode({
                 <button
                   type="button"
                   onClick={() => setExpanded((e) => !e)}
-                  className="text-xs font-semibold text-brand-600 hover:text-teal-700"
+                  className="gre-interactive text-xs font-semibold text-brand-600 hover:text-teal-700"
                 >
                   {expanded ? "Show less" : "Show more"}
                 </button>
@@ -162,7 +158,7 @@ function ReplyNode({
                 <button
                   type="button"
                   onClick={() => onReply(isReplyingHere ? null : node.id)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand-600"
+                  className="gre-interactive inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand-600"
                 >
                   <Reply className="h-3.5 w-3.5" />
                   Reply
@@ -199,7 +195,7 @@ function ReplyNode({
             <button
               type="button"
               onClick={() => setThreadOpen(true)}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-100 hover:bg-teal-50"
+              className="gre-interactive mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 ring-1 ring-brand-100 hover:bg-teal-50"
             >
               <ChevronRight className="h-3.5 w-3.5" />
               Show {childCount} {childCount === 1 ? "reply" : "replies"}
@@ -210,7 +206,7 @@ function ReplyNode({
                 <button
                   type="button"
                   onClick={() => setThreadOpen(false)}
-                  className="mt-2 mb-1 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-700"
+                  className="gre-interactive mt-2 mb-1 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-700"
                 >
                   <ChevronDown className="h-3.5 w-3.5" />
                   Hide replies
@@ -268,20 +264,20 @@ export function ForumReplyThread({
   const lookup = useMemo(() => replyById(replies), [replies]);
 
   return (
-    <section className="forum-reply-thread">
-      <h2 className="mb-4 flex items-center gap-2 font-semibold text-ink">
+    <section className="forum-reply-thread gre-card p-5 sm:p-6">
+      <h2 className="gre-display mb-4 flex items-center gap-2 text-lg font-semibold text-ink">
         <MessageSquare className="h-5 w-5 text-brand-600" />
         Replies ({displayCount})
       </h2>
 
       {loadError && (
-        <div className="rounded-2xl border border-brand-200 bg-brand-50/50 px-4 py-4 text-sm text-brand-900">
+        <div className="gre-card border-brand-200/80 bg-brand-50/50 px-4 py-4 text-sm text-brand-900">
           <p>Replies could not be loaded{displayCount > 0 ? ` (${displayCount} in database)` : ""}.</p>
           {onRetryLoad && (
             <button
               type="button"
               onClick={() => onRetryLoad()}
-              className="mt-2 font-semibold text-brand-600 hover:underline"
+              className="gre-interactive mt-2 font-semibold text-brand-600 hover:underline"
             >
               Try again
             </button>
@@ -290,11 +286,11 @@ export function ForumReplyThread({
       )}
 
       {!loadError && replies.length === 0 && displayCount === 0 ? (
-        <p className="rounded-2xl border border-dashed border-slate-200 py-8 text-center text-sm text-slate-500">
+        <p className="gre-card border-dashed border-slate-200 py-8 text-center text-sm text-slate-500">
           No replies yet. Be the first to respond.
         </p>
       ) : !loadError ? (
-        <div className="space-y-1">
+        <div className="gre-stagger space-y-1">
           {tree.map((node) => (
             <ReplyNode
               key={node.id}
@@ -316,7 +312,7 @@ export function ForumReplyThread({
       ) : null}
 
       {!loadError && replies.length === 0 && displayCount > 0 && (
-        <p className="rounded-2xl border border-dashed border-brand-200 bg-brand-50/40 py-6 text-center text-sm text-brand-800">
+        <p className="gre-card border-dashed border-brand-200/80 bg-brand-50/40 py-6 text-center text-sm text-brand-800">
           Replies exist but could not be displayed.{" "}
           {onRetryLoad && (
             <button
@@ -331,26 +327,33 @@ export function ForumReplyThread({
       )}
 
       {canReply && replyingTo === null && (
-        <form
-          className={`${greFormPanelClass} mt-8`}
-          onSubmit={(e) => {
-            e.preventDefault();
-            onTopLevelSubmit();
-          }}
-        >
-          <Textarea
-            label="Join the discussion"
-            value={topLevelDraft}
-            onChange={(e) => onTopLevelDraftChange(e.target.value)}
-            rows={4}
-            placeholder="Share your thoughts…"
-            className="!min-h-[6rem]"
-          />
-          <Button type="submit" loading={posting} disabled={!topLevelDraft.trim()}>
-            <Send className="h-4 w-4" />
-            Post reply
-          </Button>
-        </form>
+        <div className="forum-compose-bar">
+          <form
+            className="forum-compose-shell"
+            onSubmit={(e) => {
+              e.preventDefault();
+              onTopLevelSubmit();
+            }}
+          >
+            <Textarea
+              label="Join the discussion"
+              value={topLevelDraft}
+              onChange={(e) => onTopLevelDraftChange(e.target.value)}
+              rows={4}
+              placeholder="Share your perspective, ask a question, or build on this thread…"
+              className="!min-h-[6rem] !border-slate-200/90"
+            />
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-slate-500">
+                Replies are threaded. Use Reply on any comment to respond directly.
+              </p>
+              <Button type="submit" loading={posting} disabled={!topLevelDraft.trim()}>
+                <Send className="h-4 w-4" />
+                Post reply
+              </Button>
+            </div>
+          </form>
+        </div>
       )}
     </section>
   );

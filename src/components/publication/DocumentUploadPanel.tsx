@@ -1,7 +1,10 @@
 import { AlertCircle, FileUp, Loader2, Sparkles } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "../ui/Button";
-import type { ExtractedManuscript } from "../../lib/publicationExtract";
+import {
+  EXTRACT_SECTION_LABELS,
+  type ExtractedManuscript,
+} from "../../lib/publicationExtract";
 import { PdfPreview } from "./PdfPreview";
 
 const ACCEPT = ".pdf,.doc,.docx,.txt,.rtf";
@@ -81,7 +84,7 @@ export function DocumentUploadPanel({
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
-              Extract title & abstract
+              Extract sections with AI
             </Button>
             <Button type="button" variant="secondary" onClick={() => pick(null)}>
               Remove file
@@ -106,11 +109,30 @@ export function DocumentUploadPanel({
           </ul>
         )}
 
+        {extracted?.section_notes && Object.keys(extracted.section_notes).length > 0 && (
+          <div className="rounded-xl border border-brand-200 bg-brand-50/70 px-4 py-3 text-sm text-brand-950">
+            <p className="font-semibold text-brand-900">AI suggestions for missing or partial sections</p>
+            <ul className="mt-2 space-y-2">
+              {Object.entries(extracted.section_notes).map(([key, note]) => (
+                <li key={key}>
+                  <span className="font-medium text-brand-800">
+                    {EXTRACT_SECTION_LABELS[key] || key}:
+                  </span>{" "}
+                  {note}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {extracted?.success && (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
-            <p className="text-sm font-semibold text-emerald-900">Title and abstract ready</p>
+            <p className="text-sm font-semibold text-emerald-900">
+              {extracted.ai_enhanced ? "Sections extracted with AI" : "Sections extracted"}
+            </p>
             <p className="mt-1 text-xs text-emerald-800">
-              Apply to the form, set category and map location, then save. Readers will see the full PDF.
+              Apply to the editor, review each section (especially any AI notes above), then set category
+              and map location before saving.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button type="button" onClick={onApplyExtracted}>

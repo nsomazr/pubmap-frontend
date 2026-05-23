@@ -14,6 +14,13 @@ export type SignupMethod = "otp" | "password";
 
 const SIGNUP_METHOD_KEY = "gre_signup_method";
 
+export interface OtpSendResult {
+  detail: string;
+  expires_in: number;
+  resend_in: number;
+  expires_at: string;
+}
+
 export function getSignupMethod(): SignupMethod | null {
   const v = sessionStorage.getItem(SIGNUP_METHOD_KEY);
   return v === "otp" || v === "password" ? v : null;
@@ -31,12 +38,13 @@ interface AuthState {
   user: User | null;
   loading: boolean;
   onboardingRequired: boolean;
-  sendOtp: (email: string, purpose: "login" | "register") => Promise<string>;
+  sendOtp: (email: string, purpose: "login" | "register") => Promise<OtpSendResult>;
   verifyOtpLogin: (email: string, code: string) => Promise<void>;
   verifyOtpRegister: (email: string, code: string) => Promise<void>;
   registerWithPassword: (email: string, password: string, confirm: string) => Promise<void>;
   loginWithPassword: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  patchUser: (user: User) => void;
   refreshUser: () => Promise<void>;
   setOnboardingRequired: (v: boolean) => void;
 }
@@ -62,6 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [onboardingRequired, setOnboardingRequired] = useState(false);
 
+  const patchUser = useCallback((next: User) => {
+    setUser(next);
+  }, []);
+
   const refreshUser = useCallback(async () => {
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -86,11 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshUser]);
 
   const sendOtp = async (email: string, purpose: "login" | "register") => {
-    const { data } = await api.post<{ detail: string }>("/auth/otp/send/", {
+    const { data } = await api.post<OtpSendResult>("/auth/otp/send/", {
       email,
       purpose,
     });
-    return data.detail;
+    return data;
   };
 
   const verifyOtpLogin = async (email: string, code: string) => {
@@ -149,10 +161,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       registerWithPassword,
       loginWithPassword,
       logout,
+      patchUser,
       refreshUser,
       setOnboardingRequired,
     }),
-    [user, loading, onboardingRequired, refreshUser]
+    [user, loading, onboardingRequired, refreshUser, patchUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

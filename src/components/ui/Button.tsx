@@ -29,7 +29,7 @@ export function Button({
 }: Props) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-60 ${variants[variant]} ${className}`}
+      className={`gre-interactive inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-60 ${variants[variant]} ${className}`}
       disabled={disabled || loading}
       {...props}
     >

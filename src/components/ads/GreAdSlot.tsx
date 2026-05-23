@@ -1,0 +1,162 @@
+import { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+import {
+  adLinkHref,
+  isExternalAdLink,
+  trackAdEvent,
+  usePlacementAds,
+  type AdPlacement,
+  type GreAd,
+} from "../../lib/ads";
+import { mediaUrl } from "../../lib/mediaUrl";
+
+type Variant = "compact" | "banner" | "card";
+
+interface GreAdSlotProps {
+  ads: GreAd[];
+  placement: AdPlacement;
+  variant?: Variant;
+  className?: string;
+  emptyClassName?: string;
+}
+
+function resolveImage(image: string): string {
+  if (!image) return "";
+  if (image.startsWith("http://") || image.startsWith("https://") || image.startsWith("/")) {
+    return image;
+  }
+  return mediaUrl(image) || "";
+}
+
+function AdItem({
+  ad,
+  placement,
+  variant,
+}: {
+  ad: GreAd;
+  placement: AdPlacement;
+  variant: Variant;
+}) {
+  const tracked = useRef(false);
+  const href = ad.publication_id
+    ? `/publication/${ad.publication_id}`
+    : adLinkHref(ad.link);
+  const external = !ad.publication_id && isExternalAdLink(ad.link);
+  const imageSrc = resolveImage(ad.image);
+
+  useEffect(() => {
+    if (tracked.current) return;
+    tracked.current = true;
+    void trackAdEvent(ad.id, placement, "impression");
+  }, [ad.id, placement]);
+
+  const onClick = () => {
+    void trackAdEvent(ad.id, placement, "click");
+  };
+
+  const label = ad.sponsor_label || "Sponsored";
+
+  const shell =
+    variant === "banner"
+      ? "overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm"
+      : variant === "card"
+        ? "overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+        : "overflow-hidden rounded-xl border border-slate-200/80 bg-white/95 shadow-sm backdrop-blur";
+
+  const content = (
+    <>
+      <div className="flex items-center justify-between gap-2 px-3 pt-2.5">
+        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800 ring-1 ring-amber-200/80">
+          {label}
+        </span>
+      </div>
+      {imageSrc && (
+        <div className={variant === "banner" ? "relative h-28 sm:h-32" : "relative mt-2 h-24 px-3"}>
+          <img
+            src={imageSrc}
+            alt=""
+            className={
+              variant === "banner"
+                ? "h-full w-full object-cover"
+                : "h-full w-full rounded-lg object-cover"
+            }
+            loading="lazy"
+          />
+        </div>
+      )}
+      <div className="space-y-1 px-3 pb-3 pt-2">
+        <p className="text-sm font-semibold leading-snug text-ink">{ad.title}</p>
+        {ad.description && (
+          <p className="line-clamp-2 text-xs leading-relaxed text-slate-500">{ad.description}</p>
+        )}
+      </div>
+    </>
+  );
+
+  if (external) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer sponsored"
+        onClick={onClick}
+        className={`group block transition hover:-translate-y-0.5 hover:shadow-md ${shell}`}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      to={href}
+      onClick={onClick}
+      className={`group block transition hover:-translate-y-0.5 hover:shadow-md ${shell}`}
+    >
+      {content}
+    </Link>
+  );
+}
+
+export function GreAdSlot({
+  ads,
+  placement,
+  variant = "compact",
+  className = "",
+  emptyClassName = "hidden",
+}: GreAdSlotProps) {
+  if (!ads.length) {
+    return emptyClassName ? <div className={emptyClassName} /> : null;
+  }
+
+  return (
+    <aside
+      className={className}
+      aria-label="Sponsored content"
+      data-ad-placement={placement}
+    >
+      {ads.map((ad) => (
+        <AdItem key={ad.id} ad={ad} placement={placement} variant={variant} />
+      ))}
+    </aside>
+  );
+}
+
+interface GreAdPlacementProps {
+  placement: AdPlacement;
+  limit?: number;
+  variant?: Variant;
+  className?: string;
+  enabled?: boolean;
+}
+
+export function GreAdPlacement({
+  placement,
+  limit = 2,
+  variant = "compact",
+  className = "space-y-3",
+  enabled = true,
+}: GreAdPlacementProps) {
+  const { data: ads = [] } = usePlacementAds(placement, limit, enabled);
+  return <GreAdSlot ads={ads} placement={placement} variant={variant} className={className} />;
+}

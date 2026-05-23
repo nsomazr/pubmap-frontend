@@ -12,6 +12,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ProfilePhotoEditor } from "../../components/profile/ProfilePhotoEditor";
+import { InterestPicker } from "../../components/interests/InterestPicker";
+import { CountryInstitutionPicker } from "../../components/institutions/CountryInstitutionPicker";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { GreHeroBanner } from "../../components/ui/GreHeroBanner";
 import { Button } from "../../components/ui/Button";
@@ -19,6 +22,12 @@ import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
+import {
+  greAccountStatDraft,
+  greAccountStatPending,
+  greAccountStatPublished,
+  greAccountStatRevision,
+} from "../../lib/greTheme";
 import { HONORIFIC_OPTIONS, userFormalName } from "../../lib/userDisplay";
 import type { DashboardStats } from "../../types";
 
@@ -33,8 +42,8 @@ function Alert({
     <p
       className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm ${
         type === "success"
-          ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100"
-          : "bg-red-50 text-red-700 ring-1 ring-red-100"
+          ? "bg-teal-50 text-teal-800 ring-1 ring-teal-100"
+          : "bg-brand-50 text-brand-800 ring-1 ring-brand-200"
       }`}
     >
       {type === "success" ? (
@@ -59,7 +68,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+    <section className="gre-card overflow-hidden p-0">
       <div className="flex items-start gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-4 sm:px-6">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
           <Icon className="h-5 w-5" />
@@ -83,9 +92,9 @@ export function AccountPage() {
   const [middlename, setMiddlename] = useState("");
   const [lastname, setLastname] = useState("");
   const [affiliation, setAffiliation] = useState("");
-  const [areaOfStudy, setAreaOfStudy] = useState("");
+  const [countryCode, setCountryCode] = useState("");
+  const [interests, setInterests] = useState<string[]>([]);
   const [phone, setPhone] = useState("");
-  const [photo, setPhoto] = useState("");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -95,7 +104,6 @@ export function AccountPage() {
   const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(
     null
   );
-  const [photoError, setPhotoError] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -104,10 +112,14 @@ export function AccountPage() {
     setMiddlename(user.middlename || "");
     setLastname(user.lastname || "");
     setAffiliation(user.affiliation || "");
-    setAreaOfStudy(user.area_of_study || "");
+    setCountryCode(user.country_code || "");
+    setInterests(
+      user.interests?.map((item) => item.label) ||
+        (user.area_of_study
+          ? user.area_of_study.split(/[,;|/\n]+/).map((part) => part.trim()).filter(Boolean)
+          : [])
+    );
     setPhone(user.phone || "");
-    setPhoto(user.photo || "");
-    setPhotoError(false);
   }, [user]);
 
   const { data: stats } = useQuery({
@@ -125,10 +137,10 @@ export function AccountPage() {
         firstname,
         middlename,
         lastname,
+        country_code: countryCode,
         affiliation,
-        area_of_study: areaOfStudy,
+        interests,
         phone,
-        photo: photo || undefined,
       }),
     onSuccess: async () => {
       await refreshUser();
@@ -168,29 +180,25 @@ export function AccountPage() {
     {
       label: "Published",
       value: stats?.published ?? 0,
-      color: "text-emerald-700",
-      bg: "hover:bg-emerald-50/80",
+      ...greAccountStatPublished,
       status: "3",
     },
     {
       label: "Pending",
       value: stats?.pending ?? 0,
-      color: "text-amber-700",
-      bg: "hover:bg-amber-50/80",
+      ...greAccountStatPending,
       status: "1",
     },
     {
       label: "Revision",
       value: stats?.commented ?? 0,
-      color: "text-orange-700",
-      bg: "hover:bg-orange-50/80",
+      ...greAccountStatRevision,
       status: "2",
     },
     {
       label: "Drafts",
       value: stats?.drafts ?? 0,
-      color: "text-slate-700",
-      bg: "hover:bg-slate-100/80",
+      ...greAccountStatDraft,
       status: "0",
     },
   ];
@@ -205,9 +213,10 @@ export function AccountPage() {
       <GreHeroBanner
         className="account-hero mb-8"
         photoUrl={user?.photo}
+        photoVersion={user?.updated_at}
         initials={initials}
         avatarBadge={
-          <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white">
+          <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-teal-500 ring-2 ring-white">
             <CheckCircle2 className="h-3 w-3 text-white" />
           </span>
         }
@@ -271,11 +280,18 @@ export function AccountPage() {
                 setProfileMsg(null);
                 profileMutation.mutate();
               }}
-            >
-              {profileMsg && <Alert type={profileMsg.type} message={profileMsg.text} />}
+          >
+            {profileMsg && <Alert type={profileMsg.type} message={profileMsg.text} />}
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Select
+            {user && (
+              <ProfilePhotoEditor
+                user={{ ...user, firstname, lastname, photo: user.photo }}
+                onUpdated={refreshUser}
+              />
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select
                   label="Honorific (optional)"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -287,12 +303,6 @@ export function AccountPage() {
                     </option>
                   ))}
                 </Select>
-                <Input
-                  label="Profile photo URL"
-                  value={photo}
-                  onChange={(e) => setPhoto(e.target.value)}
-                  placeholder="https://…"
-                />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
@@ -315,18 +325,18 @@ export function AccountPage() {
                 />
               </div>
 
-              <Input
-                label="Affiliation / institution"
-                value={affiliation}
-                onChange={(e) => setAffiliation(e.target.value)}
-                placeholder="University, lab, or organization"
+              <CountryInstitutionPicker
+                countryCode={countryCode}
+                onCountryChange={setCountryCode}
+                institution={affiliation}
+                onInstitutionChange={setAffiliation}
               />
 
-              <Input
-                label="Areas of study / interests"
-                value={areaOfStudy}
-                onChange={(e) => setAreaOfStudy(e.target.value)}
-                placeholder="e.g. Hydrogeology, geochemistry, environmental geology"
+              <InterestPicker
+                value={interests}
+                onChange={setInterests}
+                affiliation={affiliation}
+                showCollaborators
               />
 
               <Input

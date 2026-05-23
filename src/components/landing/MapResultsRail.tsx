@@ -1,7 +1,12 @@
-import { ChevronDown, ChevronLeft, ChevronRight, FileText, MapPin, Sparkles, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, MapPin, Sparkles, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { requestPublicationSummary } from "../map/publicationPopupSummary";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { ResearcherRankInline } from "../rankings/ResearcherRankInline";
+import { SubcategoryBadge } from "../taxonomy/SubcategoryBadge";
+import { UserAvatar } from "../ui/UserAvatar";
+import { authorDisplayName } from "../../lib/userDisplay";
+import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
 
 interface Props {
@@ -131,9 +136,10 @@ export function MapResultsRail({
               <p className="mt-1 text-xs text-slate-400">Try different search terms.</p>
             </div>
           ) : (
-            <ul className="space-y-2.5">
+            <ul className="space-y-2.5 gre-stagger">
               {publications.map((pub, i) => {
                 const location = formatLocation(pub);
+                const subVisual = publicationSubcategoryVisual(pub);
                 return (
                   <li key={pub.id}>
                     <article
@@ -144,17 +150,22 @@ export function MapResultsRail({
                         to={`/publication/${pub.id}`}
                         className="flex gap-3 p-3.5 pb-2.5"
                       >
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-teal-500 text-white shadow-md">
-                          <FileText className="h-4 w-4" />
-                        </div>
+                        <UserAvatar
+                          user={pub.author}
+                          size="sm"
+                          className="h-11 w-11 rounded-xl border-2 text-sm"
+                        />
                         <div className="min-w-0 flex-1">
                           <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink group-hover:text-brand-700">
                             {pub.title}
                           </p>
                           <p className="mt-1 truncate text-xs text-slate-500">
-                            {pub.author?.full_name ||
+                            {authorDisplayName(pub.author) ||
                               `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim()}
                           </p>
+                          <div className="mt-1.5">
+                            <ResearcherRankInline ranking={pub.author?.ranking} compact />
+                          </div>
                           {location && (
                             <p className="mt-1 flex items-start gap-1 text-xs text-slate-600">
                               <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-teal-600" />
@@ -166,11 +177,11 @@ export function MapResultsRail({
                               {pub.abstract.replace(/<[^>]+>/g, "").slice(0, 220)}
                             </p>
                           )}
-                          {pub.sub_category_name && (
-                            <span className="mt-2 inline-block rounded-md bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-700">
-                              {pub.sub_category_name}
-                            </span>
-                          )}
+                          {subVisual ? (
+                            <div className="mt-2">
+                              <SubcategoryBadge visual={subVisual} size="xs" />
+                            </div>
+                          ) : null}
                         </div>
                       </Link>
                       <div className="flex flex-col gap-2 px-3.5 pb-3.5 sm:flex-row">

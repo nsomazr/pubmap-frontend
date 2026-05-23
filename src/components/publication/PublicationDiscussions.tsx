@@ -6,6 +6,8 @@ import { Button } from "../ui/Button";
 import { Textarea } from "../ui/Textarea";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
+import { ResearcherRankInline } from "../rankings/ResearcherRankInline";
+import { UserAvatar } from "../ui/UserAvatar";
 import type { PublicationConversation } from "../../types";
 
 interface Props {
@@ -84,9 +86,13 @@ export function PublicationDiscussions({ publicationId }: Props) {
               key={thread.id}
               className="rounded-2xl border border-slate-100 bg-slate-50/40 p-4 sm:p-5"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
+              <div className="flex items-start gap-3">
+                <UserAvatar user={thread.user} size="sm" className="border-2" />
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-ink">{authorName(thread.user)}</p>
+                  <div className="mt-1">
+                    <ResearcherRankInline ranking={thread.user?.ranking} compact showBadges={false} />
+                  </div>
                   {thread.created_at && (
                     <p className="text-xs text-slate-400">{formatWhen(thread.created_at)}</p>
                   )}
@@ -99,9 +105,13 @@ export function PublicationDiscussions({ publicationId }: Props) {
               {(thread.replies ?? []).length > 0 && (
                 <ul className="mt-4 space-y-3 border-l-2 border-brand-100 pl-4">
                   {thread.replies!.map((r) => (
-                    <li key={r.id} className="rounded-xl bg-white px-3 py-2.5 ring-1 ring-slate-100">
-                      <p className="text-xs font-semibold text-slate-600">{authorName(r.user)}</p>
-                      <p className="mt-1 text-sm text-slate-600">{r.reply}</p>
+                    <li key={r.id} className="flex gap-3 rounded-xl bg-white px-3 py-2.5 ring-1 ring-slate-100">
+                      <UserAvatar user={r.user} size="sm" className="h-8 w-8 border text-[10px]" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-slate-600">{authorName(r.user)}</p>
+                        <ResearcherRankInline ranking={r.user?.ranking} compact showBadges={false} />
+                        <p className="mt-1 text-sm text-slate-600">{r.reply}</p>
+                      </div>
                     </li>
                   ))}
                 </ul>

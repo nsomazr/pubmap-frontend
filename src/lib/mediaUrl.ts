@@ -4,6 +4,7 @@ import { resolveApiBaseUrl } from "./apiBaseUrl";
 export function mediaUrl(path?: string | null): string | null {
   if (!path) return null;
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (path.startsWith("/")) return path;
 
   const clean = path.replace(/^\/+/, "");
 

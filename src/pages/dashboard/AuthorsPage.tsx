@@ -107,7 +107,7 @@ export function AuthorsPage() {
                     {a.firstname} {a.lastname}
                   </td>
                   <td className="px-4 py-3 text-slate-600">{a.email}</td>
-                  <td className="px-4 py-3 text-slate-500">{a.affiliation || "—"}</td>
+                  <td className="px-4 py-3 text-slate-500">{a.affiliation || "-"}</td>
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
                       {a.role_id === 1 ? "Admin" : "Author"}

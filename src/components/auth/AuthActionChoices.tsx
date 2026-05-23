@@ -11,7 +11,7 @@ interface Props {
   disabled?: boolean;
 }
 
-/** Primary + secondary actions — method choice lives at the send buttons. */
+/** Primary + secondary actions  -  method choice lives at the send buttons. */
 export function AuthActionChoices({
   codeLabel,
   passwordLabel,

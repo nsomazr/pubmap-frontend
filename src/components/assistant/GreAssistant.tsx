@@ -13,12 +13,17 @@ const STARTERS = [
 
 const INITIAL_MESSAGE: Msg = {
   role: "assistant",
-  text: "Hi, I'm GRE Assistant. Ask about the platform, finding research on the map, or how to publish your work.",
+  text: "Hi, I'm GRE Assistant. I can answer from live GRE data: categories, geology subcategories, published studies on the map, forum topics, and events, plus how to publish and use the platform.",
 };
 
 export function GreAssistant() {
   const [open, setOpen] = useState(false);
-  const [available, setAvailable] = useState<boolean | null>(null);
+  const [health, setHealth] = useState<{
+    available: boolean;
+    provider?: string | null;
+    model?: string | null;
+    hint?: string;
+  } | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,10 +32,17 @@ export function GreAssistant() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (open && available === null) {
-      assistantHealth().then(setAvailable);
+    if (open && health === null) {
+      assistantHealth().then((h) =>
+        setHealth({
+          available: h.available,
+          provider: h.engine ?? h.provider,
+          model: h.model,
+          hint: h.hint,
+        })
+      );
     }
-  }, [open, available]);
+  }, [open, health]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -77,7 +89,7 @@ export function GreAssistant() {
               }
               return next;
             });
-            setAvailable(true);
+            setHealth((h) => (h ? { ...h, available: true } : { available: true }));
           },
           onError: (detail) => setError(detail),
         },
@@ -90,7 +102,7 @@ export function GreAssistant() {
         (err as Error).message ||
         "GRE Assistant is temporarily unavailable. Please try again in a moment.";
       setError(detail);
-      setAvailable(false);
+      setHealth((h) => (h ? { ...h, available: false } : { available: false }));
       setMessages((prev) => {
         const next = prev.filter((m) => !m.streaming);
         if (next[next.length - 1]?.role !== "assistant" || next[next.length - 1]?.text) {
@@ -145,11 +157,11 @@ export function GreAssistant() {
               <div>
                 <p className="text-sm font-bold">GRE Assistant</p>
                 <p className="text-[10px] text-white/80">
-                  {available === false
-                    ? "Offline"
-                    : available
-                      ? "Online"
-                      : "Checking…"}
+                  {health === null
+                    ? "Checking…"
+                    : health.available
+                      ? `Online · ${health.provider ?? "AI"}${health.model ? ` (${health.model})` : ""}`
+                      : health.hint ?? "Offline. Check API GROQ_API_KEY"}
                 </p>
               </div>
             </div>

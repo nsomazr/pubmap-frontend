@@ -10,6 +10,7 @@ export type ManuscriptFields = {
   conclusion: string;
   funder: string;
   references: string;
+  keywords: string;
 };
 
 interface Props {
@@ -31,6 +32,12 @@ export function ManuscriptSectionsEditor({ fields, onChange }: Props) {
         label="Introduction"
         value={fields.introduction}
         onChange={(v) => onChange("introduction", v)}
+      />
+      <Input
+        label="Keywords"
+        value={fields.keywords}
+        onChange={(e) => onChange("keywords", e.target.value)}
+        placeholder="climate, remote sensing, East Africa (comma-separated)"
       />
       <RichTextEditor
         label="Methods"

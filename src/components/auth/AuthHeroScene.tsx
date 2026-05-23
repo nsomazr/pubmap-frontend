@@ -18,7 +18,7 @@ const FEATURES = [
   { icon: BookOpen, label: "Share findings" },
 ];
 
-/** Pins on the ring — angle in degrees */
+/** Pins on the ring  -  angle in degrees */
 const RING_PINS = [20, 95, 200, 285];
 
 interface Props {

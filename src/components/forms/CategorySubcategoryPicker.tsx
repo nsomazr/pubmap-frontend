@@ -9,7 +9,9 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import type { Category, SubCategory } from "../../types";
+import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
+import { resolveCategoryVisual, resolveSubcategoryFromModel } from "../../lib/taxonomyVisuals";
+import type { Category, SubCategory, SubcategoryVisual as Visual } from "../../types";
 
 interface MenuRect {
   left: number;
@@ -22,6 +24,7 @@ interface MenuRect {
 interface DropdownOption {
   value: string;
   label: string;
+  visual?: Visual | null;
 }
 
 interface PickerDropdownProps {
@@ -143,6 +146,7 @@ function PickerDropdown({
   const menu = open && menuRect && createPortal(
     <div
       ref={menuRef}
+      data-gre-picker-menu
       className="fixed z-[10000] overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/5"
       role="listbox"
       style={{
@@ -212,7 +216,12 @@ function PickerDropdown({
                       : "text-ink hover:bg-slate-50"
                   }`}
                 >
-                  <span className="min-w-0 truncate">{opt.label}</span>
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    {opt.visual && (
+                      <SubcategoryVisual visual={opt.visual} size="xs" className="!shadow-none" />
+                    )}
+                    <span className="min-w-0 truncate">{opt.label}</span>
+                  </span>
                   {active && <Check className="h-4 w-4 shrink-0 text-brand-600" />}
                 </button>
               </li>
@@ -241,7 +250,12 @@ function PickerDropdown({
         aria-expanded={open}
       >
         <span className={`min-w-0 truncate ${selected ? "text-ink" : "text-slate-400"}`}>
-          {selected?.label ?? placeholder}
+          <span className="inline-flex items-center gap-2">
+            {selected?.visual && (
+              <SubcategoryVisual visual={selected.visual} size="xs" className="!shadow-none" />
+            )}
+            <span className="truncate">{selected?.label ?? placeholder}</span>
+          </span>
         </span>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-slate-400 transition ${open ? "rotate-180 text-brand-600" : ""}`}
@@ -264,6 +278,8 @@ function PickerDropdown({
 
 interface Props {
   categories: Category[];
+  /** Flat subcategory list from /map/ when nested category.sub_categories is empty */
+  allSubCategories?: SubCategory[];
   categoryId: string;
   subCategoryId: string;
   onCategoryChange: (id: string) => void;
@@ -280,6 +296,7 @@ interface Props {
 
 export function CategorySubcategoryPicker({
   categories,
+  allSubCategories = [],
   categoryId,
   subCategoryId,
   onCategoryChange,
@@ -295,31 +312,64 @@ export function CategorySubcategoryPicker({
 }: Props) {
   const baseId = useId();
 
+  const nestedForCategory = useCallback(
+    (catId: string) => {
+      const fromNested =
+        categories.find((c) => String(c.id) === catId)?.sub_categories ?? [];
+      if (fromNested.length > 0) return fromNested;
+      return allSubCategories.filter((s) => String(s.category_id) === catId);
+    },
+    [categories, allSubCategories]
+  );
+
   const subCategories: SubCategory[] = useMemo(() => {
     if (categoryId) {
-      return categories.find((c) => String(c.id) === categoryId)?.sub_categories ?? [];
+      return nestedForCategory(categoryId);
     }
-    return categories.flatMap((c) => c.sub_categories ?? []);
-  }, [categories, categoryId]);
+    const nestedAll = categories.flatMap((c) => c.sub_categories ?? []);
+    if (nestedAll.length > 0) return nestedAll;
+    return allSubCategories;
+  }, [categories, categoryId, allSubCategories, nestedForCategory]);
+
+  // Drop subcategory selection if it no longer matches the chosen category
+  useEffect(() => {
+    if (!subCategoryId || !categoryId) return;
+    const valid = subCategories.some((s) => String(s.id) === subCategoryId);
+    if (!valid) onSubCategoryChange("");
+  }, [categoryId, subCategoryId, subCategories, onSubCategoryChange]);
 
   const categoryOptions: DropdownOption[] = useMemo(
-    () => categories.map((c) => ({ value: String(c.id), label: c.name })),
+    () =>
+      categories.map((c) => ({
+        value: String(c.id),
+        label: c.name,
+        visual: c.visual ?? resolveCategoryVisual(c.name),
+      })),
     [categories]
   );
 
   const subOptions: DropdownOption[] = useMemo(
-    () => subCategories.map((s) => ({ value: String(s.id), label: s.name })),
+    () =>
+      subCategories.map((s) => ({
+        value: String(s.id),
+        label: s.name,
+        visual: resolveSubcategoryFromModel(s),
+      })),
     [subCategories]
   );
 
   const categoryDisabled = categories.length === 0;
-  const subDisabled = subCategories.length === 0 || (!filterMode && !categoryId);
+  const subDisabled =
+    subCategories.length === 0 || (!filterMode && !categoryId);
 
-  const subPlaceholder = subDisabled
-    ? filterMode
-      ? "No subcategories"
-      : "Choose a category first"
-    : subCategoryPlaceholder;
+  const subPlaceholder =
+    subCategories.length === 0
+      ? filterMode
+        ? categoryId
+          ? "No subcategories in this category"
+          : "All subcategories"
+        : "Choose a category first"
+      : subCategoryPlaceholder;
 
   const gridClass =
     variant === "map"
@@ -343,6 +393,11 @@ export function CategorySubcategoryPicker({
         onChange={(id) => {
           onCategoryChange(id);
           onSubCategoryChange("");
+          if (id && filterMode) {
+            window.setTimeout(() => {
+              document.getElementById(`${baseId}-sub`)?.click();
+            }, 0);
+          }
         }}
       />
       <PickerDropdown

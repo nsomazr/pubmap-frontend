@@ -2,7 +2,7 @@ import type { User } from "../types";
 
 const HONORIFICS = new Set(["mr", "mrs", "miss", "ms", "dr", "prof"]);
 
-/** First name for greetings — never uses honorific (Mr, Dr, etc.). */
+/** First name for greetings  -  never uses honorific (Mr, Dr, etc.). */
 export function userFirstName(user?: Pick<User, "firstname"> | null): string {
   return user?.firstname?.trim() || "Researcher";
 }
@@ -46,4 +46,27 @@ export function authorDisplayName(
   if (!author) return "";
   if (author.formal_name?.trim()) return author.formal_name.trim();
   return userFormalName(author);
+}
+
+export function userInitials(
+  user?: Pick<User, "firstname" | "lastname" | "full_name"> | null
+): string {
+  const first = user?.firstname?.trim()?.[0] ?? "";
+  const last = user?.lastname?.trim()?.[0] ?? "";
+  if (first || last) return `${first}${last}`.toUpperCase();
+  const legacy = user?.full_name?.trim();
+  if (legacy) {
+    const parts = legacy.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    return parts[0]?.slice(0, 2).toUpperCase() || "?";
+  }
+  return "?";
+}
+
+export function userInitialsFromName(name?: string | null): string {
+  const trimmed = name?.trim();
+  if (!trimmed) return "?";
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  return parts[0].slice(0, 2).toUpperCase();
 }

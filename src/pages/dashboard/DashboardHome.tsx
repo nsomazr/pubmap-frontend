@@ -14,6 +14,17 @@ import { PageHeader } from "../../components/dashboard/PageHeader";
 import { GreHeroBanner } from "../../components/ui/GreHeroBanner";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
+import {
+  greStatCardDraft,
+  greStatCardPending,
+  greStatCardPublished,
+  greStatCardRevision,
+  greStatIconDraft,
+  greStatIconPending,
+  greStatIconPublished,
+  greStatIconRevision,
+  greStatLinkPending,
+} from "../../lib/greTheme";
 import { userFirstName } from "../../lib/userDisplay";
 import type { DashboardStats } from "../../types";
 
@@ -35,32 +46,32 @@ export function DashboardHome() {
       value: stats?.drafts ?? 0,
       icon: FileText,
       to: "/dashboard/publications?status=0",
-      gradient: "from-slate-500/10 to-slate-500/5",
-      iconBg: "bg-slate-100 text-slate-600",
+      gradient: greStatCardDraft,
+      iconBg: greStatIconDraft,
     },
     {
       label: "Pending review",
       value: stats?.pending ?? 0,
       icon: Clock,
       to: "/dashboard/publications?status=1",
-      gradient: "from-amber-500/10 to-amber-500/5",
-      iconBg: "bg-amber-100 text-amber-700",
+      gradient: greStatCardPending,
+      iconBg: greStatIconPending,
     },
     {
       label: "Needs revision",
       value: stats?.commented ?? 0,
       icon: MessageSquare,
       to: "/dashboard/publications?status=2",
-      gradient: "from-orange-500/10 to-orange-500/5",
-      iconBg: "bg-orange-100 text-orange-700",
+      gradient: greStatCardRevision,
+      iconBg: greStatIconRevision,
     },
     {
       label: "Published",
       value: stats?.published ?? 0,
       icon: CheckCircle,
       to: "/dashboard/publications?status=3",
-      gradient: "from-emerald-500/10 to-emerald-500/5",
-      iconBg: "bg-emerald-100 text-emerald-700",
+      gradient: greStatCardPublished,
+      iconBg: greStatIconPublished,
     },
   ];
 
@@ -110,14 +121,14 @@ export function DashboardHome() {
           <div className="flex flex-wrap gap-2">
             <Link
               to="/dashboard/publications/new"
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-brand-700"
+              className="gre-interactive inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-brand-700"
             >
               <Plus className="h-4 w-4" />
               New publication
             </Link>
             <Link
               to="/"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-200"
+              className="gre-interactive inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-brand-200"
             >
               <Map className="h-4 w-4 text-brand-600" />
               View map
@@ -125,7 +136,7 @@ export function DashboardHome() {
             {isAdmin && (stats?.pending ?? 0) > 0 && (
               <Link
                 to="/dashboard/review"
-                className="inline-flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-200"
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${greStatLinkPending}`}
               >
                 <Clock className="h-4 w-4" />
                 {stats?.pending} pending review
@@ -135,12 +146,12 @@ export function DashboardHome() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 gre-stagger">
         {cards.map(({ label, value, icon: Icon, to, gradient, iconBg }) => (
           <Link
             key={label}
             to={to}
-            className={`group relative overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br ${gradient} p-5 transition hover:border-brand-200 hover:shadow-md`}
+            className={`gre-card gre-card-hover group relative overflow-hidden bg-gradient-to-br ${gradient} p-5`}
           >
             <div className={`inline-flex rounded-xl p-2.5 ${iconBg}`}>
               <Icon className="h-5 w-5" />

@@ -25,6 +25,18 @@ const EventDetailPage = lazy(() =>
   import("./pages/EventDetailPage").then((m) => ({ default: m.EventDetailPage }))
 );
 const AboutPage = lazy(() => import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })));
+const DoiRedirectPage = lazy(() =>
+  import("./pages/DoiRedirectPage").then((m) => ({ default: m.DoiRedirectPage }))
+);
+const RankingsPage = lazy(() =>
+  import("./pages/RankingsPage").then((m) => ({ default: m.RankingsPage }))
+);
+const StatisticsPage = lazy(() =>
+  import("./pages/StatisticsPage").then((m) => ({ default: m.StatisticsPage }))
+);
+const ResearcherProfilePage = lazy(() =>
+  import("./pages/ResearcherProfilePage").then((m) => ({ default: m.ResearcherProfilePage }))
+);
 
 const DashboardHome = lazy(() =>
   import("./pages/dashboard/DashboardHome").then((m) => ({ default: m.DashboardHome }))
@@ -57,6 +69,9 @@ const AdsPage = lazy(() => import("./pages/dashboard/AdsPage").then((m) => ({ de
 const AdminOperationsPage = lazy(() =>
   import("./pages/dashboard/AdminOperationsPage").then((m) => ({ default: m.AdminOperationsPage }))
 );
+const PlagiarismClaimsPage = lazy(() =>
+  import("./pages/dashboard/PlagiarismClaimsPage").then((m) => ({ default: m.PlagiarismClaimsPage }))
+);
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -84,7 +99,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Full-screen auth routes only — never render dashboard behind login/register. */
+/** Full-screen auth routes only  -  never render dashboard behind login/register. */
 function AuthRoute() {
   const { user, loading, onboardingRequired } = useAuth();
   if (loading) return <AuthScreenLoading />;
@@ -123,11 +138,15 @@ function AppRoutes() {
           <Route path="/onboarding" element={<OnboardingPage />} />
         </Route>
         <Route path="/publication/:id" element={<PublicationDetailPage />} />
+        <Route path="/researcher/:id" element={<ResearcherProfilePage />} />
+        <Route path="/doi/:doi" element={<DoiRedirectPage />} />
         <Route path="/forum" element={<ForumPage />} />
         <Route path="/forum/category/:id" element={<ForumCategoryPage />} />
         <Route path="/forum/topic/:id" element={<ForumTopicPage />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/events/:id" element={<EventDetailPage />} />
+        <Route path="/rankings" element={<RankingsPage />} />
+        <Route path="/statistics" element={<StatisticsPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<AboutPage />} />
         <Route
@@ -150,6 +169,7 @@ function AppRoutes() {
           <Route path="events" element={<EventsAdminPage />} />
           <Route path="ads" element={<AdsPage />} />
           <Route path="operations" element={<AdminOperationsPage />} />
+          <Route path="plagiarism" element={<PlagiarismClaimsPage />} />
           <Route path="cms" element={<Navigate to="/dashboard/operations" replace />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

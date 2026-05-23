@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { assistantSummarizePublicationStream } from "../../lib/assistant";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
+import { greAccentBadge } from "../../lib/greTheme";
 import type { Publication } from "../../types";
 
 interface Props {
@@ -74,23 +75,23 @@ export function MapSummaryDock({ publication, onClose }: Props) {
   const location = formatLocation(publication);
 
   return (
-    <div className="map-summary-dock pointer-events-auto">
+    <aside className="map-summary-dock pointer-events-auto" aria-live="polite">
       <div className="map-summary-dock-card">
         <header className="map-summary-dock-header">
-          <div className="flex min-w-0 flex-1 items-start gap-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <span className={`${greAccentBadge} h-9 w-9 shrink-0 rounded-xl shadow-md`}>
               <Sparkles className="h-4 w-4" />
             </span>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
-                GRE Assistant summary
+                Research summary
               </p>
-              <h3 className="line-clamp-2 text-sm font-bold leading-snug text-ink">
+              <h3 className="line-clamp-2 text-base font-bold leading-snug text-ink">
                 {publication.title}
               </h3>
-              <p className="mt-0.5 truncate text-xs text-slate-500">{author}</p>
+              <p className="mt-1 truncate text-xs font-medium text-slate-600">{author}</p>
               {location && (
-                <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-600">
+                <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
                   <MapPin className="h-3 w-3 shrink-0 text-teal-600" />
                   <span className="truncate">{location}</span>
                 </p>
@@ -123,12 +124,12 @@ export function MapSummaryDock({ publication, onClose }: Props) {
         <footer className="map-summary-dock-footer">
           <Link
             to={`/publication/${publication.id}`}
-            className="text-xs font-semibold text-brand-600 hover:text-brand-700"
+            className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700"
           >
-            View full PDF
+            View full publication
           </Link>
         </footer>
       </div>
-    </div>
+    </aside>
   );
 }

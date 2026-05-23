@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../lib/api";
+import { parseMapDeepLink } from "../lib/mapDeepLink";
 import { DraggableMapPanel } from "../components/landing/DraggableMapPanel";
 import { MapResultsRail } from "../components/landing/MapResultsRail";
 import { MapSearchHub } from "../components/landing/MapSearchHub";
@@ -9,13 +11,28 @@ import {
   GRE_SUMMARY_REQUEST,
   type GreSummaryRequestDetail,
 } from "../components/map/publicationPopupSummary";
+import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import { PublicFooter } from "../components/layout/PublicFooter";
 import { PublicNav } from "../components/layout/PublicNav";
 import { ResearchMap } from "../components/map/ResearchMap";
 import { assets } from "../lib/brand";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import type { Category, Publication, SubCategory } from "../types";
 
+type MapSearchFilters = {
+  author: string;
+  affiliation: string;
+  title: string;
+  categoryId: string;
+  subCategoryId: string;
+};
+
 export function HomePage() {
+  const [searchParams] = useSearchParams();
+  const mapDeepLink = useMemo(
+    () => parseMapDeepLink(searchParams.toString()),
+    [searchParams]
+  );
   const [author, setAuthor] = useState("");
   const [affiliation, setAffiliation] = useState("");
   const [title, setTitle] = useState("");
@@ -27,7 +44,30 @@ export function HomePage() {
   const [resultsRailCollapsed, setResultsRailCollapsed] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [summaryPubId, setSummaryPubId] = useState<number | null>(null);
+  const [focusPubId, setFocusPubId] = useState<number | null>(null);
+  const [deepLinkPub, setDeepLinkPub] = useState<Publication | null>(null);
   const mapChromeBoundsRef = useRef<HTMLElement | null>(null);
+  const skipAutoSearchRef = useRef(true);
+
+  const debouncedAuthor = useDebouncedValue(author, 400);
+  const debouncedAffiliation = useDebouncedValue(affiliation, 400);
+  const debouncedTitle = useDebouncedValue(title, 400);
+
+  useEffect(() => {
+    const id = mapDeepLink.publicationId;
+    if (!id) return;
+    setFocusPubId(id);
+    if (mapDeepLink.panel === "summary") {
+      setSummaryPubId(id);
+    }
+  }, [mapDeepLink.publicationId, mapDeepLink.panel]);
+
+  useEffect(() => {
+    if (mapDeepLink.affiliation) {
+      setAffiliation(mapDeepLink.affiliation);
+      skipAutoSearchRef.current = false;
+    }
+  }, [mapDeepLink.affiliation]);
 
   useEffect(() => {
     const onSummary = (e: Event) => {
@@ -52,28 +92,49 @@ export function HomePage() {
     retry: 2,
   });
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearching(true);
-    setSearchError(null);
-    try {
-      const { data } = await api.get<Publication[]>("/map/search/", {
-        params: {
-          author: author || undefined,
-          affiliation: affiliation || undefined,
-          title: title || undefined,
-          category: categoryId || undefined,
-          sub_category: subCategoryId || undefined,
-        },
-      });
-      setResults(data);
-      setResultsRailOpen(true);
-      setResultsRailCollapsed(false);
-    } catch {
-      setSearchError("Search failed. Check your connection and try again.");
-    } finally {
-      setSearching(false);
-    }
+  const runSearch = useCallback(
+    async (filters?: MapSearchFilters) => {
+      const active = filters ?? {
+        author: debouncedAuthor,
+        affiliation: debouncedAffiliation,
+        title: debouncedTitle,
+        categoryId,
+        subCategoryId,
+      };
+      setSearching(true);
+      setSearchError(null);
+      try {
+        const { data } = await api.get<Publication[]>("/map/search/", {
+          params: {
+            author: active.author || undefined,
+            affiliation: active.affiliation || undefined,
+            title: active.title || undefined,
+            category: active.categoryId || undefined,
+            sub_category: active.subCategoryId || undefined,
+          },
+        });
+        setResults(data);
+        setResultsRailOpen(true);
+        setResultsRailCollapsed(false);
+      } catch {
+        setSearchError("Search failed. Check your connection and try again.");
+      } finally {
+        setSearching(false);
+      }
+    },
+    [debouncedAuthor, debouncedAffiliation, debouncedTitle, categoryId, subCategoryId]
+  );
+
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    skipAutoSearchRef.current = false;
+    await runSearch({
+      author,
+      affiliation,
+      title,
+      categoryId,
+      subCategoryId,
+    });
   };
 
   const clearFilters = () => {
@@ -84,11 +145,61 @@ export function HomePage() {
     setSubCategoryId("");
     setResults(null);
     setResultsRailOpen(false);
+    skipAutoSearchRef.current = true;
   };
 
+  useEffect(() => {
+    if (skipAutoSearchRef.current) return;
+    const hasFilter =
+      debouncedAuthor ||
+      debouncedAffiliation ||
+      debouncedTitle ||
+      categoryId ||
+      subCategoryId;
+    if (results === null && !hasFilter) return;
+    void runSearch();
+  }, [
+    debouncedAuthor,
+    debouncedAffiliation,
+    debouncedTitle,
+    categoryId,
+    subCategoryId,
+    runSearch,
+    results,
+  ]);
+
   const mapPublications = data?.publications ?? [];
+
+  useEffect(() => {
+    const id = mapDeepLink.publicationId;
+    if (!id || isLoading) return;
+    const found = mapPublications.find((p) => p.id === id);
+    if (found) {
+      setDeepLinkPub(found);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get<Publication>(`/publications/${id}/public/`)
+      .then(({ data: pub }) => {
+        if (!cancelled) setDeepLinkPub(pub);
+      })
+      .catch(() => {
+        if (!cancelled) setDeepLinkPub(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mapDeepLink.publicationId, mapPublications, isLoading]);
+
   const hasSearched = results !== null;
-  const publications = hasSearched ? (results ?? []) : mapPublications;
+  const basePublications = hasSearched ? (results ?? []) : mapPublications;
+  const publications = useMemo(() => {
+    if (deepLinkPub && !basePublications.some((p) => p.id === deepLinkPub.id)) {
+      return [deepLinkPub, ...basePublications];
+    }
+    return basePublications;
+  }, [basePublications, deepLinkPub]);
   const categories = data?.categories ?? [];
   const subCategories = data?.sub_categories ?? [];
   const totalOnMap = mapPublications.length;
@@ -96,16 +207,18 @@ export function HomePage() {
     (p) => p.coordinates?.latitude && p.coordinates?.longitude
   ).length;
 
-  const summaryPublication = useMemo(
-    () => publications.find((p) => p.id === summaryPubId) ?? null,
-    [publications, summaryPubId]
-  );
+  const summaryPublication = useMemo(() => {
+    if (summaryPubId) {
+      return publications.find((p) => p.id === summaryPubId) ?? deepLinkPub;
+    }
+    return null;
+  }, [publications, summaryPubId, deepLinkPub]);
 
   return (
     <div
       className={`landing-page relative flex min-h-[100dvh] flex-col overflow-hidden bg-slate-200${
         resultsRailOpen && !resultsRailCollapsed ? " landing-page--results-open" : ""
-      }`}
+      }${summaryPublication ? " landing-page--summary-open" : ""}`}
     >
       <PublicNav variant="map" />
 
@@ -120,7 +233,12 @@ export function HomePage() {
               />
             </div>
           ) : (
-            <ResearchMap publications={publications} height="100%" className="rounded-none border-0" />
+            <ResearchMap
+              publications={publications}
+              focusPublicationId={focusPubId}
+              height="100%"
+              className="rounded-none border-0"
+            />
           )}
         </div>
 
@@ -185,6 +303,7 @@ export function HomePage() {
             subCategoryId={subCategoryId}
             categories={categories}
             subCategories={subCategories}
+            suggestionSource={mapPublications}
             resultCount={publications.length}
             searching={searching}
             hasResults={hasSearched}
@@ -200,11 +319,12 @@ export function HomePage() {
             onSearch={handleSearch}
             onClear={clearFilters}
           />
-          <MapSummaryDock
-            publication={summaryPublication}
-            onClose={() => setSummaryPubId(null)}
-          />
         </DraggableMapPanel>
+
+        <MapSummaryDock
+          publication={summaryPublication}
+          onClose={() => setSummaryPubId(null)}
+        />
 
         {resultsRailOpen && (
           <MapResultsRail
@@ -214,6 +334,16 @@ export function HomePage() {
             onToggleCollapse={() => setResultsRailCollapsed((c) => !c)}
             onClose={() => setResultsRailOpen(false)}
           />
+        )}
+
+        {!resultsRailOpen && !summaryPublication && (
+          <div className="pointer-events-none absolute bottom-24 right-4 z-[1000] hidden w-[min(100%,240px)] md:block lg:bottom-8 lg:right-6">
+            <GreAdPlacement
+              placement="sidebar"
+              limit={2}
+              className="pointer-events-auto space-y-3"
+            />
+          </div>
         )}
       </main>
 

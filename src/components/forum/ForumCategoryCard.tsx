@@ -2,6 +2,8 @@ import { ArrowUpRight, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 import { DefaultBanner } from "../ui/DefaultBanner";
 import { isHexColor, mediaUrl } from "../../lib/mediaUrl";
+import { resolveSubcategoryFromModel } from "../../lib/taxonomyVisuals";
+import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import type { SubCategory } from "../../types";
 
 interface Props {
@@ -9,14 +11,15 @@ interface Props {
 }
 
 export function ForumCategoryCard({ sub }: Props) {
-  const accent = isHexColor(sub.icon) ? sub.icon! : "#3b5bdb";
+  const visual = resolveSubcategoryFromModel(sub);
+  const accent = visual?.accent_color ?? (isHexColor(sub.icon) ? sub.icon! : "#3b5bdb");
   const imageSrc = sub.icon && !isHexColor(sub.icon) ? mediaUrl(sub.icon) : null;
   const count = (sub as SubCategory & { topic_count?: number }).topic_count ?? 0;
 
   return (
     <Link
       to={`/forum/category/${sub.id}`}
-      className="group flex items-center gap-3.5 rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-brand-200/80 sm:gap-4 sm:p-4"
+      className="gre-card gre-card-hover group flex items-center gap-3.5 p-3.5 sm:gap-4 sm:p-4"
     >
       <div
         className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl sm:h-[4.5rem] sm:w-[4.5rem]"
@@ -33,7 +36,16 @@ export function ForumCategoryCard({ sub }: Props) {
               className="absolute inset-0 opacity-40"
               style={{ background: `linear-gradient(135deg, ${accent}, rgba(15,23,42,0.5))` }}
             />
+            {visual && (
+              <div className="absolute bottom-1.5 right-1.5">
+                <SubcategoryVisual visual={visual} size="xs" className="ring-2 ring-white" />
+              </div>
+            )}
           </>
+        ) : visual ? (
+          <div className="flex h-full w-full items-center justify-center">
+            <SubcategoryVisual visual={visual} size="lg" className="h-full w-full rounded-xl" />
+          </div>
         ) : (
           <DefaultBanner kind="forum" seed={sub.id} compact />
         )}

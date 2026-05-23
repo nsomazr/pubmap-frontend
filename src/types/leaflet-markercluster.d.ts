@@ -16,6 +16,7 @@ declare module "leaflet" {
   class MarkerClusterGroup extends FeatureGroup {
     addLayer(layer: Layer): this;
     clearLayers(): this;
+    zoomToShowLayer(layer: Layer, callback?: () => void): void;
   }
 
   function markerClusterGroup(options?: MarkerClusterGroupOptions): MarkerClusterGroup;

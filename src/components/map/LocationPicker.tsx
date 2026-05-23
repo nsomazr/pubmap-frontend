@@ -18,6 +18,7 @@ import {
   searchPlaces,
   type GeocodeResult,
 } from "../../lib/geocode";
+import { InstitutionPicker } from "../institutions/InstitutionPicker";
 import type { Coordinate } from "../../types";
 import "leaflet/dist/leaflet.css";
 
@@ -137,10 +138,21 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
   const [searchError, setSearchError] = useState("");
   const [reverseLoading, setReverseLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appliedInstitutionDefaultRef = useRef(false);
 
   const lat = parseFloat(value.latitude);
   const lng = parseFloat(value.longitude);
   const hasPin = hasValidCoords(value.latitude, value.longitude);
+
+  useEffect(() => {
+    const defaultInst = institutionDefault?.trim();
+    if (!defaultInst || appliedInstitutionDefaultRef.current || value.institution?.trim()) {
+      if (value.institution?.trim()) appliedInstitutionDefaultRef.current = true;
+      return;
+    }
+    appliedInstitutionDefaultRef.current = true;
+    onChange({ ...value, institution: defaultInst });
+  }, [institutionDefault, onChange, value]);
 
   const applyCoords = useCallback(
     async (latitude: number, longitude: number, locationName?: string) => {
@@ -378,13 +390,11 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700">Institution / site</label>
-          <input
-            type="text"
+          <InstitutionPicker
             value={value.institution || ""}
-            onChange={(e) => onChange({ ...value, institution: e.target.value })}
+            onChange={(institution) => onChange({ ...value, institution })}
+            label="Institution / site"
             placeholder="University, lab, field site…"
-            className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
           />
         </div>
         <div>

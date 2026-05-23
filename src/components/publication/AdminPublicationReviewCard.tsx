@@ -14,6 +14,9 @@ import { Textarea } from "../ui/Textarea";
 import api from "../../lib/api";
 import { abstractPlainText } from "../../lib/abstractText";
 import { authorDisplayName } from "../../lib/userDisplay";
+import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
+import { SubcategoryBadge } from "../taxonomy/SubcategoryBadge";
+import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import type { Publication } from "../../types";
 import { PdfPreview } from "./PdfPreview";
 
@@ -31,6 +34,7 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
   const docPath = pub.documents?.[0]?.document ?? null;
   const hasPdf = Boolean(docPath && /\.pdf$/i.test(docPath.split("?")[0]));
   const author = authorDisplayName(pub.author);
+  const subVisual = publicationSubcategoryVisual(pub);
 
   const acceptMutation = useMutation({
     mutationFn: () => api.post(`/publications/${pub.id}/accept/`),
@@ -62,20 +66,24 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
     >
       <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
-              <FileText className="h-5 w-5" />
-            </div>
+            <div className="flex min-w-0 gap-3">
+            {subVisual ? (
+              <SubcategoryVisual visual={subVisual} size="md" />
+            ) : (
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
+                <FileText className="h-5 w-5" />
+              </div>
+            )}
             <div className="min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
                 Submission for review
               </p>
               <p className="mt-1 text-sm font-medium text-slate-600">{author}</p>
               <h3 className="mt-1 text-lg font-bold leading-snug text-ink">{pub.title}</h3>
-              {pub.sub_category_name && (
-                <span className="mt-2 inline-block rounded-md bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-700">
-                  {pub.sub_category_name}
-                </span>
+              {subVisual && (
+                <div className="mt-2">
+                  <SubcategoryBadge visual={subVisual} size="xs" />
+                </div>
               )}
             </div>
           </div>
@@ -88,7 +96,7 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Abstract</h4>
             <p className="mt-2 text-sm leading-relaxed text-slate-700">
-              {abstractPlainText(pub.abstract) || "—"}
+              {abstractPlainText(pub.abstract) || "-"}
             </p>
           </div>
           {pub.coordinates && (

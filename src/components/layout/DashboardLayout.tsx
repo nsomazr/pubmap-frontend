@@ -19,6 +19,7 @@ function breadcrumbLabel(pathname: string): string {
   if (pathname.includes("/authors")) return "Users";
   if (pathname.includes("/categories")) return "Categories";
   if (pathname.includes("/events")) return "Events";
+  if (pathname.includes("/plagiarism")) return "Plagiarism";
   if (pathname.includes("/ads")) return "Ads";
   if (pathname.includes("/operations")) return "Operations";
   return "Overview";
@@ -99,7 +100,7 @@ export function DashboardLayout() {
           <button
             type="button"
             onClick={toggleCollapse}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 lg:hidden"
+            className="gre-interactive flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 lg:hidden"
             aria-label="Toggle menu"
           >
             {isMobile && mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -112,7 +113,7 @@ export function DashboardLayout() {
           <NotificationBell />
           <Link
             to="/"
-            className="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-brand-600 transition hover:bg-brand-50 sm:flex"
+            className="gre-interactive hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50 sm:flex"
           >
             <ExternalLink className="h-3.5 w-3.5" />
             Map
@@ -120,7 +121,7 @@ export function DashboardLayout() {
         </header>
 
         <div className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8">
-          <div className="dashboard-panel min-h-[calc(100vh-8rem)] p-4 sm:p-6 lg:p-8">
+          <div className="dashboard-panel min-h-[calc(100vh-8rem)]">
             <Outlet />
           </div>
         </div>

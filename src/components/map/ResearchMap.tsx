@@ -31,6 +31,7 @@ interface Props {
   height?: string;
   className?: string;
   zoomPosition?: "bottomright" | "bottomleft" | "topright" | "topleft";
+  focusPublicationId?: number | null;
 }
 
 export function ResearchMap({
@@ -38,6 +39,7 @@ export function ResearchMap({
   height = "calc(100vh - 4rem)",
   className = "",
   zoomPosition = "bottomright",
+  focusPublicationId = null,
 }: Props) {
   const withCoords = publications.filter(
     (p) => p.coordinates?.latitude && p.coordinates?.longitude
@@ -60,8 +62,11 @@ export function ResearchMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitBounds pubs={withCoords} />
-        <PublicationMarkerLayer publications={publications} />
+        {!focusPublicationId && <FitBounds pubs={withCoords} />}
+        <PublicationMarkerLayer
+          publications={publications}
+          focusPublicationId={focusPublicationId}
+        />
       </MapContainer>
     </div>
   );

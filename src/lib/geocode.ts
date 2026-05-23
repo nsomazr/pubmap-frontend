@@ -1,4 +1,4 @@
-/** OpenStreetMap Nominatim — free geocoding (use sparingly: max ~1 req/s). */
+/** OpenStreetMap Nominatim  -  free geocoding (use sparingly: max ~1 req/s). */
 
 const NOMINATIM = "https://nominatim.openstreetmap.org";
 const HEADERS = {

@@ -5,7 +5,7 @@ interface Props {
   className?: string;
 }
 
-/** Single auth panel card — method picker + form live inside one surface. */
+/** Single auth panel card  -  method picker + form live inside one surface. */
 export function AuthFormCard({ children, className = "" }: Props) {
   return <div className={`auth-form-card ${className}`.trim()}>{children}</div>;
 }

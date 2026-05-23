@@ -1,13 +1,19 @@
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PageBackLink } from "../ui/PageBackLink";
 import { PublicNav } from "./PublicNav";
 import { PublicFooter } from "./PublicFooter";
 
-export type PageAccent = "blue" | "teal" | "violet" | "amber" | "rose";
+export type PageAccent = "blue" | "teal";
 
 interface Crumb {
   label: string;
   to?: string;
+}
+
+export interface PageBack {
+  to: string;
+  label?: string;
 }
 
 interface Props {
@@ -20,6 +26,8 @@ interface Props {
   badge?: string;
   /** Shorter hero for About, Events, Forum, Contact, etc. */
   compactHero?: boolean;
+  /** Optional back link rendered above page content, aligned with the hero. */
+  back?: PageBack;
 }
 
 const accentStyles: Record<
@@ -35,26 +43,8 @@ const accentStyles: Record<
   teal: {
     hero: "from-[#0f766e] via-[#0d9488] to-[#3b5bdb]",
     orb1: "bg-teal-300/35",
-    orb2: "bg-cyan-400/20",
+    orb2: "bg-brand-400/20",
     badge: "bg-teal-500/20 text-teal-50 ring-teal-400/30",
-  },
-  violet: {
-    hero: "from-[#4c1d95] via-[#6366f1] to-[#3b5bdb]",
-    orb1: "bg-violet-400/30",
-    orb2: "bg-indigo-400/25",
-    badge: "bg-violet-500/20 text-violet-100 ring-violet-400/30",
-  },
-  amber: {
-    hero: "from-[#b45309] via-[#d97706] to-[#3b5bdb]",
-    orb1: "bg-amber-400/25",
-    orb2: "bg-orange-300/20",
-    badge: "bg-amber-500/20 text-amber-50 ring-amber-400/30",
-  },
-  rose: {
-    hero: "from-[#be123c] via-[#e11d48] to-[#7c3aed]",
-    orb1: "bg-rose-400/25",
-    orb2: "bg-pink-400/20",
-    badge: "bg-rose-500/20 text-rose-50 ring-rose-400/30",
   },
 };
 
@@ -67,8 +57,10 @@ export function PublicPageLayout({
   accent = "blue",
   badge,
   compactHero = false,
+  back,
 }: Props) {
   const a = accentStyles[accent];
+  const contentShell = wide ? "max-w-[1600px]" : "max-w-5xl";
 
   return (
     <div className="flex min-h-screen min-h-[100dvh] flex-col overflow-x-hidden bg-[#f8fafc]">
@@ -93,7 +85,7 @@ export function PublicPageLayout({
           aria-hidden
         />
         <div
-          className={`relative mx-auto max-w-[1600px] px-4 sm:px-6 ${
+          className={`relative mx-auto ${contentShell} px-4 sm:px-6 ${
             compactHero
               ? "pb-8 pt-6 sm:pb-10 sm:pt-8"
               : "pb-16 pt-10 sm:pb-20 sm:pt-14 lg:pb-24"
@@ -130,7 +122,7 @@ export function PublicPageLayout({
             </span>
           )}
           <h1
-            className={`max-w-4xl font-bold leading-[1.15] tracking-tight text-white ${
+            className={`gre-display max-w-4xl font-bold tracking-tight text-white ${
               compactHero
                 ? "text-2xl sm:text-3xl lg:text-4xl"
                 : "text-4xl sm:text-5xl lg:text-6xl"
@@ -140,7 +132,7 @@ export function PublicPageLayout({
           </h1>
           {subtitle && (
             <p
-              className={`max-w-2xl leading-relaxed text-white/80 ${
+              className={`gre-readable max-w-2xl text-white/80 ${
                 compactHero
                   ? "mt-2 text-sm sm:text-base"
                   : "mt-5 text-lg sm:text-xl"
@@ -158,12 +150,13 @@ export function PublicPageLayout({
       </section>
 
       <main
-        className={`relative z-10 mx-auto w-full flex-1 px-4 pb-16 sm:px-6 ${
-          wide ? "max-w-[1600px]" : "max-w-5xl"
-        }`}
+        className={`relative z-10 mx-auto w-full flex-1 px-4 pb-16 sm:px-6 ${contentShell}`}
         style={{ marginTop: compactHero ? "-1.25rem" : "-2.5rem" }}
       >
-        <div className="animate-fade-up">{children}</div>
+        <div className="animate-fade-up">
+          {back && <PageBackLink to={back.to} label={back.label} className="mb-6" />}
+          {children}
+        </div>
       </main>
       <PublicFooter />
     </div>

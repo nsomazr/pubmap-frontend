@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CountryInstitutionPicker } from "../../components/institutions/CountryInstitutionPicker";
+import { InterestPicker } from "../../components/interests/InterestPicker";
 import api from "../../lib/api";
 import {
   clearSignupMethod,
@@ -16,7 +18,7 @@ export function OnboardingPage() {
   const { refreshUser, setOnboardingRequired } = useAuth();
   const navigate = useNavigate();
   const needsPassword = getSignupMethod() === "otp";
-  const totalSteps = needsPassword ? 3 : 2;
+  const totalSteps = needsPassword ? 4 : 3;
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -25,8 +27,9 @@ export function OnboardingPage() {
     firstname: "",
     middlename: "",
     lastname: "",
-    area_of_study: "",
+    interests: [] as string[],
     phone: "",
+    country_code: "",
     affiliation: "",
     password: "",
     confirm_password: "",
@@ -47,13 +50,14 @@ export function OnboardingPage() {
     setError("");
     setLoading(true);
     try {
-      const payload: Record<string, string> = {
+      const payload: Record<string, string | string[]> = {
         title: form.title,
         firstname: form.firstname,
         middlename: form.middlename,
         lastname: form.lastname,
-        area_of_study: form.area_of_study,
+        interests: form.interests,
         phone: form.phone,
+        country_code: form.country_code,
         affiliation: form.affiliation,
       };
       if (needsPassword) {
@@ -116,7 +120,7 @@ export function OnboardingPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-slate-500">How you prefer to be addressed — not your job title.</p>
+              <p className="text-xs text-slate-500">How you prefer to be addressed, not your job title.</p>
             </div>
             <Input
               label="First name"
@@ -136,13 +140,6 @@ export function OnboardingPage() {
               required
               value={form.lastname}
               onChange={(e) => update("lastname", e.target.value)}
-              className="auth-input"
-            />
-            <Input
-              label="Areas of study / interests"
-              value={form.area_of_study}
-              onChange={(e) => update("area_of_study", e.target.value)}
-              placeholder="e.g. Engineering geology, hydrogeology, GIS"
               className="auth-input"
             />
             {error && (
@@ -168,19 +165,19 @@ export function OnboardingPage() {
 
         {step === 2 && (
           <>
+            <CountryInstitutionPicker
+              countryCode={form.country_code}
+              onCountryChange={(country_code) => setForm((f) => ({ ...f, country_code }))}
+              institution={form.affiliation}
+              onInstitutionChange={(affiliation) => setForm((f) => ({ ...f, affiliation }))}
+              required
+            />
             <Input
               label="Phone number"
               required
               type="tel"
               value={form.phone}
               onChange={(e) => update("phone", e.target.value)}
-              className="auth-input"
-            />
-            <Input
-              label="Affiliation / institution"
-              placeholder="University, organization, etc."
-              value={form.affiliation}
-              onChange={(e) => update("affiliation", e.target.value)}
               className="auth-input"
             />
             {error && (
@@ -195,12 +192,54 @@ export function OnboardingPage() {
               <Button
                 className="auth-submit flex-1"
                 onClick={() => {
+                  if (!form.country_code) {
+                    setError("Select your country of residence");
+                    return;
+                  }
+                  if (!form.affiliation.trim()) {
+                    setError("Select or enter your institution");
+                    return;
+                  }
                   if (!form.phone.trim()) {
                     setError("Phone number is required");
                     return;
                   }
                   setError("");
-                  if (needsPassword) setStep(3);
+                  setStep(3);
+                }}
+              >
+                Continue
+              </Button>
+            </div>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <InterestPicker
+              value={form.interests}
+              onChange={(interests) => setForm((f) => ({ ...f, interests }))}
+              affiliation={form.affiliation}
+              showCollaborators
+            />
+            {error && (
+              <p className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-700 ring-1 ring-red-100">
+                {error}
+              </p>
+            )}
+            <div className="flex gap-3 pt-1">
+              <Button variant="secondary" className="flex-1 !rounded-xl" onClick={() => setStep(2)}>
+                Back
+              </Button>
+              <Button
+                className="auth-submit flex-1"
+                onClick={() => {
+                  if (form.interests.length === 0) {
+                    setError("Select at least one research interest");
+                    return;
+                  }
+                  setError("");
+                  if (needsPassword) setStep(4);
                   else handleSubmit();
                 }}
               >
@@ -210,7 +249,7 @@ export function OnboardingPage() {
           </>
         )}
 
-        {step === 3 && needsPassword && (
+        {step === 4 && needsPassword && (
           <>
             <p className="auth-inline-hint">
               Choose a password for your account. You can still sign in with email codes anytime.
@@ -240,7 +279,7 @@ export function OnboardingPage() {
               </p>
             )}
             <div className="flex gap-3 pt-1">
-              <Button variant="secondary" className="flex-1 !rounded-xl" onClick={() => setStep(2)}>
+              <Button variant="secondary" className="flex-1 !rounded-xl" onClick={() => setStep(3)}>
                 Back
               </Button>
               <Button

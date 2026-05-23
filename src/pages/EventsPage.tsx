@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, ChevronRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import api from "../lib/api";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { DefaultBanner } from "../components/ui/DefaultBanner";
@@ -42,6 +43,20 @@ export function EventsPage() {
       subtitle="Research conferences, symposia, and gatherings from the global community."
       crumbs={[{ label: "Home", to: "/" }, { label: "Events" }]}
     >
+      <GreAdPlacement
+        placement="institutional_banner"
+        limit={1}
+        variant="banner"
+        className="mb-8"
+      />
+
+      <GreAdPlacement
+        placement="event_sponsor"
+        limit={2}
+        variant="card"
+        className="mb-8 grid gap-4 sm:grid-cols-2"
+      />
+
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (

@@ -28,16 +28,13 @@ import {
   patchUnreadCountsAfterRead,
   refreshUnreadState,
 } from "../../lib/notifications";
+import { userInitials } from "../../lib/userDisplay";
 import type { Message, User } from "../../types";
 
 function displayName(u: User) {
   return (
     u.full_name || [u.title, u.firstname, u.middlename, u.lastname].filter(Boolean).join(" ")
   ).trim();
-}
-
-function initials(u: User) {
-  return `${u.firstname?.[0] || ""}${u.lastname?.[0] || ""}`.toUpperCase() || "?";
 }
 
 function dedupeContacts(users: User[], myId?: number) {
@@ -372,7 +369,7 @@ export function MessagesPage() {
         <button
           type="button"
           onClick={() => selectPartner(String(c.id))}
-          className={`group relative mx-2 flex w-[calc(100%-1rem)] items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-150 ${
+          className={`gre-interactive group relative mx-2 flex w-[calc(100%-1rem)] items-center gap-3 rounded-xl px-3 py-3 text-left ${
             active
               ? "bg-white shadow-sm ring-1 ring-slate-200/90"
               : hasUnread
@@ -389,7 +386,7 @@ export function MessagesPage() {
           <div className="relative shrink-0">
             <GreAvatarSlot
               photoUrl={c.photo}
-              initials={initials(c)}
+              initials={userInitials(c)}
               size="sm"
               className={`border-2 border-white shadow-sm ${
                 active ? "ring-2 ring-brand-200" : ""
@@ -448,7 +445,7 @@ export function MessagesPage() {
 
   return (
     <div className="animate-fade-up flex h-[calc(100dvh-5.5rem)] flex-col">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)] md:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden gre-card p-0 md:flex-row">
         {/* Sidebar */}
         <aside
           className={`flex shrink-0 flex-col bg-slate-50/50 md:w-[min(100%,340px)] md:border-r md:border-slate-100 ${
@@ -495,7 +492,7 @@ export function MessagesPage() {
                     <p className="px-4 pb-1 pt-1 text-[11px] font-medium tracking-wide text-slate-400 uppercase">
                       Recent
                     </p>
-                    <ul>{conversationContacts.map((c) => renderContactRow(c, "conversation"))}</ul>
+                    <ul className="gre-stagger">{conversationContacts.map((c) => renderContactRow(c, "conversation"))}</ul>
                   </section>
                 )}
                 {suggestedContacts.length > 0 && (
@@ -503,7 +500,7 @@ export function MessagesPage() {
                     <p className="px-4 pb-1 pt-2 text-[11px] font-medium tracking-wide text-slate-400 uppercase">
                       {debouncedSearch ? "Matches" : "Suggested"}
                     </p>
-                    <ul>{suggestedContacts.map((c) => renderContactRow(c, "suggested"))}</ul>
+                    <ul className="gre-stagger">{suggestedContacts.map((c) => renderContactRow(c, "suggested"))}</ul>
                   </section>
                 )}
               </>
@@ -542,7 +539,7 @@ export function MessagesPage() {
                 </button>
                 <GreAvatarSlot
                   photoUrl={partner.photo}
-                  initials={initials(partner)}
+                  initials={userInitials(partner)}
                   size="sm"
                   className="border-2 border-white shadow-sm"
                 />
@@ -571,15 +568,16 @@ export function MessagesPage() {
                         aria-label="Close menu"
                         onClick={() => setHeaderMenuOpen(false)}
                       />
-                      <div className="absolute right-0 top-full z-20 mt-1 min-w-[10rem] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                      <div className="absolute right-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
                         <button
                           type="button"
                           disabled={deleteThreadMutation.isPending || thread.length === 0}
                           onClick={handleDeleteThread}
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-40"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-40"
+                          aria-label="Delete all messages"
+                          title="Delete all messages"
                         >
                           <Trash2 className="h-4 w-4" />
-                          Delete all messages
                         </button>
                       </div>
                     </>
@@ -667,26 +665,28 @@ export function MessagesPage() {
                                       onClick={() => setMessageMenuId(null)}
                                     />
                                     <div
-                                      className={`absolute top-full z-20 mt-1 min-w-[9.5rem] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg ${
+                                      className={`absolute top-full z-20 mt-1 flex gap-0.5 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg ${
                                         mine ? "right-0" : "left-0"
                                       }`}
                                     >
                                       <button
                                         type="button"
                                         onClick={() => handleCopyMessage(body)}
-                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
+                                        aria-label="Copy message"
+                                        title="Copy message"
                                       >
                                         <Copy className="h-4 w-4" />
-                                        Copy text
                                       </button>
                                       <button
                                         type="button"
                                         disabled={deleteMessageMutation.isPending}
                                         onClick={() => handleDeleteMessage(m.id)}
-                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-40"
+                                        aria-label="Delete message"
+                                        title="Delete message"
                                       >
                                         <Trash2 className="h-4 w-4" />
-                                        Delete message
                                       </button>
                                     </div>
                                   </>

@@ -40,8 +40,7 @@ export function PublicationDocumentUpload({
       form.append("document", file);
       const { data } = await api.post(
         `/publications/${publicationId}/upload_document/`,
-        form,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        form
       );
       return data;
     },
@@ -72,7 +71,7 @@ export function PublicationDocumentUpload({
     setExtracting(true);
     setLocalError("");
     try {
-      const data = await extractDocument(file);
+      const data = await extractDocument(file, { metadataOnly: false, useAi: true });
       if (data.success) {
         onExtracted?.(data);
         await uploadDocumentWithExtract(publicationId, file, false);

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, Mail, MapPin } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Calendar, Mail, MapPin } from "lucide-react";
+import { useParams } from "react-router-dom";
 import api from "../lib/api";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { DefaultBanner } from "../components/ui/DefaultBanner";
@@ -29,11 +29,12 @@ export function EventDetailPage() {
 
   if (isError || !event) {
     return (
-      <PublicPageLayout title="Event not found" crumbs={[{ label: "Events", to: "/events" }]}>
-        <Link to="/events" className="inline-flex items-center gap-2 text-brand-600 hover:underline">
-          <ArrowLeft className="h-4 w-4" />
-          Back to events
-        </Link>
+      <PublicPageLayout
+        title="Event not found"
+        crumbs={[{ label: "Events", to: "/events" }]}
+        back={{ to: "/events", label: "Back to events" }}
+      >
+        <p className="text-slate-600">This event could not be found.</p>
       </PublicPageLayout>
     );
   }
@@ -52,15 +53,8 @@ export function EventDetailPage() {
         { label: "Events", to: "/events" },
         { label: event.title },
       ]}
+      back={{ to: "/events", label: "All events" }}
     >
-      <Link
-        to="/events"
-        className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-brand-600"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        All events
-      </Link>
-
       <div className="overflow-hidden rounded-3xl bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/80">
         {poster ? (
           <img src={poster} alt="" className="max-h-80 w-full object-cover sm:max-h-96" />

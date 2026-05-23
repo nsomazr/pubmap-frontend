@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { BrandMark } from "../components/brand/BrandMark";
+import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 
 const PILLARS = [
@@ -227,7 +228,7 @@ export function AboutPage() {
         </div>
       ) : (
         <div className="space-y-10">
-          {/* At-a-glance — single entry card instead of overlapping dark banner */}
+          {/* At-a-glance  -  single entry card instead of overlapping dark banner */}
           <section className="gre-card overflow-hidden p-0">
             <div className="border-b border-slate-100 bg-gradient-to-r from-brand-50 to-teal-50/80 px-6 py-5 sm:px-8">
               <div className="flex flex-wrap items-center gap-4">
@@ -258,7 +259,7 @@ export function AboutPage() {
             </div>
           </section>
 
-          {/* Mission — readable, not another full gradient block */}
+          {/* Mission  -  readable, not another full gradient block */}
           <section className="flex gap-5 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
             <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-brand-700 sm:flex">
               <Target className="h-6 w-6" />
@@ -278,7 +279,7 @@ export function AboutPage() {
             </div>
           </section>
 
-          {/* How it works — scannable steps */}
+          {/* How it works  -  scannable steps */}
           <section>
             <div className="mb-6">
               <h2 className="text-xl font-bold text-ink sm:text-2xl">How it works</h2>
@@ -305,7 +306,7 @@ export function AboutPage() {
             </ol>
           </section>
 
-          {/* Why different — concise contrast */}
+          {/* Why different  -  concise contrast */}
           <section className="rounded-2xl border-l-4 border-brand-500 bg-white px-6 py-5 shadow-sm ring-1 ring-slate-200/80 sm:px-8 sm:py-6">
             <div className="flex gap-3">
               <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
@@ -361,6 +362,13 @@ export function AboutPage() {
           </section>
 
           {/* CTA */}
+          <GreAdPlacement
+            placement="institutional_banner"
+            limit={1}
+            variant="banner"
+            className="mb-8"
+          />
+
           <section className="flex flex-col items-center gap-5 rounded-2xl gre-gradient-bar px-6 py-10 text-center text-white sm:flex-row sm:justify-between sm:text-left">
             <div>
               <p className="text-lg font-bold sm:text-xl">Ready to put your research on the map?</p>

@@ -77,7 +77,7 @@ export function SubmissionReviewDialog({
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Abstract</h3>
             <p className="mt-2 text-sm leading-relaxed text-slate-700">
-              {abstractPlainText(abstract) || "—"}
+              {abstractPlainText(abstract) || "-"}
             </p>
           </div>
 

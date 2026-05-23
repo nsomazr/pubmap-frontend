@@ -61,7 +61,7 @@ export function ForumPage() {
           <button
             type="button"
             onClick={() => setCategoryFilter("all")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+            className={`gre-interactive rounded-full px-4 py-2 text-sm font-semibold ${
               categoryFilter === "all"
                 ? "gre-gradient-bar text-white shadow-md shadow-brand-600/25"
                 : "bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-brand-200"
@@ -74,7 +74,7 @@ export function ForumPage() {
               key={c.id}
               type="button"
               onClick={() => setCategoryFilter(String(c.id))}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              className={`gre-interactive rounded-full px-4 py-2 text-sm font-semibold ${
                 categoryFilter === String(c.id)
                   ? "gre-gradient-bar text-white shadow-md shadow-brand-600/25"
                   : "bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-brand-200"
@@ -93,7 +93,7 @@ export function ForumPage() {
       {isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-[5.5rem] animate-pulse rounded-2xl bg-slate-200/70" />
+            <div key={i} className="gre-skeleton h-[5.5rem]" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -102,7 +102,7 @@ export function ForumPage() {
           <p className="mt-3 font-medium text-slate-600">No forums in this category</p>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 gre-stagger">
           {filtered.map((sub) => (
             <ForumCategoryCard key={sub.id} sub={sub} />
           ))}
@@ -115,12 +115,12 @@ export function ForumPage() {
           <p className="mt-1 text-sm text-slate-500">
             Latest topics across all research areas. Replies are stored in the database.
           </p>
-          <ul className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200/80">
+          <ul className="gre-card mt-4 divide-y divide-slate-100 overflow-hidden p-0">
             {recentTopics.map((t) => (
               <li key={t.id}>
                 <Link
                   to={`/forum/topic/${t.id}`}
-                  className="flex items-center gap-4 px-5 py-4 transition hover:bg-brand-50/50"
+                  className="gre-interactive flex items-center gap-4 px-5 py-4 hover:bg-brand-50/50"
                 >
                   <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
                     <DefaultBanner kind="forum" seed={t.id} compact />

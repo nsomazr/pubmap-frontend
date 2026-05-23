@@ -10,6 +10,7 @@ import {
   LogOut,
   Megaphone,
   MessageSquare,
+  MessageSquareWarning,
   Plus,
   Settings,
   Shield,
@@ -18,7 +19,9 @@ import {
 } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { BrandMark } from "../brand/BrandMark";
-import { assets } from "../../lib/brand";
+import { GreAvatarSlot } from "../ui/GreHeroBanner";
+import { userInitials } from "../../lib/userDisplay";
+import { greUnreadBadge } from "../../lib/greTheme";
 import { useUnreadCounts } from "../../hooks/useUnreadCounts";
 import type { User } from "../../types";
 
@@ -26,6 +29,7 @@ const mainNav: { to: string; label: string; icon: LucideIcon; end?: boolean }[] 
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, end: true },
   { to: "/dashboard/publications", label: "Publications", icon: FileText, end: true },
   { to: "/dashboard/messages", label: "Messages", icon: MessageSquare },
+  { to: "/dashboard/plagiarism", label: "Plagiarism", icon: MessageSquareWarning },
   { to: "/dashboard/account", label: "Account", icon: Settings },
 ];
 
@@ -87,7 +91,7 @@ function NavItem({
       <span className="relative shrink-0">
         <Icon className="h-[18px] w-[18px]" />
         {badge != null && badge > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold text-white ring-2 ring-[#0f1218]">
+          <span className={`absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full ${greUnreadBadge} px-0.5 text-[9px] font-bold text-white ring-2 ring-[#0f1218]`}>
             {badge > 9 ? "9+" : badge}
           </span>
         )}
@@ -116,7 +120,6 @@ export function DashboardSidebar({
 }: Props) {
   const { data: unread } = useUnreadCounts();
   const messageBadge = unread?.messages ?? 0;
-  const photoUrl = user?.photo?.startsWith("http") ? user.photo : user?.photo || assets.logo;
 
   return (
     <aside
@@ -152,10 +155,11 @@ export function DashboardSidebar({
           showLabels ? "flex items-center gap-3 p-3" : "mx-auto flex h-11 w-11 items-center justify-center"
         }`}
       >
-        <img
-          src={photoUrl}
-          alt=""
-          className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-brand-500/40"
+        <GreAvatarSlot
+          photoUrl={user?.photo}
+          initials={userInitials(user)}
+          size="sm"
+          className="h-9 w-9 border-2 border-brand-500/40"
         />
         {showLabels && (
           <div className="min-w-0 flex-1">
@@ -251,7 +255,7 @@ export function DashboardSidebar({
           type="button"
           onClick={onLogout}
           title="Sign out"
-          className={`flex items-center rounded-xl text-sm text-white/50 transition hover:bg-red-500/15 hover:text-red-300 ${
+          className={`flex items-center rounded-xl text-sm text-white/50 transition hover:bg-brand-500/15 hover:text-brand-200 ${
             showLabels ? "w-full gap-2 px-3 py-2" : "mx-auto h-11 w-11 justify-center"
           }`}
         >

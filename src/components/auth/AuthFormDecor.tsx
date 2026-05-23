@@ -4,7 +4,7 @@ interface Props {
   variant: AuthHeroVariant;
 }
 
-/** Ambient background for the form panel — map dots + soft gradients */
+/** Ambient background for the form panel  -  map dots + soft gradients */
 export function AuthFormDecor({ variant }: Props) {
   return (
     <div className="auth-panel-decor" aria-hidden data-variant={variant}>

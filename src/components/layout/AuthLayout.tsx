@@ -4,6 +4,7 @@ import { AuthFormDecor } from "../auth/AuthFormDecor";
 import { AuthHeroScene } from "../auth/AuthHeroScene";
 import { AuthMobileBrand } from "../auth/AuthMobileBrand";
 import { BrandMark } from "../brand/BrandMark";
+import { partneringUniversity } from "../../lib/brand";
 
 export type AuthHeroVariant = "login" | "register" | "onboarding";
 
@@ -44,7 +45,7 @@ export function AuthLayout({
 
   return (
     <div className="auth-page flex min-h-[100dvh] w-full bg-[#f4f6fb]">
-      {/* Left — brand & animation (desktop) */}
+      {/* Left  -  brand & animation (desktop) */}
       <aside className="auth-hero relative hidden overflow-hidden lg:flex lg:w-[44%] lg:flex-col xl:w-[46%]">
         <div className="absolute inset-0 bg-gradient-to-br from-[#2f4fc7] via-[#3b5bdb] to-[#0d9488]" />
         <div
@@ -62,6 +63,7 @@ export function AuthLayout({
             <div>
               <p className="text-sm font-semibold leading-tight">Global Research Exchange</p>
               <p className="text-[11px] text-white/55">Research worldwide</p>
+              <p className="text-[10px] text-white/45">Partner: {partneringUniversity}</p>
             </div>
           </Link>
 
@@ -81,7 +83,7 @@ export function AuthLayout({
         </div>
       </aside>
 
-      {/* Right — form panel */}
+      {/* Right  -  form panel */}
       <div className="auth-panel relative flex min-h-[100dvh] flex-1 flex-col bg-[#f4f6fb]">
         <AuthFormDecor variant={variant} />
         <AuthMobileBrand variant={variant} />

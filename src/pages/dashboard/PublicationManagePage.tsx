@@ -18,8 +18,10 @@ import { PageHeader } from "../../components/dashboard/PageHeader";
 import { hasValidCoords } from "../../lib/geocode";
 import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { Button } from "../../components/ui/Button";
+import { InstitutionPicker } from "../../components/institutions/InstitutionPicker";
 import { Input } from "../../components/ui/Input";
 import { CategorySubcategoryPicker } from "../../components/forms/CategorySubcategoryPicker";
+import { PublicationLifecyclePanel } from "../../components/publication/PublicationLifecyclePanel";
 import { AdminPublicationReviewCard } from "../../components/publication/AdminPublicationReviewCard";
 import { DocumentUploadPanel } from "../../components/publication/DocumentUploadPanel";
 import { PdfSubmissionFields } from "../../components/publication/PdfSubmissionFields";
@@ -42,7 +44,15 @@ import {
   uploadDocumentWithExtract,
   type ExtractedManuscript,
 } from "../../lib/publicationExtract";
-import type { Category, Collaborator, Coordinate, Publication } from "../../types";
+import { PublicationAccessPanel } from "../../components/publication/PublicationAccessPanel";
+import { PublicationFiguresEditor } from "../../components/publication/PublicationFiguresEditor";
+import { PublicationSupplementaryUpload } from "../../components/publication/PublicationSupplementaryUpload";
+import {
+  updatePublicationGre,
+  type GreDocument,
+  type PublicationGre,
+} from "../../lib/publicationGre";
+import type { Category, Collaborator, Coordinate, Publication, PublicationFigure } from "../../types";
 
 const emptyCoord = (): Coordinate => ({
   location: "",
@@ -51,6 +61,27 @@ const emptyCoord = (): Coordinate => ({
   institution: "",
   study_area: "",
 });
+
+function hasTextContent(value: string): boolean {
+  const trimmed = (value || "").trim();
+  if (!trimmed) return false;
+  if (/<[a-z][\s\S]*>/i.test(trimmed)) {
+    const doc = new DOMParser().parseFromString(trimmed, "text/html");
+    return Boolean((doc.body.textContent || "").trim());
+  }
+  return true;
+}
+
+function parseKeywords(raw: string): string[] {
+  return raw
+    .split(/[,;]/)
+    .map((k) => k.trim())
+    .filter(Boolean);
+}
+
+function formatKeywords(keywords?: string[] | null): string {
+  return Array.isArray(keywords) ? keywords.join(", ") : "";
+}
 
 type ComposerTab = "upload" | "editor";
 
@@ -75,11 +106,14 @@ export function PublicationManagePage() {
   const [conclusion, setConclusion] = useState("");
   const [funder, setFunder] = useState("");
   const [references, setReferences] = useState("");
+  const [keywords, setKeywords] = useState("");
   const [adminNote, setAdminNote] = useState("");
   const [subCategoryId, setSubCategoryId] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [coordinates, setCoordinates] = useState<Coordinate>(emptyCoord());
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [gre, setGre] = useState<PublicationGre>({ access_type: "open" });
+  const [figures, setFigures] = useState<PublicationFigure[]>([]);
   const [error, setError] = useState("");
   const [pendingDocument, setPendingDocument] = useState<File | null>(null);
   const [extracted, setExtracted] = useState<ExtractedManuscript | null>(null);
@@ -97,6 +131,7 @@ export function PublicationManagePage() {
     conclusion,
     funder,
     references,
+    keywords,
   };
 
   const setManuscript = useCallback((key: keyof ManuscriptFields, value: string) => {
@@ -109,6 +144,7 @@ export function PublicationManagePage() {
       conclusion: setConclusion,
       funder: setFunder,
       references: setReferences,
+      keywords: setKeywords,
     };
     setters[key](value);
   }, []);
@@ -116,6 +152,14 @@ export function PublicationManagePage() {
   const applyExtracted = useCallback((data: ExtractedManuscript) => {
     if (data.title?.trim()) setTitle(data.title.trim());
     if (data.abstract) setAbstract(data.abstract);
+    if (data.keywords) setKeywords(data.keywords);
+    if (data.introduction) setIntroduction(data.introduction);
+    if (data.methods) setMethods(data.methods);
+    if (data.results) setResults(data.results);
+    if (data.findings) setFindings(data.findings);
+    if (data.conclusion) setConclusion(data.conclusion);
+    if (data.funder) setFunder(data.funder);
+    if (data.references) setReferences(data.references);
     setEntryMode("upload");
     setComposerTab("editor");
   }, []);
@@ -148,6 +192,7 @@ export function PublicationManagePage() {
     setConclusion(pub.conclusion ?? "");
     setFunder(pub.funder ?? "");
     setReferences(pub.references ?? "");
+    setKeywords(formatKeywords(pub.keywords));
     setSubCategoryId(pub.sub_category_id ? String(pub.sub_category_id) : "");
     if (pub.sub_category_id && categories.length) {
       const cat = categories.find((c) =>
@@ -155,9 +200,26 @@ export function PublicationManagePage() {
       );
       if (cat) setCategoryId(String(cat.id));
     }
-    if (pub.coordinates) setCoordinates(pub.coordinates);
+    if (pub.coordinates) {
+      setCoordinates({
+        ...pub.coordinates,
+        institution:
+          pub.coordinates.institution?.trim() || user?.affiliation?.trim() || "",
+      });
+    }
     if (pub.collaborators) setCollaborators(pub.collaborators);
-  }, [pub, categories]);
+    setGre(pub.gre ?? { access_type: "open" });
+    setFigures(pub.figures ?? pub.photos ?? []);
+  }, [pub, categories, user?.affiliation]);
+
+  useEffect(() => {
+    if (!isNew) return;
+    const affiliation = user?.affiliation?.trim();
+    if (!affiliation) return;
+    setCoordinates((prev) =>
+      prev.institution?.trim() ? prev : { ...prev, institution: affiliation }
+    );
+  }, [isNew, user?.affiliation]);
 
   useEffect(() => {
     if (location.hash !== "#review" || !pub || pub.status !== 1) return;
@@ -168,7 +230,7 @@ export function PublicationManagePage() {
   const extractMutation = useMutation({
     mutationFn: () => {
       if (!pendingDocument) throw new Error("Choose a file first.");
-      return extractDocument(pendingDocument);
+      return extractDocument(pendingDocument, { metadataOnly: false, useAi: true });
     },
     onSuccess: (data) => {
       setExtracted(data);
@@ -193,6 +255,7 @@ export function PublicationManagePage() {
         conclusion,
         funder,
         references,
+        keywords: parseKeywords(keywords),
         sub_category_id: subCategoryId ? Number(subCategoryId) : null,
         coordinates,
         collaborators,
@@ -212,9 +275,7 @@ export function PublicationManagePage() {
           } else {
             const form = new FormData();
             form.append("document", pendingDocument);
-            await api.post(`/publications/${data.id}/upload_document/`, form, {
-              headers: { "Content-Type": "multipart/form-data" },
-            });
+            await api.post(`/publications/${data.id}/upload_document/`, form);
           }
         } catch {
           setError("Draft saved, but the PDF could not be uploaded. Use Upload & extract to try again.");
@@ -224,6 +285,13 @@ export function PublicationManagePage() {
           return;
         }
         setPendingDocument(null);
+      }
+      if (data.id) {
+        try {
+          await updatePublicationGre(data.id, gre);
+        } catch {
+          /* gre meta optional on save */
+        }
       }
       queryClient.invalidateQueries({ queryKey: ["publications"] });
       queryClient.invalidateQueries({ queryKey: ["publication-edit", String(data.id)] });
@@ -281,32 +349,45 @@ export function PublicationManagePage() {
   });
 
   const hideMutation = useMutation({
-    mutationFn: () => api.post(`/publications/${id}/hide/`),
-    onSuccess: () => navigate("/dashboard/publications"),
+    mutationFn: () => api.post(`/publications/${id}/archive/`),
+    onSuccess: () => navigate("/dashboard/publications?status=4"),
   });
 
   const isOwner = Boolean(pub && pub.author?.id === user?.id);
+  const isReadOnly = Boolean(pub && (pub.status === 4 || pub.status === 6));
   const canSubmit =
-    pub && (pub.status === 0 || pub.status === 2) && isOwner;
+    pub && (pub.status === 0 || pub.status === 2) && isOwner && !isReadOnly;
 
   const addCollaborator = () =>
-    setCollaborators([...collaborators, { fullname: "", affiliation: "", email: "" }]);
+    setCollaborators([...collaborators, { fullname: "", affiliation: "", email: "", role: "" }]);
 
   const existingDocPath = pub?.documents?.[0]?.document ?? null;
   const hasDocument = Boolean(pendingDocument || existingDocPath);
   const isPdfWorkflow = entryMode === "upload" || hasDocument;
+  const isClosedAccess = gre.access_type === "closed";
+  const openNeedsDocument =
+    !isClosedAccess && isPdfWorkflow && !gre.external_url?.trim();
+  const closedSectionsReady =
+    hasTextContent(abstract) &&
+    hasTextContent(introduction) &&
+    hasTextContent(methods) &&
+    (hasTextContent(findings) || hasTextContent(results)) &&
+    hasTextContent(conclusion);
   const readyToSubmit =
     Boolean(title.trim() && abstract.trim() && subCategoryId) &&
     hasValidCoords(coordinates.latitude, coordinates.longitude) &&
     Boolean(coordinates.location.trim()) &&
-    (isPdfWorkflow ? hasDocument : true);
+    (isClosedAccess ? closedSectionsReady : isPdfWorkflow ? hasDocument || Boolean(gre.external_url?.trim()) : true);
 
   const getSaveValidationError = (): string | null => {
     if (!title.trim()) return "Please add a title.";
     if (!abstract.trim()) return "Please add an abstract.";
     if (!subCategoryId) return "Please select a category and subcategory.";
-    if (isPdfWorkflow && !hasDocument) {
+    if (openNeedsDocument && !hasDocument) {
       return "Upload your manuscript PDF in the Upload tab before saving.";
+    }
+    if (isClosedAccess && !closedSectionsReady) {
+      return "Restricted publications need introduction, methods, findings/results, and conclusion.";
     }
     if (!hasValidCoords(coordinates.latitude, coordinates.longitude)) {
       return "Please set a map location by searching for a place or clicking on the map.";
@@ -331,7 +412,11 @@ export function PublicationManagePage() {
   const openSubmitReview = () => {
     setError("");
     if (!readyToSubmit) {
-      setError("Complete title, abstract, category, PDF, and map location before submitting.");
+      setError(
+        isClosedAccess
+          ? "Complete title, abstract, all required sections, category, and map location before submitting."
+          : "Complete title, abstract, category, PDF or external URL, and map location before submitting."
+      );
       return;
     }
     const err = getSaveValidationError();
@@ -362,7 +447,7 @@ export function PublicationManagePage() {
         title={isNew ? "New publication" : "Edit publication"}
         description={
           isNew
-            ? "Upload a paper or write in the editor — preview your PDF, then submit for review."
+            ? "Upload a paper or write in the editor, preview your PDF, then submit for review."
             : pub?.title
         }
         action={
@@ -408,7 +493,15 @@ export function PublicationManagePage() {
         </section>
       )}
 
-      {isAdmin && !isNew && pub && pub.status !== 1 && (
+      {!isNew && pub && (
+        <PublicationLifecyclePanel
+          publication={pub}
+          isOwner={isOwner}
+          isAdmin={isAdmin}
+        />
+      )}
+
+      {isAdmin && !isNew && pub && pub.status !== 1 && pub.status !== 4 && pub.status !== 6 && (
         <section className="mb-6 rounded-2xl border border-violet-200 bg-violet-50/40 p-5">
           <h2 className="text-sm font-semibold text-violet-900">Admin actions</h2>
           {!isOwner && (
@@ -420,7 +513,7 @@ export function PublicationManagePage() {
           <div className="mt-3 flex flex-wrap gap-2">
             {pub.status === 3 && (
               <Button type="button" variant="secondary" onClick={() => hideMutation.mutate()}>
-                Hide from map
+                Archive (admin)
               </Button>
             )}
           </div>
@@ -451,7 +544,7 @@ export function PublicationManagePage() {
         <section className="gre-card mb-8 p-6">
           <h2 className="text-lg font-bold text-ink">How do you want to start?</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Upload a PDF — we extract title and abstract for search. Add map location, then submit for review.
+            Upload a PDF. We extract title and abstract for search. Add map location, then submit for review.
           </p>
           <div className="mt-5">
             <PublicationModeSelector
@@ -494,7 +587,13 @@ export function PublicationManagePage() {
         </div>
       )}
 
-      <form className="space-y-8" onSubmit={validateAndSave}>
+      <form className={`space-y-8${isReadOnly ? " pointer-events-none opacity-60" : ""}`} onSubmit={validateAndSave}>
+        {isReadOnly && (
+          <p className="pointer-events-auto rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
+            This publication is {pub?.status === 6 ? "deleted" : "archived"} and cannot be edited until
+            restored.
+          </p>
+        )}
         {(isNew && entryMode === "upload" && composerTab === "upload") ||
         (!isNew && composerTab === "upload") ? (
           <section className="gre-card p-6 sm:p-8">
@@ -596,6 +695,25 @@ export function PublicationManagePage() {
         )}
 
         <section className="gre-card p-6">
+          <PublicationAccessPanel gre={gre} onChange={setGre} />
+        </section>
+
+        {!isNew && id && (
+          <PublicationSupplementaryUpload
+            publicationId={Number(id)}
+            documents={pub?.documents as GreDocument[] | undefined}
+          />
+        )}
+
+        {!isNew && id && (
+          <PublicationFiguresEditor
+            publicationId={Number(id)}
+            figures={figures}
+            onChange={setFigures}
+          />
+        )}
+
+        <section className="gre-card p-6">
           <h2 className="mb-1 font-semibold text-ink">Where does this study take place?</h2>
           <p className="mb-5 text-sm text-slate-500">
             Search for a city or landmark, or click the map. Coordinates are filled automatically.
@@ -620,7 +738,7 @@ export function PublicationManagePage() {
             </button>
           </div>
           {collaborators.map((c, i) => (
-            <div key={i} className="grid gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:grid-cols-3">
+            <div key={i} className="grid gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:grid-cols-2 lg:grid-cols-4">
               <Input
                 label="Name"
                 value={c.fullname}
@@ -630,12 +748,23 @@ export function PublicationManagePage() {
                   setCollaborators(next);
                 }}
               />
-              <Input
-                label="Affiliation"
+              <InstitutionPicker
                 value={c.affiliation}
+                onChange={(affiliation) => {
+                  const next = [...collaborators];
+                  next[i] = { ...c, affiliation };
+                  setCollaborators(next);
+                }}
+                label="Affiliation"
+                hideHint
+              />
+              <Input
+                label="Contribution role (optional)"
+                placeholder="e.g. Field lead, Data analysis"
+                value={c.role || ""}
                 onChange={(e) => {
                   const next = [...collaborators];
-                  next[i] = { ...c, affiliation: e.target.value };
+                  next[i] = { ...c, role: e.target.value };
                   setCollaborators(next);
                 }}
               />
@@ -682,7 +811,9 @@ export function PublicationManagePage() {
           )}
           {(isNew || canSubmit) && !readyToSubmit && (
             <p className="text-xs text-slate-500">
-              Complete title, abstract, category, PDF, and map location to submit.
+              {isClosedAccess
+                ? "Complete title, abstract, required sections, category, and map location to submit."
+                : "Complete title, abstract, category, PDF or external URL, and map location to submit."}
             </p>
           )}
           {!isNew && isAdmin && !isOwner && (pub?.status === 0 || pub?.status === 2) && (

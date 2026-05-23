@@ -18,12 +18,25 @@ export interface UnreadCounts {
   messagePartners: Record<string, number>;
 }
 
+const NOTIFICATION_OPEN_MARKERS = [" | Open: ", " \u2014 Open: "] as const;
+
 export function parseNotificationPreview(message: string): string {
   const text = message || "";
-  if (text.includes(" — Open: ")) {
-    return text.split(" — Open: ")[0].trim();
+  for (const marker of NOTIFICATION_OPEN_MARKERS) {
+    if (text.includes(marker)) {
+      return text.split(marker)[0].trim();
+    }
   }
   return text;
+}
+
+export function notificationLinkFromMessage(message: string): string | null {
+  for (const marker of NOTIFICATION_OPEN_MARKERS) {
+    if (message.includes(marker)) {
+      return message.split(marker).pop()?.trim() ?? null;
+    }
+  }
+  return null;
 }
 
 export function partnerIdFromLink(link?: string | null): number | null {

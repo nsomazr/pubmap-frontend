@@ -1,13 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { greUnreadBadge } from "../../lib/greTheme";
 import { Bell, CheckCheck, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { extractNotificationPath } from "../../lib/mapDeepLink";
+import { notificationVisual } from "../../lib/notificationVisuals";
 import {
   fetchNotifications,
   markAllNotificationsRead,
   markMessageThreadRead,
   markNotificationRead,
   parseNotificationPreview,
+  notificationLinkFromMessage,
   partnerIdFromLink,
   patchUnreadCountsAfterRead,
   refreshUnreadState,
@@ -29,12 +33,16 @@ function formatWhen(iso: string) {
 }
 
 function notificationHref(n: GreNotification): string {
-  if (n.link?.startsWith("/")) {
-    return n.link.split(" — ")[0].trim();
-  }
+  const fromLink = extractNotificationPath(n.link);
+  if (fromLink) return fromLink;
+
+  const fromMessage = extractNotificationPath(notificationLinkFromMessage(n.message));
+  if (fromMessage) return fromMessage;
+
   if (n.type === "message") return "/dashboard/messages";
   if (n.type === "forum_reply") return "/forum";
-  if (n.type === "discussion") return "/dashboard/publications";
+  if (n.type === "discussion") return "/";
+  if (n.type === "publication") return "/";
   return "/dashboard";
 }
 
@@ -102,97 +110,132 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100"
+        className="gre-interactive relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
         aria-label={total ? `${total} unread notifications` : "Notifications"}
+        aria-expanded={open}
       >
         <Bell className="h-5 w-5" />
         {total > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+          <span className={`absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full ${greUnreadBadge} px-1 text-[10px] font-bold text-white ring-2 ring-white`}>
             {total > 99 ? "99+" : total}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <p className="text-sm font-bold text-ink">Notifications</p>
-            <div className="flex items-center gap-1">
-              {unreadItems.length > 0 && (
+        <div className="gre-card absolute right-0 top-full z-50 mt-2 w-[min(100vw-2rem,24rem)] overflow-hidden p-0 shadow-[0_24px_60px_-16px_rgba(15,23,42,0.28)]">
+          <div className="relative border-b border-slate-100 px-4 py-3">
+            <div className="absolute inset-x-0 top-0 h-0.5 gre-gradient-bar" aria-hidden />
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-bold text-ink">Notifications</p>
+                {unreadItems.length > 0 && (
+                  <p className="text-[11px] text-slate-500">{unreadItems.length} unread</p>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                {unreadItems.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => markAll.mutate()}
+                    disabled={markAll.isPending}
+                    className="gre-interactive rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+                    title="Mark all read"
+                  >
+                    <CheckCheck className="h-4 w-4" />
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => markAll.mutate()}
-                  disabled={markAll.isPending}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
-                  title="Mark all read"
+                  onClick={() => setOpen(false)}
+                  className="gre-interactive rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
                 >
-                  <CheckCheck className="h-4 w-4" />
+                  <X className="h-4 w-4" />
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              </div>
             </div>
           </div>
 
-          <div className="max-h-[min(60vh,320px)] overflow-y-auto">
+          <div className="max-h-[min(60vh,360px)] overflow-y-auto">
             {isLoading ? (
-              <div className="flex justify-center py-8">
+              <div className="flex justify-center py-10">
                 <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
               </div>
             ) : items.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-slate-500">No notifications yet.</p>
+              <div className="px-4 py-10 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                  <Bell className="h-5 w-5" />
+                </div>
+                <p className="mt-3 text-sm font-medium text-slate-600">No notifications yet</p>
+                <p className="mt-1 text-xs text-slate-400">
+                  Forum replies, messages, and publication updates appear here.
+                </p>
+              </div>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-slate-100 gre-stagger">
                 {items.filter((n) => !n.read).length === 0 && items.length > 0 && (
                   <li className="px-4 py-2 text-center text-xs text-slate-400">
-                    All caught up — older alerts are shown below.
+                    All caught up. Older alerts are shown below.
                   </li>
                 )}
-                {items.slice(0, 30).map((n) => (
-                  <li key={n.id}>
-                    <button
-                      type="button"
-                      onClick={() => openNotification(n)}
-                      className={`flex w-full flex-col gap-0.5 px-4 py-3 text-left transition hover:bg-slate-50 ${
-                        !n.read ? "bg-brand-50/40" : ""
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p
-                          className={`text-sm leading-snug ${
-                            !n.read ? "font-semibold text-ink" : "font-medium text-slate-700"
-                          }`}
-                        >
-                          {n.title}
-                        </p>
-                        <span className="shrink-0 text-[10px] text-slate-400">
-                          {formatWhen(n.created_at)}
-                        </span>
-                      </div>
-                      <p className="line-clamp-2 text-xs text-slate-500">
-                        {parseNotificationPreview(n.message)}
-                      </p>
-                    </button>
-                  </li>
-                ))}
+                {items.slice(0, 30).map((n) => {
+                  const visual = notificationVisual(n.type);
+                  const Icon = visual.icon;
+                  return (
+                    <li key={n.id}>
+                      <button
+                        type="button"
+                        onClick={() => openNotification(n)}
+                        className={`gre-interactive flex w-full gap-3 px-4 py-3 text-left hover:bg-slate-50/90 ${
+                          !n.read ? "bg-brand-50/30" : ""
+                        }`}
+                      >
+                        {!n.read && (
+                          <span
+                            className={`mt-2 h-2 w-2 shrink-0 rounded-full ${visual.dotClass}`}
+                            aria-hidden
+                          />
+                        )}
+                        <div className={`min-w-0 flex-1 ${n.read ? "pl-5" : ""}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${visual.chipClass}`}
+                            >
+                              <Icon className="h-3 w-3" />
+                              {visual.label}
+                            </span>
+                            <span className="shrink-0 text-[10px] tabular-nums text-slate-400">
+                              {formatWhen(n.created_at)}
+                            </span>
+                          </div>
+                          <p
+                            className={`mt-1.5 text-sm leading-snug ${
+                              !n.read ? "font-semibold text-ink" : "font-medium text-slate-700"
+                            }`}
+                          >
+                            {n.title}
+                          </p>
+                          <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
+                            {parseNotificationPreview(n.message)}
+                          </p>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
 
-          <div className="border-t border-slate-100 px-4 py-2.5 text-center">
+          <div className="border-t border-slate-100 bg-slate-50/80 px-4 py-2.5 text-center">
             <Link
               to="/dashboard/messages"
               onClick={() => setOpen(false)}
-              className="text-xs font-semibold text-brand-600 hover:underline"
+              className="gre-interactive inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
             >
               Open messages
               {(counts?.messages ?? 0) > 0 && (
-                <span className="ml-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] text-white">
+                <span className={`rounded-full ${greUnreadBadge} px-1.5 py-0.5 text-[10px] text-white`}>
                   {counts!.messages}
                 </span>
               )}

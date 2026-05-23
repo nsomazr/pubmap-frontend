@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, MessageSquare, Plus } from "lucide-react";
+import { MessageSquare, Plus } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
+import { PageBackLink } from "../components/ui/PageBackLink";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
@@ -83,13 +84,7 @@ export function ForumCategoryPage() {
       ]}
     >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <Link
-          to="/forum"
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-brand-600"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          All forums
-        </Link>
+        <PageBackLink to="/forum" label="All forums" />
         {user && (
           <Button type="button" onClick={() => setShowForm((s) => !s)}>
             <Plus className="h-4 w-4" />

@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ForumReplyThread } from "../components/forum/ForumReplyThread";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
+import { PageBackLink } from "../components/ui/PageBackLink";
 import { DefaultBanner } from "../components/ui/DefaultBanner";
+import { UserAvatar } from "../components/ui/UserAvatar";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
 import type { Topic, TopicReply } from "../types";
@@ -84,11 +85,8 @@ export function ForumTopicPage() {
 
   if (isError || !topic) {
     return (
-      <PublicPageLayout title="Topic not found">
-        <Link to="/forum" className="inline-flex items-center gap-2 text-brand-600 hover:underline">
-          <ArrowLeft className="h-4 w-4" />
-          Back to forum
-        </Link>
+      <PublicPageLayout title="Topic not found" back={{ to: "/forum", label: "Back to forum" }}>
+        <p className="text-slate-600">This discussion could not be found.</p>
       </PublicPageLayout>
     );
   }
@@ -112,25 +110,23 @@ export function ForumTopicPage() {
           : []),
         { label: "Discussion" },
       ]}
+      back={{
+        to: topic.sub_category_id ? `/forum/category/${topic.sub_category_id}` : "/forum",
+      }}
     >
-      <Link
-        to={topic.sub_category_id ? `/forum/category/${topic.sub_category_id}` : "/forum"}
-        className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back
-      </Link>
-
-      <article className="mb-8 overflow-hidden rounded-3xl bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.1)] ring-1 ring-slate-200/80">
+      <article className="gre-card mb-8 overflow-hidden p-0">
         <div className="h-24 sm:h-28">
           <DefaultBanner kind="forum" seed={topic.id} />
         </div>
         <div className="p-6 sm:p-8">
           {topic.author && (
-            <p className="text-sm font-medium text-brand-600">
-              {topic.author.full_name ??
-                `${topic.author.firstname} ${topic.author.lastname}`.trim()}
-            </p>
+            <div className="flex items-center gap-3">
+              <UserAvatar user={topic.author} size="sm" className="border-2" />
+              <p className="text-sm font-medium text-brand-600">
+                {topic.author.full_name ??
+                  `${topic.author.firstname} ${topic.author.lastname}`.trim()}
+              </p>
+            </div>
           )}
           <p className="mt-4 whitespace-pre-wrap leading-relaxed text-slate-700">{topic.content}</p>
           <p className="mt-4 text-xs text-slate-400">
@@ -140,7 +136,7 @@ export function ForumTopicPage() {
       </article>
 
       {postError && (
-        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="gre-card mb-4 border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-700">
           {postError}
         </p>
       )}

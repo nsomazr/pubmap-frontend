@@ -22,9 +22,10 @@ export function PublicationModeSelector({ mode, onChange }: Props) {
         <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600 text-white shadow-lg shadow-brand-600/25">
           <FileUp className="h-6 w-6" />
         </span>
-        <h3 className="mt-4 text-lg font-bold text-ink">Upload a paper</h3>
+        <h3 className="mt-4 text-lg font-bold text-ink">Open access paper</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Upload PDF or Word. GRE extracts title and abstract for search — readers open the full PDF.
+          Upload the full PDF or Word manuscript. Readers download the complete paper after approval.
+          Add supplementary files and external links in the access panel below.
         </p>
       </button>
 
@@ -40,9 +41,10 @@ export function PublicationModeSelector({ mode, onChange }: Props) {
         <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 text-white shadow-lg">
           <PenLine className="h-6 w-6" />
         </span>
-        <h3 className="mt-4 text-lg font-bold text-ink">Write in the editor</h3>
+        <h3 className="mt-4 text-lg font-bold text-ink">Structured / restricted study</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Compose your study with CKEditor, attach a PDF for preview, and submit when ready.
+          Fill abstract, methods, findings, keywords, and conclusions in the editor. Choose{" "}
+          <strong>Restricted / closed</strong> in the access panel to publish GRE summaries instead of the full PDF.
         </p>
       </button>
     </div>

@@ -18,6 +18,7 @@ import { PageHeader } from "../../components/dashboard/PageHeader";
 import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
+import { GRE_ADMIN_QUICK_LINK_COLORS, greUrgentIcon, greUrgentRing } from "../../lib/greTheme";
 import { authorDisplayName } from "../../lib/userDisplay";
 import type { DashboardStats, Publication } from "../../types";
 
@@ -27,42 +28,42 @@ const QUICK_LINKS = [
     label: "Review queue",
     description: "Approve PDFs or request revisions",
     icon: ClipboardCheck,
-    color: "bg-amber-100 text-amber-800",
+  },
+  {
+    to: "/dashboard/plagiarism",
+    label: "Plagiarism moderation",
+    description: "Review claims, evidence, and restore or remove studies",
+    icon: MessageSquareWarning,
   },
   {
     to: "/dashboard/authors",
     label: "Users",
     description: "Authors, admins, activate accounts",
     icon: Users,
-    color: "bg-brand-100 text-brand-800",
   },
   {
     to: "/dashboard/categories",
     label: "Categories",
     description: "Research taxonomy on the map",
     icon: BookOpen,
-    color: "bg-teal-100 text-teal-800",
   },
   {
     to: "/dashboard/events",
     label: "Events",
     description: "Conferences and community events",
     icon: Calendar,
-    color: "bg-violet-100 text-violet-800",
   },
   {
     to: "/dashboard/ads",
     label: "Advertisements",
     description: "Banners on home and static pages",
     icon: Megaphone,
-    color: "bg-orange-100 text-orange-800",
   },
   {
     to: "/",
     label: "Public map",
     description: "See published research live",
     icon: MapPin,
-    color: "bg-emerald-100 text-emerald-800",
   },
 ] as const;
 
@@ -142,7 +143,7 @@ export function AdminOperationsPage() {
     <div className="animate-fade-up space-y-8">
       <PageHeader
         title="Admin operations"
-        description="Platform oversight — review submissions, manage users, and keep GRE running smoothly."
+        description="Platform oversight: review submissions, manage users, and keep GRE running smoothly."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -151,15 +152,13 @@ export function AdminOperationsPage() {
             key={label}
             to={to}
             className={`rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md ${
-              urgent
-                ? "border-amber-300 ring-2 ring-amber-200/60"
-                : "border-slate-100 hover:border-brand-200"
+              urgent ? greUrgentRing : "border-slate-100 hover:border-brand-200"
             }`}
           >
             <div className="flex items-center justify-between gap-2">
               <span
                 className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                  urgent ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"
+                  urgent ? greUrgentIcon : "bg-slate-100 text-slate-600"
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -178,7 +177,7 @@ export function AdminOperationsPage() {
             <div>
               <h2 className="font-bold text-ink">Submissions awaiting review</h2>
               <p className="text-sm text-slate-500">
-                Authors submitted these for approval — open to preview PDFs.
+                Authors submitted these for approval. Open to preview PDFs.
               </p>
             </div>
             <Link
@@ -241,13 +240,15 @@ export function AdminOperationsPage() {
             <p className="text-sm text-slate-500">Common admin tasks in one place.</p>
           </div>
           <ul className="divide-y divide-slate-100 p-2">
-            {QUICK_LINKS.map(({ to, label, description, icon: Icon, color }) => (
+            {QUICK_LINKS.map(({ to, label, description, icon: Icon }, index) => (
               <li key={to}>
                 <Link
                   to={to}
                   className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-50"
                 >
-                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${color}`}>
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${GRE_ADMIN_QUICK_LINK_COLORS[index % GRE_ADMIN_QUICK_LINK_COLORS.length]}`}
+                  >
                     <Icon className="h-5 w-5" />
                   </span>
                   <div className="min-w-0">
@@ -269,12 +270,12 @@ export function AdminOperationsPage() {
               <h2 className="font-bold text-ink">Awaiting author resubmission</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {revisions.length} publication{revisions.length !== 1 ? "s" : ""} sent back for
-                revision — authors must update and resubmit.
+                revision. Authors must update and resubmit.
               </p>
             </div>
             <Link
               to="/dashboard/review?status=2"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-orange-100 px-4 py-2 text-sm font-semibold text-orange-900 hover:bg-orange-200"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-100 px-4 py-2 text-sm font-semibold text-brand-900 hover:bg-brand-200"
             >
               View revision queue
               <ArrowRight className="h-4 w-4" />

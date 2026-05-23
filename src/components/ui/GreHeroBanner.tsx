@@ -1,6 +1,7 @@
 import { User, type LucideIcon } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { mediaUrl } from "../../lib/mediaUrl";
+import { useState, useEffect, type ReactNode } from "react";
+import { greAvatarInitials, greGradientHero } from "../../lib/greTheme";
+import { resolveProfilePhotoSrc } from "../../lib/profilePhoto";
 
 type Variant = "card" | "strip";
 type AvatarSize = "sm" | "md" | "lg";
@@ -13,6 +14,7 @@ const AVATAR_SIZE: Record<AvatarSize, string> = {
 
 interface AvatarProps {
   photoUrl?: string | null;
+  photoVersion?: string | null;
   initials?: string;
   icon?: LucideIcon;
   size?: AvatarSize;
@@ -21,20 +23,25 @@ interface AvatarProps {
 
 export function GreAvatarSlot({
   photoUrl,
+  photoVersion,
   initials,
   icon: Icon = User,
   size = "md",
   className = "",
 }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
-  const src = photoUrl ? mediaUrl(photoUrl) : null;
-  const showPhoto = src && !imgError;
+  const src = resolveProfilePhotoSrc(photoUrl, photoVersion);
+  const showPhoto = Boolean(src && !imgError);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [photoUrl, photoVersion]);
 
   return (
     <div
       className={`flex shrink-0 items-center justify-center overflow-hidden border-[3px] border-white bg-slate-100 font-bold text-white shadow-md ${AVATAR_SIZE[size]} ${className}`}
     >
-      {showPhoto ? (
+      {showPhoto && src ? (
         <img
           src={src}
           alt=""
@@ -42,9 +49,7 @@ export function GreAvatarSlot({
           onError={() => setImgError(true)}
         />
       ) : initials ? (
-        <span className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-500 to-teal-600">
-          {initials}
-        </span>
+        <span className={`${greAvatarInitials} h-full w-full`}>{initials}</span>
       ) : (
         <Icon className="h-[45%] w-[45%] text-slate-400" strokeWidth={1.5} aria-hidden />
       )}
@@ -55,6 +60,7 @@ export function GreAvatarSlot({
 interface Props {
   variant?: Variant;
   photoUrl?: string | null;
+  photoVersion?: string | null;
   initials?: string;
   icon?: LucideIcon;
   avatarSize?: AvatarSize;
@@ -75,6 +81,7 @@ interface Props {
 export function GreHeroBanner({
   variant = "card",
   photoUrl,
+  photoVersion,
   initials,
   icon,
   avatarSize,
@@ -89,8 +96,7 @@ export function GreHeroBanner({
   bannerClassName = "",
 }: Props) {
   const size = avatarSize ?? (variant === "strip" ? "sm" : compact ? "md" : "lg");
-  const gradient =
-    "bg-gradient-to-r from-brand-600 via-[#3b5bdb] to-teal-600";
+  const gradient = greGradientHero;
 
   if (variant === "strip") {
     return (
@@ -99,6 +105,7 @@ export function GreHeroBanner({
       >
         <GreAvatarSlot
           photoUrl={photoUrl}
+          photoVersion={photoVersion}
           initials={initials}
           icon={icon}
           size={size}
@@ -134,7 +141,13 @@ export function GreHeroBanner({
           className={`absolute bottom-0 translate-y-1/2 ${compact ? "left-4" : "left-4 sm:left-5"}`}
         >
           <div className="relative">
-            <GreAvatarSlot photoUrl={photoUrl} initials={initials} icon={icon} size={size} />
+            <GreAvatarSlot
+              photoUrl={photoUrl}
+              photoVersion={photoVersion}
+              initials={initials}
+              icon={icon}
+              size={size}
+            />
             {avatarBadge}
           </div>
         </div>
@@ -176,18 +189,34 @@ export function GreHeroBanner({
 /** Compact top strip for list cards (publication rows, etc.) */
 export function GreHeroBannerStrip({
   photoUrl,
+  photoVersion,
   initials,
   icon,
   className = "",
-}: Pick<Props, "photoUrl" | "initials" | "icon" | "className">) {
+  accentColor,
+}: Pick<Props, "photoUrl" | "photoVersion" | "initials" | "icon" | "className"> & {
+  accentColor?: string;
+}) {
   return (
     <div
-      className={`relative h-14 overflow-hidden rounded-t-2xl bg-gradient-to-r from-brand-600 via-[#3b5bdb] to-teal-600 sm:h-16 ${className}`}
+      className={`relative h-14 overflow-hidden rounded-t-2xl sm:h-16 ${
+        accentColor
+          ? ""
+          : greGradientHero
+      } ${className}`}
+      style={
+        accentColor
+          ? {
+              background: `linear-gradient(90deg, ${accentColor} 0%, ${accentColor}dd 45%, #0d9488 100%)`,
+            }
+          : undefined
+      }
       aria-hidden
     >
       <div className="absolute bottom-0 left-3 translate-y-1/3 sm:left-4">
         <GreAvatarSlot
           photoUrl={photoUrl}
+          photoVersion={photoVersion}
           initials={initials}
           icon={icon}
           size="sm"

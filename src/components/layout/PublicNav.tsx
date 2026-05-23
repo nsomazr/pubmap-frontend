@@ -6,6 +6,8 @@ import { BrandMark } from "../brand/BrandMark";
 
 const links = [
   { to: "/", label: "Map" },
+  { to: "/statistics", label: "Statistics" },
+  { to: "/rankings", label: "Rankings" },
   { to: "/about", label: "About" },
   { to: "/events", label: "Events" },
   { to: "/forum", label: "Forum" },

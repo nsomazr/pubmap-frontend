@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthActionChoices } from "../../components/auth/AuthActionChoices";
 import { AuthFormCard } from "../../components/auth/AuthFormCard";
-import { AuthOtpSteps } from "../../components/auth/AuthOtpSteps";
+import { OtpVerificationPanel } from "../../components/auth/OtpVerificationPanel";
 import { AuthLayout } from "../../components/layout/AuthLayout";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth, type OtpSendResult } from "../../context/AuthContext";
 import { HONORIFIC_OPTIONS, SIGNUP_HONORIFIC_KEY } from "../../lib/userDisplay";
 
 export function RegisterPage() {
@@ -17,11 +17,14 @@ export function RegisterPage() {
   const [confirm, setConfirm] = useState("");
   const [code, setCode] = useState("");
   const [otpStep, setOtpStep] = useState<"email" | "code">("email");
+  const [otpMeta, setOtpMeta] = useState<OtpSendResult | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingAction, setLoadingAction] = useState<"code" | "password" | null>(null);
+  const [loadingAction, setLoadingAction] = useState<"code" | "password" | "resend" | null>(
+    null
+  );
   const [honorific, setHonorific] = useState("");
 
   const persistHonorific = () => {
@@ -32,6 +35,7 @@ export function RegisterPage() {
   const resetOtpFlow = () => {
     setOtpStep("email");
     setCode("");
+    setOtpMeta(null);
     setShowPassword(false);
     setError("");
     setInfo("");
@@ -47,17 +51,40 @@ export function RegisterPage() {
     setLoading(true);
     setLoadingAction("code");
     try {
-      setInfo(await sendOtp(email, "register"));
+      const result = await sendOtp(email, "register");
+      setOtpMeta(result);
+      setInfo(result.detail);
       setOtpStep("code");
       setShowPassword(false);
       setCode("");
     } catch (err: unknown) {
-      setError(
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          "Could not send code."
-      );
+      const payload = (err as { response?: { data?: OtpSendResult & { detail?: string } } })
+        ?.response?.data;
+      if (payload?.expires_at) {
+        setOtpMeta(payload);
+      }
+      setError(payload?.detail || "Could not send code.");
     } finally {
       setLoading(false);
+      setLoadingAction(null);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setError("");
+    setLoadingAction("resend");
+    try {
+      const result = await sendOtp(email, "register");
+      setOtpMeta(result);
+      setCode("");
+    } catch (err: unknown) {
+      const payload = (err as { response?: { data?: OtpSendResult & { detail?: string } } })
+        ?.response?.data;
+      if (payload?.expires_at) {
+        setOtpMeta(payload);
+      }
+      setError(payload?.detail || "Could not resend code.");
+    } finally {
       setLoadingAction(null);
     }
   };
@@ -125,9 +152,21 @@ export function RegisterPage() {
       }
     >
       <AuthFormCard>
-        {otpStep === "code" ? (
+        {otpStep === "code" && otpMeta ? (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <AuthOtpSteps email={email} onChangeEmail={resetOtpFlow} />
+            <OtpVerificationPanel
+              email={email}
+              code={code}
+              onCodeChange={setCode}
+              onChangeEmail={resetOtpFlow}
+              expiresAt={otpMeta.expires_at}
+              resendIn={otpMeta.resend_in}
+              onResend={handleResendCode}
+              error={error}
+              disabled={loading}
+              resendLoading={loadingAction === "resend"}
+              idPrefix="register-otp"
+            />
             <div className="space-y-1.5">
               <label htmlFor="reg-honorific-code" className="block text-sm font-medium text-ink">
                 Honorific (optional)
@@ -145,25 +184,9 @@ export function RegisterPage() {
                 ))}
               </select>
             </div>
-            <Input
-              label="6-digit code"
-              type="text"
-              inputMode="numeric"
-              required
-              maxLength={6}
-              placeholder="• • • • • •"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className="auth-input auth-otp-input"
-            />
-            {error && (
-              <p className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-700 ring-1 ring-red-100">
-                {error}
-              </p>
-            )}
             <Button
               type="submit"
-              loading={loading}
+              loading={loading && loadingAction !== "resend"}
               disabled={code.length < 6}
               className="auth-submit w-full"
             >
@@ -256,7 +279,7 @@ export function RegisterPage() {
               >
                 {HONORIFIC_OPTIONS.map((t) => (
                   <option key={t || "none"} value={t}>
-                    {t || "None — Mr, Dr, Prof, etc."}
+                    {t || "None (Mr, Dr, Prof, etc.)"}
                   </option>
                 ))}
               </select>

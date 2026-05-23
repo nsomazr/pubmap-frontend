@@ -1,5 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { partneringUniversity } from "../../lib/brand";
 import { BrandMark } from "../brand/BrandMark";
 
 const exploreLinks = [
@@ -78,7 +79,7 @@ export function PublicFooter({ variant = "full", publicationCount }: Props) {
               </Link>
               <Link
                 to="/register"
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-teal-500 px-5 py-2.5 text-sm font-bold text-white"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-teal-600 px-5 py-2.5 text-sm font-bold text-white"
               >
                 Get started
                 <ArrowUpRight className="h-4 w-4" />
@@ -128,9 +129,15 @@ export function PublicFooter({ variant = "full", publicationCount }: Props) {
         </div>
 
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row">
-          <p className="text-xs text-white/40">
-            © {new Date().getFullYear()} Global Research Exchange. All rights reserved.
-          </p>
+          <div className="text-center sm:text-left">
+            <p className="text-xs text-white/40">
+              © {new Date().getFullYear()} Global Research Exchange. All rights reserved.
+            </p>
+            <p className="mt-1 text-xs text-white/35">
+              Partnering university:{" "}
+              <span className="font-medium text-white/55">{partneringUniversity}</span>
+            </p>
+          </div>
           <p className="bg-gradient-to-r from-brand-400 to-teal-400 bg-clip-text text-xs font-medium text-transparent">
             Built for researchers, by researchers.
           </p>

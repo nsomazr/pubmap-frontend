@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthActionChoices } from "../../components/auth/AuthActionChoices";
 import { AuthFormCard } from "../../components/auth/AuthFormCard";
-import { AuthOtpSteps } from "../../components/auth/AuthOtpSteps";
+import { OtpVerificationPanel } from "../../components/auth/OtpVerificationPanel";
 import { AuthLayout } from "../../components/layout/AuthLayout";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth, type OtpSendResult } from "../../context/AuthContext";
 
 export function LoginPage() {
   const { sendOtp, verifyOtpLogin, loginWithPassword } = useAuth();
@@ -15,18 +15,48 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [otpStep, setOtpStep] = useState<"email" | "code">("email");
+  const [otpMeta, setOtpMeta] = useState<OtpSendResult | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingAction, setLoadingAction] = useState<"code" | "password" | null>(null);
+  const [loadingAction, setLoadingAction] = useState<"code" | "password" | "resend" | null>(
+    null
+  );
 
   const resetOtpFlow = () => {
     setOtpStep("email");
     setCode("");
+    setOtpMeta(null);
     setShowPassword(false);
     setError("");
     setInfo("");
+  };
+
+  const requestOtp = async () => {
+    setError("");
+    setInfo("");
+    setLoading(true);
+    setLoadingAction("code");
+    try {
+      const result = await sendOtp(email, "login");
+      setOtpMeta(result);
+      setInfo(result.detail);
+      setOtpStep("code");
+      setShowPassword(false);
+      setCode("");
+      return result;
+    } catch (err: unknown) {
+      const payload = (err as { response?: { data?: OtpSendResult & { detail?: string } } })
+        ?.response?.data;
+      if (payload?.expires_at) {
+        setOtpMeta(payload);
+      }
+      setError(payload?.detail || "Could not send code. Try again.");
+    } finally {
+      setLoading(false);
+      setLoadingAction(null);
+    }
   };
 
   const handleSendCode = async () => {
@@ -34,22 +64,24 @@ export function LoginPage() {
       setError("Enter your email address.");
       return;
     }
+    await requestOtp();
+  };
+
+  const handleResendCode = async () => {
     setError("");
-    setInfo("");
-    setLoading(true);
-    setLoadingAction("code");
+    setLoadingAction("resend");
     try {
-      setInfo(await sendOtp(email, "login"));
-      setOtpStep("code");
-      setShowPassword(false);
+      const result = await sendOtp(email, "login");
+      setOtpMeta(result);
       setCode("");
     } catch (err: unknown) {
-      setError(
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          "Could not send code. Try again."
-      );
+      const payload = (err as { response?: { data?: OtpSendResult & { detail?: string } } })
+        ?.response?.data;
+      if (payload?.expires_at) {
+        setOtpMeta(payload);
+      }
+      setError(payload?.detail || "Could not resend code.");
     } finally {
-      setLoading(false);
       setLoadingAction(null);
     }
   };
@@ -105,55 +137,29 @@ export function LoginPage() {
       }
     >
       <AuthFormCard>
-        {otpStep === "code" ? (
+        {otpStep === "code" && otpMeta ? (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <AuthOtpSteps email={email} onChangeEmail={resetOtpFlow} />
-            <Input
-              label="6-digit code"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              required
-              maxLength={6}
-              placeholder="• • • • • •"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className="auth-input auth-otp-input"
+            <OtpVerificationPanel
+              email={email}
+              code={code}
+              onCodeChange={setCode}
+              onChangeEmail={resetOtpFlow}
+              expiresAt={otpMeta.expires_at}
+              resendIn={otpMeta.resend_in}
+              onResend={handleResendCode}
+              error={error}
+              disabled={loading}
+              resendLoading={loadingAction === "resend"}
+              idPrefix="login-otp"
             />
-            {error && (
-              <p className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-700 ring-1 ring-red-100">
-                {error}
-              </p>
-            )}
             <Button
               type="submit"
-              loading={loading}
+              loading={loading && loadingAction !== "resend"}
               disabled={code.length < 6}
               className="auth-submit w-full"
             >
               Sign in
             </Button>
-            <button
-              type="button"
-              className="auth-switch-link"
-              disabled={loading}
-              onClick={async () => {
-                setError("");
-                setLoading(true);
-                try {
-                  setInfo(await sendOtp(email, "login"));
-                } catch (err: unknown) {
-                  setError(
-                    (err as { response?: { data?: { detail?: string } } })?.response?.data
-                      ?.detail || "Could not resend code."
-                  );
-                } finally {
-                  setLoading(false);
-                }
-              }}
-            >
-              Didn&apos;t get it? Resend code
-            </button>
           </form>
         ) : showPassword ? (
           <form onSubmit={handlePasswordLogin} className="space-y-4">

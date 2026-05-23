@@ -45,7 +45,7 @@ export function AdminReviewPage() {
     <div className="animate-fade-up">
       <PageHeader
         title="Review queue"
-        description="Review submitted PDFs, metadata, and map location — then approve or request revisions."
+        description="Review submitted PDFs, metadata, and map location, then approve or request revisions."
       />
 
       <div className="mb-8 inline-flex rounded-xl bg-slate-100/80 p-1 ring-1 ring-slate-200/60">

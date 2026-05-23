@@ -8,9 +8,35 @@ export type StreamHandlers = {
   onError?: (message: string) => void;
 };
 
+export type AssistantHealthStatus = {
+  available: boolean;
+  provider?: string | null;
+  engine?: string | null;
+  model?: string | null;
+  groq_api_key_set?: boolean;
+  chat_public?: boolean;
+  hint?: string;
+};
+
 function authHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function parseApiError(res: Response, bodyText: string): string {
+  try {
+    const err = JSON.parse(bodyText) as { detail?: string };
+    if (err.detail) return err.detail;
+  } catch {
+    /* ignore */
+  }
+  if (res.status === 401) {
+    return "Sign in to use GRE Assistant chat, or ask your admin to enable public chat.";
+  }
+  if (res.status === 429) {
+    return "Too many requests. Please wait a minute and try again.";
+  }
+  return "GRE Assistant is temporarily unavailable. Please try again in a moment.";
 }
 
 async function consumeAssistantStream(
@@ -32,14 +58,8 @@ async function consumeAssistantStream(
   });
 
   if (!res.ok) {
-    let detail = "GRE Assistant is temporarily unavailable. Please try again in a moment.";
-    try {
-      const text = await res.text();
-      const err = JSON.parse(text) as { detail?: string };
-      if (err.detail) detail = err.detail;
-    } catch {
-      /* ignore */
-    }
+    const text = await res.text();
+    const detail = parseApiError(res, text);
     handlers.onError?.(detail);
     throw new Error(detail);
   }
@@ -80,13 +100,13 @@ async function consumeAssistantStream(
   }
 }
 
-export async function assistantHealth(): Promise<boolean> {
+export async function assistantHealth(): Promise<AssistantHealthStatus> {
   try {
     const res = await fetch(`${API_URL}/assistant/health/`, { headers: ngrokHeaders() });
-    const data = await res.json();
-    return data.available;
+    if (!res.ok) return { available: false };
+    return (await res.json()) as AssistantHealthStatus;
   } catch {
-    return false;
+    return { available: false };
   }
 }
 

@@ -50,7 +50,7 @@ export function EventsAdminPage() {
     <div className="animate-fade-up space-y-8">
       <PageHeader
         title="Events"
-        description="Create research events shown on the public Events page. Poster image URL is optional — a default banner rotates when none is set."
+        description="Create research events shown on the public Events page. Poster image URL is optional; a default banner rotates when none is set."
         action={
           <Link
             to="/events"
