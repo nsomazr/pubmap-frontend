@@ -116,7 +116,14 @@ export function CountryInstitutionPicker({
             {required && <span className="text-red-500"> *</span>}
           </label>
 
-          {!customMode && catalog.length > 0 && (
+          {loadingCatalog && catalog.length === 0 && (
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
+              <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+              Loading universities for {selectedCountry?.name || "this country"}…
+            </div>
+          )}
+
+          {!loadingCatalog && !customMode && catalog.length > 0 && (
             <>
               <input
                 type="search"
@@ -149,7 +156,7 @@ export function CountryInstitutionPicker({
             </>
           )}
 
-          {(customMode || catalog.length === 0) && (
+          {!loadingCatalog && (customMode || catalog.length === 0) && (
             <div className="space-y-2">
               {catalog.length > 0 && (
                 <button
