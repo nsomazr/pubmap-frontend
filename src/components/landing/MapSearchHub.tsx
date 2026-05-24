@@ -69,6 +69,83 @@ function SuggestionList({
   );
 }
 
+function DragHandle({ className = "" }: { className?: string }) {
+  const { dragHandlers, isCompact } = useMapPanelLayout();
+  if (isCompact) return null;
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Drag search panel"
+      onPointerDown={dragHandlers.onPointerDown}
+      onPointerMove={dragHandlers.onPointerMove}
+      onPointerUp={dragHandlers.onPointerUp}
+      onPointerCancel={dragHandlers.onPointerUp}
+      className={`map-drag-handle flex shrink-0 cursor-grab items-center justify-center text-slate-400 transition hover:text-brand-600 active:cursor-grabbing ${className}`}
+    >
+      <GripVertical className="h-5 w-5" />
+    </div>
+  );
+}
+
+function MapSearchField({
+  icon: Icon,
+  label,
+  placeholder,
+  value,
+  onChange,
+  onFocus,
+  onBlur,
+  showSuggestions,
+  suggestions,
+  onPickSuggestion,
+  listId,
+  autoFocus,
+}: {
+  icon: typeof BookOpen;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  showSuggestions?: boolean;
+  suggestions?: string[];
+  onPickSuggestion?: (value: string) => void;
+  listId?: string;
+  autoFocus?: boolean;
+}) {
+  return (
+    <div className="relative">
+      <label className="map-search-field flex items-start gap-3 rounded-xl border border-slate-100/90 bg-slate-50/60 px-3 py-2.5 transition focus-within:border-brand-200 focus-within:bg-white focus-within:shadow-sm focus-within:ring-2 focus-within:ring-brand-100/90">
+        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm ring-1 ring-slate-100/90">
+          <Icon className="h-4 w-4" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            {label}
+          </span>
+          <input
+            type="text"
+            placeholder={placeholder}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={onFocus}
+            onBlur={onBlur}
+            list={listId}
+            autoFocus={autoFocus}
+            className="map-search-field-input w-full border-0 bg-transparent p-0 text-sm leading-snug text-ink placeholder:text-slate-400"
+            autoComplete="off"
+          />
+        </span>
+      </label>
+      {showSuggestions && suggestions && suggestions.length > 0 && onPickSuggestion && (
+        <SuggestionList items={suggestions} onPick={onPickSuggestion} />
+      )}
+    </div>
+  );
+}
+
 export function MapSearchHub({
   author,
   affiliation,
@@ -90,7 +167,7 @@ export function MapSearchHub({
   onSearch,
   onClear,
 }: Props) {
-  const { expandUpward, dragHandlers, isCompact } = useMapPanelLayout();
+  const { expandUpward, isCompact } = useMapPanelLayout();
   const [open, setOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [titleFocused, setTitleFocused] = useState(false);
@@ -185,21 +262,6 @@ export function MapSearchHub({
     [author, affiliation, title].filter(Boolean).join(" · ") ||
     "Search publications on the map";
 
-  const dragGrip = !isCompact ? (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-label="Drag search panel"
-      onPointerDown={dragHandlers.onPointerDown}
-      onPointerMove={dragHandlers.onPointerMove}
-      onPointerUp={dragHandlers.onPointerUp}
-      onPointerCancel={dragHandlers.onPointerUp}
-      className="map-drag-handle flex shrink-0 cursor-grab items-center justify-center self-stretch px-3 text-slate-400 transition hover:text-brand-600 active:cursor-grabbing"
-    >
-      <GripVertical className="h-5 w-5" />
-    </div>
-  ) : null;
-
   const filterChipsRow =
     filterChips.length > 0 ? (
       <MapFilterChips
@@ -227,10 +289,10 @@ export function MapSearchHub({
             </span>
           )}
         </button>
-        {dragGrip && (
+        {!isCompact && (
           <>
             <div className="w-px shrink-0 self-center bg-slate-200/80" aria-hidden />
-            {dragGrip}
+            <DragHandle className="self-stretch px-3" />
           </>
         )}
       </div>
@@ -247,81 +309,72 @@ export function MapSearchHub({
       }}
       className="map-search-hub-form overflow-hidden rounded-2xl bg-white/95 shadow-xl shadow-slate-900/15 ring-1 ring-white/90 backdrop-blur-xl"
     >
-      <div className="flex items-center justify-between border-b border-slate-100 py-2.5 pl-4 pr-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Search map
-        </span>
-        <div className="flex items-center">
-          {dragGrip}
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-ink"
-            aria-label="Close search"
-          >
-            <X className="h-4 w-4" />
-          </button>
+      <div className="flex items-start gap-2 border-b border-slate-100 px-4 py-4">
+        <DragHandle className="mt-0.5 rounded-lg p-1 hover:bg-slate-100" />
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-semibold text-ink">Search map</h2>
+          <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+            Find publications by title, author, or institution
+          </p>
         </div>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-ink"
+          aria-label="Close search"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
-      {filterChipsRow && <div className="border-b border-slate-100 px-3 py-2">{filterChipsRow}</div>}
+      {filterChipsRow && (
+        <div className="border-b border-slate-100 bg-slate-50/50 px-4 py-3">{filterChipsRow}</div>
+      )}
 
-      <div className="space-y-0 divide-y divide-slate-100">
-        <label className="relative flex items-center gap-3 px-4 py-3">
-          <BookOpen className="h-4 w-4 shrink-0 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Title, keywords, or GRE DOI (gre-2026-000123)"
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
-            onFocus={() => setTitleFocused(true)}
-            onBlur={() => window.setTimeout(() => setTitleFocused(false), 120)}
-            autoFocus
-            className="w-full bg-transparent text-sm text-ink placeholder:text-slate-400 focus:outline-none"
-            autoComplete="off"
-          />
-          {titleFocused && titleSuggestions.length > 0 && (
-            <SuggestionList items={titleSuggestions} onPick={onTitleChange} />
-          )}
-        </label>
-        <label className="relative flex items-center gap-3 px-4 py-3">
-          <User className="h-4 w-4 shrink-0 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Author"
-            value={author}
-            onChange={(e) => onAuthorChange(e.target.value)}
-            onFocus={() => setAuthorFocused(true)}
-            onBlur={() => window.setTimeout(() => setAuthorFocused(false), 120)}
-            className="w-full bg-transparent text-sm text-ink placeholder:text-slate-400 focus:outline-none"
-            autoComplete="off"
-          />
-          {authorFocused && authorSuggestions.length > 0 && (
-            <SuggestionList items={authorSuggestions} onPick={onAuthorChange} />
-          )}
-        </label>
-        <label className="flex items-center gap-3 px-4 py-3">
-          <Building2 className="h-4 w-4 shrink-0 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Institution"
-            value={affiliation}
-            onChange={(e) => onAffiliationChange(e.target.value)}
-            list="map-affiliation-suggestions"
-            className="w-full bg-transparent text-sm text-ink placeholder:text-slate-400 focus:outline-none"
-            autoComplete="off"
-          />
-          <datalist id="map-affiliation-suggestions">
-            {suggestions.institutions.map((inst) => (
-              <option key={inst} value={inst} />
-            ))}
-          </datalist>
-        </label>
+      <div className="space-y-2.5 px-4 py-4">
+        <MapSearchField
+          icon={BookOpen}
+          label="Title or keywords"
+          placeholder="e.g. coastal erosion or gre-2026-000123"
+          value={title}
+          onChange={onTitleChange}
+          onFocus={() => setTitleFocused(true)}
+          onBlur={() => window.setTimeout(() => setTitleFocused(false), 120)}
+          showSuggestions={titleFocused}
+          suggestions={titleSuggestions}
+          onPickSuggestion={onTitleChange}
+          autoFocus
+        />
+        <MapSearchField
+          icon={User}
+          label="Author"
+          placeholder="Researcher name"
+          value={author}
+          onChange={onAuthorChange}
+          onFocus={() => setAuthorFocused(true)}
+          onBlur={() => window.setTimeout(() => setAuthorFocused(false), 120)}
+          showSuggestions={authorFocused}
+          suggestions={authorSuggestions}
+          onPickSuggestion={onAuthorChange}
+        />
+        <MapSearchField
+          icon={Building2}
+          label="Institution"
+          placeholder="University or organization"
+          value={affiliation}
+          onChange={onAffiliationChange}
+          listId="map-affiliation-suggestions"
+        />
+        <datalist id="map-affiliation-suggestions">
+          {suggestions.institutions.map((inst) => (
+            <option key={inst} value={inst} />
+          ))}
+        </datalist>
       </div>
 
       {(showFilters || categoryId || subCategoryId) && (
         <div className="border-t border-slate-100 bg-gradient-to-b from-slate-50/90 to-white px-4 py-4">
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             Research area
           </p>
           <CategorySubcategoryPicker
@@ -344,43 +397,45 @@ export function MapSearchHub({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 p-2 sm:flex-nowrap">
-        <button
-          type="button"
-          onClick={() => setShowFilters((v) => !v)}
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold ${
-            showFilters || activeFilterCount
-              ? "bg-brand-50 text-brand-700"
-              : "text-slate-500 hover:bg-slate-100"
-          }`}
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          Filters
-          {activeFilterCount > 0 && (
-            <span className="rounded-full bg-brand-600 px-1.5 text-[10px] text-white">
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
-        {hasInput && (
+      <div className="space-y-2.5 border-t border-slate-100 px-4 py-3.5">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => {
-              onClear();
-              setShowFilters(false);
-            }}
-            className="rounded-lg px-3 py-2 text-xs font-medium text-slate-500 hover:bg-slate-100"
+            onClick={() => setShowFilters((v) => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+              showFilters || activeFilterCount
+                ? "bg-brand-50 text-brand-700 ring-1 ring-brand-200/80"
+                : "text-slate-600 ring-1 ring-slate-200/80 hover:bg-slate-50"
+            }`}
           >
-            Clear all
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="rounded-full bg-brand-600 px-1.5 text-[10px] text-white">
+                {activeFilterCount}
+              </span>
+            )}
           </button>
-        )}
+          {hasInput && (
+            <button
+              type="button"
+              onClick={() => {
+                onClear();
+                setShowFilters(false);
+              }}
+              className="rounded-lg px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-ink"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
         <button
           type="submit"
           disabled={searching}
-          className="ml-auto flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-60"
         >
           <Search className="h-4 w-4" />
-          {searching ? "…" : "Search"}
+          {searching ? "Searching…" : "Search map"}
         </button>
       </div>
     </form>
