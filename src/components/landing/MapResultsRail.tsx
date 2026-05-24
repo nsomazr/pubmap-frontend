@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, ChevronRight, MapPin, Sparkles, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Sparkles, X } from "lucide-react";
 import { useRef } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
@@ -50,39 +50,10 @@ export function MapResultsRail({
     const start = swipeRef.current;
     swipeRef.current = null;
     if (!start) return;
-    if (clientY - start.startY > 56) {
+    if (clientY - start.startY > 48) {
       onToggleCollapse();
     }
   };
-
-  const mobileToggle = (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggleCollapse();
-      }}
-      className="map-results-rail-toggle pointer-events-auto fixed left-1/2 z-[1300] flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-brand-700 shadow-lg ring-1 ring-slate-200/80"
-      style={{
-        bottom: collapsed
-          ? "calc(3.75rem + env(safe-area-inset-bottom, 0px))"
-          : "calc(3.25rem + env(safe-area-inset-bottom, 0px))",
-      }}
-      aria-label={collapsed ? "Show search results" : "Hide search results"}
-    >
-      {collapsed ? (
-        <>
-          <ChevronDown className="h-4 w-4 rotate-180" />
-          Show {publications.length} result{publications.length !== 1 ? "s" : ""}
-        </>
-      ) : (
-        <>
-          <ChevronDown className="h-4 w-4" />
-          Hide results
-        </>
-      )}
-    </button>
-  );
 
   const desktopToggle = (
     <button
@@ -100,17 +71,18 @@ export function MapResultsRail({
     </button>
   );
 
+  const countLabel = `${publications.length} publication${publications.length !== 1 ? "s" : ""}`;
+
   const sheet = (
     <>
-      {isMobile && mobileToggle}
       {!isMobile && desktopToggle}
 
       {!collapsed && isMobile && (
         <button
           type="button"
-          className="fixed inset-0 z-[1290] bg-slate-900/35"
+          className="fixed inset-0 z-[1290] bg-slate-900/30"
           onClick={onToggleCollapse}
-          aria-label="Dismiss search results"
+          aria-label="Hide search results"
         />
       )}
 
@@ -128,58 +100,36 @@ export function MapResultsRail({
         }`}
       >
         <div
-          className="flex shrink-0 flex-col items-center border-b border-slate-100 bg-white px-5 pb-4 pt-3"
+          className="map-results-rail-header flex shrink-0 cursor-grab flex-col border-b border-slate-100 bg-white px-4 pb-3 pt-2 active:cursor-grabbing"
           onPointerDown={(e) => isMobile && handleSheetPointerDown(e.clientY)}
           onPointerUp={(e) => isMobile && handleSheetPointerUp(e.clientY)}
           onPointerCancel={(e) => isMobile && handleSheetPointerUp(e.clientY)}
         >
           {isMobile && (
-            <span className="mb-3 h-1 w-12 rounded-full bg-slate-300" aria-hidden />
+            <span className="mx-auto mb-2.5 h-1 w-10 rounded-full bg-slate-300" aria-hidden />
           )}
-          <div className="relative w-full overflow-hidden rounded-2xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-600 via-brand-600 to-teal-600 opacity-[0.08]" />
-            <div className="relative flex items-start justify-between gap-3 py-2">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-600">
-                  Search results
-                </p>
-                <p className="mt-1 text-2xl font-bold text-ink">
-                  {publications.length}
-                  <span className="ml-1 text-base font-medium text-slate-500">
-                    publication{publications.length !== 1 ? "s" : ""}
-                  </span>
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                {isMobile && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleCollapse();
-                    }}
-                    className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700"
-                  >
-                    Minimize
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onClose();
-                  }}
-                  className="rounded-xl bg-slate-100 p-2.5 text-slate-500 transition hover:bg-slate-200 hover:text-ink"
-                  aria-label="Close search results"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 text-left">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-600">
+                Search results
+              </p>
+              <p className="mt-0.5 text-lg font-bold leading-tight text-ink">{countLabel}</p>
             </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              className="shrink-0 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-ink"
+              aria-label="Close search results"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-6">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 pb-4">
           {publications.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-slate-200 px-4 py-12 text-center">
               <MapPin className="mx-auto h-10 w-10 text-slate-300" />
@@ -206,7 +156,7 @@ export function MapResultsRail({
                           size="sm"
                           className="h-11 w-11 rounded-xl border-2 text-sm"
                         />
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-0 flex-1 text-left">
                           <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink group-hover:text-brand-700">
                             {pub.title}
                           </p>

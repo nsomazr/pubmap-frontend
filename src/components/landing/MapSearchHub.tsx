@@ -31,6 +31,8 @@ interface Props {
   resultCount: number;
   searching: boolean;
   hasResults: boolean;
+  /** When true, the mobile results sheet is expanded (hide duplicate results chip). */
+  resultsPanelVisible?: boolean;
   onOpenResults: () => void;
   onAuthorChange: (v: string) => void;
   onAffiliationChange: (v: string) => void;
@@ -158,6 +160,7 @@ export function MapSearchHub({
   resultCount,
   searching,
   hasResults,
+  resultsPanelVisible = false,
   onOpenResults,
   onAuthorChange,
   onAffiliationChange,
@@ -441,7 +444,7 @@ export function MapSearchHub({
     </form>
   );
 
-  const resultsBtn = hasResults && !open && (
+  const resultsBtn = hasResults && !open && !resultsPanelVisible && (
     <button
       type="button"
       onClick={onOpenResults}

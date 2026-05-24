@@ -320,6 +320,7 @@ export function HomePage() {
             resultCount={publications.length}
             searching={searching}
             hasResults={hasSearched}
+            resultsPanelVisible={resultsRailOpen && !resultsRailCollapsed}
             onOpenResults={() => {
               userDismissedResultsRailRef.current = false;
               setResultsRailOpen(true);

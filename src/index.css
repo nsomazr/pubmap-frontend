@@ -1694,9 +1694,14 @@ body {
     left: 0 !important;
     right: 0 !important;
     width: 100% !important;
-    max-height: min(68dvh, calc(100dvh - 8rem - env(safe-area-inset-bottom, 0px))) !important;
+    max-height: min(72dvh, calc(100dvh - 7rem - env(safe-area-inset-bottom, 0px))) !important;
     border-radius: 1.25rem 1.25rem 0 0;
     border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -8px 32px rgb(15 23 42 / 0.12);
+  }
+
+  .map-results-rail-header {
+    touch-action: none;
   }
 
   .map-nav-scroll {
