@@ -96,7 +96,7 @@ export function DashboardLayout() {
         className="flex min-h-screen min-w-0 flex-1 flex-col transition-[margin] duration-300"
         style={{ marginLeft: isMobile ? 0 : sidebarW }}
       >
-        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-xl sm:px-6">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-slate-200/80 bg-white/90 px-3 backdrop-blur-xl safe-top sm:gap-3 sm:px-6">
           <button
             type="button"
             onClick={toggleCollapse}
@@ -113,10 +113,10 @@ export function DashboardLayout() {
           <NotificationBell />
           <Link
             to="/"
-            className="gre-interactive hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50 sm:flex"
+            className="gre-interactive inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50 sm:px-3"
           >
             <ExternalLink className="h-3.5 w-3.5" />
-            Map
+            <span className="hidden min-[420px]:inline">Map</span>
           </Link>
         </header>
 

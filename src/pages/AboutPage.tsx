@@ -16,21 +16,29 @@ import { BrandMark } from "../components/brand/BrandMark";
 import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 
+const INTRO = {
+  lead: "Welcome to the Global Research Exchange (GRE).",
+  mission:
+    "This is a transformative platform that redefines how research connects with the world. Our mission is to amplify the impact of groundbreaking research, foster collaboration, and build a dynamic global community of thinkers, creators, and problem-solvers.",
+  living:
+    "GRE offers a unique alternative to traditional research sharing. Through our platform, your work doesn't just reach an audience; it thrives. We ensure your research is more than a publication, it becomes a living, breathing resource enriched by global engagement. Think of your contributions as fine wine, growing richer with time, dialogue, and collaboration.",
+};
+
 const PILLARS = [
   {
     icon: Map,
     label: "Discover",
-    text: "Explore research on an interactive global map.",
+    text: "Explore geolocated research on an interactive global map.",
   },
   {
     icon: BookOpen,
     label: "Share",
-    text: "Publish studies with location, context, and lasting visibility.",
+    text: "Publish findings and recommendations with lasting visibility beyond conferences and journals.",
   },
   {
     icon: MessageCircle,
     label: "Connect",
-    text: "Forum, events, and messaging built for researchers.",
+    text: "Forums, events, and discussions where research evolves with the community.",
   },
 ];
 
@@ -38,49 +46,77 @@ const STEPS = [
   {
     step: "1",
     title: "Add your research",
-    text: "Create a publication with title, summary, and study location on the map.",
+    text: "Create a publication with title, abstract, and study location on the map.",
   },
   {
     step: "2",
     title: "Reach a global audience",
-    text: "Your work appears on GRE's map and publication directory for others to find.",
+    text: "Your work gains prolonged visibility on GRE's map and publication directory.",
   },
   {
     step: "3",
     title: "Stay in the conversation",
-    text: "Engage through forum discussions, events, and direct messages with peers.",
+    text: "Engage through comments, forum discussions, events, and direct messages with peers.",
   },
 ];
 
-const BENEFITS = [
+const EXCEPTIONAL = [
   {
     icon: Globe2,
-    title: "Global visibility",
-    text: "Go beyond conference posters and journal paywalls. Show work where people actually browse.",
+    title: "Global Visibility",
+    text: "Showcase your research to a worldwide audience beyond the confines of conferences and journals.",
   },
   {
     icon: Sparkles,
-    title: "Lasting impact",
-    text: "Publications remain discoverable as living resources, not one-off presentations.",
+    title: "Prolonged Impact",
+    text: "Your findings remain accessible and relevant, fostering ongoing discussions and unlocking new opportunities for innovation.",
   },
   {
     icon: Users,
-    title: "Built for collaboration",
-    text: "Find researchers in your field, region, or institution through shared topics and places.",
+    title: "Collaborative Environment",
+    text: "Join a vibrant community committed to solving real-world challenges. GRE is a hub where research evolves and relationships blossom.",
   },
   {
     icon: Handshake,
-    title: "Flexible & open",
-    text: "Share on your schedule. No venue bookings or travel required to participate.",
+    title: "Flexibility & Convenience",
+    text: "Forget the logistical hassles of traditional conferences. At GRE, every day is a chance to connect, share, and grow.",
+  },
+];
+
+const MEMBER_BENEFITS = [
+  {
+    icon: Globe2,
+    title: "Global Visibility",
+    text: "Share your research findings and recommendations with a worldwide audience.",
+  },
+  {
+    icon: MessageCircle,
+    title: "Engage & Collaborate",
+    text: "Connect with peers by commenting on and discussing submitted abstracts, fostering meaningful academic dialogues.",
+  },
+  {
+    icon: BookOpen,
+    title: "Specialized Forums",
+    text: "Participate in forums tailored to various specializations, where you can exchange ideas with experts in your field.",
+  },
+  {
+    icon: Lightbulb,
+    title: "Resource Accessibility",
+    text: "Discover valuable research materials, tools, and insights to enhance your work.",
+  },
+  {
+    icon: Target,
+    title: "Recognition",
+    text: "Showcase your contributions and establish your presence in the academic and research community.",
   },
 ];
 
 const AUDIENCE = [
   "Researchers",
+  "Academics",
+  "Industry experts",
   "Graduate students",
-  "Faculty & labs",
   "Policy & NGO teams",
-  "Industry R&D",
   "Field scientists",
 ];
 
@@ -148,7 +184,7 @@ export function AboutPage() {
       subtitle={
         isContact
           ? "Questions about GRE? Pick the team that fits. We reply as soon as we can."
-          : "One place to map, share, and discuss research with a worldwide community."
+          : "A transformative platform where research connects with the world."
       }
       crumbs={[{ label: "Home", to: "/" }, { label: title }]}
     >
@@ -234,12 +270,9 @@ export function AboutPage() {
               <div className="flex flex-wrap items-center gap-4">
                 <BrandMark symbol="icon" variant="gradient" size="lg" />
                 <div>
-                  <h2 className="text-lg font-bold text-ink sm:text-xl">
-                    What is Global Research Exchange?
-                  </h2>
-                  <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
-                    GRE is a map-first platform where researchers publish geolocated studies,
-                    discover work worldwide, and collaborate through community tools.
+                  <h2 className="text-lg font-bold text-ink sm:text-xl">{INTRO.lead}</h2>
+                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
+                    {INTRO.mission}
                   </p>
                 </div>
               </div>
@@ -259,27 +292,23 @@ export function AboutPage() {
             </div>
           </section>
 
-          {/* Mission  -  readable, not another full gradient block */}
+          {/* Living research */}
           <section className="flex gap-5 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
             <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-brand-700 sm:flex">
-              <Target className="h-6 w-6" />
+              <Sparkles className="h-6 w-6" />
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-brand-600">
-                Our mission
+                Research that grows richer
               </p>
               <h2 className="mt-1 text-xl font-bold text-ink sm:text-2xl">
-                Research without borders
+                More than a publication
               </h2>
-              <p className="mt-3 max-w-3xl leading-relaxed text-slate-600">
-                We help groundbreaking work travel further by placing it on a shared map,
-                keeping it accessible over time, and connecting the people behind the ideas.
-                GRE is built for discovery, dialogue, and real-world impact.
-              </p>
+              <p className="mt-3 max-w-3xl leading-relaxed text-slate-600">{INTRO.living}</p>
             </div>
           </section>
 
-          {/* How it works  -  scannable steps */}
+          {/* How it works */}
           <section>
             <div className="mb-6">
               <h2 className="text-xl font-bold text-ink sm:text-2xl">How it works</h2>
@@ -306,26 +335,43 @@ export function AboutPage() {
             </ol>
           </section>
 
-          {/* Why different  -  concise contrast */}
+          {/* What makes GRE exceptional */}
           <section className="rounded-2xl border-l-4 border-brand-500 bg-white px-6 py-5 shadow-sm ring-1 ring-slate-200/80 sm:px-8 sm:py-6">
             <div className="flex gap-3">
               <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
-              <div>
-                <h2 className="font-bold text-ink">Why GRE is different</h2>
-                <p className="mt-2 leading-relaxed text-slate-600">
-                  Traditional sharing often ends when a conference closes or a paper is filed
-                  away. On GRE, your research stays visible on the map, open to search,
-                  discussion, and follow-up, so impact can grow after the first presentation.
-                </p>
+              <div className="w-full">
+                <h2 className="font-bold text-ink">What makes GRE truly exceptional?</h2>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  {EXCEPTIONAL.map(({ icon: Icon, title: benefitTitle, text }) => (
+                    <article
+                      key={benefitTitle}
+                      className="flex gap-4 rounded-2xl border border-slate-100 bg-slate-50/50 p-4"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-brand-600 ring-1 ring-slate-200/80">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <h3 className="font-bold text-ink">{benefitTitle}</h3>
+                        <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{text}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               </div>
             </div>
           </section>
 
-          {/* Benefits grid */}
+          {/* Member benefits */}
           <section>
-            <h2 className="text-xl font-bold text-ink sm:text-2xl">What you gain</h2>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {BENEFITS.map(({ icon: Icon, title: benefitTitle, text }) => (
+            <h2 className="text-xl font-bold text-ink sm:text-2xl">
+              Why being a GRE member matters
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
+              As a member, you gain access to an array of benefits that empower you to make a real
+              impact in the research community.
+            </p>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {MEMBER_BENEFITS.map(({ icon: Icon, title: benefitTitle, text }) => (
                 <article
                   key={benefitTitle}
                   className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-brand-200 hover:shadow-md"
@@ -340,14 +386,21 @@ export function AboutPage() {
                 </article>
               ))}
             </div>
+            <p className="mt-5 max-w-3xl text-sm leading-relaxed text-slate-600">
+              One of the unique benefits of GRE is the ability for members to add comments and engage
+              in discussions under submitted abstracts. Much like fine wine that improves with age,
+              these abstracts gain value and richness as insights from discussions and collaborations
+              are incorporated.
+            </p>
           </section>
 
           {/* Audience */}
           <section className="rounded-2xl bg-slate-50 px-6 py-6 ring-1 ring-slate-200/80 sm:px-8">
             <h2 className="font-bold text-ink">Who it is for</h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-              Anyone who wants their work seen, understood, and discussed across borders, whether
-              you are publishing your first study or leading a lab.
+              Whether you&apos;re a researcher, academic, or industry expert, GRE is designed for
+              you. It&apos;s more than a platform; it&apos;s a movement to reshape the future of
+              research exchange, turning ideas into actions that impact the world.
             </p>
             <ul className="mt-4 flex flex-wrap gap-2">
               {AUDIENCE.map((role) => (
@@ -371,9 +424,12 @@ export function AboutPage() {
 
           <section className="flex flex-col items-center gap-5 rounded-2xl gre-gradient-bar px-6 py-10 text-center text-white sm:flex-row sm:justify-between sm:text-left">
             <div>
-              <p className="text-lg font-bold sm:text-xl">Ready to put your research on the map?</p>
+              <p className="text-lg font-bold sm:text-xl">
+                Join us where boundaries dissolve and innovation knows no limits
+              </p>
               <p className="mt-1 text-sm text-white/80">
-                Create a free account and publish your first study in minutes.
+                Together, we can create a better tomorrow, one idea at a time. Welcome to the GRE
+                family, where your research thrives without boundaries.
               </p>
             </div>
             <div className="flex shrink-0 flex-wrap justify-center gap-3">

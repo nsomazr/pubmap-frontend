@@ -1696,6 +1696,19 @@ body {
   .map-nav-scroll::-webkit-scrollbar {
     display: none;
   }
+
+  .public-mobile-menu {
+    animation: public-menu-slide-in 220ms var(--gre-ease-out) forwards;
+  }
+
+  @keyframes public-menu-slide-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
