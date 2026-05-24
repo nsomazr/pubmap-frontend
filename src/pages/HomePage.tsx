@@ -340,7 +340,8 @@ export function HomePage() {
           <div className="pointer-events-none absolute bottom-24 right-4 z-[1000] hidden w-[min(100%,240px)] md:block lg:bottom-8 lg:right-6">
             <GreAdPlacement
               placement="sidebar"
-              limit={2}
+              limit={6}
+              rotate
               className="pointer-events-auto space-y-3"
             />
           </div>

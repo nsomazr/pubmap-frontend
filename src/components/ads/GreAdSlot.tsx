@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   adLinkHref,
@@ -12,12 +12,15 @@ import { mediaUrl } from "../../lib/mediaUrl";
 
 type Variant = "compact" | "banner" | "card";
 
+const ROTATE_MS = 8000;
+
 interface GreAdSlotProps {
   ads: GreAd[];
   placement: AdPlacement;
   variant?: Variant;
   className?: string;
   emptyClassName?: string;
+  rotate?: boolean;
 }
 
 function resolveImage(image: string): string {
@@ -118,16 +121,89 @@ function AdItem({
   );
 }
 
+function GreAdCarousel({
+  ads,
+  placement,
+  variant,
+}: {
+  ads: GreAd[];
+  placement: AdPlacement;
+  variant: Variant;
+}) {
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (ads.length <= 1 || paused) return;
+    const timer = window.setInterval(() => {
+      setVisible(false);
+      window.setTimeout(() => {
+        setIndex((current) => (current + 1) % ads.length);
+        setVisible(true);
+      }, 220);
+    }, ROTATE_MS);
+    return () => window.clearInterval(timer);
+  }, [ads.length, paused]);
+
+  const ad = ads[index];
+
+  return (
+    <div
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setPaused(false);
+        }
+      }}
+    >
+      <div
+        className={`transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
+        aria-live="polite"
+      >
+        <AdItem key={ad.id} ad={ad} placement={placement} variant={variant} />
+      </div>
+      {ads.length > 1 && (
+        <div className="mt-2 flex items-center justify-center gap-1.5">
+          {ads.map((row, dotIndex) => (
+            <button
+              key={row.id}
+              type="button"
+              aria-label={`Show sponsored ad: ${row.title}`}
+              aria-current={dotIndex === index ? "true" : undefined}
+              onClick={() => {
+                setVisible(false);
+                window.setTimeout(() => {
+                  setIndex(dotIndex);
+                  setVisible(true);
+                }, 120);
+              }}
+              className={`h-1.5 rounded-full transition-all ${
+                dotIndex === index ? "w-4 bg-brand-600" : "w-1.5 bg-slate-300 hover:bg-slate-400"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function GreAdSlot({
   ads,
   placement,
   variant = "compact",
   className = "",
   emptyClassName = "hidden",
+  rotate = false,
 }: GreAdSlotProps) {
   if (!ads.length) {
     return emptyClassName ? <div className={emptyClassName} /> : null;
   }
+
+  const showCarousel = rotate && variant === "compact" && ads.length > 1;
 
   return (
     <aside
@@ -135,9 +211,13 @@ export function GreAdSlot({
       aria-label="Sponsored content"
       data-ad-placement={placement}
     >
-      {ads.map((ad) => (
-        <AdItem key={ad.id} ad={ad} placement={placement} variant={variant} />
-      ))}
+      {showCarousel ? (
+        <GreAdCarousel ads={ads} placement={placement} variant={variant} />
+      ) : (
+        ads.map((ad) => (
+          <AdItem key={ad.id} ad={ad} placement={placement} variant={variant} />
+        ))
+      )}
     </aside>
   );
 }
@@ -148,6 +228,7 @@ interface GreAdPlacementProps {
   variant?: Variant;
   className?: string;
   enabled?: boolean;
+  rotate?: boolean;
 }
 
 export function GreAdPlacement({
@@ -156,7 +237,16 @@ export function GreAdPlacement({
   variant = "compact",
   className = "space-y-3",
   enabled = true,
+  rotate = false,
 }: GreAdPlacementProps) {
-  const { data: ads = [] } = usePlacementAds(placement, limit, enabled);
-  return <GreAdSlot ads={ads} placement={placement} variant={variant} className={className} />;
+  const { data: ads = [] } = usePlacementAds(placement, limit, enabled, rotate);
+  return (
+    <GreAdSlot
+      ads={ads}
+      placement={placement}
+      variant={variant}
+      className={className}
+      rotate={rotate}
+    />
+  );
 }

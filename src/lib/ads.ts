@@ -75,13 +75,18 @@ export interface AdAnalytics {
   }[];
 }
 
-export function usePlacementAds(placement: AdPlacement, limit = 3, enabled = true) {
+export function usePlacementAds(
+  placement: AdPlacement,
+  limit = 3,
+  enabled = true,
+  rotate = false
+) {
   return useQuery({
-    queryKey: ["ads", "placement", placement, limit],
+    queryKey: ["ads", "placement", placement, limit, rotate],
     queryFn: async () => {
       const { data } = await api.get<{ placement: AdPlacement; ads: GreAd[] }>(
         "/ads/placements/",
-        { params: { placement, limit } }
+        { params: { placement, limit, rotate: rotate ? 1 : undefined } }
       );
       return data.ads;
     },
