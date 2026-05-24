@@ -919,6 +919,11 @@ body {
   touch-action: none;
 }
 
+.map-summary-dock-body {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
 .map-summary-dock-card {
   display: flex;
   flex-direction: column;
@@ -1800,6 +1805,29 @@ body {
     width: min(100%, 32rem);
   }
 
+  .map-draggable-panel--bottom {
+    touch-action: auto;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: calc(2.75rem + env(safe-area-inset-bottom, 0px)) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    transform: none !important;
+    display: flex;
+    justify-content: center;
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  }
+
+  .map-draggable-panel--bottom > div {
+    width: min(100%, 24rem);
+  }
+
+  .map-draggable-panel--bottom .map-drag-handle {
+    display: none;
+  }
+
   .map-draggable-panel--top .map-drag-handle {
     display: none;
   }
@@ -1825,6 +1853,18 @@ body {
   /* Hide FAB while mobile results sheet is open  -  avoids covering action buttons */
   .landing-page--results-open .gre-assistant-fab {
     display: none;
+  }
+
+  .landing-page--summary-open .gre-assistant-fab {
+    display: none;
+  }
+
+  .landing-page--summary-open .leaflet-bottom.leaflet-right {
+    bottom: calc(18rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .landing-page--summary-open footer.safe-bottom {
+    z-index: 999;
   }
 
   .landing-page .gre-assistant-panel {
@@ -1862,6 +1902,22 @@ body {
 
   .map-nav-scroll::-webkit-scrollbar {
     display: none;
+  }
+
+  .leaflet-control-zoom a {
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
+  }
+
+  .gre-map--embedded .leaflet-bottom.leaflet-right {
+    bottom: 5.5rem;
+  }
+
+  .gre-popup-summary-btn,
+  .gre-popup-link {
+    min-height: 2.5rem;
+    font-size: 0.75rem;
   }
 
   .public-mobile-menu {

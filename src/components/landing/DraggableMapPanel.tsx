@@ -75,7 +75,7 @@ export function DraggableMapPanel({
   const isCompact = useIsMobile();
   const isFloating = layout === "floating-card";
   const persistPosition = persistPositionProp ?? isFloating;
-  const mobilePinned = isCompact && !isFloating;
+  const mobilePinned = isCompact;
   const dragEnabled = !mobilePinned;
   const panelRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<Position | null>(null);
@@ -244,7 +244,9 @@ export function DraggableMapPanel({
         ref={panelRef}
         className={`map-draggable-panel pointer-events-none w-full max-w-lg px-3 sm:px-4 ${
           mobilePinned
-            ? "map-draggable-panel--top fixed inset-x-0 top-0 z-[1100]"
+            ? isFloating
+              ? "map-draggable-panel--bottom fixed inset-x-0 z-[1100]"
+              : "map-draggable-panel--top fixed inset-x-0 top-0 z-[1100]"
             : `absolute z-[1150] ${expandUpward ? "map-draggable-panel--up" : ""} ${
                 isFloating ? "map-draggable-panel--floating w-[min(100%,22rem)]" : "w-[min(100%,32rem)]"
               }`

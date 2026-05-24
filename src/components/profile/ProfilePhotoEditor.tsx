@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { Camera, Loader2, Trash2, Upload, X, ZoomIn } from "lucide-react";
+import { Camera, CheckCircle2, Loader2, Trash2, Upload, X, ZoomIn } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   PROFILE_CROP_VIEWPORT,
@@ -24,6 +24,11 @@ interface Props {
   onUpdated: () => void | Promise<void>;
 }
 
+function parseUploadError(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+}
+
 export function ProfilePhotoEditor({ user, onUpdated }: Props) {
   const { patchUser } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,14 +39,24 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
   const [loaded, setLoaded] = useState<LoadedImage | null>(null);
   const [crop, setCrop] = useState<CropState>(defaultCropState);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
+  const [displayPhoto, setDisplayPhoto] = useState(user.photo);
+  const [displayVersion, setDisplayVersion] = useState(user.updated_at);
 
   const initials = userInitials(user);
+
+  useEffect(() => {
+    setDisplayPhoto(user.photo);
+    setDisplayVersion(user.updated_at);
+  }, [user.photo, user.updated_at]);
 
   const closeEditor = useCallback(() => {
     setOpen(false);
     setLoadingImage(false);
     setCrop(defaultCropState());
     setError("");
+    setPendingPreview(null);
     revokeLoadedImage(loadedRef.current);
     loadedRef.current = null;
     setLoaded(null);
@@ -59,29 +74,54 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, closeEditor]);
 
+  const applySavedUser = useCallback(
+    async (updatedUser: User) => {
+      patchUser(updatedUser);
+      setDisplayPhoto(updatedUser.photo);
+      setDisplayVersion(updatedUser.updated_at || String(Date.now()));
+      await onUpdated();
+    },
+    [onUpdated, patchUser]
+  );
+
   const uploadMutation = useMutation({
     mutationFn: async (blob: Blob) => uploadProfilePhoto(blob),
     onSuccess: async (updatedUser) => {
-      patchUser(updatedUser);
-      await onUpdated();
+      setPendingPreview(null);
+      await applySavedUser(updatedUser);
+      setSuccess("Profile photo saved.");
+      setError("");
       closeEditor();
     },
-    onError: () => setError("Could not save profile photo. Try again."),
+    onError: (err) => setError(parseUploadError(err, "Could not save profile photo. Try again.")),
   });
 
   const removeMutation = useMutation({
     mutationFn: () => removeProfilePhoto(),
     onSuccess: async (updatedUser) => {
-      patchUser(updatedUser);
-      await onUpdated();
+      await applySavedUser(updatedUser);
+      setSuccess("Profile photo removed.");
+      setError("");
       closeEditor();
     },
-    onError: () => setError("Could not remove profile photo."),
+    onError: (err) => setError(parseUploadError(err, "Could not remove profile photo.")),
   });
+
+  const openFilePicker = () => {
+    setSuccess("");
+    if (inputRef.current) {
+      inputRef.current.value = "";
+      inputRef.current.click();
+    }
+  };
 
   const onPickFile = async (file: File | null) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
+
+    const type = file.type.toLowerCase();
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    const allowedExt = ["jpg", "jpeg", "png", "webp", "gif"];
+    if (!type.startsWith("image/") && !allowedExt.includes(ext)) {
       setError("Choose a JPG, PNG, WEBP, or GIF image.");
       return;
     }
@@ -91,8 +131,10 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
     }
 
     setError("");
+    setSuccess("");
     setOpen(true);
     setLoadingImage(true);
+    setPendingPreview(null);
     revokeLoadedImage(loadedRef.current);
     loadedRef.current = null;
     setLoaded(null);
@@ -102,8 +144,9 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
       const next = await loadImageFromFile(file);
       loadedRef.current = next;
       setLoaded(next);
+      setPendingPreview(next.objectUrl);
     } catch {
-      setError("Could not open that image.");
+      setError("Could not open that image. Try JPG or PNG.");
       setOpen(false);
     } finally {
       setLoadingImage(false);
@@ -113,6 +156,7 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
   const savePhoto = async () => {
     if (!loaded?.image) return;
     setError("");
+    setSuccess("");
     try {
       const blob = await cropImageToBlob(loaded.image, crop);
       uploadMutation.mutate(blob);
@@ -162,23 +206,30 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
   const totalScale = coverScale * crop.scale;
   const displayW = image ? image.naturalWidth * totalScale : 0;
   const displayH = image ? image.naturalHeight * totalScale : 0;
-  const busy = loadingImage || uploadMutation.isPending;
+  const busy = loadingImage || uploadMutation.isPending || removeMutation.isPending;
+  const avatarPhoto = pendingPreview || displayPhoto;
+  const avatarVersion = pendingPreview ? "pending" : displayVersion;
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
         <button
           type="button"
-          onClick={() => inputRef.current?.click()}
+          onClick={openFilePicker}
           className="group relative shrink-0 self-start rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
           aria-label="Upload profile photo"
         >
           <GreAvatarSlot
-            photoUrl={user.photo}
-            photoVersion={user.updated_at}
+            photoUrl={avatarPhoto}
+            photoVersion={avatarVersion}
             initials={initials}
             size="lg"
           />
+          {uploadMutation.isPending && (
+            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-white/70">
+              <Loader2 className="h-7 w-7 animate-spin text-brand-600" />
+            </span>
+          )}
           <span className="absolute inset-0 flex items-center justify-center rounded-full bg-slate-900/0 transition group-hover:bg-slate-900/35">
             <Camera className="h-6 w-6 text-white opacity-0 transition group-hover:opacity-100" />
           </span>
@@ -191,7 +242,9 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
           <div>
             <h3 className="text-sm font-semibold text-ink">Profile photo</h3>
             <p className="mt-1 text-sm text-slate-600">
-              Shown on publications, discussions, the research map, and collaborator lists.
+              Shown on publications, discussions, the research map, and collaborator lists. Saves
+              immediately when you click <span className="font-medium text-ink">Save photo</span> in
+              the crop dialog — not via Update profile.
             </p>
           </div>
 
@@ -199,15 +252,15 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
             <input
               ref={inputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
               className="hidden"
               onChange={(e) => void onPickFile(e.target.files?.[0] ?? null)}
             />
-            <Button type="button" variant="secondary" onClick={() => inputRef.current?.click()}>
+            <Button type="button" variant="secondary" onClick={openFilePicker}>
               <Upload className="h-4 w-4" />
-              {isDefaultProfilePhoto(user.photo) ? "Upload photo" : "Change photo"}
+              {isDefaultProfilePhoto(displayPhoto) ? "Upload photo" : "Change photo"}
             </Button>
-            {!isDefaultProfilePhoto(user.photo) && (
+            {!isDefaultProfilePhoto(displayPhoto) && (
               <Button
                 type="button"
                 variant="secondary"
@@ -220,6 +273,12 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
             )}
           </div>
 
+          {success && !open && (
+            <p className="flex items-center gap-2 text-sm text-teal-700">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              {success}
+            </p>
+          )}
           {error && !open && <p className="text-sm text-red-600">{error}</p>}
         </div>
       </div>
@@ -241,7 +300,7 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
                   Adjust profile photo
                 </h4>
                 <p className="mt-1 text-sm text-slate-500">
-                  Drag to reposition. Scroll or use the slider to zoom. Saved as a square crop.
+                  Drag to reposition. Scroll or use the slider to zoom, then save.
                 </p>
               </div>
               <button
@@ -303,7 +362,9 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
                     />
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                <p className="text-sm text-slate-500">No image loaded. Choose a photo to continue.</p>
+              )}
             </div>
 
             {!loadingImage && loaded && (

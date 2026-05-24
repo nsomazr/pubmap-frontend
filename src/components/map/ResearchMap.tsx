@@ -80,6 +80,7 @@ export function ResearchMap({
       ? publications.find((pub) => pub.id === focusPublicationId) ?? null
       : null;
   const embedded = variant === "embedded";
+  const mapZoomPosition = embedded ? "topright" : zoomPosition;
   const [embeddedPopupOpen, setEmbeddedPopupOpen] = useState(false);
   const [overlaySuppressed, setOverlaySuppressed] = useState(false);
 
@@ -110,7 +111,7 @@ export function ResearchMap({
         scrollWheelZoom
         zoomControl={false}
       >
-        <ZoomControl position={zoomPosition} />
+        <ZoomControl position={mapZoomPosition} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

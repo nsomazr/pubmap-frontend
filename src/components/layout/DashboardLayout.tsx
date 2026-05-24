@@ -103,7 +103,7 @@ export function DashboardLayout() {
           <button
             type="button"
             onClick={toggleCollapse}
-            className="gre-interactive flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 lg:hidden"
+            className="gre-interactive flex h-11 w-11 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 lg:hidden"
             aria-label="Toggle menu"
           >
             {isMobile && mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

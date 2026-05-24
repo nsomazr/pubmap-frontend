@@ -1,3 +1,5 @@
+import DOMPurify from "dompurify";
+
 const ALLOWED_TAGS = new Set([
   "p",
   "br",
@@ -18,30 +20,58 @@ const ALLOWED_TAGS = new Set([
   "sup",
 ]);
 
-/** Sanitize rich HTML for public display (DOMPurify CDN when available). */
+const BLOCKED_LINK_PREFIXES = ["javascript:", "data:", "vbscript:"];
+
+function sanitizeHref(value: string | null): string | null {
+  if (!value) return null;
+  const href = value.trim();
+  const lower = href.toLowerCase();
+  if (BLOCKED_LINK_PREFIXES.some((prefix) => lower.startsWith(prefix))) {
+    return null;
+  }
+  return href;
+}
+
+/** Sanitize rich HTML for public display. */
 export function sanitizeHtml(html: string): string {
   if (!html?.trim()) return "";
-  if (typeof window !== "undefined" && window.DOMPurify) {
-    return window.DOMPurify.sanitize(html, {
+
+  if (typeof window !== "undefined") {
+    return DOMPurify.sanitize(html, {
       USE_PROFILES: { html: true },
       ADD_ATTR: ["target", "rel"],
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
     });
   }
+
   const doc = new DOMParser().parseFromString(html, "text/html");
   const walk = (node: Node) => {
     const children = [...node.childNodes];
     for (const child of children) {
-      if (child.nodeType === Node.ELEMENT_NODE) {
-        const el = child as Element;
-        if (!ALLOWED_TAGS.has(el.tagName.toLowerCase())) {
-          const text = doc.createTextNode(el.textContent || "");
-          el.replaceWith(text);
-        } else if (el.tagName.toLowerCase() === "a") {
-          el.setAttribute("target", "_blank");
-          el.setAttribute("rel", "noopener noreferrer");
-        }
-        walk(el);
+      if (child.nodeType !== Node.ELEMENT_NODE) continue;
+      const el = child as Element;
+      const tag = el.tagName.toLowerCase();
+      if (!ALLOWED_TAGS.has(tag)) {
+        el.replaceWith(doc.createTextNode(el.textContent || ""));
+        continue;
       }
+      [...el.attributes].forEach((attr) => {
+        if (tag === "a" && attr.name === "href") {
+          const safe = sanitizeHref(attr.value);
+          if (!safe) el.removeAttribute("href");
+          else el.setAttribute("href", safe);
+          return;
+        }
+        if (tag === "a" && (attr.name === "target" || attr.name === "rel")) {
+          return;
+        }
+        el.removeAttribute(attr.name);
+      });
+      if (tag === "a") {
+        el.setAttribute("target", "_blank");
+        el.setAttribute("rel", "noopener noreferrer");
+      }
+      walk(el);
     }
   };
   walk(doc.body);

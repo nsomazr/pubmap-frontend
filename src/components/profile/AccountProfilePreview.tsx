@@ -62,6 +62,7 @@ export function AccountProfilePreview({ user, draft, publishedCount = 0, live = 
             <UserAvatar
               user={user}
               name={displayName}
+              photoVersion={user?.updated_at}
               size="lg"
               className="!h-16 !w-16 !rounded-2xl !text-lg"
             />

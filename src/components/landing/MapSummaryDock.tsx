@@ -121,7 +121,7 @@ export function MapSummaryDock({ publication, onClose }: Props) {
             <button
               type="button"
               onClick={() => setMinimized(true)}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-ink"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-ink"
               aria-label="Minimize summary"
             >
               <ChevronDown className="h-4 w-4" />
@@ -129,7 +129,7 @@ export function MapSummaryDock({ publication, onClose }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-ink"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-ink"
               aria-label="Close summary"
             >
               <X className="h-4 w-4" />

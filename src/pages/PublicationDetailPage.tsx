@@ -164,7 +164,7 @@ export function PublicationDetailPage() {
                   <p className="mt-1 text-xs text-slate-500">Full open-access paper</p>
                 </div>
               </div>
-              <PdfPreview documentPath={docPath} className="min-h-[min(75vh,900px)] rounded-none border-0" />
+              <PdfPreview documentPath={docPath} className="min-h-[min(50vh,420px)] rounded-none border-0 sm:min-h-[min(75vh,900px)]" />
             </section>
           ) : (
             <div className="space-y-4">

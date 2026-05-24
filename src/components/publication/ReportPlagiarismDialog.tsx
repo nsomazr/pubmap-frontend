@@ -155,11 +155,11 @@ export function ReportPlagiarismDialog({
                 {error}
               </p>
             )}
-            <div className="flex gap-3 pt-2">
-              <Button type="submit" loading={submitMutation.isPending} className="flex-1">
+            <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:gap-3">
+              <Button type="submit" loading={submitMutation.isPending} className="w-full sm:flex-1">
                 Submit report
               </Button>
-              <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
+              <Button type="button" variant="secondary" className="w-full sm:flex-1" onClick={onClose}>
                 Cancel
               </Button>
             </div>

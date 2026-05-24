@@ -90,13 +90,25 @@ export function cropImageToBlob(
 export async function uploadProfilePhoto(blob: Blob): Promise<User> {
   const form = new FormData();
   form.append("photo", blob, "profile.jpg");
-  const { data } = await api.post<User>("/auth/me/photo/", form);
-  return data;
+  try {
+    const { data } = await api.post<User>("/auth/me/photo/", form);
+    return data;
+  } catch (err: unknown) {
+    const axiosErr = err as { response?: { data?: { detail?: string } } };
+    const detail = axiosErr.response?.data?.detail;
+    throw new Error(detail || "Could not save profile photo. Try again.");
+  }
 }
 
 export async function removeProfilePhoto(): Promise<User> {
-  const { data } = await api.delete<User>("/auth/me/photo/");
-  return data;
+  try {
+    const { data } = await api.delete<User>("/auth/me/photo/");
+    return data;
+  } catch (err: unknown) {
+    const axiosErr = err as { response?: { data?: { detail?: string } } };
+    const detail = axiosErr.response?.data?.detail;
+    throw new Error(detail || "Could not remove profile photo.");
+  }
 }
 
 export const DEFAULT_PROFILE_PHOTO_URL =
@@ -132,7 +144,9 @@ export function resolveProfilePhotoSrc(
     url = mediaUrl(raw);
   }
 
-  if (!url || !cacheVersion) return url;
+  if (!url) return url;
+  const version = cacheVersion || (raw.startsWith("blob:") ? null : raw);
+  if (!version) return url;
   const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}v=${encodeURIComponent(cacheVersion)}`;
+  return `${url}${sep}v=${encodeURIComponent(version)}`;
 }

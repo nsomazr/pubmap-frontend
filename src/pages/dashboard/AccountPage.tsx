@@ -76,7 +76,7 @@ function SectionCard({
 }) {
   return (
     <section className="gre-card overflow-hidden p-0">
-      <div className="flex items-start gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-4 sm:px-6">
+      <div className="flex flex-wrap items-start gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-4 sm:px-6">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
           <Icon className="h-5 w-5" />
         </div>
@@ -84,7 +84,7 @@ function SectionCard({
           <h2 className="font-semibold text-ink">{title}</h2>
           {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
         </div>
-        {action}
+        {action && <div className="w-full sm:ml-auto sm:w-auto">{action}</div>}
       </div>
       <div className="p-5 sm:p-6">{children}</div>
     </section>
@@ -336,8 +336,8 @@ export function AccountPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
-        <div className="space-y-6">
+      <div className={`grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start${profileEditing ? " pb-24 xl:pb-0" : ""}`}>
+        <div className="order-2 space-y-6 xl:order-none">
           <SectionCard
             icon={User}
             title="Profile"
@@ -369,10 +369,7 @@ export function AccountPage() {
                 {profileMsg && <Alert type={profileMsg.type} message={profileMsg.text} />}
 
                 {user && (
-                  <ProfilePhotoEditor
-                    user={{ ...user, firstname, lastname, photo: user.photo }}
-                    onUpdated={refreshUser}
-                  />
+                  <ProfilePhotoEditor user={user} onUpdated={refreshUser} />
                 )}
 
                 <Select
@@ -492,7 +489,7 @@ export function AccountPage() {
           </SectionCard>
         </div>
 
-        <aside className="space-y-4 xl:sticky xl:top-6">
+        <aside className="order-1 space-y-4 xl:order-none xl:sticky xl:top-6">
           <AccountProfilePreview
             user={user}
             draft={previewProfile}
@@ -512,8 +509,12 @@ export function AccountPage() {
                 >
                   Update profile
                 </Button>
-                {isDirty && (
+                {isDirty ? (
                   <p className="text-center text-xs text-amber-700">You have unsaved profile changes.</p>
+                ) : (
+                  <p className="text-center text-xs text-slate-500">
+                    Name, affiliation, and interests save here. Profile photo saves separately above.
+                  </p>
                 )}
                 <Button type="button" variant="secondary" className="w-full" onClick={cancelProfileEdit}>
                   Cancel editing
@@ -633,6 +634,20 @@ export function AccountPage() {
               name accurate so collaborators can find you.
             </p>
           </div>
+
+          {profileEditing && (
+            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 p-4 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm xl:hidden pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <Button
+                type="submit"
+                form="account-profile-form"
+                className="w-full"
+                loading={profileMutation.isPending}
+                disabled={!isDirty && !profileMutation.isPending}
+              >
+                Update profile
+              </Button>
+            </div>
+          )}
         </aside>
       </div>
     </div>

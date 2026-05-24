@@ -333,7 +333,11 @@ export function MapSearchHub({
         onSearch(e);
         setOpen(false);
       }}
-      className="map-search-hub-form overflow-hidden rounded-2xl bg-white/95 shadow-xl shadow-slate-900/15 ring-1 ring-white/90 backdrop-blur-xl"
+      className={`map-search-hub-form overflow-hidden rounded-2xl bg-white/95 shadow-xl shadow-slate-900/15 ring-1 ring-white/90 backdrop-blur-xl${
+        isCompact
+          ? " max-h-[calc(100dvh-5.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto overscroll-contain"
+          : ""
+      }`}
     >
       <div className="flex items-start gap-2 border-b border-slate-100 px-4 py-4">
         <DragHandle className="mt-0.5 rounded-lg p-1 hover:bg-slate-100" />
