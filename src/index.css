@@ -846,6 +846,21 @@ body {
   box-shadow: none;
 }
 
+.gre-scrollable-select-menu {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.45) transparent;
+}
+
+.gre-scrollable-select-menu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.gre-scrollable-select-menu::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.45);
+}
+
 .leaflet-top.leaflet-left .leaflet-control-zoom {
   display: none !important;
 }

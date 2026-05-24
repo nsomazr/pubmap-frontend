@@ -5,6 +5,7 @@ import {
   normalizeInstitutionLabel,
   useInstitutionsByCountry,
 } from "../../lib/institutions";
+import { ScrollableSelect } from "../ui/ScrollableSelect";
 
 interface Props {
   countryCode: string;
@@ -57,6 +58,19 @@ export function CountryInstitutionPicker({
     [countries, countryCode]
   );
 
+  const countryOptions = useMemo(
+    () => countries.map((row) => ({ value: row.code, label: row.name })),
+    [countries]
+  );
+
+  const institutionOptions = useMemo(
+    () => [
+      ...catalog.map((row) => ({ value: row.label, label: row.label })),
+      { value: "__custom__", label: "Not listed: type full official name" },
+    ],
+    [catalog]
+  );
+
   const handleCountryChange = (next: string) => {
     onCountryChange(next);
     onInstitutionChange("");
@@ -82,23 +96,23 @@ export function CountryInstitutionPicker({
           {required && <span className="text-red-500"> *</span>}
         </label>
         <div className="relative">
-          <Globe2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <select
-            value={countryCode}
-            required={required}
-            disabled={loadingCountries}
-            onChange={(e) => handleCountryChange(e.target.value)}
-            className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-8 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-          >
-            <option value="">Select your country…</option>
-            {countries.map((row) => (
-              <option key={row.code} value={row.code}>
-                {row.name}
-              </option>
-            ))}
-          </select>
-          {loadingCountries && (
-            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-brand-600" />
+          {loadingCountries ? (
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600">
+              <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+              Loading countries…
+            </div>
+          ) : (
+            <ScrollableSelect
+              value={countryCode}
+              onChange={handleCountryChange}
+              options={countryOptions}
+              placeholder="Select your country…"
+              required={required}
+              aria-label={countryLabel}
+              icon={<Globe2 className="h-4 w-4" />}
+              triggerClassName="pl-3 pr-3"
+              maxMenuHeight={280}
+            />
           )}
         </div>
         {selectedCountry && !selectedCountry.has_catalog && (
@@ -132,27 +146,17 @@ export function CountryInstitutionPicker({
                 placeholder="Filter universities in this country…"
                 className="mb-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
               />
-              <div className="relative">
-                <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <select
-                  value={institution || ""}
-                  required={required && !customMode}
-                  disabled={loadingCatalog}
-                  onChange={(e) => handleInstitutionSelect(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-8 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                >
-                  <option value="">Choose your institution…</option>
-                  {catalog.map((row) => (
-                    <option key={row.id} value={row.label}>
-                      {row.label}
-                    </option>
-                  ))}
-                  <option value="__custom__">Not listed: type full official name</option>
-                </select>
-                {loadingCatalog && (
-                  <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-brand-600" />
-                )}
-              </div>
+              <ScrollableSelect
+                value={institution}
+                onChange={handleInstitutionSelect}
+                options={institutionOptions}
+                placeholder="Choose your institution…"
+                required={required && !customMode}
+                aria-label={institutionLabel}
+                icon={<Building2 className="h-4 w-4" />}
+                triggerClassName="pl-3 pr-3"
+                maxMenuHeight={280}
+              />
             </>
           )}
 

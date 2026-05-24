@@ -95,7 +95,7 @@ export function InstitutionPicker({
       left: rect.left,
       top: rect.bottom + gap,
       width: rect.width,
-      maxHeight: Math.min(224, Math.max(120, spaceBelow)),
+      maxHeight: Math.min(280, Math.max(120, spaceBelow)),
     });
   }, []);
 
@@ -132,7 +132,7 @@ export function InstitutionPicker({
           <ul
             ref={menuRef}
             data-gre-picker-menu
-            className="gre-card fixed z-[10000] overflow-y-auto overscroll-contain p-1 shadow-2xl ring-1 ring-slate-900/5"
+            className="gre-scrollable-select-menu fixed z-[10000] overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white p-1 shadow-2xl ring-1 ring-slate-900/5"
             style={{
               left: menuRect.left,
               top: menuRect.top,
