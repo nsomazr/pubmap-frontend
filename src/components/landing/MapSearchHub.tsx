@@ -30,6 +30,7 @@ interface Props {
   suggestionSource: Publication[];
   resultCount: number;
   searching: boolean;
+  searchError?: string | null;
   hasResults: boolean;
   /** When true, the mobile results sheet is expanded (hide duplicate results chip). */
   resultsPanelVisible?: boolean;
@@ -159,6 +160,7 @@ export function MapSearchHub({
   suggestionSource,
   resultCount,
   searching,
+  searchError = null,
   hasResults,
   resultsPanelVisible = false,
   onOpenResults,
@@ -267,15 +269,32 @@ export function MapSearchHub({
 
   const filterChipsRow =
     filterChips.length > 0 ? (
-      <MapFilterChips
-        chips={filterChips}
-        onClearAll={onClear}
-        className="px-1 pt-1"
-      />
+      <MapFilterChips chips={filterChips} onClearAll={onClear} />
+    ) : null;
+
+  const emptyResultsHint =
+    hasResults && resultCount === 0 && !searching && !open && !resultsPanelVisible ? (
+      <div className="rounded-xl bg-slate-800/92 px-3 py-2.5 text-center text-xs font-medium leading-relaxed text-white shadow-md ring-1 ring-slate-900/10">
+        No matches for this search.{" "}
+        <button
+          type="button"
+          onClick={onClear}
+          className="font-semibold underline underline-offset-2"
+        >
+          Show all on map
+        </button>
+      </div>
+    ) : null;
+
+  const searchErrorHint =
+    searchError && !open ? (
+      <div className="rounded-xl bg-red-600/95 px-3 py-2.5 text-center text-xs font-medium text-white shadow-md ring-1 ring-red-700/20">
+        {searchError}
+      </div>
     ) : null;
 
   const collapsedBar = (
-    <div className="map-search-hub-trigger flex w-full flex-col gap-1.5">
+    <div className="map-search-hub-trigger flex w-full flex-col gap-2">
       <div className="flex w-full items-stretch overflow-hidden rounded-full bg-white/95 text-left shadow-lg shadow-slate-900/10 ring-1 ring-white/90 backdrop-blur-xl transition hover:shadow-xl">
         <button
           type="button"
@@ -299,7 +318,11 @@ export function MapSearchHub({
           </>
         )}
       </div>
-      {filterChipsRow}
+      {filterChipsRow && (
+        <div className="rounded-2xl bg-white/95 px-2.5 py-2 shadow-md ring-1 ring-white/90 backdrop-blur-xl">
+          {filterChipsRow}
+        </div>
+      )}
     </div>
   );
 
@@ -444,7 +467,8 @@ export function MapSearchHub({
     </form>
   );
 
-  const resultsBtn = hasResults && !open && !resultsPanelVisible && (
+  const resultsBtn =
+    hasResults && resultCount > 0 && !open && !resultsPanelVisible && (
     <button
       type="button"
       onClick={onOpenResults}
@@ -465,11 +489,15 @@ export function MapSearchHub({
       {expandUpward ? (
         <>
           {resultsBtn}
+          {emptyResultsHint}
+          {searchErrorHint}
           {open ? searchForm : collapsedBar}
         </>
       ) : (
         <>
           {open ? searchForm : collapsedBar}
+          {emptyResultsHint}
+          {searchErrorHint}
           {resultsBtn}
         </>
       )}

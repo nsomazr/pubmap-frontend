@@ -108,7 +108,7 @@ export function MapFilterChips({ chips, onClearAll, className = "" }: ChipsProps
           <X className="h-3 w-3 shrink-0 opacity-70" />
         </button>
       ))}
-      {onClearAll && chips.length > 1 && (
+      {onClearAll && chips.length > 0 && (
         <button
           type="button"
           onClick={onClearAll}

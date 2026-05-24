@@ -284,29 +284,6 @@ export function HomePage() {
           </div>
         )}
 
-        {!isLoading && !isError && hasSearched && publications.length === 0 && (
-          <div className="pointer-events-none absolute left-1/2 top-24 z-[1001] -translate-x-1/2 px-4 md:top-20">
-            <p className="pointer-events-auto max-w-[min(100%,20rem)] rounded-full bg-slate-800 px-4 py-2 text-center text-xs font-medium text-white shadow-lg">
-              No matches for this search.{" "}
-              <button
-                type="button"
-                className="font-bold underline"
-                onClick={clearFilters}
-              >
-                Show all on map
-              </button>
-            </p>
-          </div>
-        )}
-
-        {searchError && (
-          <div className="pointer-events-none absolute left-1/2 top-24 z-[1001] -translate-x-1/2 px-4 md:top-20">
-            <p className="pointer-events-auto max-w-[min(100%,20rem)] rounded-full bg-red-600 px-4 py-2 text-center text-xs font-medium text-white shadow-lg">
-              {searchError}
-            </p>
-          </div>
-        )}
-
         <DraggableMapPanel boundsRef={mapChromeBoundsRef}>
           <MapSearchHub
             author={author}
@@ -319,6 +296,7 @@ export function HomePage() {
             suggestionSource={mapPublications}
             resultCount={publications.length}
             searching={searching}
+            searchError={searchError}
             hasResults={hasSearched}
             resultsPanelVisible={resultsRailOpen && !resultsRailCollapsed}
             onOpenResults={() => {
