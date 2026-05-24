@@ -24,7 +24,7 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { useAuth } from "../../context/AuthContext";
-import api from "../../lib/api";
+import api, { parseApiError } from "../../lib/api";
 import { useCountries } from "../../lib/countries";
 import {
   greAccountStatDraft,
@@ -215,12 +215,13 @@ export function AccountPage() {
   const previewProfile = profileEditing ? draftProfile : savedProfile;
   const displayName = userFormalName(savedProfile) || "Your name";
 
-  const { data: stats } = useQuery({
+  const { data: stats, isError: statsError } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
       const { data } = await api.get<DashboardStats>("/dashboard/stats/");
       return data;
     },
+    retry: 1,
   });
 
   const profileMutation = useMutation({
@@ -240,8 +241,11 @@ export function AccountPage() {
       setProfileMsg({ type: "success", text: "Profile updated successfully." });
       setProfileEditing(false);
     },
-    onError: () => {
-      setProfileMsg({ type: "error", text: "Could not update profile. Check your details." });
+    onError: (err) => {
+      setProfileMsg({
+        type: "error",
+        text: parseApiError(err, "Could not update profile. Check your details."),
+      });
     },
   });
 
@@ -324,6 +328,11 @@ export function AccountPage() {
       />
 
       <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {statsError && (
+          <p className="col-span-full rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-100">
+            Could not load publication stats. If this persists, sign out and sign in again.
+          </p>
+        )}
         {statItems.map(({ label, value, color, bg, status }) => (
           <Link
             key={label}

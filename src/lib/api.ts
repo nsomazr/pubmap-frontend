@@ -8,6 +8,39 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json", ...ngrokHeaders() },
 });
 
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  const refresh = localStorage.getItem("refresh_token");
+  if (!refresh) return null;
+
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post<{ access: string; refresh?: string }>(
+        `${API_URL}/auth/refresh/`,
+        { refresh },
+        { headers: ngrokHeaders() }
+      )
+      .then(({ data }) => {
+        localStorage.setItem("access_token", data.access);
+        if (data.refresh) {
+          localStorage.setItem("refresh_token", data.refresh);
+        }
+        return data.access;
+      })
+      .catch(() => {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        return null;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -29,23 +62,51 @@ api.interceptors.response.use(
   (r) => r,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
-      original._retry = true;
-      const refresh = localStorage.getItem("refresh_token");
-      if (refresh) {
-        try {
-          const { data } = await axios.post(`${API_URL}/auth/refresh/`, { refresh });
-          localStorage.setItem("access_token", data.access);
-          original.headers.Authorization = `Bearer ${data.access}`;
-          return api(original);
-        } catch {
-          localStorage.clear();
-          window.location.href = "/login";
-        }
-      }
+    if (!original || error.response?.status !== 401 || original._retry) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    original._retry = true;
+    const access = await refreshAccessToken();
+    if (!access) {
+      if (!window.location.pathname.startsWith("/login")) {
+        window.location.href = "/login";
+      }
+      return Promise.reject(error);
+    }
+
+    original.headers.Authorization = `Bearer ${access}`;
+    return api(original);
   }
 );
+
+export function parseApiError(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as
+      | { detail?: string }
+      | Record<string, string | string[]>
+      | undefined;
+    if (data && typeof data === "object") {
+      if (typeof data.detail === "string" && data.detail.trim()) {
+        return data.detail;
+      }
+      for (const value of Object.values(data)) {
+        if (typeof value === "string" && value.trim()) return value;
+        if (Array.isArray(value) && typeof value[0] === "string") return value[0];
+      }
+    }
+    if (error.response?.status === 401) {
+      return "Your session expired. Please sign in again.";
+    }
+    if (error.response?.status === 429) {
+      return "Too many requests. Please wait a moment and try again.";
+    }
+    if (!error.response) {
+      return "Could not reach the GRE server. Check your connection or try again shortly.";
+    }
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
 
 export default api;
