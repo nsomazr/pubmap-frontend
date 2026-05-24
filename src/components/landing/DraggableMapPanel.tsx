@@ -28,6 +28,8 @@ interface Props {
   storageKey?: string;
   /** search-bar: pinned under nav on mobile. floating-card: draggable everywhere. */
   layout?: DraggableMapPanelLayout;
+  /** When false, panel always opens at the default spot (e.g. search bar on map refresh). */
+  persistPosition?: boolean;
 }
 
 function loadPosition(key: string): Position | null {
@@ -68,9 +70,11 @@ export function DraggableMapPanel({
   children,
   storageKey = DEFAULT_STORAGE_KEY,
   layout = "search-bar",
+  persistPosition: persistPositionProp,
 }: Props) {
   const isCompact = useIsMobile();
   const isFloating = layout === "floating-card";
+  const persistPosition = persistPositionProp ?? isFloating;
   const mobilePinned = isCompact && !isFloating;
   const dragEnabled = !mobilePinned;
   const panelRef = useRef<HTMLDivElement>(null);
@@ -122,11 +126,14 @@ export function DraggableMapPanel({
       const margin = 12;
 
       let defaultX = (bw - pw) / 2;
-      let defaultY = 16;
+      let defaultY = margin;
 
       if (isFloating) {
         defaultX = Math.max(margin, bw - pw - margin);
         defaultY = Math.max(margin, bh - ph - (isCompact ? 72 : 24));
+      } else {
+        // Center-top below the floating map nav (matches mobile pinned offset).
+        defaultY = Math.max(margin, 72);
       }
 
       const x = candidate?.x ?? defaultX;
@@ -139,11 +146,18 @@ export function DraggableMapPanel({
 
   useLayoutEffect(() => {
     if (mobilePinned) return;
-    const saved = loadPosition(storageKey);
+    if (!persistPosition) {
+      try {
+        sessionStorage.removeItem(storageKey);
+      } catch {
+        /* ignore */
+      }
+    }
+    const saved = persistPosition ? loadPosition(storageKey) : null;
     if (applyPosition(saved)) return;
     const id = requestAnimationFrame(() => applyPosition(saved));
     return () => cancelAnimationFrame(id);
-  }, [applyPosition, mobilePinned, storageKey]);
+  }, [applyPosition, mobilePinned, persistPosition, storageKey]);
 
   useLayoutEffect(() => {
     updateExpandDirection();
@@ -163,8 +177,8 @@ export function DraggableMapPanel({
   }, [clampPosition, updateExpandDirection, mobilePinned]);
 
   useEffect(() => {
-    if (pos) savePosition(storageKey, pos);
-  }, [pos, storageKey]);
+    if (pos && persistPosition) savePosition(storageKey, pos);
+  }, [pos, persistPosition, storageKey]);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (!dragEnabled || e.button !== 0) return;
@@ -202,7 +216,7 @@ export function DraggableMapPanel({
       ? { left: pos.x, top: pos.y }
       : isFloating
         ? undefined
-        : { left: "50%", top: 16, transform: "translateX(-50%)" };
+        : { left: "50%", top: 72, transform: "translateX(-50%)" };
 
   const orderedChildren = useMemo(() => {
     const items = Children.toArray(children);

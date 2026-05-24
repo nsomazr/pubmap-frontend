@@ -1,8 +1,12 @@
 import { MapPin, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { abstractPlainText } from "../../lib/abstractText";
 import { Button } from "../ui/Button";
 import { PdfPreview } from "./PdfPreview";
+
+export const AUTHOR_SUBMISSION_DECLARATION =
+  "I declare that this work is my own and that the Global Research Explorer (GRE) has no obligation or liability regarding any claims, including complaints from third parties, related to this article.";
 
 interface Props {
   open: boolean;
@@ -31,6 +35,12 @@ export function SubmissionReviewDialog({
   onClose,
   onConfirm,
 }: Props) {
+  const [declared, setDeclared] = useState(false);
+
+  useEffect(() => {
+    if (!open) setDeclared(false);
+  }, [open]);
+
   if (!open) return null;
 
   return createPortal(
@@ -105,13 +115,25 @@ export function SubmissionReviewDialog({
               className="min-h-[280px]"
             />
           </div>
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-3.5">
+            <input
+              type="checkbox"
+              checked={declared}
+              onChange={(e) => setDeclared(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+            />
+            <span className="text-sm leading-relaxed text-slate-700">
+              {AUTHOR_SUBMISSION_DECLARATION}
+            </span>
+          </label>
         </div>
 
         <div className="flex flex-wrap gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-4">
           <Button type="button" variant="secondary" onClick={onClose} disabled={submitting}>
             Go back and edit
           </Button>
-          <Button type="button" onClick={onConfirm} loading={submitting}>
+          <Button type="button" onClick={onConfirm} loading={submitting} disabled={!declared}>
             Confirm & submit for review
           </Button>
         </div>

@@ -350,7 +350,9 @@ export function PublicationManagePage() {
 
       if (options?.thenSubmit) {
         try {
-          await api.post(`/publications/${data.id}/submit_review/`);
+          await api.post(`/publications/${data.id}/submit_review/`, {
+            author_declaration: true,
+          });
           setSubmitReviewOpen(false);
           navigate("/dashboard/publications?status=1");
         } catch (err: unknown) {

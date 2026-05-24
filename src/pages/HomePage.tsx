@@ -284,7 +284,7 @@ export function HomePage() {
           </div>
         )}
 
-        <DraggableMapPanel boundsRef={mapChromeBoundsRef}>
+        <DraggableMapPanel boundsRef={mapChromeBoundsRef} persistPosition={false}>
           <MapSearchHub
             author={author}
             affiliation={affiliation}
