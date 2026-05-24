@@ -48,6 +48,7 @@ export function HomePage() {
   const [deepLinkPub, setDeepLinkPub] = useState<Publication | null>(null);
   const mapChromeBoundsRef = useRef<HTMLElement | null>(null);
   const skipAutoSearchRef = useRef(true);
+  const userDismissedResultsRailRef = useRef(false);
 
   const debouncedAuthor = useDebouncedValue(author, 400);
   const debouncedAffiliation = useDebouncedValue(affiliation, 400);
@@ -93,7 +94,10 @@ export function HomePage() {
   });
 
   const runSearch = useCallback(
-    async (filters?: MapSearchFilters) => {
+    async (
+      filters?: MapSearchFilters,
+      options?: { revealResults?: boolean }
+    ) => {
       const active = filters ?? {
         author: debouncedAuthor,
         affiliation: debouncedAffiliation,
@@ -114,8 +118,13 @@ export function HomePage() {
           },
         });
         setResults(data);
-        setResultsRailOpen(true);
-        setResultsRailCollapsed(false);
+        if (options?.revealResults) {
+          userDismissedResultsRailRef.current = false;
+          setResultsRailOpen(true);
+          setResultsRailCollapsed(false);
+        } else if (!userDismissedResultsRailRef.current) {
+          setResultsRailOpen(true);
+        }
       } catch {
         setSearchError("Search failed. Check your connection and try again.");
       } finally {
@@ -128,13 +137,16 @@ export function HomePage() {
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
     skipAutoSearchRef.current = false;
-    await runSearch({
-      author,
-      affiliation,
-      title,
-      categoryId,
-      subCategoryId,
-    });
+    await runSearch(
+      {
+        author,
+        affiliation,
+        title,
+        categoryId,
+        subCategoryId,
+      },
+      { revealResults: true }
+    );
   };
 
   const clearFilters = () => {
@@ -145,6 +157,8 @@ export function HomePage() {
     setSubCategoryId("");
     setResults(null);
     setResultsRailOpen(false);
+    setResultsRailCollapsed(false);
+    userDismissedResultsRailRef.current = false;
     skipAutoSearchRef.current = true;
   };
 
@@ -156,7 +170,7 @@ export function HomePage() {
       debouncedTitle ||
       categoryId ||
       subCategoryId;
-    if (results === null && !hasFilter) return;
+    if (!hasFilter) return;
     void runSearch();
   }, [
     debouncedAuthor,
@@ -165,7 +179,6 @@ export function HomePage() {
     categoryId,
     subCategoryId,
     runSearch,
-    results,
   ]);
 
   const mapPublications = data?.publications ?? [];
@@ -308,6 +321,7 @@ export function HomePage() {
             searching={searching}
             hasResults={hasSearched}
             onOpenResults={() => {
+              userDismissedResultsRailRef.current = false;
               setResultsRailOpen(true);
               setResultsRailCollapsed(false);
             }}
@@ -340,7 +354,11 @@ export function HomePage() {
             open={resultsRailOpen}
             collapsed={resultsRailCollapsed}
             onToggleCollapse={() => setResultsRailCollapsed((c) => !c)}
-            onClose={() => setResultsRailOpen(false)}
+            onClose={() => {
+              userDismissedResultsRailRef.current = true;
+              setResultsRailOpen(false);
+              setResultsRailCollapsed(false);
+            }}
           />
         )}
 
