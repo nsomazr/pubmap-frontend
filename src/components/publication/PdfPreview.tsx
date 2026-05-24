@@ -6,6 +6,8 @@ import { mediaUrl } from "../../lib/mediaUrl";
 interface Props {
   file?: File | null;
   documentPath?: string | null;
+  /** Direct URL for PDF preview (e.g. API-generated GRE publication PDF). */
+  previewUrl?: string | null;
   className?: string;
   title?: string;
   /** Show fullscreen expand control (default true when a PDF is available). */
@@ -87,6 +89,7 @@ function PreviewFrame({
 export function PdfPreview({
   file,
   documentPath,
+  previewUrl,
   className = "",
   title = "Document preview",
   allowExpand = true,
@@ -109,7 +112,10 @@ export function PdfPreview({
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const remoteUrl = useMemo(() => mediaUrl(documentPath ?? null), [documentPath]);
+  const remoteUrl = useMemo(
+    () => previewUrl ?? mediaUrl(documentPath ?? null),
+    [previewUrl, documentPath]
+  );
 
   useEffect(() => {
     if (file || !remoteUrl) {
@@ -166,12 +172,12 @@ export function PdfPreview({
   }, [expanded]);
 
   const src = file ? blobUrl : remoteBlobUrl ?? remoteUrl;
-  const pdf = isPdf(file, documentPath);
+  const pdf = previewUrl ? true : isPdf(file, documentPath);
   const canExpand = allowExpand && pdf && src && !remoteLoadError;
   const fileMissing =
     remoteLoadError && remoteHttpStatus != null && [404, 410].includes(remoteHttpStatus);
 
-  if (!file && !documentPath) {
+  if (!file && !documentPath && !previewUrl) {
     if (emptyState === "publication") {
       return <NoPdfAvailable className={className} />;
     }

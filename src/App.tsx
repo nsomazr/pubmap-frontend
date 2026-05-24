@@ -62,6 +62,9 @@ const AuthorsPage = lazy(() =>
 const CategoriesPage = lazy(() =>
   import("./pages/dashboard/CategoriesPage").then((m) => ({ default: m.CategoriesPage }))
 );
+const ManagersPage = lazy(() =>
+  import("./pages/dashboard/ManagersPage").then((m) => ({ default: m.ManagersPage }))
+);
 const EventsAdminPage = lazy(() =>
   import("./pages/dashboard/EventsAdminPage").then((m) => ({ default: m.EventsAdminPage }))
 );
@@ -165,6 +168,7 @@ function AppRoutes() {
           <Route path="messages" element={<MessagesPage />} />
           <Route path="review" element={<AdminReviewPage />} />
           <Route path="authors" element={<AuthorsPage />} />
+          <Route path="managers" element={<ManagersPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="events" element={<EventsAdminPage />} />
           <Route path="ads" element={<AdsPage />} />

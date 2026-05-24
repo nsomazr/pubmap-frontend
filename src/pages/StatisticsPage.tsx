@@ -19,6 +19,7 @@ import {
   Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { formatGrePaperTitle } from "../lib/grePaperTitle";
 import api from "../lib/api";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { AnimatedCounter } from "../components/stats/AnimatedCounter";
@@ -295,7 +296,7 @@ export function StatisticsPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="line-clamp-2 font-semibold text-ink group-hover:text-brand-700">
-                          {paper.title}
+                          {formatGrePaperTitle(paper.title, paper.short_number)}
                         </h3>
                         <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-500">
                           <span className="inline-flex items-center gap-1">

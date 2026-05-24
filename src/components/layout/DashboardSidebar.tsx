@@ -14,6 +14,7 @@ import {
   Plus,
   Settings,
   Shield,
+  UserCog,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -36,6 +37,7 @@ const mainNav: { to: string; label: string; icon: LucideIcon; end?: boolean }[] 
 const adminNav: { to: string; label: string; icon: LucideIcon }[] = [
   { to: "/dashboard/operations", label: "Operations", icon: Shield },
   { to: "/dashboard/review", label: "Review queue", icon: ClipboardCheck },
+  { to: "/dashboard/managers", label: "Managers", icon: UserCog },
   { to: "/dashboard/authors", label: "Users", icon: Users },
   { to: "/dashboard/categories", label: "Categories", icon: BookOpen },
   { to: "/dashboard/events", label: "Events", icon: Calendar },

@@ -11,6 +11,7 @@ import {
 import { useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { PaperLogoUploadField } from "../../components/admin/PaperLogoUploadField";
 import { EmptyState } from "../../components/dashboard/EmptyState";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { SubcategoryVisual } from "../../components/taxonomy/SubcategoryVisual";
@@ -20,7 +21,7 @@ import api from "../../lib/api";
 import { greStatBgBrand, greStatBgTeal } from "../../lib/greTheme";
 import { resolveCategoryVisual } from "../../lib/taxonomyVisuals";
 import { isPlatformAdmin } from "../../lib/userAccess";
-import type { Category, CategoryManagerRow } from "../../types";
+import type { Category } from "../../types";
 
 function invalidateTaxonomy(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ["categories-admin"] });
@@ -43,100 +44,18 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
-function CategoryManagersSection({ categoryId }: { categoryId: number }) {
-  const queryClient = useQueryClient();
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-
-  const { data: managers = [], isLoading } = useQuery({
-    queryKey: ["category-managers", categoryId],
-    queryFn: async () => {
-      const { data } = await api.get<{ managers: CategoryManagerRow[] }>(
-        `/categories/${categoryId}/managers/`
-      );
-      return data.managers ?? [];
-    },
-  });
-
-  const assignMutation = useMutation({
-    mutationFn: () =>
-      api.post(`/categories/${categoryId}/managers/assign/`, { email: email.trim() }),
-    onSuccess: () => {
-      setEmail("");
-      setError("");
-      queryClient.invalidateQueries({ queryKey: ["category-managers", categoryId] });
-      queryClient.invalidateQueries({ queryKey: ["categories-admin"] });
-    },
-    onError: () => setError("Could not assign manager. Check the email and try again."),
-  });
-
-  const removeMutation = useMutation({
-    mutationFn: (userId: number) =>
-      api.post(`/categories/${categoryId}/managers/remove/`, { user_id: userId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["category-managers", categoryId] });
-      queryClient.invalidateQueries({ queryKey: ["categories-admin"] });
-    },
-  });
-
+function CategoryManagersLink({ categoryId, count }: { categoryId: number; count: number }) {
   return (
     <div className="border-t border-slate-100 bg-white px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Category managers</p>
-      <p className="mt-1 text-xs text-slate-500">
-        Managers can review pending submissions only for this category.
+      <p className="text-xs text-slate-500">
+        {count} manager{count === 1 ? "" : "s"} assigned to this category.
       </p>
-      {isLoading ? (
-        <p className="mt-2 text-xs text-slate-400">Loading managers…</p>
-      ) : managers.length === 0 ? (
-        <p className="mt-2 text-xs text-slate-400">No managers assigned yet.</p>
-      ) : (
-        <ul className="mt-2 space-y-1">
-          {managers.map((manager) => (
-            <li
-              key={manager.id}
-              className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs"
-            >
-              <span className="min-w-0 truncate">
-                <span className="font-medium text-slate-700">{manager.full_name || manager.email}</span>
-                <span className="text-slate-400"> · {manager.email}</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => removeMutation.mutate(manager.user_id)}
-                className="shrink-0 font-semibold text-red-600 hover:underline"
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <form
-        className="mt-3 flex flex-wrap items-center gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setError("");
-          if (email.trim()) assignMutation.mutate();
-        }}
+      <Link
+        to={`/dashboard/managers?category=${categoryId}`}
+        className="mt-2 inline-flex text-xs font-semibold text-brand-700 hover:underline"
       >
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Manager email…"
-          className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs"
-        />
-        <Button
-          type="submit"
-          variant="secondary"
-          className="!px-2.5 !py-1.5 !text-xs"
-          loading={assignMutation.isPending}
-          disabled={!email.trim()}
-        >
-          Assign
-        </Button>
-      </form>
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+        Manage managers
+      </Link>
     </div>
   );
 }
@@ -197,7 +116,7 @@ function CategoryCard({
       </div>
 
       <form
-        className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/70 px-3 py-2.5"
+        className="grid gap-3 border-t border-slate-100 bg-slate-50/70 px-3 py-3"
         onSubmit={(e) => {
           e.preventDefault();
           if (subDraft.trim()) onAddSubcategory();
@@ -208,22 +127,13 @@ function CategoryCard({
           value={subDraft}
           onChange={(e) => onSubDraftChange(e.target.value)}
           placeholder="New subcategory name…"
-          className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
         />
-        <label className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-brand-200">
-          Logo
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
-            className="hidden"
-            onChange={(e) => onSubIconChange(e.target.files?.[0] ?? null)}
-          />
-        </label>
-        {subIconFile && (
-          <span className="max-w-[88px] truncate text-[10px] text-brand-700" title={subIconFile.name}>
-            {subIconFile.name}
-          </span>
-        )}
+        <PaperLogoUploadField
+          label="Subcategory paper logo"
+          file={subIconFile}
+          onChange={onSubIconChange}
+        />
         <Button
           type="submit"
           variant="secondary"
@@ -232,11 +142,11 @@ function CategoryCard({
           disabled={!subDraft.trim()}
         >
           <Plus className="h-4 w-4" />
-          Add
+          Add subcategory
         </Button>
       </form>
 
-      <CategoryManagersSection categoryId={category.id} />
+      <CategoryManagersLink categoryId={category.id} count={category.manager_count ?? 0} />
     </article>
   );
 }
@@ -246,6 +156,7 @@ export function CategoriesPage() {
   if (!isPlatformAdmin(user)) return <Navigate to="/dashboard" replace />;
 
   const [name, setName] = useState("");
+  const [categoryLogo, setCategoryLogo] = useState<File | null>(null);
   const [query, setQuery] = useState("");
   const [subDrafts, setSubDrafts] = useState<Record<number, string>>({});
   const [subIconDrafts, setSubIconDrafts] = useState<Record<number, File | null>>({});
@@ -277,9 +188,21 @@ export function CategoriesPage() {
   }, [categories, query]);
 
   const createCategoryMutation = useMutation({
-    mutationFn: () => api.post("/categories/", { name: name.trim(), status: "active" }),
+    mutationFn: async () => {
+      const { data } = await api.post<{ id: number }>("/categories/", {
+        name: name.trim(),
+        status: "active",
+      });
+      if (categoryLogo) {
+        const form = new FormData();
+        form.append("icon", categoryLogo);
+        await api.post(`/categories/${data.id}/upload_icon/`, form);
+      }
+      return data;
+    },
     onSuccess: () => {
       setName("");
+      setCategoryLogo(null);
       setFormError("");
       invalidateTaxonomy(queryClient);
     },
@@ -321,7 +244,7 @@ export function CategoriesPage() {
     <div className="animate-fade-up space-y-8">
       <PageHeader
         title="Categories"
-        description="Manage the research taxonomy and assign category managers who review submissions for each field."
+        description="Manage the research taxonomy, paper logos, and subcategories used on publications."
         action={
           <Link
             to="/"
@@ -377,7 +300,7 @@ export function CategoriesPage() {
           New category
         </h2>
         <form
-          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+          className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
           onSubmit={(e) => {
             e.preventDefault();
             setFormError("");
@@ -389,11 +312,17 @@ export function CategoriesPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Geology, Environmental Science…"
-            className="flex-1"
           />
-          <Button type="submit" loading={createCategoryMutation.isPending} className="sm:mb-0">
-            Add category
-          </Button>
+          <PaperLogoUploadField
+            label="Category paper logo"
+            file={categoryLogo}
+            onChange={setCategoryLogo}
+          />
+          <div className="flex items-end">
+            <Button type="submit" loading={createCategoryMutation.isPending}>
+              Add category
+            </Button>
+          </div>
         </form>
         {formError && (
           <p className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-brand-900 ring-1 ring-brand-200">

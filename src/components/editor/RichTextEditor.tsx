@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, type CSSProperties } from "react";
 import { loadCkEditor } from "../../lib/ckeditorLoader";
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
   placeholder?: string;
   minHeight?: number;
   required?: boolean;
+  hint?: string;
 }
 
 export function RichTextEditor({
@@ -15,8 +16,9 @@ export function RichTextEditor({
   value,
   onChange,
   placeholder,
-  minHeight = 160,
+  minHeight = 176,
   required,
+  hint,
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Awaited<ReturnType<NonNullable<typeof window.ClassicEditor>["create"]>> | null>(
@@ -84,17 +86,26 @@ export function RichTextEditor({
   }, [value]);
 
   return (
-    <div className="gre-rich-editor space-y-1.5">
-      <label htmlFor={id} className="block text-sm font-medium text-slate-700">
-        {label}
-        {required && <span className="text-red-500"> *</span>}
-      </label>
-      <div
-        id={id}
-        ref={hostRef}
-        className="gre-ckeditor-host rounded-xl border border-slate-200 bg-white shadow-sm"
-        style={{ minHeight }}
-      />
+    <div className="gre-manuscript-field space-y-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <label htmlFor={id} className="text-sm font-semibold text-ink">
+          {label}
+          {required && (
+            <span className="ml-1 text-xs font-bold uppercase tracking-wide text-red-500">
+              Required
+            </span>
+          )}
+        </label>
+        {hint ? <p className="text-xs text-slate-500">{hint}</p> : null}
+      </div>
+      <div className="gre-manuscript-editor-shell overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100/90">
+        <div
+          id={id}
+          ref={hostRef}
+          className="gre-ckeditor-host gre-manuscript-ckeditor"
+          style={{ "--gre-editor-min-height": `${minHeight}px` } as CSSProperties}
+        />
+      </div>
     </div>
   );
 }

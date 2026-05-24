@@ -116,6 +116,7 @@ export interface Publication {
   score?: number;
   gre?: PublicationGre;
   figures?: PublicationFigure[];
+  created_at?: string;
   lifecycle?: {
     previous_status?: number | null;
     archived_at?: string | null;
@@ -265,6 +266,7 @@ export interface Category {
   id: number;
   name: string;
   status: string;
+  icon?: string | null;
   sub_categories?: SubCategory[];
   visual?: SubcategoryVisual;
   manager_count?: number;
@@ -388,6 +390,7 @@ export interface PublicStatsTrendPoint {
 export interface PublicStatsDiscussedPaper {
   id: number;
   title: string;
+  short_number?: string;
   conversations: number;
   replies: number;
   views: number;

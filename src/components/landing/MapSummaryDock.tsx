@@ -1,10 +1,10 @@
-import { ChevronDown, ChevronUp, GripVertical, Loader2, MapPin, Sparkles, X } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, MapPin, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { PublicationSummaryAssistant } from "../publication/PublicationSummaryAssistant";
 import { useMapPanelLayout } from "../../context/MapPanelLayoutContext";
-import { assistantSummarizePublicationStream } from "../../lib/assistant";
-import { FormattedAssistantText } from "../../lib/formatAssistantText";
 import { greAccentBadge } from "../../lib/greTheme";
+import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import type { Publication } from "../../types";
 
 interface Props {
@@ -38,59 +38,13 @@ function SummaryDragHandle() {
 }
 
 export function MapSummaryDock({ publication, onClose }: Props) {
-  const [summary, setSummary] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [streaming, setStreaming] = useState(false);
-  const [error, setError] = useState("");
   const [minimized, setMinimized] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (!publication) return;
     setMinimized(false);
   }, [publication?.id]);
-
-  useEffect(() => {
-    if (!publication) return;
-
-    abortRef.current?.abort();
-    setSummary("");
-    setError("");
-    setLoading(true);
-    setStreaming(true);
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    assistantSummarizePublicationStream(
-      publication.id,
-      {
-        onToken: (t) => setSummary((s) => s + t),
-        onError: (msg) => setError(msg),
-        onDone: () => {
-          setStreaming(false);
-          setLoading(false);
-        },
-      },
-      controller.signal
-    )
-      .catch((err: Error) => {
-        if (err.name === "AbortError") return;
-        setError(
-          err.message ||
-            "GRE Assistant is temporarily unavailable. Please try again in a moment."
-        );
-        setLoading(false);
-        setStreaming(false);
-      });
-
-    return () => controller.abort();
-  }, [publication?.id]);
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [summary]);
 
   if (!publication) return null;
 
@@ -110,7 +64,9 @@ export function MapSummaryDock({ publication, onClose }: Props) {
             className="min-w-0 flex-1 text-left"
           >
             <p className="truncate text-xs font-semibold text-brand-700">Research summary</p>
-            <p className="truncate text-[11px] text-slate-500">{publication.title}</p>
+            <p className="truncate text-[11px] text-slate-500">
+              {formatGrePaperTitle(publication.title, publication.short_number)}
+            </p>
           </button>
           <button
             type="button"
@@ -150,7 +106,7 @@ export function MapSummaryDock({ publication, onClose }: Props) {
                 Research summary
               </p>
               <h3 className="line-clamp-2 text-left text-base font-bold leading-snug text-ink">
-                {publication.title}
+                {formatGrePaperTitle(publication.title, publication.short_number)}
               </h3>
               <p className="mt-1 truncate text-left text-xs font-medium text-slate-600">{author}</p>
               {location && (
@@ -182,16 +138,13 @@ export function MapSummaryDock({ publication, onClose }: Props) {
         </header>
 
         <div ref={scrollRef} className="map-summary-dock-body">
-          {error ? (
-            <p className="text-sm text-amber-800">{error}</p>
-          ) : !summary && loading ? (
-            <span className="inline-flex items-center gap-2 text-sm text-slate-500">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Generating summary…
-            </span>
-          ) : (
-            <FormattedAssistantText content={summary} streaming={streaming} />
-          )}
+          <PublicationSummaryAssistant
+            key={publication.id}
+            publicationId={publication.id}
+            autoGenerate
+            layout="dock"
+            scrollContainerRef={scrollRef}
+          />
         </div>
 
         <footer className="map-summary-dock-footer">

@@ -19,6 +19,7 @@ import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 import { GRE_ADMIN_QUICK_LINK_COLORS, greUrgentIcon, greUrgentRing } from "../../lib/greTheme";
+import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { authorDisplayName } from "../../lib/userDisplay";
 import type { DashboardStats, Publication } from "../../types";
 
@@ -214,7 +215,9 @@ export function AdminOperationsPage() {
                       <p className="text-sm font-medium text-slate-600">
                         {authorDisplayName(pub.author)}
                       </p>
-                      <p className="font-semibold text-ink">{pub.title}</p>
+                      <p className="font-semibold text-ink">
+                        {formatGrePaperTitle(pub.title, pub.short_number)}
+                      </p>
                       {pub.sub_category_name && (
                         <span className="mt-1 inline-block text-xs text-slate-500">
                           {pub.sub_category_name}

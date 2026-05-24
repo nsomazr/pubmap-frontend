@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";
-import type { CollaborationNetworkData, CoAuthorPerson, Publication, PublicationCoAuthors } from "../../types";
+import { publicationCoAuthorsFromPublication } from "../../lib/publicationAuthors";
+import type { CollaborationNetworkData, Publication } from "../../types";
 import { CoAuthorCard } from "./CoAuthorCard";
 import { CollaborationNetwork } from "./CollaborationNetwork";
 
@@ -10,37 +11,8 @@ interface Props {
   publication: Publication;
 }
 
-function fallbackCoAuthors(publication: Publication): PublicationCoAuthors {
-  const author = publication.author;
-  const primary: CoAuthorPerson = {
-    kind: "primary",
-    user_id: author?.id ?? null,
-    fullname:
-      author?.full_name ||
-      `${author?.firstname ?? ""} ${author?.lastname ?? ""}`.trim() ||
-      "Lead author",
-    affiliation: author?.affiliation || "",
-    email: author?.email,
-    role: "Lead author",
-    photo: author?.photo,
-    profile_url: author?.id ? `/researcher/${author.id}` : null,
-    institution_map_url: author?.affiliation
-      ? `/?affiliation=${encodeURIComponent(author.affiliation)}`
-      : "/",
-    is_registered: Boolean(author?.id),
-    ranking: author?.ranking,
-  };
-  const coAuthors: CoAuthorPerson[] = (publication.collaborators || []).map((person) => ({
-    ...person,
-    kind: "coauthor",
-    role: person.role || "Co-author",
-  }));
-  return {
-    primary_author: primary,
-    co_authors: coAuthors,
-    team: [primary, ...coAuthors],
-    total_authors: 1 + coAuthors.length,
-  };
+function fallbackCoAuthors(publication: Publication) {
+  return publicationCoAuthorsFromPublication(publication);
 }
 
 export function CoAuthorsPanel({ publication }: Props) {

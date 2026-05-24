@@ -68,7 +68,16 @@ function isHexColor(value: string | undefined | null) {
   return Boolean(value && /^#[0-9a-fA-F]{3,8}$/.test(value.trim()));
 }
 
-export function resolveCategoryVisual(name?: string | null): SubcategoryVisual {
+function isIconPath(value?: string | null) {
+  if (!value || isHexColor(value)) return false;
+  const text = value.trim();
+  return text.startsWith("uploads/") || text.startsWith("media/") || text.includes("/");
+}
+
+export function resolveCategoryVisual(
+  name?: string | null,
+  options?: { iconField?: string | null }
+): SubcategoryVisual {
   const key = normalizeName(name);
   const preset = CATEGORY_VISUALS[key] ?? {
     icon_key: DEFAULT_ICON_KEY,
@@ -79,6 +88,7 @@ export function resolveCategoryVisual(name?: string | null): SubcategoryVisual {
     category_name: (name || "").trim() || "Research",
     icon_key: preset.icon_key,
     accent_color: preset.accent_color,
+    logo_url: isIconPath(options?.iconField) ? options!.iconField!.trim() : undefined,
   };
 }
 
@@ -105,6 +115,7 @@ export function resolveSubcategoryVisual(
     category_name: options?.categoryName?.trim() || category.name,
     icon_key: preset?.icon_key || category.icon_key,
     accent_color: accent,
+    logo_url: isIconPath(options?.iconField) ? options!.iconField!.trim() : undefined,
   };
 }
 

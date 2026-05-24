@@ -1,11 +1,17 @@
 import type { Publication } from "../../types";
+import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { assets } from "../../lib/brand";
 import { effectiveProfilePhoto } from "../../lib/profilePhoto";
 import { mediaUrl } from "../../lib/mediaUrl";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { userInitials } from "../../lib/userDisplay";
 
-export function buildPublicationPopupHtml(pub: Publication): string {
+export type PublicationPopupVariant = "default" | "detail";
+
+export function buildPublicationPopupHtml(
+  pub: Publication,
+  options?: { variant?: PublicationPopupVariant }
+) {
   const author =
     pub.author?.full_name ||
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
@@ -27,6 +33,11 @@ export function buildPublicationPopupHtml(pub: Publication): string {
       </div>`
     : "";
 
+  const viewLink =
+    options?.variant === "detail"
+      ? ""
+      : `<a href="/publication/${pub.id}" class="gre-popup-link">View publication</a>`;
+
   return `
     <div class="gre-popup-inner">
       <div class="gre-popup-head">
@@ -36,7 +47,7 @@ export function buildPublicationPopupHtml(pub: Publication): string {
             <img src="${assets.logo}" alt="" />
           </div>
           ${subcategoryHtml}
-          <h3 class="gre-popup-title">${escapeHtml(pub.title)}</h3>
+          <h3 class="gre-popup-title">${escapeHtml(formatGrePaperTitle(pub.title, pub.short_number))}</h3>
           <p class="gre-popup-author">${escapeHtml(author)}</p>
         </div>
       </div>
@@ -48,7 +59,7 @@ export function buildPublicationPopupHtml(pub: Publication): string {
         <button type="button" class="gre-popup-summary-btn" data-pub-id="${pub.id}">
           Get summary
         </button>
-        <a href="/publication/${pub.id}" class="gre-popup-link">View publication</a>
+        ${viewLink}
       </div>
     </div>
   `;

@@ -2,19 +2,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   Eye,
-  FileText,
   Loader2,
   PenLine,
   Plus,
   Save,
   Send,
-  Upload,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { LocationPicker } from "../../components/map/LocationPicker";
 import { PageHeader } from "../../components/dashboard/PageHeader";
+import { buildAuthorByline } from "../../lib/publicationAuthors";
 import { hasValidCoords } from "../../lib/geocode";
 import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { Button } from "../../components/ui/Button";
@@ -23,35 +22,30 @@ import { Input } from "../../components/ui/Input";
 import { CategorySubcategoryPicker } from "../../components/forms/CategorySubcategoryPicker";
 import { PublicationLifecyclePanel } from "../../components/publication/PublicationLifecyclePanel";
 import { AdminPublicationReviewCard } from "../../components/publication/AdminPublicationReviewCard";
-import { DocumentUploadPanel } from "../../components/publication/DocumentUploadPanel";
-import { PdfSubmissionFields } from "../../components/publication/PdfSubmissionFields";
+import { ManuscriptUploadField } from "../../components/publication/ManuscriptUploadField";
 import {
   ManuscriptSectionsEditor,
   type ManuscriptFields,
 } from "../../components/publication/ManuscriptSectionsEditor";
+import { PublicationDocumentUpload } from "../../components/publication/PublicationDocumentUpload";
 import {
-  PublicationModeSelector,
-  type PublicationEntryMode,
-} from "../../components/publication/PublicationModeSelector";
-import { PdfPreview } from "../../components/publication/PdfPreview";
+  PublicationAccessTypeGate,
+} from "../../components/publication/PublicationAccessTypeGate";
+import { PublicationAccessFields } from "../../components/publication/PublicationAccessFields";
+import { PublicationPaperPreview } from "../../components/publication/PublicationPaperPreview";
 import { SubmissionReviewDialog } from "../../components/publication/SubmissionReviewDialog";
 import { Textarea } from "../../components/ui/Textarea";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
-import { plainTextToHtml } from "../../lib/sanitizeHtml";
-import {
-  extractDocument,
-  uploadDocumentWithExtract,
-  type ExtractedManuscript,
-} from "../../lib/publicationExtract";
-import { PublicationAccessPanel } from "../../components/publication/PublicationAccessPanel";
 import { PublicationFiguresEditor } from "../../components/publication/PublicationFiguresEditor";
 import { PublicationSupplementaryUpload } from "../../components/publication/PublicationSupplementaryUpload";
 import {
   updatePublicationGre,
   type GreDocument,
+  type PublicationAccessType,
   type PublicationGre,
 } from "../../lib/publicationGre";
+import { resolveSubcategoryFromModel } from "../../lib/taxonomyVisuals";
 import { canReviewPublication, isPlatformAdmin } from "../../lib/userAccess";
 import type { Category, Collaborator, Coordinate, Publication, PublicationFigure } from "../../types";
 
@@ -84,7 +78,7 @@ function formatKeywords(keywords?: string[] | null): string {
   return Array.isArray(keywords) ? keywords.join(", ") : "";
 }
 
-type ComposerTab = "upload" | "editor";
+type ComposerTab = "editor" | "preview";
 
 export function PublicationManagePage() {
   const { id } = useParams<{ id: string }>();
@@ -95,8 +89,8 @@ export function PublicationManagePage() {
   const { user } = useAuth();
   const isAdmin = isPlatformAdmin(user);
 
-  const [composerTab, setComposerTab] = useState<ComposerTab>(isNew ? "upload" : "editor");
-  const [entryMode, setEntryMode] = useState<PublicationEntryMode>(isNew ? "upload" : "form");
+  const [composerTab, setComposerTab] = useState<ComposerTab>("editor");
+  const [accessTypeChosen, setAccessTypeChosen] = useState(!isNew);
 
   const [title, setTitle] = useState("");
   const [abstract, setAbstract] = useState("");
@@ -121,8 +115,6 @@ export function PublicationManagePage() {
   const [figures, setFigures] = useState<PublicationFigure[]>([]);
   const [error, setError] = useState("");
   const [pendingDocument, setPendingDocument] = useState<File | null>(null);
-  const [extracted, setExtracted] = useState<ExtractedManuscript | null>(null);
-  const [extractError, setExtractError] = useState("");
   const [submitReviewOpen, setSubmitReviewOpen] = useState(false);
 
   type SaveOptions = { thenSubmit?: boolean };
@@ -152,21 +144,6 @@ export function PublicationManagePage() {
       keywords: setKeywords,
     };
     setters[key](value);
-  }, []);
-
-  const applyExtracted = useCallback((data: ExtractedManuscript) => {
-    if (data.title?.trim()) setTitle(data.title.trim());
-    if (data.abstract) setAbstract(data.abstract);
-    if (data.keywords) setKeywords(data.keywords);
-    if (data.introduction) setIntroduction(data.introduction);
-    if (data.methods) setMethods(data.methods);
-    if (data.results) setResults(data.results);
-    if (data.findings) setFindings(data.findings);
-    if (data.conclusion) setConclusion(data.conclusion);
-    if (data.funder) setFunder(data.funder);
-    if (data.references) setReferences(data.references);
-    setEntryMode("upload");
-    setComposerTab("editor");
   }, []);
 
   const { data: categories = [] } = useQuery({
@@ -240,6 +217,7 @@ export function PublicationManagePage() {
     }
     setGre(pub.gre ?? { access_type: "open" });
     setFigures(pub.figures ?? pub.photos ?? []);
+    setAccessTypeChosen(true);
   }, [pub, categories, user?.affiliation]);
 
   useEffect(() => {
@@ -256,22 +234,6 @@ export function PublicationManagePage() {
     const el = document.getElementById("review");
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [location.hash, pub?.id, pub?.status]);
-
-  const extractMutation = useMutation({
-    mutationFn: () => {
-      if (!pendingDocument) throw new Error("Choose a file first.");
-      return extractDocument(pendingDocument, { metadataOnly: false, useAi: true });
-    },
-    onSuccess: (data) => {
-      setExtracted(data);
-      setExtractError("");
-    },
-    onError: (err: { response?: { data?: { detail?: string; warnings?: string[] } } }) => {
-      const d = err.response?.data;
-      setExtractError(d?.detail || d?.warnings?.[0] || "Could not extract text from this file.");
-      setExtracted(null);
-    },
-  });
 
   const buildCollaboratorsPayload = (): Collaborator[] => {
     if (submitterRole === "coauthor") {
@@ -322,15 +284,11 @@ export function PublicationManagePage() {
     onSuccess: async (data, options?: SaveOptions) => {
       if (pendingDocument) {
         try {
-          if (extracted?.success) {
-            await uploadDocumentWithExtract(data.id, pendingDocument, true);
-          } else {
-            const form = new FormData();
-            form.append("document", pendingDocument);
-            await api.post(`/publications/${data.id}/upload_document/`, form);
-          }
+          const form = new FormData();
+          form.append("document", pendingDocument);
+          await api.post(`/publications/${data.id}/upload_document/`, form);
         } catch {
-          setError("Draft saved, but the PDF could not be uploaded. Use Upload & extract to try again.");
+          setError("Draft saved, but the manuscript file could not be uploaded. Try again from the submission form.");
           setSubmitReviewOpen(false);
           queryClient.invalidateQueries({ queryKey: ["publications"] });
           navigate(`/dashboard/publications/${data.id}`);
@@ -417,31 +375,153 @@ export function PublicationManagePage() {
 
   const existingDocPath = pub?.documents?.[0]?.document ?? null;
   const hasDocument = Boolean(pendingDocument || existingDocPath);
-  const isPdfWorkflow = entryMode === "upload" || hasDocument;
   const isClosedAccess = gre.access_type === "closed";
-  const openNeedsDocument =
-    !isClosedAccess && isPdfWorkflow && !gre.external_url?.trim();
+  const showComposer = accessTypeChosen || !isNew;
+
+  const subVisual = useMemo(() => {
+    if (!subCategoryId || !categories.length) return null;
+    for (const cat of categories) {
+      const sub = cat.sub_categories?.find((s) => String(s.id) === subCategoryId);
+      if (sub) return resolveSubcategoryFromModel(sub);
+    }
+    return null;
+  }, [categories, subCategoryId]);
+
+  const subCategoryName =
+    categories
+      .flatMap((c) => c.sub_categories ?? [])
+      .find((s) => String(s.id) === subCategoryId)?.name ?? pub?.sub_category_name;
+
+  const authorDisplayName =
+    user?.full_name || `${user?.firstname ?? ""} ${user?.lastname ?? ""}`.trim();
+
+  const previewAuthorTeam = useMemo(() => {
+    if (submitterRole === "coauthor") {
+      const team = [
+        {
+          fullname: leadAuthorName.trim(),
+          affiliation: leadAuthorAffiliation.trim(),
+        },
+        {
+          fullname: authorDisplayName,
+          affiliation: user?.affiliation || coordinates.institution || "",
+          profile_url: user?.id ? `/researcher/${user.id}` : null,
+          user_id: user?.id ?? null,
+        },
+        ...collaborators
+          .filter((c) => (c.fullname || "").trim())
+          .map((c) => ({
+            fullname: c.fullname,
+            affiliation: c.affiliation,
+          })),
+      ];
+      return team.filter((c) => (c.fullname || "").trim());
+    }
+    const primary = {
+      fullname: authorDisplayName,
+      affiliation: user?.affiliation || coordinates.institution || "",
+      profile_url: user?.id ? `/researcher/${user.id}` : null,
+      user_id: user?.id ?? null,
+    };
+    const coAuthors = collaborators
+      .filter((c) => (c.fullname || "").trim())
+      .map((c) => ({
+        fullname: c.fullname,
+        affiliation: c.affiliation,
+      }));
+    return [primary, ...coAuthors];
+  }, [
+    submitterRole,
+    authorDisplayName,
+    user?.affiliation,
+    user?.id,
+    coordinates.institution,
+    collaborators,
+    leadAuthorName,
+    leadAuthorAffiliation,
+    leadAuthorEmail,
+  ]);
+
+  const previewAuthorByline = useMemo(
+    () => buildAuthorByline(previewAuthorTeam),
+    [previewAuthorTeam]
+  );
+
+  const paperPreviewData = useMemo(
+    () => ({
+      title,
+      greNumber: pub?.short_number,
+      authorByline: previewAuthorByline,
+      abstract,
+      keywords: parseKeywords(keywords),
+      funder,
+      introduction,
+      methods,
+      results,
+      findings,
+      conclusion,
+      subVisual,
+      subCategoryName,
+      location: coordinates.location,
+      accessType: gre.access_type,
+      viewsCount: pub?.views_count ?? 0,
+      downloadsCount: pub?.downloads_count ?? 0,
+      discussionsCount: pub?.discussions_count ?? 0,
+    }),
+    [
+      title,
+      pub?.short_number,
+      pub?.views_count,
+      pub?.downloads_count,
+      pub?.discussions_count,
+      previewAuthorByline,
+      coordinates.location,
+      abstract,
+      keywords,
+      funder,
+      introduction,
+      methods,
+      results,
+      findings,
+      conclusion,
+      subVisual,
+      subCategoryName,
+      gre.access_type,
+    ]
+  );
+
+  const handleAccessTypeSelect = (type: PublicationAccessType) => {
+    setGre((g) => ({ ...g, access_type: type }));
+    setAccessTypeChosen(true);
+    setComposerTab("editor");
+  };
   const closedSectionsReady =
     hasTextContent(abstract) &&
     hasTextContent(introduction) &&
     hasTextContent(methods) &&
     (hasTextContent(findings) || hasTextContent(results)) &&
     hasTextContent(conclusion);
+  const openHasSource = hasDocument || Boolean(gre.external_url?.trim());
   const readyToSubmit =
     Boolean(title.trim() && abstract.trim() && subCategoryId) &&
     hasValidCoords(coordinates.latitude, coordinates.longitude) &&
     Boolean(coordinates.location.trim()) &&
-    (isClosedAccess ? closedSectionsReady : isPdfWorkflow ? hasDocument || Boolean(gre.external_url?.trim()) : true);
+    (isClosedAccess
+      ? closedSectionsReady && Boolean(gre.external_url?.trim())
+      : openHasSource);
 
   const getSaveValidationError = (): string | null => {
     if (!title.trim()) return "Please add a title.";
     if (!abstract.trim()) return "Please add an abstract.";
     if (!subCategoryId) return "Please select a category and subcategory.";
-    if (openNeedsDocument && !hasDocument) {
-      return "Upload your manuscript PDF in the Upload tab before saving.";
-    }
     if (isClosedAccess && !closedSectionsReady) {
       return "Restricted publications need introduction, methods, findings/results, and conclusion.";
+    }
+    if (isClosedAccess && !gre.external_url?.trim()) {
+      return "Add the publisher access link before saving.";
+    }
+    if (!isClosedAccess && !openHasSource) {
+      return "Upload the original paper or add an external publication link before saving.";
     }
     if (!hasValidCoords(coordinates.latitude, coordinates.longitude)) {
       return "Please set a map location by searching for a place or clicking on the map.";
@@ -471,8 +551,8 @@ export function PublicationManagePage() {
     if (!readyToSubmit) {
       setError(
         isClosedAccess
-          ? "Complete title, abstract, all required sections, category, and map location before submitting."
-          : "Complete title, abstract, category, PDF or external URL, and map location before submitting."
+          ? "Complete title, abstract, all required sections, publisher access link, category, and map location before submitting."
+          : "Complete title, abstract, category, uploaded paper or external link, and map location before submitting."
       );
       return;
     }
@@ -488,12 +568,6 @@ export function PublicationManagePage() {
     saveMutation.mutate({ thenSubmit: true });
   };
 
-  const subCategoryName =
-    categories
-      .flatMap((c) => c.sub_categories ?? [])
-      .find((s) => String(s.id) === subCategoryId)?.name ??
-    pub?.sub_category_name;
-
   if (!isNew && isLoading) {
     return <p className="text-slate-500">Loading publication…</p>;
   }
@@ -504,7 +578,11 @@ export function PublicationManagePage() {
         title={isNew ? "New publication" : "Edit publication"}
         description={
           isNew
-            ? "Upload a paper or write in the editor, preview your PDF, then submit for review."
+            ? accessTypeChosen
+              ? isClosedAccess
+                ? "Complete all manuscript sections and the publisher access link, then submit for review."
+                : "Fill in publication details, add your paper or link, then submit for review."
+              : "Choose open or restricted access to begin your submission."
             : pub?.title
         }
         action={
@@ -597,25 +675,14 @@ export function PublicationManagePage() {
         </section>
       )}
 
-      {isNew && (
-        <section className="gre-card mb-8 p-6">
-          <h2 className="text-lg font-bold text-ink">How do you want to start?</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Upload a PDF. We extract title and abstract for search. Add map location, then submit for review.
-          </p>
-          <div className="mt-5">
-            <PublicationModeSelector
-              mode={entryMode}
-              onChange={(m) => {
-                setEntryMode(m);
-                setComposerTab(m === "upload" ? "upload" : "editor");
-              }}
-            />
-          </div>
-        </section>
+      {isNew && !accessTypeChosen && (
+        <PublicationAccessTypeGate
+          selected={accessTypeChosen ? gre.access_type : null}
+          onSelect={handleAccessTypeSelect}
+        />
       )}
 
-      {!isNew && (
+      {showComposer && (
         <div className="mb-6 flex flex-wrap gap-2 rounded-2xl bg-slate-100/90 p-1.5 ring-1 ring-slate-200/70">
           <button
             type="button"
@@ -627,23 +694,33 @@ export function PublicationManagePage() {
             }`}
           >
             <PenLine className="h-4 w-4" />
-            Editor & preview
+            Submission details
           </button>
           <button
             type="button"
-            onClick={() => setComposerTab("upload")}
+            onClick={() => setComposerTab("preview")}
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-              composerTab === "upload"
+              composerTab === "preview"
                 ? "bg-white text-brand-700 shadow-sm"
                 : "text-slate-600 hover:text-ink"
             }`}
           >
-            <Upload className="h-4 w-4" />
-            Upload & extract
+            <Eye className="h-4 w-4" />
+            Paper preview
           </button>
+          {isNew && accessTypeChosen && (
+            <button
+              type="button"
+              onClick={() => setAccessTypeChosen(false)}
+              className="ml-auto self-center px-3 text-xs font-semibold text-brand-600 hover:underline"
+            >
+              Change access type
+            </button>
+          )}
         </div>
       )}
 
+      {showComposer && (
       <form className={`space-y-8${isReadOnly ? " pointer-events-none opacity-60" : ""}`} onSubmit={validateAndSave}>
         {isReadOnly && (
           <p className="pointer-events-auto rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
@@ -651,85 +728,29 @@ export function PublicationManagePage() {
             restored.
           </p>
         )}
-        {(isNew && entryMode === "upload" && composerTab === "upload") ||
-        (!isNew && composerTab === "upload") ? (
-          <section className="gre-card p-6 sm:p-8">
-            <h2 className="flex items-center gap-2 text-lg font-bold text-ink">
-              <FileText className="h-5 w-5 text-brand-600" />
-              Upload manuscript
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Upload your PDF, extract title and abstract, then complete category and map location to submit.
-            </p>
-            <div className="mt-6">
-              <DocumentUploadPanel
-                file={pendingDocument}
-                onFileChange={(f) => {
-                  setPendingDocument(f);
-                  setExtracted(null);
-                  setExtractError("");
-                }}
-                extracting={extractMutation.isPending}
-                extractError={extractError}
-                extracted={extracted}
-                onExtract={() => extractMutation.mutate()}
-                onApplyExtracted={() => extracted && applyExtracted(extracted)}
-                onContinueToForm={() => setComposerTab("editor")}
-              />
-            </div>
-          </section>
-        ) : null}
-
-        {isPdfWorkflow && (
-          <section className="gre-card p-6">
-            <h2 className="text-lg font-bold text-ink">Submission details</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Required to save and submit. These appear in search; readers open your full PDF after approval.
-            </p>
-            <div className="mt-6 grid gap-8 lg:grid-cols-2">
-              <PdfSubmissionFields
-                title={title}
-                abstract={abstract}
-                categoryId={categoryId}
-                subCategoryId={subCategoryId}
-                categories={categories}
-                onTitleChange={setTitle}
-                onAbstractChange={setAbstract}
-                onCategoryChange={setCategoryId}
-                onSubCategoryChange={setSubCategoryId}
-              />
-              <PdfPreview
-                file={pendingDocument}
-                documentPath={existingDocPath}
-                title="Manuscript PDF"
-                className="min-h-[320px] lg:min-h-[400px]"
-              />
-            </div>
-            {!hasDocument && (
-              <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                Upload your PDF under <strong>Upload & extract</strong> before saving or submitting.
-              </p>
-            )}
-            {!subCategoryId && (
-              <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                Select a <strong>category</strong> and <strong>subcategory</strong> below before saving.
-              </p>
-            )}
+        {composerTab === "preview" && (
+          <section className="gre-card p-4 sm:p-6">
+            <PublicationPaperPreview
+              data={paperPreviewData}
+              documentPath={existingDocPath}
+              pendingFile={pendingDocument}
+              draft
+            />
           </section>
         )}
 
-        {!isPdfWorkflow && (composerTab === "editor" || (isNew && entryMode === "form")) && (
+        {composerTab === "editor" && (
           <>
             <section className="gre-card space-y-4 p-6">
-              <h2 className="text-lg font-bold text-ink">Core details</h2>
+              <div>
+                <h2 className="text-lg font-bold text-ink">Publication details</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {isClosedAccess
+                    ? "Title and category appear on the map and in search."
+                    : "Title, abstract, and category appear in search; readers open your uploaded paper or external link after approval."}
+                </p>
+              </div>
               <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-              <Textarea
-                label="Abstract"
-                value={abstract}
-                onChange={(e) => setAbstract(e.target.value)}
-                rows={5}
-                required
-              />
               <CategorySubcategoryPicker
                 categories={categories}
                 categoryId={categoryId}
@@ -738,24 +759,76 @@ export function PublicationManagePage() {
                 onSubCategoryChange={setSubCategoryId}
                 required
               />
+              {!isClosedAccess && (
+                <>
+                  <Textarea
+                    label="Abstract"
+                    value={abstract}
+                    onChange={(e) => setAbstract(e.target.value)}
+                    rows={5}
+                    required
+                  />
+                  <Input
+                    label="Keywords"
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
+                    placeholder="climate, remote sensing, East Africa (comma-separated)"
+                  />
+                  <Input
+                    label="Funder (optional)"
+                    value={funder}
+                    onChange={(e) => setFunder(e.target.value)}
+                    placeholder="Grant or funding source"
+                  />
+                </>
+              )}
             </section>
-            <section className="gre-card overflow-visible p-6">
-              <h2 className="text-lg font-bold text-ink">Manuscript (optional)</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Write sections in the editor, or switch to Upload and attach a PDF instead.
-              </p>
-              <div className="mt-6">
-                <ManuscriptSectionsEditor fields={manuscript} onChange={setManuscript} />
-              </div>
+
+            {isClosedAccess && (
+              <section className="gre-card overflow-visible p-6 sm:p-8">
+                <div className="border-b border-slate-100 pb-5">
+                  <h2 className="text-lg font-bold text-ink">Manuscript sections</h2>
+                  <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">
+                    Complete all required sections. Use <strong>Paper preview</strong> to see the reader layout.
+                  </p>
+                </div>
+                <div className="mt-6">
+                  <ManuscriptSectionsEditor fields={manuscript} onChange={setManuscript} />
+                </div>
+              </section>
+            )}
+
+            <section className="gre-card p-6">
+              <PublicationAccessFields
+                gre={gre}
+                onChange={setGre}
+                accessLocked={isNew && accessTypeChosen}
+                onChangeAccess={!isNew ? handleAccessTypeSelect : undefined}
+                disabled={isReadOnly}
+                openUploadSlot={
+                  !isClosedAccess ? (
+                    isNew ? (
+                      <ManuscriptUploadField
+                        file={pendingDocument}
+                        onFileChange={setPendingDocument}
+                        existingDocumentPath={existingDocPath}
+                        disabled={isReadOnly}
+                      />
+                    ) : id ? (
+                      <PublicationDocumentUpload
+                        publicationId={Number(id)}
+                        documents={pub?.documents}
+                        disabled={isReadOnly}
+                      />
+                    ) : null
+                  ) : undefined
+                }
+              />
             </section>
           </>
         )}
 
-        <section className="gre-card p-6">
-          <PublicationAccessPanel gre={gre} onChange={setGre} />
-        </section>
-
-        {!isNew && id && (
+        {!isClosedAccess && !isNew && id && (
           <PublicationSupplementaryUpload
             publicationId={Number(id)}
             documents={pub?.documents as GreDocument[] | undefined}
@@ -928,8 +1001,8 @@ export function PublicationManagePage() {
           {(isNew || canSubmit) && !readyToSubmit && (
             <p className="text-xs text-slate-500">
               {isClosedAccess
-                ? "Complete title, abstract, required sections, category, and map location to submit."
-                : "Complete title, abstract, category, PDF or external URL, and map location to submit."}
+                ? "Complete title, abstract, required sections, publisher access link, category, and map location to submit."
+                : "Complete title, abstract, category, uploaded paper or external link, and map location to submit."}
             </p>
           )}
           {!isNew && isAdmin && !isOwner && (pub?.status === 0 || pub?.status === 2) && (
@@ -952,6 +1025,7 @@ export function PublicationManagePage() {
           )}
         </div>
       </form>
+      )}
 
       <SubmissionReviewDialog
         open={submitReviewOpen}

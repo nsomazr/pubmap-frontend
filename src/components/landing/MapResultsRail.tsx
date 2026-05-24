@@ -7,6 +7,7 @@ import { useIsMobile } from "../../hooks/useMediaQuery";
 import { ResearcherRankInline } from "../rankings/ResearcherRankInline";
 import { SubcategoryBadge } from "../taxonomy/SubcategoryBadge";
 import { UserAvatar } from "../ui/UserAvatar";
+import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { authorDisplayName } from "../../lib/userDisplay";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
@@ -158,7 +159,7 @@ export function MapResultsRail({
                         />
                         <div className="min-w-0 flex-1 text-left">
                           <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink group-hover:text-brand-700">
-                            {pub.title}
+                            {formatGrePaperTitle(pub.title, pub.short_number)}
                           </p>
                           <p className="mt-1 truncate text-xs text-slate-500">
                             {authorDisplayName(pub.author) ||

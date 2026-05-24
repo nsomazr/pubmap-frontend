@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { RichTextEditor } from "../editor/RichTextEditor";
 import { Input } from "../ui/Input";
 
@@ -18,63 +19,114 @@ interface Props {
   onChange: (key: keyof ManuscriptFields, value: string) => void;
 }
 
+function ManuscriptGroup({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="gre-manuscript-group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <header className="border-b border-slate-100 bg-gradient-to-r from-slate-50/90 to-brand-50/20 px-5 py-4 sm:px-6">
+        <h3 className="text-sm font-bold text-ink">{title}</h3>
+        {description ? <p className="mt-1 text-xs leading-relaxed text-slate-500">{description}</p> : null}
+      </header>
+      <div className="space-y-6 px-5 py-5 sm:px-6 sm:py-6">{children}</div>
+    </section>
+  );
+}
+
 export function ManuscriptSectionsEditor({ fields, onChange }: Props) {
   return (
-    <div className="space-y-5">
-      <p className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
-        <strong className="text-slate-700">Results</strong> should list factual outcomes.{" "}
-        <strong className="text-slate-700">Findings / discussion</strong> holds interpretation. After
-        AI extraction, review Methods especially; it is often missed in PDFs.
-      </p>
-      <RichTextEditor
-        label="Abstract"
-        value={fields.abstract}
-        onChange={(v) => onChange("abstract", v)}
-        minHeight={140}
-        required
-      />
-      <RichTextEditor
-        label="Introduction"
-        value={fields.introduction}
-        onChange={(v) => onChange("introduction", v)}
-      />
-      <Input
-        label="Keywords"
-        value={fields.keywords}
-        onChange={(e) => onChange("keywords", e.target.value)}
-        placeholder="climate, remote sensing, East Africa (comma-separated)"
-      />
-      <RichTextEditor
-        label="Methods"
-        value={fields.methods}
-        onChange={(v) => onChange("methods", v)}
-      />
-      <RichTextEditor
-        label="Results"
-        value={fields.results}
-        onChange={(v) => onChange("results", v)}
-      />
-      <RichTextEditor
-        label="Findings / discussion"
-        value={fields.findings}
-        onChange={(v) => onChange("findings", v)}
-      />
-      <RichTextEditor
-        label="Conclusion"
-        value={fields.conclusion}
-        onChange={(v) => onChange("conclusion", v)}
-      />
-      <Input
-        label="Funder / acknowledgements"
-        value={fields.funder}
-        onChange={(e) => onChange("funder", e.target.value)}
-      />
-      <RichTextEditor
-        label="References"
-        value={fields.references}
-        onChange={(v) => onChange("references", v)}
-        minHeight={120}
-      />
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-brand-100/80 bg-gradient-to-br from-brand-50/50 via-white to-teal-50/30 px-4 py-3.5 text-sm leading-relaxed text-slate-600 sm:px-5">
+        <p>
+          <strong className="font-semibold text-brand-800">Results</strong> should list factual outcomes.{" "}
+          <strong className="font-semibold text-brand-800">Findings / discussion</strong> holds interpretation.
+          Review each section carefully before submitting.
+        </p>
+      </div>
+
+      <ManuscriptGroup
+        title="Summary"
+        description="What readers see first in search and on the publication page."
+      >
+        <RichTextEditor
+          label="Abstract"
+          value={fields.abstract}
+          onChange={(v) => onChange("abstract", v)}
+          minHeight={160}
+          required
+          hint="Plain-language overview of the study."
+        />
+        <Input
+          label="Keywords"
+          value={fields.keywords}
+          onChange={(e) => onChange("keywords", e.target.value)}
+          placeholder="climate, remote sensing, East Africa (comma-separated)"
+        />
+      </ManuscriptGroup>
+
+      <ManuscriptGroup title="Background" description="Context, objectives, and study motivation.">
+        <RichTextEditor
+          label="Introduction"
+          value={fields.introduction}
+          onChange={(v) => onChange("introduction", v)}
+          placeholder="Set the research context and objectives…"
+        />
+      </ManuscriptGroup>
+
+      <ManuscriptGroup
+        title="Methods & results"
+        description="How the work was done and what was observed."
+      >
+        <RichTextEditor
+          label="Methods"
+          value={fields.methods}
+          onChange={(v) => onChange("methods", v)}
+          placeholder="Design, data collection, and analysis…"
+        />
+        <RichTextEditor
+          label="Results"
+          value={fields.results}
+          onChange={(v) => onChange("results", v)}
+          placeholder="Key outcomes, measurements, and observations…"
+        />
+      </ManuscriptGroup>
+
+      <ManuscriptGroup title="Discussion & closing" description="Interpretation and takeaways.">
+        <RichTextEditor
+          label="Findings / discussion"
+          value={fields.findings}
+          onChange={(v) => onChange("findings", v)}
+          placeholder="Interpret results and relate them to the literature…"
+        />
+        <RichTextEditor
+          label="Conclusion"
+          value={fields.conclusion}
+          onChange={(v) => onChange("conclusion", v)}
+          placeholder="Summarise implications and future work…"
+        />
+      </ManuscriptGroup>
+
+      <ManuscriptGroup title="Funding & references" description="Acknowledgements and citations.">
+        <Input
+          label="Funder / acknowledgements"
+          value={fields.funder}
+          onChange={(e) => onChange("funder", e.target.value)}
+          placeholder="Grant numbers, institutions, or partners"
+        />
+        <RichTextEditor
+          label="References"
+          value={fields.references}
+          onChange={(v) => onChange("references", v)}
+          minHeight={140}
+          placeholder="List references or paste a bibliography…"
+        />
+      </ManuscriptGroup>
     </div>
   );
 }

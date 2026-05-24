@@ -1,0 +1,27 @@
+/** Normalize stored short_number (e.g. "001") to GRE code "GRE-001". */
+export function grePaperCode(shortNumber?: string | null): string | null {
+  const raw = shortNumber?.trim();
+  if (!raw) return null;
+  if (/^GRE-/i.test(raw)) {
+    return `GRE-${raw.replace(/^GRE-/i, "")}`;
+  }
+  return `GRE-${raw}`;
+}
+
+/** Strip an existing #GRE-XXX prefix from a stored title. */
+export function stripGrePaperPrefix(title: string): string {
+  return title.replace(/^#?GRE-[\w-]+\s*:\s*/i, "").trim();
+}
+
+/** Reader-facing title: "#GRE-001: Paper title" */
+export function formatGrePaperTitle(
+  title: string,
+  shortNumber?: string | null,
+  options?: { fallback?: string }
+): string {
+  const base =
+    stripGrePaperPrefix(title) || options?.fallback?.trim() || "Untitled publication";
+  const code = grePaperCode(shortNumber);
+  if (!code) return base;
+  return `#${code}: ${base}`;
+}

@@ -145,6 +145,34 @@ export function assistantSummarizeTextStream(
   return consumeAssistantStream("/assistant/summarize/", { text }, handlers, signal);
 }
 
+export type SummaryFollowUpTurn = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export function assistantSummarizeFollowUpStream(
+  publicationId: number,
+  question: string,
+  handlers: StreamHandlers,
+  options?: {
+    summary?: string;
+    history?: SummaryFollowUpTurn[];
+    signal?: AbortSignal;
+  }
+): Promise<void> {
+  return consumeAssistantStream(
+    "/assistant/summarize/follow-up/",
+    {
+      publication_id: publicationId,
+      question,
+      summary: options?.summary,
+      history: options?.history,
+    },
+    handlers,
+    options?.signal
+  );
+}
+
 export function assistantDraftHelpStream(
   task: "improve" | "shorten" | "keywords",
   title: string,

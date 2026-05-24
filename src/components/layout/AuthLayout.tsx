@@ -4,7 +4,6 @@ import { AuthFormDecor } from "../auth/AuthFormDecor";
 import { AuthHeroScene } from "../auth/AuthHeroScene";
 import { AuthMobileBrand } from "../auth/AuthMobileBrand";
 import { BrandMark } from "../brand/BrandMark";
-import { partneringUniversity } from "../../lib/brand";
 
 export type AuthHeroVariant = "login" | "register" | "onboarding";
 
@@ -63,7 +62,6 @@ export function AuthLayout({
             <div>
               <p className="text-sm font-semibold leading-tight">Global Research Exchange</p>
               <p className="text-[11px] text-white/55">Research worldwide</p>
-              <p className="text-[10px] text-white/45">Partner: {partneringUniversity}</p>
             </div>
           </Link>
 

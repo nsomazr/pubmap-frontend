@@ -999,6 +999,27 @@ body {
   z-index: 900 !important;
 }
 
+.gre-map--embedded .leaflet-bottom.leaflet-right {
+  bottom: 0.75rem;
+  right: 0.75rem;
+  z-index: 850;
+}
+
+.gre-map--embedded .leaflet-container {
+  border-bottom-left-radius: 1.5rem;
+  border-bottom-right-radius: 1.5rem;
+}
+
+.gre-map-popup--embedded .leaflet-popup-content {
+  min-width: 260px;
+  max-width: min(320px, calc(100vw - 2rem));
+}
+
+.gre-map-popup--embedded .gre-popup-title {
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
 .landing-page .leaflet-bottom.leaflet-right {
   bottom: 2.75rem;
   right: 0.5rem;
@@ -1558,6 +1579,122 @@ body {
   padding: 0.75rem 1rem !important;
 }
 
+/* Manuscript section editors */
+.gre-manuscript-ckeditor .ck.ck-editor {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.gre-manuscript-ckeditor .ck.ck-sticky-panel__content,
+.gre-manuscript-ckeditor .ck.ck-editor__main {
+  border: none !important;
+}
+
+.gre-manuscript-ckeditor .ck.ck-toolbar {
+  border: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  padding: 0.5rem 0.625rem !important;
+  gap: 0.125rem;
+}
+
+.gre-manuscript-ckeditor .ck.ck-toolbar .ck-toolbar__items {
+  gap: 0.125rem;
+}
+
+.gre-manuscript-ckeditor .ck.ck-toolbar .ck-button {
+  border-radius: 0.625rem !important;
+  min-height: 2rem;
+  min-width: 2rem;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.gre-manuscript-ckeditor .ck.ck-toolbar .ck-button:hover:not(.ck-disabled) {
+  background: #e0e7ff !important;
+}
+
+.gre-manuscript-ckeditor .ck.ck-toolbar .ck-button.ck-on {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+.gre-manuscript-ckeditor .ck.ck-toolbar .ck-dropdown .ck-button {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+}
+
+.gre-manuscript-ckeditor .ck.ck-toolbar .ck-toolbar__separator {
+  background: #cbd5e1 !important;
+  margin-inline: 0.25rem;
+}
+
+.gre-manuscript-ckeditor .ck-editor__editable {
+  min-height: var(--gre-editor-min-height, 11rem) !important;
+  padding: 1rem 1.125rem !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: #0f172a;
+}
+
+.gre-manuscript-ckeditor .ck-editor__editable:focus,
+.gre-manuscript-ckeditor .ck-editor__editable.ck-focused {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.gre-manuscript-ckeditor .ck-editor__editable p {
+  margin-bottom: 0.65em;
+}
+
+.gre-manuscript-ckeditor .ck-editor__editable h2,
+.gre-manuscript-ckeditor .ck-editor__editable h3 {
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.gre-manuscript-ckeditor .ck-editor__editable h2 {
+  font-size: 1.125rem;
+}
+
+.gre-manuscript-ckeditor .ck-editor__editable h3 {
+  font-size: 1rem;
+}
+
+.gre-manuscript-ckeditor .ck-editor__editable blockquote {
+  border-left: 3px solid #93c5fd;
+  margin: 0.75em 0;
+  padding-left: 1em;
+  color: #475569;
+}
+
+.gre-manuscript-ckeditor .ck-editor__editable ul,
+.gre-manuscript-ckeditor .ck-editor__editable ol {
+  padding-left: 1.35rem;
+  margin-bottom: 0.65em;
+}
+
+.gre-manuscript-ckeditor .ck-placeholder::before {
+  color: #94a3b8 !important;
+  font-style: normal !important;
+}
+
+.gre-manuscript-group .gre-field {
+  border-color: rgb(226 232 240 / 0.9);
+  background: #fff;
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+}
+
+.gre-manuscript-group .gre-field:focus {
+  border-color: #60a5fa;
+}
+
 .gre-ckeditor-host--cms .ck-editor__editable {
   min-height: 22rem;
 }
@@ -1576,6 +1713,20 @@ body {
 
 .gre-cms-editor .ck.ck-toolbar .ck-toolbar__items {
   flex-wrap: wrap;
+}
+
+.publication-paper-header {
+  animation: fade-up var(--gre-duration-slow) var(--gre-ease-out) forwards;
+}
+
+.publication-paper-category {
+  width: min(100%, 7.5rem);
+}
+
+@media (min-width: 640px) {
+  .publication-paper-category {
+    width: 8.5rem;
+  }
 }
 
 .publication-submit-bar {

@@ -9,13 +9,19 @@ import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
 
 const FOCUS_ZOOM = 13;
+const EMBEDDED_FOCUS_ZOOM = 10;
 
 interface Props {
   publications: Publication[];
   focusPublicationId?: number | null;
+  embedded?: boolean;
 }
 
-export function PublicationMarkerLayer({ publications, focusPublicationId }: Props) {
+export function PublicationMarkerLayer({
+  publications,
+  focusPublicationId,
+  embedded = false,
+}: Props) {
   const map = useMap();
   const markersById = useRef<Map<number, L.Marker>>(new Map());
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
@@ -48,13 +54,16 @@ export function PublicationMarkerLayer({ publications, focusPublicationId }: Pro
           accentColor,
         } as L.MarkerOptions & { accentColor?: string }
       );
-      marker.bindPopup(buildPublicationPopupHtml(pub), {
-        maxWidth: 280,
-        className: "gre-map-popup",
+      marker.bindPopup(buildPublicationPopupHtml(pub, { variant: embedded ? "detail" : "default" }), {
+        maxWidth: embedded ? 320 : 280,
+        className: embedded ? "gre-map-popup gre-map-popup--embedded" : "gre-map-popup",
         autoPan: true,
-        autoPanPaddingTopLeft: L.point(24, 150),
-        autoPanPaddingBottomRight: L.point(24, 80),
+        autoPanPaddingTopLeft: L.point(24, embedded ? 80 : 150),
+        autoPanPaddingBottomRight: L.point(24, embedded ? 180 : 80),
         keepInView: true,
+        closeButton: true,
+        autoClose: true,
+        closeOnClick: true,
       });
       markersById.current.set(pub.id, marker);
       cluster.addLayer(marker);
@@ -94,7 +103,7 @@ export function PublicationMarkerLayer({ publications, focusPublicationId }: Pro
       markersById.current.clear();
       lastFocusRef.current = null;
     };
-  }, [publications, map]);
+  }, [publications, map, embedded]);
 
   useEffect(() => {
     if (!focusPublicationId) {
@@ -115,14 +124,21 @@ export function PublicationMarkerLayer({ publications, focusPublicationId }: Pro
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
     lastFocusRef.current = focusPublicationId;
-    map.flyTo([lat, lng], FOCUS_ZOOM, { duration: 0.85 });
+    const zoom = embedded ? EMBEDDED_FOCUS_ZOOM : FOCUS_ZOOM;
+    map.flyTo([lat, lng], zoom, { duration: 0.85 });
 
     const timer = window.setTimeout(() => {
-      cluster.zoomToShowLayer(marker, () => marker.openPopup());
+      cluster.zoomToShowLayer(marker, () => {
+        if (embedded) {
+          map.panBy([0, -120], { animate: true });
+          return;
+        }
+        marker.openPopup();
+      });
     }, 900);
 
     return () => window.clearTimeout(timer);
-  }, [focusPublicationId, publications, map]);
+  }, [focusPublicationId, publications, map, embedded]);
 
   return null;
 }

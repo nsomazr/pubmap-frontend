@@ -1,16 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, Loader2, Sparkles, Trash2, Upload } from "lucide-react";
+import { FileText, Loader2, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import api from "../../lib/api";
 import { mediaUrl } from "../../lib/mediaUrl";
-import {
-  extractDocument,
-  uploadDocumentWithExtract,
-  type ExtractedManuscript,
-} from "../../lib/publicationExtract";
 import type { Publication } from "../../types";
 import { PdfPreview } from "./PdfPreview";
-import { Button } from "../ui/Button";
 
 const ACCEPT = ".pdf,.doc,.docx,.txt,.rtf";
 
@@ -19,7 +13,6 @@ interface Props {
   documents?: Publication["documents"];
   disabled?: boolean;
   disabledHint?: string;
-  onExtracted?: (data: ExtractedManuscript) => void;
 }
 
 export function PublicationDocumentUpload({
@@ -27,22 +20,16 @@ export function PublicationDocumentUpload({
   documents = [],
   disabled,
   disabledHint,
-  onExtracted,
 }: Props) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [localError, setLocalError] = useState("");
-  const [extracting, setExtracting] = useState(false);
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       const form = new FormData();
       form.append("document", file);
-      const { data } = await api.post(
-        `/publications/${publicationId}/upload_document/`,
-        form
-      );
-      return data;
+      await api.post(`/publications/${publicationId}/upload_document/`, form);
     },
     onSuccess: () => {
       setLocalError("");
@@ -67,32 +54,13 @@ export function PublicationDocumentUpload({
     uploadMutation.mutate(file);
   };
 
-  const runExtract = async (file: File) => {
-    setExtracting(true);
-    setLocalError("");
-    try {
-      const data = await extractDocument(file, { metadataOnly: false, useAi: true });
-      if (data.success) {
-        onExtracted?.(data);
-        await uploadDocumentWithExtract(publicationId, file, false);
-        queryClient.invalidateQueries({ queryKey: ["publication-edit", String(publicationId)] });
-      } else {
-        setLocalError(data.warnings?.[0] || "Extraction failed.");
-      }
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string } } };
-      setLocalError(e.response?.data?.detail || "Extraction failed.");
-    } finally {
-      setExtracting(false);
-    }
-  };
-
   const primaryDoc = documents[0];
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-500">
-        Attach a PDF or Word file. Extract sections into the editor, or let readers download it.
+        Attach the original paper (PDF or Word). It will be available to readers for open-access
+        publications after approval.
       </p>
       {disabled && disabledHint && (
         <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{disabledHint}</p>
@@ -122,33 +90,6 @@ export function PublicationDocumentUpload({
           )}
           Upload document
         </button>
-        {onExtracted && (
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={disabled || extracting || !primaryDoc}
-            onClick={async () => {
-              if (!primaryDoc) return;
-              const url = mediaUrl(primaryDoc.document);
-              if (!url) return;
-              try {
-                const res = await fetch(url);
-                const blob = await res.blob();
-                const name = primaryDoc.document.split("/").pop() || "document.pdf";
-                await runExtract(new File([blob], name, { type: blob.type }));
-              } catch {
-                setLocalError("Could not read the stored file for extraction.");
-              }
-            }}
-          >
-            {extracting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
-            Re-extract from file
-          </Button>
-        )}
       </div>
       {localError && <p className="text-sm text-red-600">{localError}</p>}
 

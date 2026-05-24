@@ -24,8 +24,8 @@ export function attachPublicationPopupSummary(map: L.Map): () => void {
       const pubId = Number(btn.dataset.pubId);
       if (!pubId) return;
 
-      map.closePopup();
       requestPublicationSummary(pubId);
+      map.closePopup();
     };
 
     btn.addEventListener("click", handler);

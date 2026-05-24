@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { StatusBadge } from "../dashboard/StatusBadge";
 import { Button } from "../ui/Button";
 import { Textarea } from "../ui/Textarea";
+import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import api from "../../lib/api";
 import { abstractPlainText } from "../../lib/abstractText";
 import { authorDisplayName } from "../../lib/userDisplay";
@@ -79,7 +80,9 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
                 Submission for review
               </p>
               <p className="mt-1 text-sm font-medium text-slate-600">{author}</p>
-              <h3 className="mt-1 text-lg font-bold leading-snug text-ink">{pub.title}</h3>
+              <h3 className="mt-1 text-lg font-bold leading-snug text-ink">
+                {formatGrePaperTitle(pub.title, pub.short_number)}
+              </h3>
               {subVisual && (
                 <div className="mt-2">
                   <SubcategoryBadge visual={subVisual} size="xs" />
@@ -125,7 +128,7 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
             </h4>
             <PdfPreview
               documentPath={docPath}
-              title={pub.title}
+              title={formatGrePaperTitle(pub.title, pub.short_number)}
               allowExpand={hasPdf}
               className={compact ? "min-h-[300px]" : "min-h-[min(50vh,480px)]"}
             />

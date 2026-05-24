@@ -37,16 +37,24 @@ export function normalizeGreTypography(text: string): string {
     .trim();
 }
 
-/** Remove markdown / echoed publication metadata before rendering. */
+/** Remove markdown / echoed publication metadata and legacy template labels. */
 export function cleanAssistantSummary(raw: string): string {
+  let text = raw
+    .replace(/\bOpening paragraph\s*/gi, "")
+    .replace(/\s*Key findings:\s*/gi, "\n\n")
+    .replace(/\s*Why it matters:\s*/gi, "\n\n");
+
   return normalizeGreTypography(
-    raw
+    text
       .split("\n")
     .map((line) => {
       let t = line.trim();
       if (!t) return "";
       if (/^[-]{3,}$/.test(t)) return "";
       t = t.replace(/^#{1,6}\s+/, "").trim();
+      if (/^opening paragraph$/i.test(t)) return "";
+      if (/^key findings:?$/i.test(t)) return "";
+      if (/^why it matters:?$/i.test(t)) return "";
       if (/^TITLE\s*:/i.test(t)) return "";
       if (/^Subcategory\s*:/i.test(t)) return "";
       if (/^Location\s*:/i.test(t)) return "";
@@ -96,6 +104,11 @@ function parseBlocks(raw: string): Block[] {
     }
 
     const trimmed = line.trim();
+
+    if (/^opening paragraph$/i.test(trimmed)) {
+      i += 1;
+      continue;
+    }
 
     const mdHeading = trimmed.match(/^#{1,6}\s+(.+)$/);
     if (mdHeading) {

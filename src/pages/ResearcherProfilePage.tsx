@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Building2, FileText, Users } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { formatGrePaperTitle } from "../lib/grePaperTitle";
 import api from "../lib/api";
 import { institutionMapUrl } from "../lib/institutionLinks";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
@@ -137,7 +138,9 @@ export function ResearcherProfilePage() {
                     to={`/publication/${pub.id}`}
                     className="block rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 text-sm transition hover:border-brand-200 hover:bg-white"
                   >
-                    <p className="font-semibold text-ink">{pub.title}</p>
+                    <p className="font-semibold text-ink">
+                      {formatGrePaperTitle(pub.title, pub.short_number)}
+                    </p>
                     {pub.sub_category_name && (
                       <p className="mt-1 text-xs text-slate-500">{pub.sub_category_name}</p>
                     )}
@@ -163,7 +166,9 @@ export function ResearcherProfilePage() {
                     to={`/publication/${pub.id}`}
                     className="block rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 text-sm transition hover:border-brand-200 hover:bg-white"
                   >
-                    <p className="font-semibold text-ink">{pub.title}</p>
+                    <p className="font-semibold text-ink">
+                      {formatGrePaperTitle(pub.title, pub.short_number)}
+                    </p>
                     <p className="mt-1 text-xs text-slate-500">
                       Lead author:{" "}
                       {pub.author?.full_name ||

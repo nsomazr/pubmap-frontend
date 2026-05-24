@@ -58,6 +58,18 @@ export async function deleteFigure(publicationId: number, figureId: number) {
   await api.delete(`/publications/${publicationId}/figures/${figureId}/`);
 }
 
+export async function updateFigure(
+  publicationId: number,
+  figureId: number,
+  meta: { caption?: string; title?: string; figure_number?: string }
+): Promise<PublicationFigure> {
+  const { data } = await api.patch<PublicationFigure>(
+    `/publications/${publicationId}/figures/${figureId}/`,
+    meta
+  );
+  return data;
+}
+
 export async function uploadSupplementaryDocument(
   publicationId: number,
   file: File,
@@ -79,10 +91,16 @@ export async function deletePublicationDocument(publicationId: number, documentI
   await api.delete(`/publications/${publicationId}/documents/${documentId}/`);
 }
 
-export function summaryPdfUrl(publicationId: number, includeDiscussions = false) {
+export function summaryPdfUrl(
+  publicationId: number,
+  options: { discussions?: boolean; inline?: boolean } = {}
+) {
   const base = resolveApiBaseUrl().replace(/\/$/, "");
-  const q = includeDiscussions ? "?discussions=1" : "";
-  return `${base}/publications/${publicationId}/summary-pdf/${q}`;
+  const params = new URLSearchParams();
+  if (options.discussions) params.set("discussions", "1");
+  if (options.inline) params.set("inline", "1");
+  const query = params.toString();
+  return `${base}/publications/${publicationId}/summary-pdf/${query ? `?${query}` : ""}`;
 }
 
 export function greDoiDisplayPath(greDoi: string) {

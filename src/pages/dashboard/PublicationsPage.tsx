@@ -15,6 +15,7 @@ import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 import { canAccessReviewQueue, isPlatformAdmin } from "../../lib/userAccess";
+import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { authorDisplayName } from "../../lib/userDisplay";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { SubcategoryBadge } from "../../components/taxonomy/SubcategoryBadge";
@@ -230,14 +231,13 @@ export function PublicationsPage() {
                       </p>
                     )}
                     <h3 className="mt-0.5 text-base font-semibold text-ink group-hover:text-brand-700">
-                      {pub.title}
+                      {formatGrePaperTitle(pub.title, pub.short_number)}
                     </h3>
                     <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-slate-500">
                       {pub.abstract}
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                       {subVisual && <SubcategoryBadge visual={subVisual} size="xs" />}
-                      {pub.short_number && <span>#{pub.short_number}</span>}
                       {pub.coordinates?.location && (
                         <span className="inline-flex items-center gap-1">
                           <MapPin className="h-3 w-3 text-teal-600" />
