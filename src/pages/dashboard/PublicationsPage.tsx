@@ -14,6 +14,7 @@ import { PageHeader } from "../../components/dashboard/PageHeader";
 import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
+import { canAccessReviewQueue, isPlatformAdmin } from "../../lib/userAccess";
 import { authorDisplayName } from "../../lib/userDisplay";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { SubcategoryBadge } from "../../components/taxonomy/SubcategoryBadge";
@@ -75,7 +76,8 @@ const NEXT_STEP: Record<number, string> = {
 
 export function PublicationsPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role_id === 1;
+  const isAdmin = isPlatformAdmin(user);
+  const canReview = canAccessReviewQueue(user);
   const [params, setParams] = useSearchParams();
   const status = params.get("status") ?? "5";
 
@@ -169,7 +171,7 @@ export function PublicationsPage() {
 
       <p className="mb-8 text-xs text-slate-500">
         Workflow: Draft → submit → Pending → admin review → Published, or Revision with feedback.
-        {isAdmin && status === "1" && (
+        {canReview && status === "1" && (
           <>
             {" "}
             <Link to="/dashboard/review" className="font-semibold text-brand-600 hover:underline">
@@ -204,7 +206,7 @@ export function PublicationsPage() {
       ) : (
         <div className="gre-stagger grid gap-4">
           {publications.map((pub) => {
-            const reviewPending = isAdmin && pub.status === 1;
+            const reviewPending = canReview && pub.status === 1;
             const hasDoc = (pub.documents?.length ?? 0) > 0;
             const subVisual = publicationSubcategoryVisual(pub);
             const target = reviewPending

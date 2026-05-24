@@ -21,6 +21,11 @@ interface Props {
 export function ManuscriptSectionsEditor({ fields, onChange }: Props) {
   return (
     <div className="space-y-5">
+      <p className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
+        <strong className="text-slate-700">Results</strong> should list factual outcomes.{" "}
+        <strong className="text-slate-700">Findings / discussion</strong> holds interpretation. After
+        AI extraction, review Methods especially; it is often missed in PDFs.
+      </p>
       <RichTextEditor
         label="Abstract"
         value={fields.abstract}

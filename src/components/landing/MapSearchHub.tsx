@@ -70,8 +70,8 @@ function SuggestionList({
 }
 
 function DragHandle({ className = "" }: { className?: string }) {
-  const { dragHandlers, isCompact } = useMapPanelLayout();
-  if (isCompact) return null;
+  const { dragHandlers, isCompact, dragEnabled } = useMapPanelLayout();
+  if (isCompact || !dragEnabled) return null;
   return (
     <div
       role="button"

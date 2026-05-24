@@ -39,6 +39,15 @@ export function DocumentUploadPanel({
 
   return (
     <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
+      <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-600 lg:col-span-2">
+        <p className="font-semibold text-slate-800">Upload & extract workflow</p>
+        <ol className="mt-2 list-decimal space-y-1 pl-5">
+          <li>Choose your manuscript (PDF or DOCX recommended).</li>
+          <li>Click <strong>Extract sections with AI</strong> to fill title, abstract, and manuscript sections.</li>
+          <li>Review each section in the editor, especially Methods and Results, then save the draft.</li>
+          <li>After saving, the file is attached automatically when you continue from a new submission.</li>
+        </ol>
+      </div>
       <div className="space-y-4">
         <div
           role="button"

@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { NotificationBell } from "../dashboard/NotificationBell";
 import { DashboardSidebar } from "./DashboardSidebar";
+import { canAccessReviewQueue, isPlatformAdmin } from "../../lib/userAccess";
 
 const SIDEBAR_KEY = "gre-sidebar-collapsed";
 const EXPANDED_W = "16.5rem";
@@ -29,7 +30,8 @@ export function DashboardLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const isAdmin = user?.role_id === 1;
+  const isAdmin = isPlatformAdmin(user);
+  const canReview = canAccessReviewQueue(user);
   const isMobile = useIsMobile(1024);
 
   const [collapsed, setCollapsed] = useState(() => {
@@ -83,6 +85,7 @@ export function DashboardLayout() {
         collapsed={collapsed}
         showLabels={showLabels}
         isAdmin={isAdmin}
+        canReview={canReview}
         user={user}
         sidebarW={sidebarW}
         isMobile={isMobile}

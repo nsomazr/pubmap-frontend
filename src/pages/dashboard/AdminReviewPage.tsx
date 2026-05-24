@@ -7,6 +7,7 @@ import { AdminPublicationReviewCard } from "../../components/publication/AdminPu
 import { EmptyState } from "../../components/dashboard/EmptyState";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import api from "../../lib/api";
+import { canAccessReviewQueue, isPlatformAdmin, managedCategoryLabel } from "../../lib/userAccess";
 import type { Publication } from "../../types";
 
 const TABS = [
@@ -16,7 +17,10 @@ const TABS = [
 
 export function AdminReviewPage() {
   const { user } = useAuth();
-  if (user?.role_id !== 1) return <Navigate to="/dashboard" replace />;
+  if (!canAccessReviewQueue(user)) return <Navigate to="/dashboard" replace />;
+
+  const isAdmin = isPlatformAdmin(user);
+  const managerScope = managedCategoryLabel(user);
 
   const [params, setParams] = useSearchParams({ status: "1" });
   const status = params.get("status") ?? "1";
@@ -45,7 +49,11 @@ export function AdminReviewPage() {
     <div className="animate-fade-up">
       <PageHeader
         title="Review queue"
-        description="Review submitted PDFs, metadata, and map location, then approve or request revisions."
+        description={
+          isAdmin
+            ? "Review submitted PDFs, metadata, and map location, then approve or request revisions."
+            : `Review submissions in your assigned categories${managerScope ? `: ${managerScope}` : ""}.`
+        }
       />
 
       <div className="mb-8 inline-flex rounded-xl bg-slate-100/80 p-1 ring-1 ring-slate-200/60">

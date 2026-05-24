@@ -221,6 +221,12 @@ export function PublicationDetailPage() {
                   {pub.keywords.join(", ")}
                 </p>
               )}
+              {pub.funder?.trim() && (
+                <p className="mt-4 text-sm text-slate-600">
+                  <span className="font-semibold text-slate-700">Project funders: </span>
+                  {pub.funder.trim()}
+                </p>
+              )}
             </div>
             <button
               type="button"
@@ -318,7 +324,7 @@ export function PublicationDetailPage() {
           </section>
         )}
 
-        <PublicationDiscussions publicationId={pub.id} />
+        <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
 
         <CoAuthorsPanel publication={pub} />
 

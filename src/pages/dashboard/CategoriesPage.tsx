@@ -9,7 +9,8 @@ import {
   Search,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import { EmptyState } from "../../components/dashboard/EmptyState";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { SubcategoryVisual } from "../../components/taxonomy/SubcategoryVisual";
@@ -18,7 +19,8 @@ import { Input } from "../../components/ui/Input";
 import api from "../../lib/api";
 import { greStatBgBrand, greStatBgTeal } from "../../lib/greTheme";
 import { resolveCategoryVisual } from "../../lib/taxonomyVisuals";
-import type { Category } from "../../types";
+import { isPlatformAdmin } from "../../lib/userAccess";
+import type { Category, CategoryManagerRow } from "../../types";
 
 function invalidateTaxonomy(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ["categories-admin"] });
@@ -41,16 +43,118 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
+function CategoryManagersSection({ categoryId }: { categoryId: number }) {
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+
+  const { data: managers = [], isLoading } = useQuery({
+    queryKey: ["category-managers", categoryId],
+    queryFn: async () => {
+      const { data } = await api.get<{ managers: CategoryManagerRow[] }>(
+        `/categories/${categoryId}/managers/`
+      );
+      return data.managers ?? [];
+    },
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: () =>
+      api.post(`/categories/${categoryId}/managers/assign/`, { email: email.trim() }),
+    onSuccess: () => {
+      setEmail("");
+      setError("");
+      queryClient.invalidateQueries({ queryKey: ["category-managers", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["categories-admin"] });
+    },
+    onError: () => setError("Could not assign manager. Check the email and try again."),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (userId: number) =>
+      api.post(`/categories/${categoryId}/managers/remove/`, { user_id: userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["category-managers", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["categories-admin"] });
+    },
+  });
+
+  return (
+    <div className="border-t border-slate-100 bg-white px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Category managers</p>
+      <p className="mt-1 text-xs text-slate-500">
+        Managers can review pending submissions only for this category.
+      </p>
+      {isLoading ? (
+        <p className="mt-2 text-xs text-slate-400">Loading managers…</p>
+      ) : managers.length === 0 ? (
+        <p className="mt-2 text-xs text-slate-400">No managers assigned yet.</p>
+      ) : (
+        <ul className="mt-2 space-y-1">
+          {managers.map((manager) => (
+            <li
+              key={manager.id}
+              className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs"
+            >
+              <span className="min-w-0 truncate">
+                <span className="font-medium text-slate-700">{manager.full_name || manager.email}</span>
+                <span className="text-slate-400"> · {manager.email}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => removeMutation.mutate(manager.user_id)}
+                className="shrink-0 font-semibold text-red-600 hover:underline"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form
+        className="mt-3 flex flex-wrap items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setError("");
+          if (email.trim()) assignMutation.mutate();
+        }}
+      >
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Manager email…"
+          className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs"
+        />
+        <Button
+          type="submit"
+          variant="secondary"
+          className="!px-2.5 !py-1.5 !text-xs"
+          loading={assignMutation.isPending}
+          disabled={!email.trim()}
+        >
+          Assign
+        </Button>
+      </form>
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 function CategoryCard({
   category,
   subDraft,
+  subIconFile,
   onSubDraftChange,
+  onSubIconChange,
   onAddSubcategory,
   addingSub,
 }: {
   category: Category;
   subDraft: string;
+  subIconFile: File | null;
   onSubDraftChange: (value: string) => void;
+  onSubIconChange: (file: File | null) => void;
   onAddSubcategory: () => void;
   addingSub: boolean;
 }) {
@@ -78,20 +182,17 @@ function CategoryCard({
             No subcategories yet. Add one below.
           </p>
         ) : (
-          <p className="max-h-36 overflow-y-auto text-xs leading-6">
-            {subs.map((sub, index) => (
-              <span key={sub.id}>
-                {index > 0 && <span className="text-slate-300"> · </span>}
-                <span
-                  className={`font-medium ${
-                    index % 2 === 0 ? "text-brand-700" : "text-teal-700"
-                  }`}
-                >
-                  {sub.name}
-                </span>
-              </span>
+          <ul className="max-h-44 space-y-2 overflow-y-auto">
+            {subs.map((sub) => (
+              <li key={sub.id} className="flex items-center gap-2 text-xs">
+                <SubcategoryVisual
+                  visual={sub.visual ?? { name: sub.name, icon_key: "layers", accent_color: "#3b5bdb" }}
+                  size="xs"
+                />
+                <span className="font-medium text-slate-700">{sub.name}</span>
+              </li>
             ))}
-          </p>
+          </ul>
         )}
       </div>
 
@@ -109,6 +210,20 @@ function CategoryCard({
           placeholder="New subcategory name…"
           className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
         />
+        <label className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-brand-200">
+          Logo
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+            className="hidden"
+            onChange={(e) => onSubIconChange(e.target.files?.[0] ?? null)}
+          />
+        </label>
+        {subIconFile && (
+          <span className="max-w-[88px] truncate text-[10px] text-brand-700" title={subIconFile.name}>
+            {subIconFile.name}
+          </span>
+        )}
         <Button
           type="submit"
           variant="secondary"
@@ -120,14 +235,20 @@ function CategoryCard({
           Add
         </Button>
       </form>
+
+      <CategoryManagersSection categoryId={category.id} />
     </article>
   );
 }
 
 export function CategoriesPage() {
+  const { user } = useAuth();
+  if (!isPlatformAdmin(user)) return <Navigate to="/dashboard" replace />;
+
   const [name, setName] = useState("");
   const [query, setQuery] = useState("");
   const [subDrafts, setSubDrafts] = useState<Record<number, string>>({});
+  const [subIconDrafts, setSubIconDrafts] = useState<Record<number, File | null>>({});
   const [formError, setFormError] = useState("");
   const queryClient = useQueryClient();
 
@@ -166,14 +287,30 @@ export function CategoriesPage() {
   });
 
   const createSubMutation = useMutation({
-    mutationFn: ({ categoryId, subName }: { categoryId: number; subName: string }) =>
-      api.post("/subcategories/", {
+    mutationFn: async ({
+      categoryId,
+      subName,
+      iconFile,
+    }: {
+      categoryId: number;
+      subName: string;
+      iconFile?: File | null;
+    }) => {
+      const { data } = await api.post<{ id: number }>("/subcategories/", {
         name: subName.trim(),
         category_id: categoryId,
         status: "active",
-      }),
+      });
+      if (iconFile) {
+        const form = new FormData();
+        form.append("icon", iconFile);
+        await api.post(`/subcategories/${data.id}/upload_icon/`, form);
+      }
+      return data;
+    },
     onSuccess: (_data, vars) => {
       setSubDrafts((prev) => ({ ...prev, [vars.categoryId]: "" }));
+      setSubIconDrafts((prev) => ({ ...prev, [vars.categoryId]: null }));
       setFormError("");
       invalidateTaxonomy(queryClient);
     },
@@ -184,7 +321,7 @@ export function CategoriesPage() {
     <div className="animate-fade-up space-y-8">
       <PageHeader
         title="Categories"
-        description="Manage the research taxonomy used on the map, publications, and forum. Each category groups related subcategories."
+        description="Manage the research taxonomy and assign category managers who review submissions for each field."
         action={
           <Link
             to="/"
@@ -306,13 +443,21 @@ export function CategoriesPage() {
                 key={cat.id}
                 category={cat}
                 subDraft={subDrafts[cat.id] ?? ""}
+                subIconFile={subIconDrafts[cat.id] ?? null}
                 onSubDraftChange={(value) =>
                   setSubDrafts((prev) => ({ ...prev, [cat.id]: value }))
+                }
+                onSubIconChange={(file) =>
+                  setSubIconDrafts((prev) => ({ ...prev, [cat.id]: file }))
                 }
                 onAddSubcategory={() => {
                   const subName = (subDrafts[cat.id] ?? "").trim();
                   if (!subName) return;
-                  createSubMutation.mutate({ categoryId: cat.id, subName });
+                  createSubMutation.mutate({
+                    categoryId: cat.id,
+                    subName,
+                    iconFile: subIconDrafts[cat.id],
+                  });
                 }}
                 addingSub={
                   createSubMutation.isPending &&

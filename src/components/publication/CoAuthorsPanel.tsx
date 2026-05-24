@@ -84,8 +84,11 @@ export function CoAuthorsPanel({ publication }: Props) {
       {network && network.nodes.length > 1 && (
         <div className="mt-8">
           <h3 className="text-sm font-semibold text-ink">Collaboration network</h3>
-          <p className="mt-1 text-xs text-slate-500">
-            Explore how the research team connects on GRE. Click a node to open a profile.
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            This graph maps author relationships on GRE. Solid lines connect people listed on this
+            publication (lead author at the center). Dashed lines show other shared published work
+            between registered GRE members. Thicker lines mean more co-authored studies. Click a node
+            to open a researcher profile.
           </p>
           <div className="mt-4">
             <CollaborationNetwork

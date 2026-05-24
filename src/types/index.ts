@@ -30,6 +30,8 @@ export interface User {
   /** Set by /auth/contacts/ when the contact is a relevance-based suggestion */
   match_reason?: string | null;
   ranking?: ResearcherRanking;
+  managed_categories?: { id: number; name: string }[];
+  is_category_manager?: boolean;
 }
 
 export type ResearcherBadge =
@@ -93,6 +95,7 @@ export interface Publication {
   author?: User;
   sub_category_id?: number;
   sub_category_name?: string;
+  category_id?: number;
   sub_category_visual?: SubcategoryVisual | null;
   views_count?: number;
   downloads_count?: number;
@@ -244,6 +247,7 @@ export interface SubcategoryVisual {
   category_name?: string;
   icon_key: string;
   accent_color: string;
+  logo_url?: string | null;
 }
 
 export interface SubCategory {
@@ -263,6 +267,17 @@ export interface Category {
   status: string;
   sub_categories?: SubCategory[];
   visual?: SubcategoryVisual;
+  manager_count?: number;
+}
+
+export interface CategoryManagerRow {
+  id: number;
+  user_id: number;
+  email: string;
+  full_name: string;
+  affiliation?: string;
+  role_id: number;
+  created_at?: string;
 }
 
 export interface Event {
@@ -319,6 +334,8 @@ export interface DashboardStats {
   published?: number;
   authors?: number;
   drafts?: number;
+  is_reviewer?: boolean;
+  managed_categories?: { id: number; name: string }[];
 }
 
 export interface PublicStatsTotals {

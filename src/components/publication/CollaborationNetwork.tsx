@@ -104,8 +104,9 @@ export function CollaborationNetwork({ network, height = 320, onNodeClick }: Pro
           );
         })}
       </svg>
-      <p className="mt-2 text-center text-xs text-slate-500">
-        Solid lines connect authors on this publication. Dashed lines show other shared work on GRE.
+      <p className="mt-2 text-center text-xs leading-relaxed text-slate-500">
+        Solid lines: authors on this publication. Dashed lines: other shared GRE publications between
+        registered members. Line weight reflects how often two people appear together.
       </p>
     </div>
   );

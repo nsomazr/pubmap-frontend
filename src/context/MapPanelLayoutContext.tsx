@@ -9,6 +9,7 @@ export type MapPanelDragHandlers = {
 export type MapPanelLayoutValue = {
   expandUpward: boolean;
   isCompact: boolean;
+  dragEnabled: boolean;
   dragHandlers: MapPanelDragHandlers;
 };
 
@@ -17,6 +18,7 @@ const noop = () => {};
 const defaultValue: MapPanelLayoutValue = {
   expandUpward: false,
   isCompact: false,
+  dragEnabled: false,
   dragHandlers: {
     onPointerDown: noop,
     onPointerMove: noop,

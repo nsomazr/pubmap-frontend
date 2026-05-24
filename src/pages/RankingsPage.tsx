@@ -10,6 +10,8 @@ import {
   INSTITUTION_SORT_OPTIONS,
   RESEARCHER_PUBS_PER_STAR,
   RESEARCHER_SORT_OPTIONS,
+  institutionSortDescription,
+  researcherSortDescription,
 } from "../lib/rankings";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { ResearcherBadges } from "../components/rankings/ResearcherBadges";
@@ -31,22 +33,29 @@ function SortSelect<T extends string>({
 }: {
   value: T;
   onChange: (v: T) => void;
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; description?: string }[];
 }) {
   return (
-    <label className="inline-flex items-center gap-2 text-sm text-slate-600">
-      <span className="font-medium">Sort by</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value as T)}
-        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-ink shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+    <label className="inline-flex max-w-full flex-col gap-1.5 text-sm text-slate-600 sm:items-end">
+      <span className="inline-flex items-center gap-2 font-medium">
+        Sort by
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value as T)}
+          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-ink shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+        >
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </span>
+      {options.find((opt) => opt.value === value)?.description && (
+        <span className="max-w-xl text-xs leading-relaxed text-slate-500 sm:text-right">
+          {options.find((opt) => opt.value === value)?.description}
+        </span>
+      )}
     </label>
   );
 }
@@ -146,6 +155,12 @@ export function RankingsPage() {
           </p>
         </div>
       </div>
+
+      <p className="mb-6 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-600">
+        {tab === "institutions"
+          ? institutionSortDescription(instSort)
+          : researcherSortDescription(researcherSort)}
+      </p>
 
       {tab === "institutions" ? (
         instLoading ? (

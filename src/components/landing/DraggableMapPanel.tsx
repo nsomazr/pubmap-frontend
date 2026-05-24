@@ -13,21 +13,26 @@ import {
 import { MapPanelLayoutContext } from "../../context/MapPanelLayoutContext";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 
-const STORAGE_KEY = "gre-map-search-position-v2";
+const DEFAULT_STORAGE_KEY = "gre-map-search-position-v2";
 
 interface Position {
   x: number;
   y: number;
 }
 
+export type DraggableMapPanelLayout = "search-bar" | "floating-card";
+
 interface Props {
   boundsRef: RefObject<HTMLElement | null>;
   children: ReactNode;
+  storageKey?: string;
+  /** search-bar: pinned under nav on mobile. floating-card: draggable everywhere. */
+  layout?: DraggableMapPanelLayout;
 }
 
-function loadPosition(): Position | null {
+function loadPosition(key: string): Position | null {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(key);
     if (!raw) return null;
     const p = JSON.parse(raw) as Position;
     if (typeof p.x === "number" && typeof p.y === "number") return p;
@@ -37,9 +42,9 @@ function loadPosition(): Position | null {
   return null;
 }
 
-function savePosition(pos: Position) {
+function savePosition(key: string, pos: Position) {
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pos));
+    sessionStorage.setItem(key, JSON.stringify(pos));
   } catch {
     /* ignore */
   }
@@ -58,8 +63,16 @@ function computeExpandUpward(
   return panelBottom > bh * 0.58;
 }
 
-export function DraggableMapPanel({ boundsRef, children }: Props) {
+export function DraggableMapPanel({
+  boundsRef,
+  children,
+  storageKey = DEFAULT_STORAGE_KEY,
+  layout = "search-bar",
+}: Props) {
   const isCompact = useIsMobile();
+  const isFloating = layout === "floating-card";
+  const mobilePinned = isCompact && !isFloating;
+  const dragEnabled = !mobilePinned;
   const panelRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<Position | null>(null);
   const [expandUpward, setExpandUpward] = useState(false);
@@ -103,31 +116,41 @@ export function DraggableMapPanel({ boundsRef, children }: Props) {
       if (!bounds || !panel) return false;
 
       const bw = bounds.clientWidth;
+      const bh = bounds.clientHeight;
       const pw = panel.offsetWidth || 320;
-      const defaultX = (bw - pw) / 2;
-      const defaultY = 16;
+      const ph = panel.offsetHeight || 200;
+      const margin = 12;
+
+      let defaultX = (bw - pw) / 2;
+      let defaultY = 16;
+
+      if (isFloating) {
+        defaultX = Math.max(margin, bw - pw - margin);
+        defaultY = Math.max(margin, bh - ph - (isCompact ? 72 : 24));
+      }
+
       const x = candidate?.x ?? defaultX;
       const y = candidate?.y ?? defaultY;
       setPos(clampPosition(x, y));
       return true;
     },
-    [boundsRef, clampPosition]
+    [boundsRef, clampPosition, isCompact, isFloating]
   );
 
   useLayoutEffect(() => {
-    if (isCompact) return;
-    const saved = loadPosition();
+    if (mobilePinned) return;
+    const saved = loadPosition(storageKey);
     if (applyPosition(saved)) return;
     const id = requestAnimationFrame(() => applyPosition(saved));
     return () => cancelAnimationFrame(id);
-  }, [applyPosition, isCompact]);
+  }, [applyPosition, mobilePinned, storageKey]);
 
   useLayoutEffect(() => {
     updateExpandDirection();
   }, [pos, updateExpandDirection]);
 
   useEffect(() => {
-    if (isCompact) {
+    if (mobilePinned) {
       setExpandUpward(false);
       return;
     }
@@ -137,14 +160,14 @@ export function DraggableMapPanel({ boundsRef, children }: Props) {
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [clampPosition, updateExpandDirection, isCompact]);
+  }, [clampPosition, updateExpandDirection, mobilePinned]);
 
   useEffect(() => {
-    if (pos) savePosition(pos);
-  }, [pos]);
+    if (pos) savePosition(storageKey, pos);
+  }, [pos, storageKey]);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
-    if (isCompact || e.button !== 0) return;
+    if (!dragEnabled || e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
     const current = pos ?? { x: 0, y: 16 };
@@ -156,7 +179,7 @@ export function DraggableMapPanel({ boundsRef, children }: Props) {
       originY: current.y,
     };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-  }, [pos, isCompact]);
+  }, [pos, dragEnabled]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     const drag = dragState.current;
@@ -173,11 +196,13 @@ export function DraggableMapPanel({ boundsRef, children }: Props) {
     }
   }, [updateExpandDirection]);
 
-  const style: CSSProperties | undefined = isCompact
+  const style: CSSProperties | undefined = mobilePinned
     ? undefined
     : pos
       ? { left: pos.x, top: pos.y }
-      : { left: "50%", top: 16, transform: "translateX(-50%)" };
+      : isFloating
+        ? undefined
+        : { left: "50%", top: 16, transform: "translateX(-50%)" };
 
   const orderedChildren = useMemo(() => {
     const items = Children.toArray(children);
@@ -187,25 +212,28 @@ export function DraggableMapPanel({ boundsRef, children }: Props) {
 
   const layoutValue = useMemo(
     () => ({
-      expandUpward: isCompact ? false : expandUpward,
+      expandUpward: mobilePinned ? false : expandUpward,
       isCompact,
+      dragEnabled,
       dragHandlers: {
         onPointerDown,
         onPointerMove,
         onPointerUp,
       },
     }),
-    [expandUpward, isCompact, onPointerDown, onPointerMove, onPointerUp]
+    [expandUpward, isCompact, dragEnabled, onPointerDown, onPointerMove, onPointerUp]
   );
 
   return (
     <MapPanelLayoutContext.Provider value={layoutValue}>
       <div
         ref={panelRef}
-        className={`map-draggable-panel pointer-events-none z-[1100] w-full max-w-lg px-3 sm:px-4 ${
-          isCompact
-            ? "map-draggable-panel--top fixed inset-x-0 top-0"
-            : `absolute w-[min(100%,32rem)] ${expandUpward ? "map-draggable-panel--up" : ""}`
+        className={`map-draggable-panel pointer-events-none w-full max-w-lg px-3 sm:px-4 ${
+          mobilePinned
+            ? "map-draggable-panel--top fixed inset-x-0 top-0 z-[1100]"
+            : `absolute z-[1150] ${expandUpward ? "map-draggable-panel--up" : ""} ${
+                isFloating ? "map-draggable-panel--floating w-[min(100%,22rem)]" : "w-[min(100%,32rem)]"
+              }`
         }`}
         style={style}
       >

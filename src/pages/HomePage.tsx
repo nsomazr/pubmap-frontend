@@ -321,10 +321,18 @@ export function HomePage() {
           />
         </DraggableMapPanel>
 
-        <MapSummaryDock
-          publication={summaryPublication}
-          onClose={() => setSummaryPubId(null)}
-        />
+        {summaryPublication && (
+          <DraggableMapPanel
+            boundsRef={mapChromeBoundsRef}
+            storageKey="gre-map-summary-position-v1"
+            layout="floating-card"
+          >
+            <MapSummaryDock
+              publication={summaryPublication}
+              onClose={() => setSummaryPubId(null)}
+            />
+          </DraggableMapPanel>
+        )}
 
         {resultsRailOpen && (
           <MapResultsRail

@@ -52,6 +52,7 @@ import {
   type GreDocument,
   type PublicationGre,
 } from "../../lib/publicationGre";
+import { canReviewPublication, isPlatformAdmin } from "../../lib/userAccess";
 import type { Category, Collaborator, Coordinate, Publication, PublicationFigure } from "../../types";
 
 const emptyCoord = (): Coordinate => ({
@@ -92,7 +93,7 @@ export function PublicationManagePage() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const isAdmin = user?.role_id === 1;
+  const isAdmin = isPlatformAdmin(user);
 
   const [composerTab, setComposerTab] = useState<ComposerTab>(isNew ? "upload" : "editor");
   const [entryMode, setEntryMode] = useState<PublicationEntryMode>(isNew ? "upload" : "form");
@@ -112,6 +113,10 @@ export function PublicationManagePage() {
   const [categoryId, setCategoryId] = useState("");
   const [coordinates, setCoordinates] = useState<Coordinate>(emptyCoord());
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [submitterRole, setSubmitterRole] = useState<"lead" | "coauthor">("lead");
+  const [leadAuthorName, setLeadAuthorName] = useState("");
+  const [leadAuthorAffiliation, setLeadAuthorAffiliation] = useState("");
+  const [leadAuthorEmail, setLeadAuthorEmail] = useState("");
   const [gre, setGre] = useState<PublicationGre>({ access_type: "open" });
   const [figures, setFigures] = useState<PublicationFigure[]>([]);
   const [error, setError] = useState("");
@@ -181,6 +186,10 @@ export function PublicationManagePage() {
     },
   });
 
+  const canReviewThis =
+    Boolean(pub) &&
+    canReviewPublication(user, { status: pub!.status, category_id: pub!.category_id });
+
   useEffect(() => {
     if (!pub) return;
     setTitle(pub.title);
@@ -207,7 +216,28 @@ export function PublicationManagePage() {
           pub.coordinates.institution?.trim() || user?.affiliation?.trim() || "",
       });
     }
-    if (pub.collaborators) setCollaborators(pub.collaborators);
+    if (pub.collaborators) {
+      const lead = pub.collaborators.find((c) => /^lead author$/i.test((c.role || "").trim()));
+      const submitterEmail = (pub.author?.email || user?.email || "").trim().toLowerCase();
+      const leadEmail = (lead?.email || "").trim().toLowerCase();
+      if (lead && leadEmail && submitterEmail && leadEmail !== submitterEmail) {
+        setSubmitterRole("coauthor");
+        setLeadAuthorName(lead.fullname || "");
+        setLeadAuthorAffiliation(lead.affiliation || "");
+        setLeadAuthorEmail(lead.email || "");
+        setCollaborators(
+          pub.collaborators.filter(
+            (c) =>
+              c.id !== lead.id &&
+              (c.email || "").trim().toLowerCase() !== submitterEmail &&
+              !/^lead author$/i.test((c.role || "").trim())
+          )
+        );
+      } else {
+        setSubmitterRole("lead");
+        setCollaborators(pub.collaborators);
+      }
+    }
     setGre(pub.gre ?? { access_type: "open" });
     setFigures(pub.figures ?? pub.photos ?? []);
   }, [pub, categories, user?.affiliation]);
@@ -243,6 +273,28 @@ export function PublicationManagePage() {
     },
   });
 
+  const buildCollaboratorsPayload = (): Collaborator[] => {
+    if (submitterRole === "coauthor") {
+      const extra = collaborators.filter((c) => (c.fullname || "").trim());
+      return [
+        {
+          fullname: leadAuthorName.trim(),
+          affiliation: leadAuthorAffiliation.trim(),
+          email: leadAuthorEmail.trim(),
+          role: "Lead author",
+        },
+        {
+          fullname: user?.full_name || `${user?.firstname ?? ""} ${user?.lastname ?? ""}`.trim(),
+          affiliation: user?.affiliation || "",
+          email: user?.email || "",
+          role: "Co-author",
+        },
+        ...extra,
+      ];
+    }
+    return collaborators;
+  };
+
   const saveMutation = useMutation({
     mutationFn: async (_options?: SaveOptions) => {
       const payload = {
@@ -258,7 +310,7 @@ export function PublicationManagePage() {
         keywords: parseKeywords(keywords),
         sub_category_id: subCategoryId ? Number(subCategoryId) : null,
         coordinates,
-        collaborators,
+        collaborators: buildCollaboratorsPayload(),
       };
       if (isNew) {
         const { data } = await api.post<Publication>("/publications/", payload);
@@ -395,6 +447,9 @@ export function PublicationManagePage() {
     if (!coordinates.location.trim()) {
       return "Please add a location label (or search / pick on the map to fill it automatically).";
     }
+    if (submitterRole === "coauthor" && !leadAuthorName.trim()) {
+      return "Please enter the lead author’s name when submitting as a co-author.";
+    }
     return null;
   };
 
@@ -487,7 +542,7 @@ export function PublicationManagePage() {
         </section>
       )}
 
-      {isAdmin && !isNew && pub && pub.status === 1 && (
+      {canReviewThis && !isNew && pub && pub.status === 1 && (
         <section id="review" className="mb-8 scroll-mt-6">
           <AdminPublicationReviewCard pub={pub} />
         </section>
@@ -726,8 +781,67 @@ export function PublicationManagePage() {
         </section>
 
         <section className="gre-card space-y-4 p-6">
+          <div>
+            <h2 className="font-semibold text-ink">Your role on this publication</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              If you are submitting on behalf of the team, designate the lead author separately. Your
+              GRE account remains the submission owner for editing.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ["lead", "I am the lead author"],
+                ["coauthor", "I am a co-author"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                disabled={isReadOnly}
+                onClick={() => setSubmitterRole(value)}
+                className={`rounded-xl px-4 py-2.5 text-sm font-semibold ring-1 transition ${
+                  submitterRole === value
+                    ? "bg-brand-600 text-white ring-brand-600"
+                    : "bg-white text-slate-700 ring-slate-200 hover:ring-brand-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {submitterRole === "coauthor" && (
+            <div className="grid gap-3 rounded-xl border border-brand-100 bg-brand-50/40 p-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Input
+                label="Lead author name"
+                value={leadAuthorName}
+                onChange={(e) => setLeadAuthorName(e.target.value)}
+                disabled={isReadOnly}
+              />
+              <InstitutionPicker
+                value={leadAuthorAffiliation}
+                onChange={setLeadAuthorAffiliation}
+                label="Lead author affiliation"
+                hideHint
+              />
+              <Input
+                label="Lead author email"
+                value={leadAuthorEmail}
+                onChange={(e) => setLeadAuthorEmail(e.target.value)}
+                disabled={isReadOnly}
+              />
+            </div>
+          )}
+        </section>
+
+        <section className="gre-card space-y-4 p-6">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-ink">Collaborators</h2>
+            <div>
+              <h2 className="font-semibold text-ink">Additional co-authors</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                List other team members not covered by your role above.
+              </p>
+            </div>
             <button
               type="button"
               onClick={addCollaborator}
@@ -759,7 +873,7 @@ export function PublicationManagePage() {
                 hideHint
               />
               <Input
-                label="Contribution role (optional)"
+                label="Contribution (optional)"
                 placeholder="e.g. Field lead, Data analysis"
                 value={c.role || ""}
                 onChange={(e) => {

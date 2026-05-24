@@ -26,11 +26,13 @@ import {
   greStatLinkPending,
 } from "../../lib/greTheme";
 import { userFirstName } from "../../lib/userDisplay";
+import { canAccessReviewQueue, isPlatformAdmin } from "../../lib/userAccess";
 import type { DashboardStats } from "../../types";
 
 export function DashboardHome() {
   const { user } = useAuth();
-  const isAdmin = user?.role_id === 1;
+  const isAdmin = isPlatformAdmin(user);
+  const canReview = canAccessReviewQueue(user);
 
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
@@ -133,7 +135,7 @@ export function DashboardHome() {
               <Map className="h-4 w-4 text-brand-600" />
               View map
             </Link>
-            {isAdmin && (stats?.pending ?? 0) > 0 && (
+            {(isAdmin || canReview) && (stats?.pending ?? 0) > 0 && (
               <Link
                 to="/dashboard/review"
                 className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${greStatLinkPending}`}

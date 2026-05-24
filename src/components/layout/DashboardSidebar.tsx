@@ -46,6 +46,7 @@ interface Props {
   collapsed: boolean;
   showLabels: boolean;
   isAdmin: boolean;
+  canReview: boolean;
   user: User | null;
   sidebarW: string;
   isMobile: boolean;
@@ -110,6 +111,7 @@ export function DashboardSidebar({
   collapsed,
   showLabels,
   isAdmin,
+  canReview,
   user,
   sidebarW,
   isMobile,
@@ -167,7 +169,8 @@ export function DashboardSidebar({
               {user?.firstname} {user?.lastname}
             </p>
             <p className="truncate text-xs text-white/45">
-              {user?.area_of_study?.trim() || (isAdmin ? "Administrator" : "Author")}
+              {user?.area_of_study?.trim() ||
+                (isAdmin ? "Administrator" : canReview ? "Category manager" : "Author")}
             </p>
           </div>
         )}
@@ -205,6 +208,25 @@ export function DashboardSidebar({
             badge={item.to === "/dashboard/messages" ? messageBadge : undefined}
           />
         ))}
+
+        {canReview && !isAdmin && (
+          <>
+            {showLabels ? (
+              <p className="mb-2 mt-6 px-2 text-[10px] font-bold uppercase tracking-[0.15em] text-white/25">
+                Category review
+              </p>
+            ) : (
+              <div className="my-3 border-t border-white/[0.08]" />
+            )}
+            <NavItem
+              to="/dashboard/review"
+              label="Review queue"
+              icon={ClipboardCheck}
+              showLabels={showLabels}
+              onNavigate={onCloseMobile}
+            />
+          </>
+        )}
 
         {isAdmin && (
           <>

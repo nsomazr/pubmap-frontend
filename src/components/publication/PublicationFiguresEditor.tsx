@@ -15,6 +15,7 @@ interface Props {
 export function PublicationFiguresEditor({ publicationId, figures, onChange, readOnly }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [preview, setPreview] = useState<PublicationFigure | null>(null);
   const [draft, setDraft] = useState({ title: "", caption: "", figure_number: "" });
 
@@ -22,10 +23,14 @@ export function PublicationFiguresEditor({ publicationId, figures, onChange, rea
     const file = files?.[0];
     if (!file || readOnly) return;
     setUploading(true);
+    setUploadError("");
     try {
       const fig = (await uploadFigure(publicationId, file, draft)) as PublicationFigure;
       onChange([...figures, fig]);
       setDraft({ title: "", caption: "", figure_number: "" });
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      setUploadError(e.response?.data?.detail || "Figure upload failed. Use JPG, PNG, GIF, WEBP, or SVG under 10 MB.");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -59,6 +64,7 @@ export function PublicationFiguresEditor({ publicationId, figures, onChange, rea
             <ImagePlus className="h-4 w-4" />
             Add figure
           </Button>
+          {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
         </div>
       )}
 

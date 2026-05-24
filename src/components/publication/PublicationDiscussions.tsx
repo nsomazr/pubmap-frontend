@@ -8,10 +8,11 @@ import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 import { ResearcherRankInline } from "../rankings/ResearcherRankInline";
 import { UserAvatar } from "../ui/UserAvatar";
-import type { PublicationConversation } from "../../types";
+import type { CoAuthorPerson, PublicationCoAuthors, PublicationConversation } from "../../types";
 
 interface Props {
   publicationId: number;
+  coAuthors?: PublicationCoAuthors | null;
 }
 
 function authorName(user?: { firstname?: string; lastname?: string; full_name?: string }) {
@@ -31,7 +32,41 @@ function formatWhen(iso: string) {
   }
 }
 
-export function PublicationDiscussions({ publicationId }: Props) {
+function authorRoleLabel(
+  user?: { id?: number; email?: string },
+  coAuthors?: PublicationCoAuthors | null
+): string | null {
+  if (!user || !coAuthors?.team?.length) return null;
+  const email = (user.email || "").trim().toLowerCase();
+  const match = coAuthors.team.find(
+    (person: CoAuthorPerson) =>
+      (user.id && person.user_id === user.id) ||
+      (email && (person.email || "").trim().toLowerCase() === email)
+  );
+  const role = (match?.role || "").trim();
+  if (!role) return null;
+  if (/^lead/i.test(role)) return "Lead author";
+  if (/^co-?author/i.test(role)) return "Co-author";
+  return role;
+}
+
+function AuthorRoleBadge({ role }: { role: string | null }) {
+  if (!role) return null;
+  const isLead = role === "Lead author";
+  return (
+    <span
+      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${
+        isLead
+          ? "bg-brand-50 text-brand-800 ring-brand-200/80"
+          : "bg-teal-50 text-teal-800 ring-teal-200/80"
+      }`}
+    >
+      {role}
+    </span>
+  );
+}
+
+export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState("");
@@ -81,67 +116,79 @@ export function PublicationDiscussions({ publicationId }: Props) {
         <p className="mt-6 text-sm text-slate-500">Loading discussion…</p>
       ) : (
         <div className="mt-6 space-y-5">
-          {threads.map((thread) => (
-            <article
-              key={thread.id}
-              className="rounded-2xl border border-slate-100 bg-slate-50/40 p-4 sm:p-5"
-            >
-              <div className="flex items-start gap-3">
-                <UserAvatar user={thread.user} size="sm" className="border-2" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-ink">{authorName(thread.user)}</p>
-                  <div className="mt-1">
-                    <ResearcherRankInline ranking={thread.user?.ranking} compact showBadges={false} />
+          {threads.map((thread) => {
+            const threadRole = authorRoleLabel(thread.user, coAuthors);
+            return (
+              <article
+                key={thread.id}
+                className="rounded-2xl border border-slate-100 bg-slate-50/40 p-4 sm:p-5"
+              >
+                <div className="flex items-start gap-3">
+                  <UserAvatar user={thread.user} size="sm" className="border-2" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold text-ink">{authorName(thread.user)}</p>
+                      <AuthorRoleBadge role={threadRole} />
+                    </div>
+                    <div className="mt-1">
+                      <ResearcherRankInline ranking={thread.user?.ranking} compact showBadges={false} />
+                    </div>
+                    {thread.created_at && (
+                      <p className="text-xs text-slate-400">{formatWhen(thread.created_at)}</p>
+                    )}
                   </div>
-                  {thread.created_at && (
-                    <p className="text-xs text-slate-400">{formatWhen(thread.created_at)}</p>
-                  )}
                 </div>
-              </div>
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                {thread.comment}
-              </p>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                  {thread.comment}
+                </p>
 
-              {(thread.replies ?? []).length > 0 && (
-                <ul className="mt-4 space-y-3 border-l-2 border-brand-100 pl-4">
-                  {thread.replies!.map((r) => (
-                    <li key={r.id} className="flex gap-3 rounded-xl bg-white px-3 py-2.5 ring-1 ring-slate-100">
-                      <UserAvatar user={r.user} size="sm" className="h-8 w-8 border text-[10px]" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-slate-600">{authorName(r.user)}</p>
-                        <ResearcherRankInline ranking={r.user?.ranking} compact showBadges={false} />
-                        <p className="mt-1 text-sm text-slate-600">{r.reply}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                {(thread.replies ?? []).length > 0 && (
+                  <ul className="mt-4 space-y-3 border-l-2 border-brand-100 pl-4">
+                    {thread.replies!.map((r) => {
+                      const replyRole = authorRoleLabel(r.user, coAuthors);
+                      return (
+                        <li key={r.id} className="flex gap-3 rounded-xl bg-white px-3 py-2.5 ring-1 ring-slate-100">
+                          <UserAvatar user={r.user} size="sm" className="h-8 w-8 border text-[10px]" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-xs font-semibold text-slate-600">{authorName(r.user)}</p>
+                              <AuthorRoleBadge role={replyRole} />
+                            </div>
+                            <ResearcherRankInline ranking={r.user?.ranking} compact showBadges={false} />
+                            <p className="mt-1 text-sm text-slate-600">{r.reply}</p>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
 
-              {user ? (
-                <form
-                  className="mt-4 flex gap-2"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const text = (replyDrafts[thread.id] ?? "").trim();
-                    if (text) postReply.mutate({ conversationId: thread.id, text });
-                  }}
-                >
-                  <input
-                    type="text"
-                    value={replyDrafts[thread.id] ?? ""}
-                    onChange={(e) =>
-                      setReplyDrafts((d) => ({ ...d, [thread.id]: e.target.value }))
-                    }
-                    placeholder="Write a reply…"
-                    className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                  />
-                  <Button type="submit" variant="secondary" className="shrink-0 px-3">
-                    <Reply className="h-4 w-4" />
-                  </Button>
-                </form>
-              ) : null}
-            </article>
-          ))}
+                {user ? (
+                  <form
+                    className="mt-4 flex gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const text = (replyDrafts[thread.id] ?? "").trim();
+                      if (text) postReply.mutate({ conversationId: thread.id, text });
+                    }}
+                  >
+                    <input
+                      type="text"
+                      value={replyDrafts[thread.id] ?? ""}
+                      onChange={(e) =>
+                        setReplyDrafts((d) => ({ ...d, [thread.id]: e.target.value }))
+                      }
+                      placeholder="Write a reply…"
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                    />
+                    <Button type="submit" variant="secondary" className="shrink-0 px-3">
+                      <Reply className="h-4 w-4" />
+                    </Button>
+                  </form>
+                ) : null}
+              </article>
+            );
+          })}
         </div>
       )}
 

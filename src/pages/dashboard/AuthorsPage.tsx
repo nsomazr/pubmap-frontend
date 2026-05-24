@@ -1,15 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Shield, ShieldOff, UserCheck, UserX } from "lucide-react";
+import { Shield, ShieldOff, Trash2, UserCheck, UserX } from "lucide-react";
+import { useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
 import api from "../../lib/api";
+import { isPlatformAdmin } from "../../lib/userAccess";
 import type { User } from "../../types";
 
 export function AuthorsPage() {
   const { user } = useAuth();
-  if (user?.role_id !== 1) return <Navigate to="/dashboard" replace />;
+  if (!isPlatformAdmin(user)) return <Navigate to="/dashboard" replace />;
+
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
   const [params, setParams] = useSearchParams({ status: "1", role: "2" });
   const status = params.get("status") ?? "1";
@@ -38,11 +42,19 @@ export function AuthorsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["users-admin"] }),
   });
 
+  const deleteUser = useMutation({
+    mutationFn: (id: number) => api.delete(`/users/${id}/destroy_user/`),
+    onSuccess: () => {
+      setDeleteTarget(null);
+      queryClient.invalidateQueries({ queryKey: ["users-admin"] });
+    },
+  });
+
   return (
     <div className="animate-fade-up">
       <PageHeader
         title="User management"
-        description="Authors, admins, and account status. Changes are stored in the database immediately."
+        description="Authors, platform admins, and category managers. Promote users to admin, deactivate accounts, or permanently delete users."
       />
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -138,15 +150,26 @@ export function AuthorsPage() {
                           onClick={() => roleChange.mutate({ id: a.id, action: "make_admin" })}
                         >
                           <Shield className="h-4 w-4" />
-                          Make admin
+                          Promote to admin
                         </Button>
                       ) : (
                         <Button
                           variant="ghost"
                           onClick={() => roleChange.mutate({ id: a.id, action: "remove_admin" })}
+                          disabled={a.id === user?.id}
                         >
                           <ShieldOff className="h-4 w-4" />
                           Remove admin
+                        </Button>
+                      )}
+                      {a.id !== user?.id && (
+                        <Button
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => setDeleteTarget(a)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
                         </Button>
                       )}
                     </div>
@@ -155,6 +178,33 @@ export function AuthorsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl ring-1 ring-slate-200">
+            <h3 className="text-lg font-semibold text-ink">Delete user permanently?</h3>
+            <p className="mt-2 text-sm text-slate-600">
+              This removes{" "}
+              <strong>
+                {deleteTarget.firstname} {deleteTarget.lastname}
+              </strong>{" "}
+              ({deleteTarget.email}) and their category manager assignments. This cannot be undone.
+            </p>
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+                Cancel
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700"
+                loading={deleteUser.isPending}
+                onClick={() => deleteUser.mutate(deleteTarget.id)}
+              >
+                Delete user
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

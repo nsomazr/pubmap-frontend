@@ -1,5 +1,6 @@
 import type { SubcategoryVisual } from "../../types";
 import { taxonomyIcon } from "../../lib/taxonomyVisuals";
+import { mediaUrl } from "../../lib/mediaUrl";
 
 type Size = "xs" | "sm" | "md" | "lg" | "2xs";
 
@@ -28,6 +29,24 @@ interface Props {
 
 export function SubcategoryVisual({ visual, size = "sm", className = "", title }: Props) {
   const Icon = taxonomyIcon(visual.icon_key);
+  const logoSrc = mediaUrl(visual.logo_url);
+
+  if (logoSrc) {
+    return (
+      <span
+        className={`inline-flex shrink-0 overflow-hidden ${tileSizes[size]} ${className}`}
+        title={title ?? visual.name}
+        aria-hidden={title ? undefined : true}
+      >
+        <img
+          src={logoSrc}
+          alt=""
+          className="h-full w-full object-cover"
+          style={{ boxShadow: `0 4px 14px -6px ${visual.accent_color}55` }}
+        />
+      </span>
+    );
+  }
 
   return (
     <span

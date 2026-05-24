@@ -27,10 +27,21 @@ function stripHtml(text: string): string {
   return text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/** Normalize punctuation for readable GRE copy (no em/en dashes). */
+export function normalizeGreTypography(text: string): string {
+  return text
+    .replace(/\s*[—–]\s*/g, ", ")
+    .replace(/,\s*,+/g, ", ")
+    .replace(/,\s*\./g, ".")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 /** Remove markdown / echoed publication metadata before rendering. */
 export function cleanAssistantSummary(raw: string): string {
-  return raw
-    .split("\n")
+  return normalizeGreTypography(
+    raw
+      .split("\n")
     .map((line) => {
       let t = line.trim();
       if (!t) return "";
@@ -49,7 +60,7 @@ export function cleanAssistantSummary(raw: string): string {
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/\*\*([^*]+)\*\*/g, "$1")
-    .trim();
+  );
 }
 
 function inlineFormat(text: string): ReactNode[] {
@@ -61,8 +72,8 @@ function inlineFormat(text: string): ReactNode[] {
   while ((m = re.exec(plain)) !== null) {
     if (m.index > last) parts.push(plain.slice(last, m.index));
     parts.push(
-      <strong key={`${m.index}-b`} className="font-semibold text-ink">
-        {m[1]}
+        <strong key={`${m.index}-b`} className="font-semibold text-ink">
+        {normalizeGreTypography(m[1])}
       </strong>
     );
     last = m.index + m[0].length;

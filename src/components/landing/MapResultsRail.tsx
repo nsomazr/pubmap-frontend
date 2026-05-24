@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronLeft, ChevronRight, MapPin, Sparkles, X } from "lucide-react";
+import { useRef } from "react";
 import { Link } from "react-router-dom";
 import { requestPublicationSummary } from "../map/publicationPopupSummary";
 import { useIsMobile } from "../../hooks/useMediaQuery";
@@ -36,27 +37,58 @@ export function MapResultsRail({
   onClose,
 }: Props) {
   const isMobile = useIsMobile();
+  const swipeRef = useRef<{ startY: number } | null>(null);
 
   if (!open) return null;
 
-  const collapseToggle = (
+  const handleSheetPointerDown = (clientY: number) => {
+    swipeRef.current = { startY: clientY };
+  };
+
+  const handleSheetPointerUp = (clientY: number) => {
+    const start = swipeRef.current;
+    swipeRef.current = null;
+    if (!start) return;
+    if (clientY - start.startY > 56) {
+      onToggleCollapse();
+    }
+  };
+
+  const mobileToggle = (
     <button
       type="button"
       onClick={onToggleCollapse}
-      className={
-        isMobile
-          ? "fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] left-1/2 z-[1001] flex -translate-x-1/2 items-center gap-1 rounded-full bg-white px-4 py-2 text-xs font-semibold text-brand-700 shadow-lg ring-1 ring-slate-200/80"
-          : "absolute top-1/2 z-[1001] hidden -translate-y-1/2 rounded-r-2xl bg-white py-8 pl-1.5 pr-2.5 shadow-xl ring-1 ring-slate-200/80 transition hover:bg-slate-50 md:flex"
-      }
-      style={isMobile ? undefined : { left: collapsed ? 0 : "min(400px, 92vw)" }}
-      aria-label={collapsed ? "Expand results" : "Collapse results"}
+      className="map-results-rail-toggle fixed left-1/2 z-[1210] flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-brand-700 shadow-lg ring-1 ring-slate-200/80"
+      style={{
+        bottom: collapsed
+          ? "calc(3.75rem + env(safe-area-inset-bottom, 0px))"
+          : "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+      }}
+      aria-label={collapsed ? "Show search results" : "Hide search results"}
     >
-      {isMobile ? (
+      {collapsed ? (
+        <>
+          <ChevronDown className="h-4 w-4 rotate-180" />
+          Show {publications.length} result{publications.length !== 1 ? "s" : ""}
+        </>
+      ) : (
         <>
           <ChevronDown className="h-4 w-4" />
-          {collapsed ? "Show results" : "Hide results"}
+          Hide results
         </>
-      ) : collapsed ? (
+      )}
+    </button>
+  );
+
+  const desktopToggle = (
+    <button
+      type="button"
+      onClick={onToggleCollapse}
+      className="absolute top-1/2 z-[1210] hidden -translate-y-1/2 rounded-r-2xl bg-white py-8 pl-1.5 pr-2.5 shadow-xl ring-1 ring-slate-200/80 transition hover:bg-slate-50 md:flex"
+      style={{ left: collapsed ? 0 : "min(400px, 92vw)" }}
+      aria-label={collapsed ? "Expand results" : "Collapse results"}
+    >
+      {collapsed ? (
         <ChevronRight className="h-5 w-5 text-brand-600" />
       ) : (
         <ChevronLeft className="h-5 w-5 text-brand-600" />
@@ -66,23 +98,22 @@ export function MapResultsRail({
 
   return (
     <>
-      {isMobile && collapsed && collapseToggle}
+      {isMobile && mobileToggle}
+      {!isMobile && desktopToggle}
 
       {!collapsed && isMobile && (
         <button
           type="button"
-          className="fixed inset-0 z-[999] bg-slate-900/30"
+          className="fixed inset-0 z-[1200] bg-slate-900/35"
           onClick={onToggleCollapse}
-          aria-label="Dismiss results backdrop"
+          aria-label="Dismiss search results"
         />
       )}
 
-      {!collapsed && !isMobile && collapseToggle}
-
       <aside
-        className={`z-[1000] flex flex-col bg-white shadow-2xl transition-all duration-300 ease-out ${
+        className={`map-results-rail z-[1205] flex flex-col bg-white shadow-2xl transition-all duration-300 ease-out ${
           isMobile
-            ? `map-results-rail--mobile fixed inset-x-0 max-h-[min(72dvh,calc(100dvh-11rem))] rounded-t-2xl ${
+            ? `map-results-rail--mobile fixed inset-x-0 max-h-[min(68dvh,calc(100dvh-8rem))] rounded-t-2xl ${
                 collapsed ? "pointer-events-none translate-y-full opacity-0" : "translate-y-0 opacity-100"
               }`
             : `absolute bottom-0 left-0 top-0 ${
@@ -92,43 +123,53 @@ export function MapResultsRail({
               }`
         }`}
       >
-        <div className="relative overflow-hidden border-b border-slate-100 px-5 py-5">
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-600 via-brand-600 to-teal-600 opacity-[0.08]" />
-          <div className="relative flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-600">
-                Search results
-              </p>
-              <p className="mt-1 text-2xl font-bold text-ink">
-                {publications.length}
-                <span className="ml-1 text-base font-medium text-slate-500">
-                  publication{publications.length !== 1 ? "s" : ""}
-                </span>
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              {isMobile && (
+        <div
+          className="flex shrink-0 flex-col items-center border-b border-slate-100 bg-white px-5 pb-4 pt-3"
+          onPointerDown={(e) => isMobile && handleSheetPointerDown(e.clientY)}
+          onPointerUp={(e) => isMobile && handleSheetPointerUp(e.clientY)}
+          onPointerCancel={(e) => isMobile && handleSheetPointerUp(e.clientY)}
+        >
+          {isMobile && (
+            <span className="mb-3 h-1 w-12 rounded-full bg-slate-300" aria-hidden />
+          )}
+          <div className="relative w-full overflow-hidden rounded-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-600 via-brand-600 to-teal-600 opacity-[0.08]" />
+            <div className="relative flex items-start justify-between gap-3 py-2">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-600">
+                  Search results
+                </p>
+                <p className="mt-1 text-2xl font-bold text-ink">
+                  {publications.length}
+                  <span className="ml-1 text-base font-medium text-slate-500">
+                    publication{publications.length !== 1 ? "s" : ""}
+                  </span>
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                {isMobile && (
+                  <button
+                    type="button"
+                    onClick={onToggleCollapse}
+                    className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700"
+                  >
+                    Minimize
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={onToggleCollapse}
-                  className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 md:hidden"
+                  onClick={onClose}
+                  className="rounded-xl bg-slate-100 p-2.5 text-slate-500 transition hover:bg-slate-200 hover:text-ink"
+                  aria-label="Close search results"
                 >
-                  Minimize
+                  <X className="h-5 w-5" />
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-xl bg-slate-100 p-2 text-slate-500 transition hover:bg-slate-200 hover:text-ink"
-                aria-label="Close results"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-6">
           {publications.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-slate-200 px-4 py-12 text-center">
               <MapPin className="mx-auto h-10 w-10 text-slate-300" />
