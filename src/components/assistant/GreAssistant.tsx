@@ -170,13 +170,6 @@ export function GreAssistant() {
               </span>
               <div>
                 <p className="text-sm font-bold">GRE Assistant</p>
-                <p className="text-[10px] text-white/80">
-                  {health === null
-                    ? "Checking…"
-                    : health.available
-                      ? `Online · ${health.provider ?? "AI"}${health.model ? ` (${health.model})` : ""}`
-                      : health.hint ?? "Offline. Check API GROQ_API_KEY"}
-                </p>
               </div>
             </div>
             <div className="flex items-center gap-1">
