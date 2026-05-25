@@ -999,9 +999,25 @@ body {
   margin-top: 0.375rem;
 }
 
-/* Leaflet popups stay below search chrome */
+/* Leaflet popups stay below search chrome but above footer on landing map */
 .gre-map-popup.leaflet-popup {
   z-index: 900 !important;
+}
+
+.landing-page .gre-map-popup.leaflet-popup {
+  z-index: 1200 !important;
+}
+
+.gre-map--landing {
+  overflow: visible;
+}
+
+.gre-map--landing .leaflet-container {
+  overflow: hidden;
+}
+
+.gre-map--landing .leaflet-pane.leaflet-popup-pane {
+  z-index: 1200;
 }
 
 .gre-map--embedded .leaflet-bottom.leaflet-right {
@@ -1490,11 +1506,16 @@ body {
   box-shadow:
     0 16px 48px -12px rgba(15, 23, 42, 0.22),
     0 0 0 1px rgba(226, 232, 240, 0.95);
+  max-height: min(62dvh, 440px);
 }
 
 .gre-map-popup .leaflet-popup-content {
   margin: 0;
   min-width: 240px;
+  max-height: min(60dvh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .gre-map-popup .leaflet-popup-tip {

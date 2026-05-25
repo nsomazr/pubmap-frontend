@@ -9,6 +9,8 @@ import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
 
 const FOCUS_ZOOM = 13;
+const LANDING_POPUP_BOTTOM_PAD = 148;
+const LANDING_POPUP_TOP_PAD = 160;
 const EMBEDDED_FOCUS_ZOOM = 10;
 
 interface Props {
@@ -58,8 +60,9 @@ export function PublicationMarkerLayer({
         maxWidth: embedded ? 320 : 280,
         className: embedded ? "gre-map-popup gre-map-popup--embedded" : "gre-map-popup",
         autoPan: true,
-        autoPanPaddingTopLeft: L.point(24, embedded ? 80 : 150),
-        autoPanPaddingBottomRight: L.point(24, embedded ? 180 : 80),
+        autoPanPaddingTopLeft: L.point(24, embedded ? 80 : LANDING_POPUP_TOP_PAD),
+        autoPanPaddingBottomRight: L.point(24, embedded ? 180 : LANDING_POPUP_BOTTOM_PAD),
+        offset: L.point(0, embedded ? 0 : -8),
         keepInView: true,
         closeButton: true,
         autoClose: true,

@@ -111,7 +111,7 @@ export function ResearchMap({
   return (
     <div
       style={{ height }}
-      className={`gre-map ts-map relative w-full ${embedded ? "gre-map--embedded" : "overflow-hidden"} ${className || "rounded-none border-0 shadow-none"}`}
+      className={`gre-map ts-map relative w-full ${embedded ? "gre-map--embedded" : "gre-map--landing"} ${className || "rounded-none border-0 shadow-none"}`}
     >
       <MapContainer
         center={[-6.37, 34.89]}
