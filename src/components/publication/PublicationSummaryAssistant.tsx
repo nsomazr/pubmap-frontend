@@ -1,5 +1,5 @@
 import { Loader2, MessageCircle, Send, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   assistantHealth,
   assistantSummarizeFollowUpStream,
@@ -7,6 +7,8 @@ import {
   type SummaryFollowUpTurn,
 } from "../../lib/assistant";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
+import { buildPublicationFollowUpSuggestions } from "../../lib/publicationFollowUpSuggestions";
+import type { Publication } from "../../types";
 
 type FollowUpItem = {
   id: string;
@@ -18,6 +20,7 @@ type FollowUpItem = {
 
 interface Props {
   publicationId: number;
+  publication?: Publication | null;
   autoGenerate?: boolean;
   layout?: "page" | "dock";
   className?: string;
@@ -26,6 +29,7 @@ interface Props {
 
 export function PublicationSummaryAssistant({
   publicationId,
+  publication = null,
   autoGenerate = false,
   layout = "page",
   className = "",
@@ -97,9 +101,22 @@ export function PublicationSummaryAssistant({
     container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
   }, [summary, followUps, scrollContainerRef]);
 
-  const askFollowUp = async (event?: React.FormEvent) => {
-    event?.preventDefault();
-    const trimmed = question.trim();
+  const suggestedQuestions = useMemo(
+    () => buildPublicationFollowUpSuggestions(publication),
+    [publication]
+  );
+
+  const askedQuestions = useMemo(
+    () => new Set(followUps.map((item) => item.question.trim().toLowerCase())),
+    [followUps]
+  );
+
+  const visibleSuggestions = suggestedQuestions.filter(
+    (suggestion) => !askedQuestions.has(suggestion.trim().toLowerCase())
+  );
+
+  const submitFollowUp = async (questionText: string) => {
+    const trimmed = questionText.trim();
     if (!trimmed || !summary.trim() || summaryLoading || followUpLoading) return;
 
     followUpAbortRef.current?.abort();
@@ -168,9 +185,31 @@ export function PublicationSummaryAssistant({
     }
   };
 
+  const askFollowUp = (event?: React.FormEvent) => {
+    event?.preventDefault();
+    void submitFollowUp(question);
+  };
+
   const canAskFollowUp = Boolean(summary.trim()) && !summaryLoading && !followUpLoading;
   const isDock = layout === "dock";
   const isPage = layout === "page";
+
+  const suggestionChips =
+    visibleSuggestions.length > 0 ? (
+      <div className="flex flex-wrap gap-1.5 sm:gap-2">
+        {visibleSuggestions.map((suggestion) => (
+          <button
+            key={suggestion}
+            type="button"
+            disabled={!canAskFollowUp}
+            onClick={() => void submitFollowUp(suggestion)}
+            className="rounded-full bg-slate-100 px-2.5 py-1.5 text-left text-[11px] font-medium leading-snug text-slate-600 transition hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 sm:text-xs"
+          >
+            {suggestion}
+          </button>
+        ))}
+      </div>
+    ) : null;
 
   const followUpForm = (
     <form onSubmit={askFollowUp} className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -295,6 +334,12 @@ export function PublicationSummaryAssistant({
                 <MessageCircle className="h-3.5 w-3.5" />
                 Follow-up questions
               </p>
+              {suggestionChips && (
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-500">Suggested questions</p>
+                  {suggestionChips}
+                </div>
+              )}
               {followUpForm}
             </div>
           )}
@@ -324,6 +369,12 @@ export function PublicationSummaryAssistant({
             <MessageCircle className="h-3.5 w-3.5" />
             Follow-up questions
           </p>
+          {suggestionChips && (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500">Suggested questions</p>
+              {suggestionChips}
+            </div>
+          )}
           {followUpThread}
           {followUpForm}
         </div>

@@ -132,6 +132,7 @@ export function PublicationChatPage() {
         <div className="publication-chat-page__body flex min-h-0 flex-1 flex-col px-3 py-4 sm:px-6 sm:py-5">
           <PublicationSummaryAssistant
             publicationId={pub.id}
+            publication={pub}
             autoGenerate
             layout="page"
             scrollContainerRef={scrollRef}

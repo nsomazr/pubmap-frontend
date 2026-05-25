@@ -143,6 +143,7 @@ export function MapSummaryDock({ publication, onClose }: Props) {
           <PublicationSummaryAssistant
             key={publication.id}
             publicationId={publication.id}
+            publication={publication}
             autoGenerate
             layout="dock"
             scrollContainerRef={scrollRef}
