@@ -26,6 +26,9 @@ export interface PublicationPaperPreviewData {
   viewsCount?: number;
   downloadsCount?: number;
   discussionsCount?: number;
+  responsesCount?: number;
+  teamSize?: number;
+  greDoi?: string | null;
   accessType?: "open" | "closed";
 }
 
@@ -64,6 +67,9 @@ export function PublicationPaperPreview({
         viewsCount={data.viewsCount}
         downloadsCount={data.downloadsCount}
         discussionsCount={data.discussionsCount}
+        responsesCount={data.responsesCount}
+        teamSize={data.teamSize}
+        greDoi={data.greDoi}
         accessType={data.accessType}
         draft={draft}
       />

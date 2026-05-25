@@ -1,4 +1,3 @@
-import { Eye, Download, MapPin, MessageSquare, RefreshCw } from "lucide-react";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { assets } from "../../lib/brand";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
@@ -19,6 +18,9 @@ export interface PublicationPaperHeaderProps {
   viewsCount?: number;
   downloadsCount?: number;
   discussionsCount?: number;
+  responsesCount?: number;
+  teamSize?: number;
+  greDoi?: string | null;
   accessType?: "open" | "closed";
   draft?: boolean;
 }
@@ -51,7 +53,7 @@ function CategoryTopBadge({
           />
         ) : (
           <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 text-lg font-bold text-white">
-            GRE
+            {label.slice(0, 2).toUpperCase()}
           </span>
         )}
         <p className="mt-2 text-center text-[10px] font-bold uppercase leading-tight tracking-wide text-white sm:text-[11px]">
@@ -62,22 +64,60 @@ function CategoryTopBadge({
   );
 }
 
-function MetaItem({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Eye;
-  label: string;
-  value: string | number;
-}) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 sm:text-sm">
-      <Icon className="h-3.5 w-3.5 shrink-0 text-brand-600" aria-hidden />
-      <span className="font-medium text-slate-500">{label}:</span>
-      <span className="font-semibold text-slate-700">{value}</span>
-    </span>
-  );
+function buildMetaRows({
+  publishedLabel,
+  location,
+  viewsCount,
+  downloadsCount,
+  discussionsCount,
+  responsesCount,
+  teamSize,
+  greDoi,
+  accessType,
+}: Pick<
+  PublicationPaperHeaderProps,
+  | "publishedLabel"
+  | "location"
+  | "viewsCount"
+  | "downloadsCount"
+  | "discussionsCount"
+  | "responsesCount"
+  | "teamSize"
+  | "greDoi"
+  | "accessType"
+>) {
+  const rows: { label: string; value: string }[] = [];
+
+  if (publishedLabel) {
+    rows.push({ label: "Published on", value: publishedLabel });
+  }
+  if (location) {
+    rows.push({ label: "Study location", value: location });
+  }
+  rows.push({
+    label: "Readers",
+    value: `${viewsCount ?? 0} views · ${downloadsCount ?? 0} downloads`,
+  });
+  rows.push({ label: "Discussions", value: String(discussionsCount ?? 0) });
+  if (typeof responsesCount === "number" || typeof teamSize === "number") {
+    const replies = responsesCount ?? 0;
+    const authors = teamSize ?? 1;
+    rows.push({
+      label: "Responses",
+      value: `${replies} replies · ${authors} author${authors === 1 ? "" : "s"}`,
+    });
+  }
+  if (accessType) {
+    rows.push({
+      label: "Access",
+      value: accessType === "closed" ? "Restricted access" : "Open access",
+    });
+  }
+  if (greDoi?.trim()) {
+    rows.push({ label: "GRE DOI", value: greDoi.trim().toUpperCase() });
+  }
+
+  return rows;
 }
 
 export function PublicationPaperHeader({
@@ -93,10 +133,24 @@ export function PublicationPaperHeader({
   viewsCount = 0,
   downloadsCount = 0,
   discussionsCount = 0,
+  responsesCount,
+  teamSize,
+  greDoi,
   accessType,
   draft,
 }: PublicationPaperHeaderProps) {
   const displayTitle = formatGrePaperTitle(title, greNumber);
+  const metaRows = buildMetaRows({
+    publishedLabel,
+    location,
+    viewsCount,
+    downloadsCount,
+    discussionsCount,
+    responsesCount,
+    teamSize,
+    greDoi,
+    accessType,
+  });
 
   return (
     <header className="publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
@@ -129,8 +183,8 @@ export function PublicationPaperHeader({
         <CategoryTopBadge visual={subVisual} name={subCategoryName || subVisual?.name} />
       </div>
 
-      <div className="px-5 py-5 sm:px-7 sm:py-6">
-        <h1 className="text-xl font-bold leading-snug text-ink sm:text-2xl lg:text-[1.65rem] lg:leading-tight">
+      <div className="px-5 py-4 sm:px-7 sm:py-5">
+        <h1 className="text-justify text-xl font-bold leading-snug text-ink hyphens-auto sm:text-2xl lg:text-[1.65rem] lg:leading-tight">
           {displayTitle}
         </h1>
         {authorByline && authorByline.authors.length > 0 ? (
@@ -138,33 +192,25 @@ export function PublicationPaperHeader({
         ) : (
           <>
             {authorName && (
-              <p className="mt-3 text-base font-semibold text-slate-800">{authorName}</p>
+              <p className="mt-2.5 text-base font-semibold text-slate-800">{authorName}</p>
             )}
             {affiliation && <p className="mt-0.5 text-sm text-slate-600">{affiliation}</p>}
           </>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3 sm:gap-x-5 sm:px-7">
-        {publishedLabel && (
-          <MetaItem icon={RefreshCw} label="Published on" value={publishedLabel} />
-        )}
-        {location && (
-          <>
-            <span className="hidden h-4 w-px bg-slate-200 sm:block" aria-hidden />
-            <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 sm:text-sm">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-brand-600" aria-hidden />
-              <span className="font-semibold text-slate-700">{location}</span>
-            </span>
-          </>
-        )}
-        <span className="hidden h-4 w-px bg-slate-200 sm:block" aria-hidden />
-        <MetaItem icon={Eye} label="Readers" value={viewsCount} />
-        <span className="hidden h-4 w-px bg-slate-200 sm:block" aria-hidden />
-        <MetaItem icon={Download} label="Downloads" value={downloadsCount} />
-        <span className="hidden h-4 w-px bg-slate-200 sm:block" aria-hidden />
-        <MetaItem icon={MessageSquare} label="Discussions" value={discussionsCount} />
-      </div>
+      {metaRows.length > 0 && (
+        <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-3 sm:px-7">
+          <dl className="publication-paper-meta grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+            {metaRows.map((row) => (
+              <div key={row.label} className="flex min-w-0 items-start gap-2 text-xs sm:text-sm">
+                <dt className="w-[7.25rem] shrink-0 font-medium text-slate-500">{row.label}</dt>
+                <dd className="min-w-0 font-semibold text-slate-700">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
     </header>
   );
 }

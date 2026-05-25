@@ -112,6 +112,8 @@ export function PublicationDetailPage() {
             viewsCount={pub.views_count ?? 0}
             downloadsCount={pub.downloads_count ?? 0}
             discussionsCount={pub.discussions_count ?? 0}
+            teamSize={pub.co_authors?.total_authors}
+            greDoi={pub.gre?.gre_doi}
             accessType={pub.gre?.access_type}
           />
 

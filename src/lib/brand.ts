@@ -4,9 +4,9 @@
 export const partneringUniversity = "University of Dar es Salaam";
 
 export const assets = {
-  logo: "/assets/icons/logo.png",
-  logoBlack: "/assets/icons/logo_black.png",
-  mapLogo: "/assets/icons/map_logo.png",
+  logo: "/assets/icons/logo.svg",
+  logoBlack: "/assets/icons/logo.svg",
+  mapLogo: "/assets/icons/map_logo.svg",
   marker: "/assets/icons/marker.png",
   star: "/assets/icons/star.svg",
   facebook: "/assets/icons/facebook.svg",
