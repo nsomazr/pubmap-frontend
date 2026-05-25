@@ -1,47 +1,28 @@
 import api from "./api";
+import type {
+  PlagiarismClaimStatus,
+  PublicationPlagiarismClaim,
+  PublicationPlagiarismEvidence,
+} from "../types";
 
-export type PlagiarismClaimStatus =
-  | "open"
-  | "dismissed"
-  | "restored"
-  | "deleted"
+export type PlagiarismDecision =
+  | "hide"
+  | "delete"
+  | "address_claims"
+  | "dismiss"
+  | "restore"
   | "revision";
 
-export type PlagiarismDecision = "restore" | "delete" | "revision" | "dismiss";
-
-export interface PlagiarismEvidence {
-  id: number;
-  file_path: string;
-  url: string;
-  label: string;
-  uploaded_at: string;
-}
-
-export interface PlagiarismClaim {
-  id: number;
-  publication_id: number;
-  publication_title: string;
-  publication_status: number;
-  reporter_id: number;
-  reporter_name: string;
-  description: string;
-  status: PlagiarismClaimStatus;
-  admin_decision: string;
-  admin_notes: string;
-  resolved_by_id: number | null;
-  resolved_by_name: string;
-  resolved_at: string | null;
-  created_at: string;
-  updated_at: string;
-  evidence: PlagiarismEvidence[];
-}
+export type PlagiarismEvidence = PublicationPlagiarismEvidence;
+export type PlagiarismClaim = PublicationPlagiarismClaim;
 
 export const CLAIM_STATUS_LABELS: Record<PlagiarismClaimStatus, string> = {
   open: "Under review",
   dismissed: "Dismissed. Publication restored",
   restored: "Publication restored",
+  hidden: "Hidden from publications",
   deleted: "Publication removed",
-  revision: "Revision requested",
+  revision: "Address claims requested",
 };
 
 export async function submitPlagiarismClaim(publicationId: number, description: string) {

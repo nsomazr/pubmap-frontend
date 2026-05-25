@@ -66,7 +66,7 @@ export function CountryInstitutionPicker({
   const institutionOptions = useMemo(
     () => [
       ...catalog.map((row) => ({ value: row.label, label: row.label })),
-      { value: "__custom__", label: "Not listed: type full official name" },
+      { value: "__custom__", label: "Not listed: type institution / affiliation" },
     ],
     [catalog]
   );
@@ -117,8 +117,8 @@ export function CountryInstitutionPicker({
         </div>
         {selectedCountry && !selectedCountry.has_catalog && (
           <p className="mt-1.5 text-xs text-slate-500">
-            No curated university list yet for {selectedCountry.name}. Enter your institution&apos;s
-            full official name below.
+            No curated institution list yet for {selectedCountry.name}. Enter your institution or
+            affiliation below.
           </p>
         )}
       </div>
@@ -133,7 +133,7 @@ export function CountryInstitutionPicker({
           {loadingCatalog && catalog.length === 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
               <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
-              Loading universities for {selectedCountry?.name || "this country"}…
+              Loading institutions for {selectedCountry?.name || "this country"}…
             </div>
           )}
 
@@ -143,20 +143,30 @@ export function CountryInstitutionPicker({
                 type="search"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                placeholder="Filter universities in this country…"
+                placeholder="Filter institutions in this country…"
                 className="mb-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
               />
               <ScrollableSelect
                 value={institution}
                 onChange={handleInstitutionSelect}
                 options={institutionOptions}
-                placeholder="Choose your institution…"
+                placeholder="Choose your institution or affiliation…"
                 required={required && !customMode}
                 aria-label={institutionLabel}
                 icon={<Building2 className="h-4 w-4" />}
                 triggerClassName="pl-3 pr-3"
                 maxMenuHeight={280}
               />
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomMode(true);
+                  setFilter("");
+                }}
+                className="mt-2 text-xs font-medium text-brand-700 hover:text-brand-800"
+              >
+                Not listed? Type another institution / affiliation
+              </button>
             </>
           )}
 
@@ -167,11 +177,11 @@ export function CountryInstitutionPicker({
                   type="button"
                   onClick={() => {
                     setCustomMode(false);
-                    onInstitutionChange("");
+                    setFilter("");
                   }}
                   className="text-xs font-medium text-brand-700 hover:text-brand-800"
                 >
-                  Back to university list
+                  Back to institution list
                 </button>
               )}
               <div className="relative">
@@ -180,15 +190,15 @@ export function CountryInstitutionPicker({
                   type="text"
                   value={institution}
                   required={required}
-                  placeholder="Full official institution name"
+                  placeholder="Type institution or affiliation"
                   onChange={(e) => onInstitutionChange(e.target.value)}
                   onBlur={() => onInstitutionChange(normalizeInstitutionLabel(institution))}
                   className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
                 />
               </div>
               <p className="text-xs text-slate-500">
-                Use the complete official name (e.g. &quot;University of Dar es Salaam&quot;). We
-                will normalize it for rankings and map search.
+                Use the complete institution or affiliation name. We will normalize it for rankings
+                and map search where possible.
               </p>
             </div>
           )}

@@ -5,6 +5,8 @@ import { BrandMark } from "../brand/BrandMark";
 
 const exploreLinks = [
   { to: "/about", label: "About" },
+  { to: "/statistics", label: "Statistics" },
+  { to: "/rankings", label: "Rankings" },
   { to: "/events", label: "Events" },
   { to: "/forum", label: "Forum" },
   { to: "/contact", label: "Contact" },
@@ -18,26 +20,47 @@ interface Props {
 export function PublicFooter({ variant = "full", publicationCount }: Props) {
   if (variant === "compact") {
     return (
-      <footer className="safe-bottom relative z-[1002] shrink-0 bg-slate-900/90 px-4 py-2.5 text-white backdrop-blur-md sm:px-5">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 text-xs">
-          <Link to="/" className="flex items-center gap-2.5 font-semibold text-white/90">
-            <BrandMark symbol="full" variant="dark" size="sm" />
-            <span className="hidden sm:inline">GRE</span>
-          </Link>
-          {publicationCount !== undefined && publicationCount > 0 && (
-            <span className="text-white/50">
-              {publicationCount} publication{publicationCount !== 1 ? "s" : ""} on map
-            </span>
-          )}
-          <div className="flex items-center gap-3">
-            <span className="hidden text-white/35 sm:inline">© {new Date().getFullYear()}</span>
+      <footer className="safe-bottom relative z-[1002] shrink-0 bg-slate-900/90 px-3 py-3 text-white backdrop-blur-md sm:px-5 sm:py-2.5">
+        <div className="mx-auto max-w-[1600px]">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 text-xs sm:hidden">
+            <Link to="/" className="flex min-w-0 items-center gap-2.5 font-semibold text-white/90">
+              <BrandMark symbol="full" variant="dark" size="sm" />
+              <span className="truncate">GRE Map</span>
+            </Link>
             <Link
               to="/register"
-              className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20"
+              className="inline-flex items-center justify-center gap-1 rounded-full bg-white/10 px-3 py-1.5 font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20"
             >
               Join
               <ArrowUpRight className="h-3 w-3" />
             </Link>
+            {publicationCount !== undefined && publicationCount > 0 && (
+              <span className="col-span-2 text-center text-white/55">
+                {publicationCount} publication{publicationCount !== 1 ? "s" : ""} on map
+              </span>
+            )}
+          </div>
+
+          <div className="hidden items-center justify-between gap-3 text-xs sm:flex">
+            <Link to="/" className="flex items-center gap-2.5 font-semibold text-white/90">
+              <BrandMark symbol="full" variant="dark" size="sm" />
+              <span>GRE</span>
+            </Link>
+            {publicationCount !== undefined && publicationCount > 0 && (
+              <span className="text-white/50">
+                {publicationCount} publication{publicationCount !== 1 ? "s" : ""} on map
+              </span>
+            )}
+            <div className="flex items-center gap-3">
+              <span className="text-white/35">© {new Date().getFullYear()}</span>
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20"
+              >
+                Join
+                <ArrowUpRight className="h-3 w-3" />
+              </Link>
+            </div>
           </div>
         </div>
       </footer>

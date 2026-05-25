@@ -393,8 +393,8 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
           <InstitutionPicker
             value={value.institution || ""}
             onChange={(institution) => onChange({ ...value, institution })}
-            label="Institution / site"
-            placeholder="University, lab, field site…"
+            label="Institution / affiliation"
+            placeholder="University, lab, organization, or affiliation…"
           />
         </div>
         <div>

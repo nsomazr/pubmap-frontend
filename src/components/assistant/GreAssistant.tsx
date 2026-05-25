@@ -20,6 +20,7 @@ const INITIAL_MESSAGE: Msg = {
 export function GreAssistant() {
   const location = useLocation();
   const hideOnPublicationChat = /\/publication\/\d+\/chat\/?$/.test(location.pathname);
+  const isMapLanding = location.pathname === "/";
   const [open, setOpen] = useState(false);
   const [health, setHealth] = useState<{
     available: boolean;
@@ -122,6 +123,12 @@ export function GreAssistant() {
 
   const isStreaming = messages.some((m) => m.streaming);
   const canClear = messages.length > 1 || loading;
+  const fabBottomClass = isMapLanding
+    ? "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:bottom-[calc(env(safe-area-inset-bottom)+4.5rem)]"
+    : "bottom-6 sm:bottom-8";
+  const panelBottomClass = isMapLanding
+    ? "bottom-[calc(env(safe-area-inset-bottom)+5rem)] sm:bottom-[calc(env(safe-area-inset-bottom)+4.25rem)]"
+    : "bottom-4 sm:bottom-6";
 
   const clearChat = () => {
     abortRef.current?.abort();
@@ -142,7 +149,7 @@ export function GreAssistant() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="gre-assistant-fab fixed bottom-6 right-4 z-[1100] flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-brand-600 to-teal-600 text-white shadow-lg shadow-brand-600/30 transition hover:scale-[1.02] hover:shadow-xl sm:bottom-8 sm:right-8 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:font-bold"
+          className={`gre-assistant-fab fixed right-4 z-[1100] flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-brand-600 to-teal-600 text-white shadow-lg shadow-brand-600/30 transition hover:scale-[1.02] hover:shadow-xl ${fabBottomClass} sm:right-8 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:font-bold`}
           aria-label="Open GRE Assistant"
         >
           <Sparkles className="h-5 w-5" />
@@ -152,7 +159,7 @@ export function GreAssistant() {
 
       {open && (
         <div
-          className="gre-assistant-panel fixed bottom-4 left-4 right-4 z-[1100] mx-auto flex max-w-[380px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200/90 sm:bottom-6 sm:left-auto sm:right-6 sm:mx-0 sm:w-[min(100vw-2rem,380px)]"
+          className={`gre-assistant-panel fixed left-4 right-4 z-[1100] mx-auto flex max-w-[380px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200/90 ${panelBottomClass} sm:left-auto sm:right-6 sm:mx-0 sm:w-[min(100vw-2rem,380px)]`}
           role="dialog"
           aria-label="GRE Assistant"
         >

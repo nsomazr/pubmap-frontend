@@ -57,6 +57,7 @@ export function PublicationPaperPreview({
       <PublicationPaperHeader
         title={data.title || "Untitled publication"}
         greNumber={data.greNumber}
+        funder={data.funder}
         authorName={data.authorName}
         affiliation={data.affiliation}
         authorByline={data.authorByline}
@@ -83,12 +84,6 @@ export function PublicationPaperPreview({
           <p className="mt-4 text-sm text-slate-600">
             <span className="font-semibold text-slate-700">Keywords: </span>
             {data.keywords.join(", ")}
-          </p>
-        )}
-        {data.funder?.trim() && (
-          <p className="mt-3 text-sm text-slate-600">
-            <span className="font-semibold text-slate-700">Project funders: </span>
-            {data.funder.trim()}
           </p>
         )}
       </section>

@@ -105,17 +105,17 @@ function ClaimCard({
               type="button"
               variant="secondary"
               loading={resolveMutation.isPending}
-              onClick={() => resolveMutation.mutate("restore")}
+              onClick={() => resolveMutation.mutate("hide")}
             >
-              Restore publication
+              Hide
             </Button>
             <Button
               type="button"
               variant="secondary"
               loading={resolveMutation.isPending}
-              onClick={() => resolveMutation.mutate("revision")}
+              onClick={() => resolveMutation.mutate("address_claims")}
             >
-              Request revision
+              Address claims
             </Button>
             <Button
               type="button"
@@ -134,7 +134,7 @@ function ClaimCard({
             </Button>
           </div>
           <Link
-            to={`/dashboard/publications/${claim.publication_id}`}
+            to={`/dashboard/publications/${claim.publication_id}?focus=claims`}
             className="inline-block text-xs font-semibold text-brand-700 hover:underline"
           >
             Open publication in dashboard
@@ -148,7 +148,9 @@ function ClaimCard({
 export function PlagiarismClaimsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role_id === 1;
-  const [tab, setTab] = useState<"mine" | "moderation">(isAdmin ? "moderation" : "mine");
+  const [tab, setTab] = useState<"mine" | "moderation" | "publisher">(
+    isAdmin ? "moderation" : "publisher"
+  );
   const queryClient = useQueryClient();
 
   const invalidate = () => {
@@ -164,6 +166,18 @@ export function PlagiarismClaimsPage() {
       );
       return Array.isArray(data) ? data : (data.results ?? []);
     },
+  });
+
+  const { data: publisherClaims = [], isLoading: publisherLoading } = useQuery({
+    queryKey: ["plagiarism-claims", "publisher"],
+    queryFn: async () => {
+      const { data } = await api.get<PlagiarismClaim[] | { results: PlagiarismClaim[] }>(
+        "/plagiarism-claims/",
+        { params: { scope: "owned" } }
+      );
+      return Array.isArray(data) ? data : (data.results ?? []);
+    },
+    enabled: !isAdmin,
   });
 
   const { data: openClaims = [], isLoading: openLoading } = useQuery({
@@ -190,8 +204,10 @@ export function PlagiarismClaimsPage() {
         title="Plagiarism reports"
         description={
           isAdmin
-            ? "Review claims, inspect evidence, and restore, revise, or remove publications."
-            : "Track plagiarism reports you have submitted to GRE."
+            ? "Review claims, inspect evidence, and hide, address, dismiss, or remove publications."
+            : tab === "publisher"
+              ? "Review claims and moderation requests related to your publications."
+              : "Track plagiarism reports you have submitted to GRE."
         }
       />
 
@@ -220,28 +236,51 @@ export function PlagiarismClaimsPage() {
         </div>
       )}
 
-      {isAdmin && (
-        <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100/90 p-1.5 ring-1 ring-slate-200/70">
-          <button
-            type="button"
-            onClick={() => setTab("moderation")}
-            className={`rounded-xl px-4 py-2.5 text-sm font-semibold ${
-              tab === "moderation" ? "bg-white text-brand-700 shadow-sm" : "text-slate-600"
-            }`}
-          >
-            Moderation queue
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("mine")}
-            className={`rounded-xl px-4 py-2.5 text-sm font-semibold ${
-              tab === "mine" ? "bg-white text-brand-700 shadow-sm" : "text-slate-600"
-            }`}
-          >
-            My reports
-          </button>
-        </div>
-      )}
+      <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100/90 p-1.5 ring-1 ring-slate-200/70">
+        {isAdmin ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setTab("moderation")}
+              className={`rounded-xl px-4 py-2.5 text-sm font-semibold ${
+                tab === "moderation" ? "bg-white text-brand-700 shadow-sm" : "text-slate-600"
+              }`}
+            >
+              Moderation queue
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("mine")}
+              className={`rounded-xl px-4 py-2.5 text-sm font-semibold ${
+                tab === "mine" ? "bg-white text-brand-700 shadow-sm" : "text-slate-600"
+              }`}
+            >
+              My reports
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => setTab("publisher")}
+              className={`rounded-xl px-4 py-2.5 text-sm font-semibold ${
+                tab === "publisher" ? "bg-white text-brand-700 shadow-sm" : "text-slate-600"
+              }`}
+            >
+              Claims on my publications
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("mine")}
+              className={`rounded-xl px-4 py-2.5 text-sm font-semibold ${
+                tab === "mine" ? "bg-white text-brand-700 shadow-sm" : "text-slate-600"
+              }`}
+            >
+              Reports I filed
+            </button>
+          </>
+        )}
+      </div>
 
       {tab === "moderation" && isAdmin ? (
         openLoading ? (
@@ -254,6 +293,23 @@ export function PlagiarismClaimsPage() {
           <div className="grid gap-4">
             {openClaims.map((claim) => (
               <ClaimCard key={claim.id} claim={claim} adminView onResolved={invalidate} />
+            ))}
+          </div>
+        )
+      ) : tab === "publisher" && !isAdmin ? (
+        publisherLoading ? (
+          <p className="text-slate-500">Loading publication claims…</p>
+        ) : publisherClaims.length === 0 ? (
+          <div className="gre-card p-8 text-center">
+            <p className="font-medium text-ink">No claims on your publications</p>
+            <p className="mt-1 text-sm text-slate-500">
+              If GRE asks you to address a plagiarism claim, it will appear here.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {publisherClaims.map((claim) => (
+              <ClaimCard key={claim.id} claim={claim} onResolved={invalidate} />
             ))}
           </div>
         )

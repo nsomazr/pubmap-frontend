@@ -280,10 +280,13 @@ export function PublicationSummaryAssistant({
       <div className={`publication-chat flex min-h-0 flex-1 flex-col ${className}`}>
         <div
           ref={scrollContainerRef}
-          className="publication-chat__thread min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1 sm:space-y-5"
+          className="publication-chat__thread min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1 sm:space-y-4"
         >
           {summaryError ? (
-            <div className="space-y-3 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-amber-100">
+            <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3.5 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                Summary
+              </p>
               <p className="text-sm text-amber-900">{summaryError}</p>
               <button
                 type="button"
@@ -294,26 +297,21 @@ export function PublicationSummaryAssistant({
               </button>
             </div>
           ) : !summary && summaryLoading ? (
-            <div className="flex gap-3">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-                <Sparkles className="h-4 w-4" />
+            <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-600">
+                Summary
+              </p>
+              <span className="inline-flex items-center gap-2 text-sm text-slate-600">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating summary…
               </span>
-              <div className="rounded-2xl rounded-tl-md bg-brand-50/70 px-4 py-3 ring-1 ring-brand-100">
-                <span className="inline-flex items-center gap-2 text-sm text-slate-600">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Generating summary…
-                </span>
-              </div>
             </div>
           ) : summary ? (
-            <div className="flex gap-3">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-                <Sparkles className="h-4 w-4" />
-              </span>
-              <div className="min-w-0 flex-1 rounded-2xl rounded-tl-md bg-brand-50/70 px-4 py-3.5 ring-1 ring-brand-100">
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-600">
-                  Summary
-                </p>
+            <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-600">
+                Summary
+              </p>
+              <div className="text-sm leading-relaxed text-slate-800">
                 <FormattedAssistantText content={summary} streaming={summaryLoading} />
               </div>
             </div>
@@ -322,14 +320,14 @@ export function PublicationSummaryAssistant({
           {followUpThread}
         </div>
 
-        <div className="publication-chat__composer mt-4 shrink-0 border-t border-slate-100 bg-white pt-4">
+        <div className="publication-chat__composer mt-3 shrink-0 border-t border-slate-100 bg-white pt-3">
           {!summary.trim() && !summaryLoading && !summaryError && (
             <p className="mb-3 text-xs text-slate-500">
               Waiting for the summary before you can ask follow-ups.
             </p>
           )}
           {(summary.trim() || followUps.length > 0) && !summaryLoading && (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-600">
                 <MessageCircle className="h-3.5 w-3.5" />
                 Follow-up questions

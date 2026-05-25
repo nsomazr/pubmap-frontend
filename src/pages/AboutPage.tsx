@@ -17,7 +17,7 @@ import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 
 const INTRO = {
-  lead: "Welcome to the Global Research Exchange (GRE).",
+  lead: "Welcome to the Global Research Exchange (GRE)",
   mission:
     "This is a transformative platform that redefines how research connects with the world. Our mission is to amplify the impact of groundbreaking research, foster collaboration, and build a dynamic global community of thinkers, creators, and problem-solvers.",
   living:

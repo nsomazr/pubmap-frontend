@@ -25,9 +25,20 @@ interface Props {
   size?: Size;
   className?: string;
   title?: string;
+  fit?: "cover" | "contain";
+  clip?: boolean;
+  shadow?: boolean;
 }
 
-export function SubcategoryVisual({ visual, size = "sm", className = "", title }: Props) {
+export function SubcategoryVisual({
+  visual,
+  size = "sm",
+  className = "",
+  title,
+  fit = "cover",
+  clip = true,
+  shadow = true,
+}: Props) {
   const Icon = taxonomyIcon(visual.icon_key);
   const rawLogo = (visual.logo_url || "").trim();
   const logoSrc =
@@ -38,15 +49,15 @@ export function SubcategoryVisual({ visual, size = "sm", className = "", title }
   if (logoSrc) {
     return (
       <span
-        className={`inline-flex shrink-0 overflow-hidden ${tileSizes[size]} ${className}`}
+        className={`inline-flex shrink-0 ${clip ? "overflow-hidden" : ""} ${tileSizes[size]} ${className}`}
         title={title ?? visual.name}
         aria-hidden={title ? undefined : true}
       >
         <img
           src={logoSrc}
           alt=""
-          className="h-full w-full object-cover"
-          style={{ boxShadow: `0 4px 14px -6px ${visual.accent_color}55` }}
+          className={`h-full w-full ${fit === "contain" ? "object-contain" : "object-cover"}`}
+          style={shadow ? { boxShadow: `0 4px 14px -6px ${visual.accent_color}55` } : undefined}
         />
       </span>
     );

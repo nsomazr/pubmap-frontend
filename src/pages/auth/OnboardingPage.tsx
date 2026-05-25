@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CountryInstitutionPicker } from "../../components/institutions/CountryInstitutionPicker";
 import { InterestPicker } from "../../components/interests/InterestPicker";
@@ -12,7 +12,7 @@ import { AuthFormCard } from "../../components/auth/AuthFormCard";
 import { AuthLayout } from "../../components/layout/AuthLayout";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { HONORIFIC_OPTIONS, SIGNUP_HONORIFIC_KEY } from "../../lib/userDisplay";
+import { HONORIFIC_OPTIONS } from "../../lib/userDisplay";
 
 export function OnboardingPage() {
   const { refreshUser, setOnboardingRequired } = useAuth();
@@ -34,14 +34,6 @@ export function OnboardingPage() {
     password: "",
     confirm_password: "",
   });
-
-  useEffect(() => {
-    const saved = sessionStorage.getItem(SIGNUP_HONORIFIC_KEY);
-    if (saved) {
-      setForm((f) => ({ ...f, title: saved }));
-      sessionStorage.removeItem(SIGNUP_HONORIFIC_KEY);
-    }
-  }, []);
 
   const update = (field: string, value: string) =>
     setForm((f) => ({ ...f, [field]: value }));

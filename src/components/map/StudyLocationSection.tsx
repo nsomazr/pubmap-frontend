@@ -6,8 +6,7 @@ import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { buildPublicationChatPath } from "../../lib/publicationChat";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
-import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
-import { UserAvatar } from "../ui/UserAvatar";
+import { PublicationIdentityRow } from "../publication/PublicationIdentityRow";
 import { ResearchMap } from "./ResearchMap";
 
 function StudyLocationInfoPanel({
@@ -27,32 +26,17 @@ function StudyLocationInfoPanel({
 
   return (
     <div className="study-location-info border-t border-slate-100 bg-white px-4 py-4 sm:px-6">
-      <div className="flex items-start gap-3">
-        <UserAvatar
-          user={publication.author}
-          size="md"
-          className="!h-11 !w-11 shrink-0 !border-2 !text-xs"
-        />
-        <div className="min-w-0 flex-1">
-          {subVisual && (
-            <div className="mb-2 flex items-center gap-2">
-              <SubcategoryVisual visual={subVisual} size="sm" />
-              <span className="text-[11px] font-bold uppercase tracking-wide text-brand-700">
-                {subVisual.name}
-              </span>
-            </div>
-          )}
-          <h3 className="text-sm font-semibold leading-snug text-ink sm:text-base">
-            {formatGrePaperTitle(publication.title, publication.short_number)}
-          </h3>
-          {author && <p className="mt-1 text-xs text-slate-600 sm:text-sm">{author}</p>}
-          {location && (
-            <p className="mt-1.5 flex items-start gap-1.5 text-xs text-slate-500">
-              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
-              <span>{location}</span>
-            </p>
-          )}
-        </div>
+      <div className="min-w-0">
+        <PublicationIdentityRow user={publication.author} authorName={author} subVisual={subVisual} />
+        <h3 className="text-sm font-semibold leading-snug text-ink sm:text-base">
+          {formatGrePaperTitle(publication.title, publication.short_number)}
+        </h3>
+        {location && (
+          <p className="mt-1.5 flex items-start gap-1.5 text-xs text-slate-500">
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
+            <span>{location}</span>
+          </p>
+        )}
       </div>
 
       <div className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between">

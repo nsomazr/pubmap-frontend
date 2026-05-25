@@ -54,7 +54,7 @@ export function AuthorsPage() {
     <div className="animate-fade-up">
       <PageHeader
         title="User management"
-        description="Authors, platform admins, and category managers. Promote users to admin, deactivate accounts, or permanently delete users."
+        description="Authors, platform admins, and subcategory managers. Promote users to admin, deactivate accounts, or permanently delete users."
       />
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -190,7 +190,8 @@ export function AuthorsPage() {
               <strong>
                 {deleteTarget.firstname} {deleteTarget.lastname}
               </strong>{" "}
-              ({deleteTarget.email}) and their category manager assignments. This cannot be undone.
+              ({deleteTarget.email}) from account access, keeps their publications in the system,
+              and removes their manager assignments. This cannot be undone.
             </p>
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="secondary" onClick={() => setDeleteTarget(null)}>

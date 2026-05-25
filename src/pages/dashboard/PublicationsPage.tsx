@@ -69,7 +69,7 @@ const EMPTY_COPY: Record<string, { title: string; description: string }> = {
 const NEXT_STEP: Record<number, string> = {
   0: "Add location on the map, then submit for review.",
   1: "Waiting for admin approval.",
-  2: "Read admin notes, update your submission, and resubmit.",
+  2: "Read the claims and admin notes, update your existing submission, and resubmit.",
   3: "Live on the research map.",
   4: "Archived. Restore to continue editing or republish.",
   6: "Deleted. Admin can restore to previous workflow state.",
@@ -210,9 +210,18 @@ export function PublicationsPage() {
             const reviewPending = canReview && pub.status === 1;
             const hasDoc = (pub.documents?.length ?? 0) > 0;
             const subVisual = publicationSubcategoryVisual(pub);
+            const claimSummary = pub.plagiarism_summary;
+            const claimActionText = claimSummary?.needs_author_action
+              ? "Address plagiarism claims and resubmit."
+              : claimSummary?.open_count
+                ? `${claimSummary.open_count} plagiarism claim${claimSummary.open_count === 1 ? "" : "s"} under review.`
+                : NEXT_STEP[pub.status] ?? "";
+            const editTarget = claimSummary?.needs_author_action
+              ? `/dashboard/publications/${pub.id}?focus=claims`
+              : `/dashboard/publications/${pub.id}`;
             const target = reviewPending
               ? `/dashboard/review?pub=${pub.id}`
-              : `/dashboard/publications/${pub.id}`;
+              : editTarget;
             return (
             <Link
               key={pub.id}
@@ -244,9 +253,14 @@ export function PublicationsPage() {
                           {pub.coordinates.location}
                         </span>
                       )}
+                      {claimSummary && (
+                        <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-800 ring-1 ring-amber-200">
+                          Claim #{claimSummary.latest_claim_id ?? "?"}
+                        </span>
+                      )}
                     </div>
                     <p className="mt-2 text-xs font-medium text-slate-400">
-                      {NEXT_STEP[pub.status] ?? ""}
+                      {claimActionText}
                     </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">

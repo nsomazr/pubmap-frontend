@@ -41,7 +41,6 @@ interface AuthState {
   sendOtp: (email: string, purpose: "login" | "register") => Promise<OtpSendResult>;
   verifyOtpLogin: (email: string, code: string) => Promise<void>;
   verifyOtpRegister: (email: string, code: string) => Promise<void>;
-  registerWithPassword: (email: string, password: string, confirm: string) => Promise<void>;
   loginWithPassword: (email: string, password: string) => Promise<void>;
   logout: () => void;
   patchUser: (user: User) => void;
@@ -120,22 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOnboardingRequired(true);
   };
 
-  const registerWithPassword = async (
-    email: string,
-    password: string,
-    confirm_password: string
-  ) => {
-    const { data } = await api.post("/auth/register/", {
-      email,
-      password,
-      confirm_password,
-    });
-    storeTokens(data);
-    setSignupMethod("password");
-    setUser(data.user);
-    setOnboardingRequired(true);
-  };
-
   const loginWithPassword = async (email: string, password: string) => {
     const { data } = await api.post("/auth/login/", { email, password });
     storeTokens(data);
@@ -158,7 +141,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sendOtp,
       verifyOtpLogin,
       verifyOtpRegister,
-      registerWithPassword,
       loginWithPassword,
       logout,
       patchUser,

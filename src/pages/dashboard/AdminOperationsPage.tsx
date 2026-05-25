@@ -33,7 +33,7 @@ const QUICK_LINKS = [
   {
     to: "/dashboard/plagiarism",
     label: "Plagiarism moderation",
-    description: "Review claims, evidence, and restore or remove studies",
+    description: "Review claims, hide papers, address claims, or remove studies",
     icon: MessageSquareWarning,
   },
   {

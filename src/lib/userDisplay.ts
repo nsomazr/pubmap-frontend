@@ -37,8 +37,6 @@ export function userFormalName(
 
 export const HONORIFIC_OPTIONS = ["", "Mr", "Mrs", "Miss", "Ms", "Dr", "Prof"] as const;
 
-export const SIGNUP_HONORIFIC_KEY = "gre-signup-honorific";
-
 /** Author line for cards (formal name when honorific is set). */
 export function authorDisplayName(
   author?: Pick<User, "title" | "firstname" | "middlename" | "lastname" | "full_name" | "formal_name"> | null

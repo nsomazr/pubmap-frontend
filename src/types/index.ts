@@ -31,6 +31,7 @@ export interface User {
   match_reason?: string | null;
   ranking?: ResearcherRanking;
   managed_categories?: { id: number; name: string }[];
+  managed_subcategories?: { id: number; name: string; category_id: number; category_name?: string }[];
   is_category_manager?: boolean;
 }
 
@@ -113,6 +114,8 @@ export interface Publication {
   funder?: string;
   references?: string;
   admin_comments?: { id: number; comment: string }[];
+  plagiarism_summary?: PublicationPlagiarismSummary | null;
+  plagiarism_claims?: PublicationPlagiarismClaim[];
   score?: number;
   gre?: PublicationGre;
   figures?: PublicationFigure[];
@@ -123,6 +126,49 @@ export interface Publication {
     deleted_at?: string | null;
     reason?: string;
   } | null;
+}
+
+export type PlagiarismClaimStatus =
+  | "open"
+  | "dismissed"
+  | "restored"
+  | "hidden"
+  | "deleted"
+  | "revision";
+
+export interface PublicationPlagiarismEvidence {
+  id: number;
+  file_path: string;
+  url: string;
+  label: string;
+  uploaded_at: string;
+}
+
+export interface PublicationPlagiarismClaim {
+  id: number;
+  publication_id: number;
+  publication_title: string;
+  publication_status: number;
+  reporter_id: number;
+  reporter_name: string;
+  description: string;
+  status: PlagiarismClaimStatus;
+  admin_decision: string;
+  admin_notes: string;
+  resolved_by_id: number | null;
+  resolved_by_name: string;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  evidence: PublicationPlagiarismEvidence[];
+}
+
+export interface PublicationPlagiarismSummary {
+  total_count: number;
+  open_count: number;
+  latest_claim_id: number | null;
+  latest_status: PlagiarismClaimStatus | null;
+  needs_author_action: boolean;
 }
 
 export type PublicationAccessType = "open" | "closed";
@@ -275,6 +321,10 @@ export interface Category {
 export interface CategoryManagerRow {
   id: number;
   user_id: number;
+  sub_category_id?: number;
+  sub_category_name?: string;
+  category_id?: number;
+  category_name?: string;
   email: string;
   full_name: string;
   affiliation?: string;
@@ -293,6 +343,100 @@ export interface Event {
   date?: string;
   time?: string;
   photos?: { id: number; photo: string }[];
+}
+
+export type MeetSessionType =
+  | "research_discussion"
+  | "paper_presentation"
+  | "workshop"
+  | "institutional_meeting"
+  | "reviewer_session";
+
+export type MeetVisibility = "authenticated_private" | "public" | "invite_only";
+
+export type MeetSessionStatus = "scheduled" | "live" | "ended" | "cancelled";
+
+export type MeetRecordingStatus = "none" | "requested" | "recording" | "ready" | "failed";
+
+export type MeetSummaryStatus = "none" | "pending" | "ready" | "failed";
+
+export type MeetParticipantRole = "host" | "speaker" | "participant";
+
+export type MeetInviteStatus = "invited" | "accepted" | "declined" | "removed";
+
+export type MeetChatMessageType = "text" | "question" | "reaction";
+
+export interface MeetParticipant {
+  id: number;
+  user_id: number;
+  user?: User;
+  role: MeetParticipantRole;
+  invite_status: MeetInviteStatus;
+  joined_at?: string | null;
+  left_at?: string | null;
+  was_present?: boolean;
+  join_count?: number;
+  created_at?: string;
+}
+
+export interface MeetChatMessage {
+  id: number;
+  meeting_id: number;
+  sender_id: number;
+  sender?: User;
+  message: string;
+  message_type: MeetChatMessageType;
+  created_at: string;
+}
+
+export interface MeetSession {
+  id: number;
+  title: string;
+  description?: string;
+  meeting_type: MeetSessionType;
+  visibility: MeetVisibility;
+  status: MeetSessionStatus;
+  category_id: number;
+  category_name?: string;
+  sub_category_id: number;
+  sub_category_name?: string;
+  host_id: number;
+  host?: User;
+  scheduled_at: string;
+  started_at?: string | null;
+  ended_at?: string | null;
+  join_slug: string;
+  provider_name: string;
+  provider_room_name?: string;
+  recording_url?: string | null;
+  recording_status: MeetRecordingStatus;
+  recording_egress_id?: string | null;
+  recording_error?: string | null;
+  summary?: string | null;
+  summary_status: MeetSummaryStatus;
+  participant_count?: number;
+  participant_role?: MeetParticipantRole | null;
+  can_manage?: boolean;
+  can_join?: boolean;
+  meeting_link?: string;
+  dashboard_link?: string;
+  publication_id?: number | null;
+  publication?: Publication | null;
+  forum_topic_id?: number | null;
+  forum_topic?: Pick<Topic, "id" | "topic" | "sub_category_id" | "sub_category_name"> | null;
+  host_notes?: string | null;
+  participants?: MeetParticipant[];
+  chat_messages?: MeetChatMessage[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface MeetRoomJoinResponse {
+  token: string;
+  server_url: string;
+  room_name: string;
+  provider: string;
+  meeting: MeetSession;
 }
 
 export interface Topic {
@@ -338,6 +482,7 @@ export interface DashboardStats {
   drafts?: number;
   is_reviewer?: boolean;
   managed_categories?: { id: number; name: string }[];
+  managed_subcategories?: { id: number; name: string; category_id: number; category_name?: string }[];
 }
 
 export interface PublicStatsTotals {

@@ -82,8 +82,8 @@ export function PublicationChatPage() {
       back={{ to: "/", label: "Back to map" }}
     >
       <div className="publication-chat-page gre-card flex min-h-[min(72dvh,760px)] flex-col overflow-hidden">
-        <header className="shrink-0 border-b border-slate-100 bg-slate-50/60 px-4 py-4 sm:px-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <header className="shrink-0 border-b border-slate-100 bg-slate-50/60 px-4 py-3.5 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
             <div className="flex min-w-0 items-start gap-3 sm:gap-4">
               <UserAvatar
                 user={pub.author}
@@ -121,15 +121,15 @@ export function PublicationChatPage() {
           </div>
         </header>
 
-        <div className="shrink-0 border-b border-brand-100 bg-brand-50/40 px-4 py-3 sm:px-6">
-          <p className="flex items-start gap-2 text-sm leading-relaxed text-brand-800">
+        <div className="shrink-0 border-b border-slate-100 bg-slate-50/70 px-4 py-2.5 sm:px-6">
+          <p className="flex items-start gap-2 text-sm leading-relaxed text-slate-700">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
             GRE Assistant summarizes this study and answers follow-up questions about methods,
             findings, authors, or location.
           </p>
         </div>
 
-        <div className="publication-chat-page__body flex min-h-0 flex-1 flex-col px-3 py-4 sm:px-6 sm:py-5">
+        <div className="publication-chat-page__body flex min-h-0 flex-1 flex-col px-4 py-3.5 sm:px-6 sm:py-4">
           <PublicationSummaryAssistant
             publicationId={pub.id}
             publication={pub}

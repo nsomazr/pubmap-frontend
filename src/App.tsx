@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthScreen, AuthScreenLoading } from "./components/auth/AuthScreen";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -27,6 +27,9 @@ const ForumTopicPage = lazy(() =>
 const EventsPage = lazy(() => import("./pages/EventsPage").then((m) => ({ default: m.EventsPage })));
 const EventDetailPage = lazy(() =>
   import("./pages/EventDetailPage").then((m) => ({ default: m.EventDetailPage }))
+);
+const MeetRoomPage = lazy(() =>
+  import("./pages/MeetRoomPage").then((m) => ({ default: m.MeetRoomPage }))
 );
 const AboutPage = lazy(() => import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })));
 const DoiRedirectPage = lazy(() =>
@@ -71,6 +74,15 @@ const ManagersPage = lazy(() =>
 );
 const EventsAdminPage = lazy(() =>
   import("./pages/dashboard/EventsAdminPage").then((m) => ({ default: m.EventsAdminPage }))
+);
+const MeetingsPage = lazy(() =>
+  import("./pages/dashboard/MeetingsPage").then((m) => ({ default: m.MeetingsPage }))
+);
+const MeetManagePage = lazy(() =>
+  import("./pages/dashboard/MeetManagePage").then((m) => ({ default: m.MeetManagePage }))
+);
+const MeetDetailPage = lazy(() =>
+  import("./pages/dashboard/MeetDetailPage").then((m) => ({ default: m.MeetDetailPage }))
 );
 const AdsPage = lazy(() => import("./pages/dashboard/AdsPage").then((m) => ({ default: m.AdsPage })));
 const AdminOperationsPage = lazy(() =>
@@ -153,6 +165,14 @@ function AppRoutes() {
         <Route path="/forum/topic/:id" element={<ForumTopicPage />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/events/:id" element={<EventDetailPage />} />
+        <Route
+          path="/meet/:slug"
+          element={
+            <PrivateRoute>
+              <MeetRoomPage />
+            </PrivateRoute>
+          }
+        />
         <Route path="/rankings" element={<RankingsPage />} />
         <Route path="/statistics" element={<StatisticsPage />} />
         <Route path="/about" element={<AboutPage />} />
@@ -176,6 +196,10 @@ function AppRoutes() {
           <Route path="managers" element={<ManagersPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="events" element={<EventsAdminPage />} />
+          <Route path="meetings" element={<MeetingsPage />} />
+          <Route path="meetings/new" element={<MeetManagePage />} />
+          <Route path="meetings/:id" element={<MeetDetailPage />} />
+          <Route path="meetings/:id/edit" element={<MeetManagePage />} />
           <Route path="ads" element={<AdsPage />} />
           <Route path="operations" element={<AdminOperationsPage />} />
           <Route path="plagiarism" element={<PlagiarismClaimsPage />} />
@@ -188,11 +212,14 @@ function AppRoutes() {
 }
 
 function AppShell() {
+  const location = useLocation();
+  const hideAssistant = location.pathname.startsWith("/meet/");
+
   return (
     <>
       <SummaryNavigationBridge />
       <AppRoutes />
-      <GreAssistant />
+      {!hideAssistant && <GreAssistant />}
     </>
   );
 }

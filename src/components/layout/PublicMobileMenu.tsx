@@ -8,9 +8,9 @@ import type { User } from "../../types";
 
 export const PUBLIC_NAV_LINKS = [
   { to: "/", label: "Map" },
+  { to: "/about", label: "About" },
   { to: "/statistics", label: "Statistics" },
   { to: "/rankings", label: "Rankings" },
-  { to: "/about", label: "About" },
   { to: "/events", label: "Events" },
   { to: "/forum", label: "Forum" },
   { to: "/contact", label: "Contact" },

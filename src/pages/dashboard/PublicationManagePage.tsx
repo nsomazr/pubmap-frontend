@@ -165,7 +165,7 @@ export function PublicationManagePage() {
 
   const canReviewThis =
     Boolean(pub) &&
-    canReviewPublication(user, { status: pub!.status, category_id: pub!.category_id });
+    canReviewPublication(user, { status: pub!.status, sub_category_id: pub!.sub_category_id });
 
   useEffect(() => {
     if (!pub) return;
@@ -234,6 +234,12 @@ export function PublicationManagePage() {
     const el = document.getElementById("review");
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [location.hash, pub?.id, pub?.status]);
+
+  useEffect(() => {
+    if (!pub || !location.search.includes("focus=claims")) return;
+    const el = document.getElementById("claims");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [location.search, pub?.id]);
 
   const buildCollaboratorsPayload = (): Collaborator[] => {
     if (submitterRole === "coauthor") {
@@ -464,6 +470,7 @@ export function PublicationManagePage() {
       subCategoryName,
       location: coordinates.location,
       accessType: gre.access_type,
+      greDoi: gre.gre_doi ?? pub?.gre?.gre_doi ?? null,
       viewsCount: pub?.views_count ?? 0,
       downloadsCount: pub?.downloads_count ?? 0,
       discussionsCount: pub?.discussions_count ?? 0,
@@ -487,6 +494,8 @@ export function PublicationManagePage() {
       subVisual,
       subCategoryName,
       gre.access_type,
+      gre.gre_doi,
+      pub?.gre?.gre_doi,
     ]
   );
 
@@ -604,6 +613,73 @@ export function PublicationManagePage() {
         <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
+      )}
+
+      {!isNew && pub && (pub.plagiarism_claims?.length ?? 0) > 0 && (
+        <section id="claims" className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+            <AlertCircle className="h-4 w-4" />
+            Plagiarism claims and moderation requests
+          </h2>
+          <p className="mt-2 text-sm text-amber-900/85">
+            Review the claim details below, update this existing publication, and resubmit when you
+            have addressed the issues.
+          </p>
+          <div className="mt-4 space-y-4">
+            {pub.plagiarism_claims!.map((claim) => (
+              <article key={claim.id} className="rounded-xl border border-amber-100 bg-white/90 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
+                      Claim #{claim.id}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Filed {new Date(claim.created_at).toLocaleString()}
+                      {claim.reporter_name ? ` · Reporter: ${claim.reporter_name}` : ""}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
+                    {claim.status === "revision"
+                      ? "Address claims requested"
+                      : claim.status === "hidden"
+                        ? "Hidden from publications"
+                        : claim.status.replace("_", " ")}
+                  </span>
+                </div>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                  {claim.description}
+                </p>
+                {claim.admin_notes && (
+                  <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                    <span className="font-semibold">Admin note: </span>
+                    {claim.admin_notes}
+                  </p>
+                )}
+                {claim.evidence.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Claim evidence
+                    </p>
+                    <ul className="mt-2 space-y-1">
+                      {claim.evidence.map((item) => (
+                        <li key={item.id}>
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm font-medium text-brand-700 hover:underline"
+                          >
+                            {item.label || "Attachment"}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
       )}
 
       {!isNew && pub?.status === 2 && (pub.admin_comments?.length ?? 0) > 0 && (

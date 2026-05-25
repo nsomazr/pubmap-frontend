@@ -4,8 +4,7 @@ import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { buildPublicationChatPath } from "../../lib/publicationChat";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
-import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
-import { UserAvatar } from "../ui/UserAvatar";
+import { PublicationIdentityRow } from "../publication/PublicationIdentityRow";
 
 interface Props {
   publication: Publication;
@@ -37,26 +36,11 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
             <X className="h-4 w-4" />
           </button>
 
-          <div className="flex items-start gap-3 p-4 pr-12">
-            <UserAvatar
-              user={publication.author}
-              size="md"
-              className="!h-11 !w-11 shrink-0 !border-2 !text-xs"
-            />
-            <div className="min-w-0 flex-1">
-              {subVisual && (
-                <div className="mb-2 flex items-center gap-2">
-                  <SubcategoryVisual visual={subVisual} size="sm" />
-                  <span className="text-[11px] font-bold uppercase tracking-wide text-brand-700">
-                    {subVisual.name}
-                  </span>
-                </div>
-              )}
-              <h3 className="text-sm font-semibold leading-snug text-ink sm:text-base">
-                {formatGrePaperTitle(publication.title, publication.short_number)}
-              </h3>
-              {author && <p className="mt-1 text-xs text-slate-600 sm:text-sm">{author}</p>}
-            </div>
+          <div className="p-4 pr-12">
+            <PublicationIdentityRow user={publication.author} authorName={author} subVisual={subVisual} />
+            <h3 className="text-sm font-semibold leading-snug text-ink sm:text-base">
+              {formatGrePaperTitle(publication.title, publication.short_number)}
+            </h3>
           </div>
 
           <div className="flex items-center gap-4 border-t border-slate-100 px-4 py-3 text-xs text-slate-500">

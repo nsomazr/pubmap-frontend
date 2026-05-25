@@ -13,7 +13,7 @@ export function stripGrePaperPrefix(title: string): string {
   return title.replace(/^#?GRE-[\w-]+\s*:\s*/i, "").trim();
 }
 
-/** Reader-facing title: "#GRE-001: Paper title" */
+/** Reader-facing title: stored title without GRE number prefix. */
 export function formatGrePaperTitle(
   title: string,
   shortNumber?: string | null,
@@ -21,7 +21,6 @@ export function formatGrePaperTitle(
 ): string {
   const base =
     stripGrePaperPrefix(title) || options?.fallback?.trim() || "Untitled publication";
-  const code = grePaperCode(shortNumber);
-  if (!code) return base;
-  return `#${code}: ${base}`;
+  void shortNumber;
+  return base;
 }

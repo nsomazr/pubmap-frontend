@@ -105,6 +105,7 @@ export function PublicationDetailPage() {
           <PublicationPaperHeader
             title={pub.title}
             greNumber={pub.short_number}
+            funder={pub.funder}
             authorByline={authorBylineFromPublication(pub)}
             subVisual={subVisual}
             subCategoryName={pub.sub_category_name}
@@ -129,15 +130,13 @@ export function PublicationDetailPage() {
                 {pub.keywords.join(", ")}
               </p>
             )}
-            {pub.funder?.trim() && (
-              <p className="mt-4 text-sm text-slate-600">
-                <span className="font-semibold text-slate-700">Project funders: </span>
-                {pub.funder.trim()}
-              </p>
-            )}
             {pub.gre?.gre_doi && (
               <div className="mt-4">
-                <GreDoiBadge greDoi={pub.gre.gre_doi} greDoiUrl={pub.gre.gre_doi_url} />
+                <GreDoiBadge
+                  greDoi={pub.gre.gre_doi}
+                  greDoiUrl={pub.gre.gre_doi_url}
+                  paperNumber={pub.short_number}
+                />
               </div>
             )}
           </section>

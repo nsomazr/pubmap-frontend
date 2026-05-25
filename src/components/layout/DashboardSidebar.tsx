@@ -16,6 +16,7 @@ import {
   Shield,
   UserCog,
   Users,
+  Video,
   type LucideIcon,
 } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
@@ -29,6 +30,7 @@ import type { User } from "../../types";
 const mainNav: { to: string; label: string; icon: LucideIcon; end?: boolean }[] = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, end: true },
   { to: "/dashboard/publications", label: "Publications", icon: FileText, end: true },
+  { to: "/dashboard/meetings", label: "GRE Meet", icon: Video },
   { to: "/dashboard/messages", label: "Messages", icon: MessageSquare },
   { to: "/dashboard/plagiarism", label: "Plagiarism", icon: MessageSquareWarning },
   { to: "/dashboard/account", label: "Account", icon: Settings },
