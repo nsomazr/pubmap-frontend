@@ -1475,6 +1475,8 @@ body {
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
+  text-align: center;
+  text-decoration: none;
   transition:
     background var(--gre-duration-fast) var(--gre-ease-in-out),
     border-color var(--gre-duration-fast) var(--gre-ease-in-out),

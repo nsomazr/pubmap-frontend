@@ -18,6 +18,10 @@ export function parseMapDeepLink(search: string): MapDeepLinkState {
   return { publicationId, panel, affiliation, location };
 }
 
+export function buildPublicationSummaryPath(publicationId: number): string {
+  return `/publication/${publicationId}?summary=1`;
+}
+
 export function buildMapFocusPath(
   publicationId: number,
   opts?: { panel?: MapDeepLinkPanel }

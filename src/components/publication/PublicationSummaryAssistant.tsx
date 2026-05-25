@@ -6,10 +6,6 @@ import {
   type SummaryFollowUpTurn,
 } from "../../lib/assistant";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
-import {
-  GRE_SUMMARY_REQUEST,
-  type GreSummaryRequestDetail,
-} from "../map/publicationPopupSummary";
 
 type FollowUpItem = {
   id: string;
@@ -84,27 +80,6 @@ export function PublicationSummaryAssistant({
       runSummary();
     }
   }, [publicationId, autoGenerate, runSummary]);
-
-  useEffect(() => {
-    const onSummaryRequest = (event: Event) => {
-      const { publicationId: requestedId } = (event as CustomEvent<GreSummaryRequestDetail>).detail;
-      if (requestedId === publicationId) {
-        runSummary();
-        const scrollTargetId =
-          layout === "study-location" ? "study-location" : layout === "detail" ? "publication-summary" : null;
-        if (scrollTargetId) {
-          window.setTimeout(() => {
-            document.getElementById(scrollTargetId)?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }, 80);
-        }
-      }
-    };
-    window.addEventListener(GRE_SUMMARY_REQUEST, onSummaryRequest);
-    return () => window.removeEventListener(GRE_SUMMARY_REQUEST, onSummaryRequest);
-  }, [publicationId, runSummary, layout]);
 
   useEffect(() => {
     const container = scrollContainerRef?.current;

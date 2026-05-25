@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { formatGrePaperTitle } from "../lib/grePaperTitle";
 import api from "../lib/api";
@@ -19,6 +19,7 @@ import { PublicationPaperHeader } from "../components/publication/PublicationPap
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { StudyLocationSection } from "../components/map/StudyLocationSection";
+import { PublicationSummaryAssistant } from "../components/publication/PublicationSummaryAssistant";
 import { abstractPlainText } from "../lib/abstractText";
 import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
 import { authorBylineFromPublication } from "../lib/publicationAuthors";
@@ -33,7 +34,9 @@ function formatPublishedDate(value?: string): string | undefined {
 
 export function PublicationDetailPage() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const [reportOpen, setReportOpen] = useState(false);
+  const autoGenerateSummary = searchParams.get("summary") === "1";
 
   const { data: pub, isLoading, isError } = useQuery({
     queryKey: ["publication", id],
@@ -49,6 +52,17 @@ export function PublicationDetailPage() {
       api.post("/stats/record/", { publication_id: pub.id, type: "view" }).catch(() => {});
     }
   }, [pub?.id]);
+
+  useEffect(() => {
+    if (!autoGenerateSummary || !pub) return;
+    const timer = window.setTimeout(() => {
+      document.getElementById("study-location")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [autoGenerateSummary, pub?.id]);
 
   const docPath = pub?.documents?.[0]?.document ?? null;
   const isClosed = pub?.gre?.access_type === "closed";
@@ -178,7 +192,20 @@ export function PublicationDetailPage() {
             />
           )}
 
-          {pub.coordinates && <StudyLocationSection publication={pub} />}
+          {pub.coordinates ? (
+            <StudyLocationSection publication={pub} autoGenerateSummary={autoGenerateSummary} />
+          ) : autoGenerateSummary ? (
+            <section id="study-location" className="gre-card p-6 sm:p-8">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
+                GRE Assistant summary
+              </h2>
+              <PublicationSummaryAssistant
+                publicationId={pub.id}
+                layout="study-location"
+                autoGenerate
+              />
+            </section>
+          ) : null}
 
           <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
           <CoAuthorsPanel publication={pub} />

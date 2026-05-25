@@ -1,8 +1,8 @@
 import { Eye, FileText, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
+import { buildPublicationSummaryPath } from "../../lib/mapDeepLink";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
-import { requestPublicationSummary } from "./publicationPopupSummary";
 import type { Publication } from "../../types";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import { UserAvatar } from "../ui/UserAvatar";
@@ -72,16 +72,13 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
         </div>
 
         <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/80 p-3 sm:flex-row">
-          <button
-            type="button"
-            onClick={() => {
-              requestPublicationSummary(publication.id);
-              onClose();
-            }}
+          <Link
+            to={buildPublicationSummaryPath(publication.id)}
+            onClick={onClose}
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
           >
             Get summary
-          </button>
+          </Link>
           <Link
             to={`/publication/${publication.id}`}
             onClick={onClose}

@@ -1,16 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../lib/api";
-import { parseMapDeepLink } from "../lib/mapDeepLink";
+import { buildPublicationSummaryPath, parseMapDeepLink } from "../lib/mapDeepLink";
 import { DraggableMapPanel } from "../components/landing/DraggableMapPanel";
 import { MapResultsRail } from "../components/landing/MapResultsRail";
 import { MapSearchHub } from "../components/landing/MapSearchHub";
-import { MapSummaryDock } from "../components/landing/MapSummaryDock";
-import {
-  GRE_SUMMARY_REQUEST,
-  type GreSummaryRequestDetail,
-} from "../components/map/publicationPopupSummary";
 import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import { PublicFooter } from "../components/layout/PublicFooter";
 import { PublicNav } from "../components/layout/PublicNav";
@@ -46,9 +41,9 @@ export function HomePage() {
   const [resultsRailOpen, setResultsRailOpen] = useState(false);
   const [resultsRailCollapsed, setResultsRailCollapsed] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [summaryPubId, setSummaryPubId] = useState<number | null>(null);
   const [selectedPublicationId, setSelectedPublicationId] = useState<number | null>(null);
   const [mapExpanded, setMapExpanded] = useState(false);
+  const navigate = useNavigate();
   const [focusPubId, setFocusPubId] = useState<number | null>(null);
   const [deepLinkPub, setDeepLinkPub] = useState<Publication | null>(null);
   const mapChromeBoundsRef = useRef<HTMLElement | null>(null);
@@ -62,11 +57,12 @@ export function HomePage() {
   useEffect(() => {
     const id = mapDeepLink.publicationId;
     if (!id) return;
-    setFocusPubId(id);
     if (mapDeepLink.panel === "summary") {
-      setSummaryPubId(id);
+      navigate(buildPublicationSummaryPath(id), { replace: true });
+      return;
     }
-  }, [mapDeepLink.publicationId, mapDeepLink.panel]);
+    setFocusPubId(id);
+  }, [mapDeepLink.publicationId, mapDeepLink.panel, navigate]);
 
   useEffect(() => {
     if (mapDeepLink.affiliation) {
@@ -81,15 +77,6 @@ export function HomePage() {
       skipAutoSearchRef.current = false;
     }
   }, [mapDeepLink.location]);
-
-  useEffect(() => {
-    const onSummary = (e: Event) => {
-      const { publicationId } = (e as CustomEvent<GreSummaryRequestDetail>).detail;
-      setSummaryPubId(publicationId);
-    };
-    window.addEventListener(GRE_SUMMARY_REQUEST, onSummary);
-    return () => window.removeEventListener(GRE_SUMMARY_REQUEST, onSummary);
-  }, []);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["map"],
@@ -238,21 +225,10 @@ export function HomePage() {
     (p) => p.coordinates?.latitude && p.coordinates?.longitude
   ).length;
 
-  const summaryPublication = useMemo(() => {
-    if (summaryPubId) {
-      return publications.find((p) => p.id === summaryPubId) ?? deepLinkPub;
-    }
-    return null;
-  }, [publications, summaryPubId, deepLinkPub]);
-
   const selectedPublication = useMemo(() => {
     if (!selectedPublicationId) return null;
     return publications.find((p) => p.id === selectedPublicationId) ?? null;
   }, [publications, selectedPublicationId]);
-
-  useEffect(() => {
-    if (summaryPubId) setSelectedPublicationId(null);
-  }, [summaryPubId]);
 
   useEffect(() => {
     if (!mapExpanded) return;
@@ -267,9 +243,9 @@ export function HomePage() {
     <div
       className={`landing-page relative flex min-h-[100dvh] flex-col overflow-hidden bg-slate-200${
         resultsRailOpen && !resultsRailCollapsed ? " landing-page--results-open" : ""
-      }${summaryPublication ? " landing-page--summary-open" : ""}${
-        selectedPublication ? " landing-page--marker-sheet-open" : ""
-      }${mapExpanded ? " landing-page--map-expanded" : ""}`}
+      }${selectedPublication ? " landing-page--marker-sheet-open" : ""}${
+        mapExpanded ? " landing-page--map-expanded" : ""
+      }`}
     >
       {!mapExpanded && <PublicNav variant="map" />}
 
@@ -357,7 +333,7 @@ export function HomePage() {
           />
         </DraggableMapPanel>
 
-        {selectedPublication && !summaryPublication && (
+        {selectedPublication && (
           <MapPublicationSheet
             publication={selectedPublication}
             onClose={() => setSelectedPublicationId(null)}
@@ -374,19 +350,6 @@ export function HomePage() {
           </button>
         )}
 
-        {summaryPublication && (
-          <DraggableMapPanel
-            boundsRef={mapChromeBoundsRef}
-            storageKey="gre-map-summary-position-v1"
-            layout="floating-card"
-          >
-            <MapSummaryDock
-              publication={summaryPublication}
-              onClose={() => setSummaryPubId(null)}
-            />
-          </DraggableMapPanel>
-        )}
-
         {resultsRailOpen && (
           <MapResultsRail
             publications={publications}
@@ -401,7 +364,7 @@ export function HomePage() {
           />
         )}
 
-        {!resultsRailOpen && !summaryPublication && (
+        {!resultsRailOpen && (
           <div className="pointer-events-none absolute bottom-24 right-4 z-[1000] hidden w-[min(100%,240px)] md:block lg:bottom-8 lg:right-6">
             <GreAdPlacement
               placement="sidebar"

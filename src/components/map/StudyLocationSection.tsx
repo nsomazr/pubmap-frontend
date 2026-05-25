@@ -6,16 +6,17 @@ import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import { UserAvatar } from "../ui/UserAvatar";
+import { Link } from "react-router-dom";
+import { buildPublicationSummaryPath } from "../../lib/mapDeepLink";
 import { PublicationSummaryAssistant } from "../publication/PublicationSummaryAssistant";
 import { ResearchMap } from "./ResearchMap";
-import { requestPublicationSummary } from "./publicationPopupSummary";
 
 function StudyLocationInfoPanel({
   publication,
-  onGetSummary,
+  onCloseExpanded,
 }: {
   publication: Publication;
-  onGetSummary: () => void;
+  onCloseExpanded?: () => void;
 }) {
   const author =
     publication.author?.full_name ||
@@ -66,13 +67,13 @@ function StudyLocationInfoPanel({
             {downloads} downloads
           </span>
         </div>
-        <button
-          type="button"
-          onClick={onGetSummary}
+        <Link
+          to={buildPublicationSummaryPath(publication.id)}
+          onClick={onCloseExpanded}
           className="inline-flex items-center justify-center rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 sm:shrink-0"
         >
           Get summary
-        </button>
+        </Link>
       </div>
     </div>
   );
@@ -80,15 +81,11 @@ function StudyLocationInfoPanel({
 
 interface Props {
   publication: Publication;
+  autoGenerateSummary?: boolean;
 }
 
-export function StudyLocationSection({ publication }: Props) {
+export function StudyLocationSection({ publication, autoGenerateSummary = false }: Props) {
   const [expanded, setExpanded] = useState(false);
-
-  const handleGetSummary = () => {
-    setExpanded(false);
-    requestPublicationSummary(publication.id);
-  };
 
   useEffect(() => {
     if (!expanded) return;
@@ -136,7 +133,7 @@ export function StudyLocationSection({ publication }: Props) {
           <div className="relative min-h-0 flex-1">
             <ResearchMap {...mapProps} height="100%" />
           </div>
-          <StudyLocationInfoPanel publication={publication} onGetSummary={handleGetSummary} />
+          <StudyLocationInfoPanel publication={publication} onCloseExpanded={() => setExpanded(false)} />
         </div>
       </div>,
       document.body
@@ -160,8 +157,12 @@ export function StudyLocationSection({ publication }: Props) {
           </button>
         </div>
         <ResearchMap {...mapProps} height="380px" />
-        <StudyLocationInfoPanel publication={publication} onGetSummary={handleGetSummary} />
-        <PublicationSummaryAssistant publicationId={publication.id} layout="study-location" />
+        <StudyLocationInfoPanel publication={publication} />
+        <PublicationSummaryAssistant
+          publicationId={publication.id}
+          layout="study-location"
+          autoGenerate={autoGenerateSummary}
+        />
       </section>
       {expandOverlay}
     </>
