@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { AlertTriangle, MapPin } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { formatGrePaperTitle } from "../lib/grePaperTitle";
 import api from "../lib/api";
 import { ReportPlagiarismDialog } from "../components/publication/ReportPlagiarismDialog";
@@ -19,7 +19,7 @@ import { PublicationManuscriptSection } from "../components/publication/Publicat
 import { PublicationPaperHeader } from "../components/publication/PublicationPaperHeader";
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
-import { ResearchMap } from "../components/map/ResearchMap";
+import { StudyLocationSection } from "../components/map/StudyLocationSection";
 import { abstractPlainText } from "../lib/abstractText";
 import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
 import { authorBylineFromPublication } from "../lib/publicationAuthors";
@@ -185,21 +185,7 @@ export function PublicationDetailPage() {
             />
           )}
 
-          {pub.coordinates && (
-            <section className="gre-card p-0">
-              <div className="flex items-center gap-2 border-b border-slate-100 px-6 py-4">
-                <MapPin className="h-5 w-5 text-brand-600" />
-                <h2 className="gre-display font-semibold text-ink">Study location</h2>
-              </div>
-              <ResearchMap
-                publications={[pub]}
-                focusPublicationId={pub.id}
-                height="420px"
-                variant="embedded"
-                className="rounded-none border-0"
-              />
-            </section>
-          )}
+          {pub.coordinates && <StudyLocationSection publication={pub} />}
 
           <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
           <CoAuthorsPanel publication={pub} />

@@ -71,14 +71,14 @@ export function PublicationMarkerLayer({
           L.DomEvent.stopPropagation(event);
           onPublicationSelectRef.current?.(pub);
         });
-      } else {
-        marker.bindPopup(buildPublicationPopupHtml(pub, { variant: embedded ? "detail" : "default" }), {
-          maxWidth: embedded ? 320 : 280,
-          className: embedded ? "gre-map-popup gre-map-popup--embedded" : "gre-map-popup",
+      } else if (!embedded) {
+        marker.bindPopup(buildPublicationPopupHtml(pub, { variant: "default" }), {
+          maxWidth: 280,
+          className: "gre-map-popup",
           autoPan: true,
-          autoPanPaddingTopLeft: L.point(24, embedded ? 80 : LANDING_POPUP_TOP_PAD),
-          autoPanPaddingBottomRight: L.point(24, embedded ? 180 : LANDING_POPUP_BOTTOM_PAD),
-          offset: L.point(0, embedded ? 0 : -8),
+          autoPanPaddingTopLeft: L.point(24, LANDING_POPUP_TOP_PAD),
+          autoPanPaddingBottomRight: L.point(24, LANDING_POPUP_BOTTOM_PAD),
+          offset: L.point(0, -8),
           keepInView: true,
           closeButton: true,
           autoClose: true,
@@ -160,10 +160,7 @@ export function PublicationMarkerLayer({
 
     const timer = window.setTimeout(() => {
       cluster.zoomToShowLayer(marker, () => {
-        if (embedded) {
-          map.panBy([0, -120], { animate: true });
-          return;
-        }
+        if (embedded) return;
         if (useSheet) {
           onPublicationSelectRef.current?.(pub);
           return;

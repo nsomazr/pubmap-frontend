@@ -1,9 +1,7 @@
 import { MapContainer, TileLayer, useMap, ZoomControl } from "react-leaflet";
 import L from "leaflet";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { Publication } from "../../types";
-import { MapFocusedPublicationCard } from "./MapFocusedPublicationCard";
-import { GRE_SUMMARY_REQUEST, type GreSummaryRequestDetail } from "./publicationPopupSummary";
 import { PublicationMarkerLayer } from "./PublicationMarkerLayer";
 import { MapExpandControl } from "./MapExpandControl";
 import "leaflet/dist/leaflet.css";
@@ -26,33 +24,6 @@ function FitBounds({ pubs }: { pubs: Publication[] }) {
       map.fitBounds(L.latLngBounds(coords), { padding: [60, 60], maxZoom: 8 });
     }
   }, [pubs, map]);
-  return null;
-}
-
-/** Hide the embedded bottom card while a Leaflet popup is open on the marker. */
-function EmbeddedPopupOverlaySync({
-  onPopupOpen,
-  onPopupOpenAgain,
-}: {
-  onPopupOpen: (open: boolean) => void;
-  onPopupOpenAgain?: () => void;
-}) {
-  const map = useMap();
-
-  useEffect(() => {
-    const handleOpen = () => {
-      onPopupOpenAgain?.();
-      onPopupOpen(true);
-    };
-    const handleClose = () => onPopupOpen(false);
-    map.on("popupopen", handleOpen);
-    map.on("popupclose", handleClose);
-    return () => {
-      map.off("popupopen", handleOpen);
-      map.off("popupclose", handleClose);
-    };
-  }, [map, onPopupOpen, onPopupOpenAgain]);
-
   return null;
 }
 
@@ -82,39 +53,9 @@ export function ResearchMap({
   const withCoords = publications.filter(
     (p) => p.coordinates?.latitude && p.coordinates?.longitude
   );
-  const focusedPublication =
-    focusPublicationId != null
-      ? publications.find((pub) => pub.id === focusPublicationId) ?? null
-      : null;
   const embedded = variant === "embedded";
   const useSheet = !embedded && Boolean(onPublicationSelect);
   const mapZoomPosition = embedded ? "topright" : zoomPosition;
-  const [embeddedPopupOpen, setEmbeddedPopupOpen] = useState(false);
-  const [overlaySuppressed, setOverlaySuppressed] = useState(false);
-  const [overlayDismissed, setOverlayDismissed] = useState(false);
-
-  useEffect(() => {
-    setOverlayDismissed(false);
-  }, [focusPublicationId]);
-
-  useEffect(() => {
-    if (!embedded || focusPublicationId == null) return;
-    const onSummary = (e: Event) => {
-      const { publicationId } = (e as CustomEvent<GreSummaryRequestDetail>).detail;
-      if (publicationId === focusPublicationId) {
-        setOverlaySuppressed(true);
-      }
-    };
-    window.addEventListener(GRE_SUMMARY_REQUEST, onSummary);
-    return () => window.removeEventListener(GRE_SUMMARY_REQUEST, onSummary);
-  }, [embedded, focusPublicationId]);
-
-  const showEmbeddedOverlay =
-    embedded &&
-    focusedPublication &&
-    !embeddedPopupOpen &&
-    !overlaySuppressed &&
-    !overlayDismissed;
 
   return (
     <div
@@ -124,7 +65,7 @@ export function ResearchMap({
       <MapContainer
         center={[-6.37, 34.89]}
         zoom={5}
-        className={`h-full w-full ${embedded ? "rounded-b-3xl" : ""}`}
+        className={`h-full w-full ${embedded ? "rounded-none" : ""}`}
         scrollWheelZoom
         zoomControl={false}
       >
@@ -147,19 +88,7 @@ export function ResearchMap({
           useSheet={useSheet}
           onPublicationSelect={onPublicationSelect}
         />
-        {embedded && (
-          <EmbeddedPopupOverlaySync
-            onPopupOpen={setEmbeddedPopupOpen}
-            onPopupOpenAgain={() => setOverlaySuppressed(false)}
-          />
-        )}
       </MapContainer>
-      {showEmbeddedOverlay && (
-        <MapFocusedPublicationCard
-          publication={focusedPublication}
-          onClose={() => setOverlayDismissed(true)}
-        />
-      )}
     </div>
   );
 }

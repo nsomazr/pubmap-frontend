@@ -1075,6 +1075,24 @@ body {
   z-index: 1200;
 }
 
+.gre-card--study-map {
+  overflow: visible;
+}
+
+.gre-card--study-map .gre-map--embedded {
+  overflow: visible;
+}
+
+.study-location-expand {
+  padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right))
+    max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+}
+
+.study-location-info {
+  border-bottom-left-radius: 1.5rem;
+  border-bottom-right-radius: 1.5rem;
+}
+
 .gre-map--embedded .leaflet-bottom.leaflet-right {
   bottom: 0.75rem;
   right: 0.75rem;
@@ -1082,8 +1100,7 @@ body {
 }
 
 .gre-map--embedded .leaflet-container {
-  border-bottom-left-radius: 1.5rem;
-  border-bottom-right-radius: 1.5rem;
+  border-radius: 0;
 }
 
 .gre-map-popup--embedded .leaflet-popup-content {
