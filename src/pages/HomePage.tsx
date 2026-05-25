@@ -15,6 +15,7 @@ import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import { PublicFooter } from "../components/layout/PublicFooter";
 import { PublicNav } from "../components/layout/PublicNav";
 import { ResearchMap } from "../components/map/ResearchMap";
+import { MapPublicationSheet } from "../components/map/MapPublicationSheet";
 import { assets } from "../lib/brand";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import type { Category, Publication, SubCategory } from "../types";
@@ -44,6 +45,8 @@ export function HomePage() {
   const [resultsRailCollapsed, setResultsRailCollapsed] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [summaryPubId, setSummaryPubId] = useState<number | null>(null);
+  const [selectedPublicationId, setSelectedPublicationId] = useState<number | null>(null);
+  const [mapExpanded, setMapExpanded] = useState(false);
   const [focusPubId, setFocusPubId] = useState<number | null>(null);
   const [deepLinkPub, setDeepLinkPub] = useState<Publication | null>(null);
   const mapChromeBoundsRef = useRef<HTMLElement | null>(null);
@@ -227,13 +230,33 @@ export function HomePage() {
     return null;
   }, [publications, summaryPubId, deepLinkPub]);
 
+  const selectedPublication = useMemo(() => {
+    if (!selectedPublicationId) return null;
+    return publications.find((p) => p.id === selectedPublicationId) ?? null;
+  }, [publications, selectedPublicationId]);
+
+  useEffect(() => {
+    if (summaryPubId) setSelectedPublicationId(null);
+  }, [summaryPubId]);
+
+  useEffect(() => {
+    if (!mapExpanded) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMapExpanded(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mapExpanded]);
+
   return (
     <div
       className={`landing-page relative flex min-h-[100dvh] flex-col overflow-hidden bg-slate-200${
         resultsRailOpen && !resultsRailCollapsed ? " landing-page--results-open" : ""
-      }${summaryPublication ? " landing-page--summary-open" : ""}`}
+      }${summaryPublication ? " landing-page--summary-open" : ""}${
+        selectedPublication ? " landing-page--marker-sheet-open" : ""
+      }${mapExpanded ? " landing-page--map-expanded" : ""}`}
     >
-      <PublicNav variant="map" />
+      {!mapExpanded && <PublicNav variant="map" />}
 
       <main ref={mapChromeBoundsRef} className="relative min-h-0 flex-1">
         <div className="absolute inset-0">
@@ -251,6 +274,11 @@ export function HomePage() {
               focusPublicationId={focusPubId}
               height="100%"
               className="rounded-none border-0"
+              mapExpanded={mapExpanded}
+              onMapExpandedChange={setMapExpanded}
+              onPublicationSelect={(publication) =>
+                setSelectedPublicationId(publication?.id ?? null)
+              }
             />
           )}
         </div>
@@ -314,6 +342,23 @@ export function HomePage() {
           />
         </DraggableMapPanel>
 
+        {selectedPublication && !summaryPublication && (
+          <MapPublicationSheet
+            publication={selectedPublication}
+            onClose={() => setSelectedPublicationId(null)}
+          />
+        )}
+
+        {mapExpanded && (
+          <button
+            type="button"
+            onClick={() => setMapExpanded(false)}
+            className="pointer-events-auto absolute left-4 top-[max(0.75rem,env(safe-area-inset-top))] z-[1300] rounded-full bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-sm hover:bg-slate-900"
+          >
+            Exit expanded map
+          </button>
+        )}
+
         {summaryPublication && (
           <DraggableMapPanel
             boundsRef={mapChromeBoundsRef}
@@ -353,7 +398,9 @@ export function HomePage() {
         )}
       </main>
 
-      <PublicFooter variant="compact" publicationCount={onMapWithCoords || totalOnMap} />
+      {!mapExpanded && (
+        <PublicFooter variant="compact" publicationCount={onMapWithCoords || totalOnMap} />
+      )}
     </div>
   );
 }

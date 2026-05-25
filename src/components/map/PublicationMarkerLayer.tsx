@@ -17,17 +17,26 @@ interface Props {
   publications: Publication[];
   focusPublicationId?: number | null;
   embedded?: boolean;
+  useSheet?: boolean;
+  onPublicationSelect?: (publication: Publication | null) => void;
 }
 
 export function PublicationMarkerLayer({
   publications,
   focusPublicationId,
   embedded = false,
+  useSheet = false,
+  onPublicationSelect,
 }: Props) {
   const map = useMap();
   const markersById = useRef<Map<number, L.Marker>>(new Map());
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const lastFocusRef = useRef<number | null>(null);
+  const onPublicationSelectRef = useRef(onPublicationSelect);
+
+  useEffect(() => {
+    onPublicationSelectRef.current = onPublicationSelect;
+  }, [onPublicationSelect]);
 
   useEffect(() => {
     const withCoords = publications.filter(
@@ -56,18 +65,27 @@ export function PublicationMarkerLayer({
           accentColor,
         } as L.MarkerOptions & { accentColor?: string }
       );
-      marker.bindPopup(buildPublicationPopupHtml(pub, { variant: embedded ? "detail" : "default" }), {
-        maxWidth: embedded ? 320 : 280,
-        className: embedded ? "gre-map-popup gre-map-popup--embedded" : "gre-map-popup",
-        autoPan: true,
-        autoPanPaddingTopLeft: L.point(24, embedded ? 80 : LANDING_POPUP_TOP_PAD),
-        autoPanPaddingBottomRight: L.point(24, embedded ? 180 : LANDING_POPUP_BOTTOM_PAD),
-        offset: L.point(0, embedded ? 0 : -8),
-        keepInView: true,
-        closeButton: true,
-        autoClose: true,
-        closeOnClick: true,
-      });
+
+      if (useSheet) {
+        marker.on("click", (event) => {
+          L.DomEvent.stopPropagation(event);
+          onPublicationSelectRef.current?.(pub);
+        });
+      } else {
+        marker.bindPopup(buildPublicationPopupHtml(pub, { variant: embedded ? "detail" : "default" }), {
+          maxWidth: embedded ? 320 : 280,
+          className: embedded ? "gre-map-popup gre-map-popup--embedded" : "gre-map-popup",
+          autoPan: true,
+          autoPanPaddingTopLeft: L.point(24, embedded ? 80 : LANDING_POPUP_TOP_PAD),
+          autoPanPaddingBottomRight: L.point(24, embedded ? 180 : LANDING_POPUP_BOTTOM_PAD),
+          offset: L.point(0, embedded ? 0 : -8),
+          keepInView: true,
+          closeButton: true,
+          autoClose: true,
+          closeOnClick: true,
+        });
+      }
+
       markersById.current.set(pub.id, marker);
       cluster.addLayer(marker);
     }
@@ -94,11 +112,21 @@ export function PublicationMarkerLayer({
     cluster.on("clusterclick", onClusterClick);
     cluster.on("spiderfied", onSpiderfied);
 
-    const detachSummary = attachPublicationPopupSummary(map);
+    const onMapClick = () => {
+      if (useSheet) onPublicationSelectRef.current?.(null);
+    };
+    if (useSheet) {
+      map.on("click", onMapClick);
+    }
+
+    const detachSummary = useSheet ? () => {} : attachPublicationPopupSummary(map);
 
     return () => {
       cluster.off("clusterclick", onClusterClick);
       cluster.off("spiderfied", onSpiderfied);
+      if (useSheet) {
+        map.off("click", onMapClick);
+      }
       detachSummary();
       map.removeLayer(cluster);
       cluster.clearLayers();
@@ -106,7 +134,7 @@ export function PublicationMarkerLayer({
       markersById.current.clear();
       lastFocusRef.current = null;
     };
-  }, [publications, map, embedded]);
+  }, [publications, map, embedded, useSheet]);
 
   useEffect(() => {
     if (!focusPublicationId) {
@@ -136,12 +164,16 @@ export function PublicationMarkerLayer({
           map.panBy([0, -120], { animate: true });
           return;
         }
+        if (useSheet) {
+          onPublicationSelectRef.current?.(pub);
+          return;
+        }
         marker.openPopup();
       });
     }, 900);
 
     return () => window.clearTimeout(timer);
-  }, [focusPublicationId, publications, map, embedded]);
+  }, [focusPublicationId, publications, map, embedded, useSheet]);
 
   return null;
 }

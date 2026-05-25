@@ -5,6 +5,7 @@ import type { Publication } from "../../types";
 import { MapFocusedPublicationCard } from "./MapFocusedPublicationCard";
 import { GRE_SUMMARY_REQUEST, type GreSummaryRequestDetail } from "./publicationPopupSummary";
 import { PublicationMarkerLayer } from "./PublicationMarkerLayer";
+import { MapExpandControl } from "./MapExpandControl";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
@@ -62,6 +63,9 @@ interface Props {
   zoomPosition?: "bottomright" | "bottomleft" | "topright" | "topleft";
   focusPublicationId?: number | null;
   variant?: "default" | "embedded";
+  mapExpanded?: boolean;
+  onMapExpandedChange?: (expanded: boolean) => void;
+  onPublicationSelect?: (publication: Publication | null) => void;
 }
 
 export function ResearchMap({
@@ -71,6 +75,9 @@ export function ResearchMap({
   zoomPosition = "bottomright",
   focusPublicationId = null,
   variant = "default",
+  mapExpanded = false,
+  onMapExpandedChange,
+  onPublicationSelect,
 }: Props) {
   const withCoords = publications.filter(
     (p) => p.coordinates?.latitude && p.coordinates?.longitude
@@ -80,6 +87,7 @@ export function ResearchMap({
       ? publications.find((pub) => pub.id === focusPublicationId) ?? null
       : null;
   const embedded = variant === "embedded";
+  const useSheet = !embedded && Boolean(onPublicationSelect);
   const mapZoomPosition = embedded ? "topright" : zoomPosition;
   const [embeddedPopupOpen, setEmbeddedPopupOpen] = useState(false);
   const [overlaySuppressed, setOverlaySuppressed] = useState(false);
@@ -121,6 +129,12 @@ export function ResearchMap({
         zoomControl={false}
       >
         <ZoomControl position={mapZoomPosition} />
+        {!embedded && onMapExpandedChange && (
+          <MapExpandControl
+            expanded={mapExpanded}
+            onToggle={() => onMapExpandedChange(!mapExpanded)}
+          />
+        )}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -130,6 +144,8 @@ export function ResearchMap({
           publications={publications}
           focusPublicationId={focusPublicationId}
           embedded={embedded}
+          useSheet={useSheet}
+          onPublicationSelect={onPublicationSelect}
         />
         {embedded && (
           <EmbeddedPopupOverlaySync
