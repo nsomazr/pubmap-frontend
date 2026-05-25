@@ -1114,6 +1114,28 @@ body {
   text-decoration: none !important;
 }
 
+.publication-chat-page {
+  min-height: min(72dvh, 760px);
+}
+
+.publication-chat-page__body {
+  min-height: 0;
+}
+
+.publication-chat__composer {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+@media (max-width: 639px) {
+  .publication-chat-page {
+    min-height: min(68dvh, calc(100dvh - 12rem));
+  }
+
+  .publication-chat__thread {
+    max-height: none;
+  }
+}
+
 .gre-map--embedded .leaflet-bottom.leaflet-right {
   bottom: 0.75rem;
   right: 0.75rem;

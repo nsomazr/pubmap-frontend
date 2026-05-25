@@ -73,42 +73,47 @@ export function PublicationChatPage() {
       subtitle="Read an AI summary and ask follow-up questions about this study."
       crumbs={[
         { label: "Home", to: "/" },
-        { label: crumbTitle.slice(0, 48) + (crumbTitle.length > 48 ? "…" : ""), to: `/publication/${pub.id}` },
+        {
+          label: crumbTitle.slice(0, 48) + (crumbTitle.length > 48 ? "…" : ""),
+          to: `/publication/${pub.id}`,
+        },
         { label: "Chat" },
       ]}
       back={{ to: "/", label: "Back to map" }}
     >
-      <div className="gre-card overflow-hidden">
-        <header className="border-b border-slate-100 bg-slate-50/60 px-5 py-4 sm:px-6">
-          <div className="flex flex-wrap items-start gap-4">
-            <UserAvatar
-              user={pub.author}
-              size="md"
-              className="!h-12 !w-12 shrink-0 !border-2 !text-sm"
-            />
-            <div className="min-w-0 flex-1">
-              {subVisual && (
-                <div className="mb-2 flex items-center gap-2">
-                  <SubcategoryVisual visual={subVisual} size="sm" />
-                  <span className="text-[11px] font-bold uppercase tracking-wide text-brand-700">
-                    {subVisual.name}
-                  </span>
-                </div>
-              )}
-              <h1 className="text-lg font-semibold leading-snug text-ink sm:text-xl">
-                {crumbTitle}
-              </h1>
-              {author && <p className="mt-1 text-sm text-slate-600">{author}</p>}
-              {locationLabel && (
-                <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-                  <span>{locationLabel}</span>
-                </p>
-              )}
+      <div className="publication-chat-page gre-card flex min-h-[min(72dvh,760px)] flex-col overflow-hidden">
+        <header className="shrink-0 border-b border-slate-100 bg-slate-50/60 px-4 py-4 sm:px-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+              <UserAvatar
+                user={pub.author}
+                size="md"
+                className="!h-11 !w-11 shrink-0 !border-2 !text-xs sm:!h-12 sm:!w-12 sm:!text-sm"
+              />
+              <div className="min-w-0 flex-1">
+                {subVisual && (
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <SubcategoryVisual visual={subVisual} size="sm" />
+                    <span className="text-[11px] font-bold uppercase tracking-wide text-brand-700">
+                      {subVisual.name}
+                    </span>
+                  </div>
+                )}
+                <h1 className="text-base font-semibold leading-snug text-ink sm:text-lg lg:text-xl">
+                  {crumbTitle}
+                </h1>
+                {author && <p className="mt-1 text-sm text-slate-600">{author}</p>}
+                {locationLabel && (
+                  <p className="mt-1.5 flex items-start gap-1.5 text-xs text-slate-500 sm:text-sm">
+                    <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600 sm:h-4 sm:w-4" />
+                    <span>{locationLabel}</span>
+                  </p>
+                )}
+              </div>
             </div>
             <Link
               to={`/publication/${pub.id}`}
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-700"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-700 sm:ml-auto sm:w-auto"
             >
               <ExternalLink className="h-4 w-4" />
               Full publication
@@ -116,19 +121,21 @@ export function PublicationChatPage() {
           </div>
         </header>
 
-        <div className="border-b border-brand-100 bg-brand-50/40 px-5 py-3 sm:px-6">
-          <p className="flex items-center gap-2 text-sm text-brand-800">
-            <Sparkles className="h-4 w-4 shrink-0" />
-            GRE Assistant is summarizing this study. Ask about methods, findings, authors, or location below.
+        <div className="shrink-0 border-b border-brand-100 bg-brand-50/40 px-4 py-3 sm:px-6">
+          <p className="flex items-start gap-2 text-sm leading-relaxed text-brand-800">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
+            GRE Assistant summarizes this study and answers follow-up questions about methods,
+            findings, authors, or location.
           </p>
         </div>
 
-        <div className="px-4 py-5 sm:px-6 sm:py-6">
+        <div className="publication-chat-page__body flex min-h-0 flex-1 flex-col px-3 py-4 sm:px-6 sm:py-5">
           <PublicationSummaryAssistant
             publicationId={pub.id}
             autoGenerate
             layout="page"
             scrollContainerRef={scrollRef}
+            className="min-h-0 flex-1"
           />
         </div>
       </div>

@@ -10,12 +10,14 @@ export type StreamHandlers = {
 
 export type AssistantHealthStatus = {
   available: boolean;
+  connectivity?: string;
+  error?: string;
+  hint?: string;
   provider?: string | null;
   engine?: string | null;
   model?: string | null;
   groq_api_key_set?: boolean;
   chat_public?: boolean;
-  hint?: string;
 };
 
 function authHeaders(): Record<string, string> {

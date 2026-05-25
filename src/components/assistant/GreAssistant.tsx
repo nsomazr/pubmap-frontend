@@ -1,5 +1,6 @@
 import { Bot, Loader2, RotateCcw, Send, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { assistantChatStream, assistantHealth } from "../../lib/assistant";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
 
@@ -17,6 +18,8 @@ const INITIAL_MESSAGE: Msg = {
 };
 
 export function GreAssistant() {
+  const location = useLocation();
+  const hideOnPublicationChat = /\/publication\/\d+\/chat\/?$/.test(location.pathname);
   const [open, setOpen] = useState(false);
   const [health, setHealth] = useState<{
     available: boolean;
@@ -128,6 +131,10 @@ export function GreAssistant() {
     setInput("");
     setMessages([INITIAL_MESSAGE]);
   };
+
+  if (hideOnPublicationChat) {
+    return null;
+  }
 
   return (
     <>
