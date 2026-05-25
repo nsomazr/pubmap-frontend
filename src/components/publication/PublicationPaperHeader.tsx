@@ -201,10 +201,10 @@ export function PublicationPaperHeader({
 
       {metaRows.length > 0 && (
         <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-3 sm:px-7">
-          <dl className="publication-paper-meta grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+          <dl className="publication-paper-meta grid max-w-4xl grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-2">
             {metaRows.map((row) => (
               <div key={row.label} className="flex min-w-0 items-start gap-2 text-xs sm:text-sm">
-                <dt className="w-[7.25rem] shrink-0 font-medium text-slate-500">{row.label}</dt>
+                <dt className="w-[6.25rem] shrink-0 font-medium text-slate-500">{row.label}</dt>
                 <dd className="min-w-0 font-semibold text-slate-700">{row.value}</dd>
               </div>
             ))}
