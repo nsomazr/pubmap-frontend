@@ -4,7 +4,6 @@ import { assets } from "../../lib/brand";
 import { resolveProfilePhotoSrc } from "../../lib/profilePhoto";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { userInitials } from "../../lib/userDisplay";
-import { buildPublicationSummaryPath } from "../../lib/mapDeepLink";
 
 export type PublicationPopupVariant = "default" | "detail";
 
@@ -23,7 +22,6 @@ export function buildPublicationPopupHtml(
   const views = pub.views_count ?? 0;
   const downloads = pub.downloads_count ?? 0;
   const subVisual = publicationSubcategoryVisual(pub);
-  const summaryPath = buildPublicationSummaryPath(pub.id);
 
   const avatarHtml = authorPhoto
     ? `<span class="gre-popup-avatar-wrap">
@@ -62,7 +60,7 @@ export function buildPublicationPopupHtml(
         <span>⬇ ${downloads}</span>
       </div>
       <div class="gre-popup-actions">
-        <a href="${escapeAttr(summaryPath)}" class="gre-popup-summary-btn" data-pub-id="${pub.id}">
+        <a href="/publication/${pub.id}/chat" class="gre-popup-summary-btn" data-pub-id="${pub.id}">
           Get summary
         </a>
         ${viewLink}

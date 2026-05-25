@@ -1,22 +1,21 @@
 import { Eye, MapPin, Maximize2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
+import { buildPublicationChatPath } from "../../lib/publicationChat";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import { UserAvatar } from "../ui/UserAvatar";
-import { Link } from "react-router-dom";
-import { buildPublicationSummaryPath } from "../../lib/mapDeepLink";
-import { PublicationSummaryAssistant } from "../publication/PublicationSummaryAssistant";
 import { ResearchMap } from "./ResearchMap";
 
 function StudyLocationInfoPanel({
   publication,
-  onCloseExpanded,
+  chatPath,
 }: {
   publication: Publication;
-  onCloseExpanded?: () => void;
+  chatPath: string;
 }) {
   const author =
     publication.author?.full_name ||
@@ -68,8 +67,7 @@ function StudyLocationInfoPanel({
           </span>
         </div>
         <Link
-          to={buildPublicationSummaryPath(publication.id)}
-          onClick={onCloseExpanded}
+          to={chatPath}
           className="inline-flex items-center justify-center rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 sm:shrink-0"
         >
           Get summary
@@ -81,11 +79,11 @@ function StudyLocationInfoPanel({
 
 interface Props {
   publication: Publication;
-  autoGenerateSummary?: boolean;
 }
 
-export function StudyLocationSection({ publication, autoGenerateSummary = false }: Props) {
+export function StudyLocationSection({ publication }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const chatPath = buildPublicationChatPath(publication.id);
 
   useEffect(() => {
     if (!expanded) return;
@@ -133,7 +131,7 @@ export function StudyLocationSection({ publication, autoGenerateSummary = false 
           <div className="relative min-h-0 flex-1">
             <ResearchMap {...mapProps} height="100%" />
           </div>
-          <StudyLocationInfoPanel publication={publication} onCloseExpanded={() => setExpanded(false)} />
+          <StudyLocationInfoPanel publication={publication} chatPath={chatPath} />
         </div>
       </div>,
       document.body
@@ -157,12 +155,7 @@ export function StudyLocationSection({ publication, autoGenerateSummary = false 
           </button>
         </div>
         <ResearchMap {...mapProps} height="380px" />
-        <StudyLocationInfoPanel publication={publication} />
-        <PublicationSummaryAssistant
-          publicationId={publication.id}
-          layout="study-location"
-          autoGenerate={autoGenerateSummary}
-        />
+        <StudyLocationInfoPanel publication={publication} chatPath={chatPath} />
       </section>
       {expandOverlay}
     </>

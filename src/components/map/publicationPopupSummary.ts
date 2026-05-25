@@ -1,5 +1,18 @@
 import L from "leaflet";
-import { openPublicationSummaryPage } from "../../lib/publicationSummaryNav";
+import { buildPublicationChatPath } from "../../lib/publicationChat";
+
+export const GRE_SUMMARY_REQUEST = "gre:summary-request";
+
+export type GreSummaryRequestDetail = { publicationId: number };
+
+/** Opens the dedicated research chat page for this publication. */
+export function requestPublicationSummary(publicationId: number) {
+  window.dispatchEvent(
+    new CustomEvent<GreSummaryRequestDetail>(GRE_SUMMARY_REQUEST, {
+      detail: { publicationId },
+    })
+  );
+}
 
 export function attachPublicationPopupSummary(map: L.Map): () => void {
   const onPopupOpen = (e: L.PopupEvent) => {
@@ -14,7 +27,7 @@ export function attachPublicationPopupSummary(map: L.Map): () => void {
       const pubId = Number(btn.dataset.pubId);
       if (!pubId) return;
 
-      openPublicationSummaryPage(pubId);
+      requestPublicationSummary(pubId);
       map.closePopup();
     };
 

@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../lib/api";
-import { buildPublicationSummaryPath, parseMapDeepLink } from "../lib/mapDeepLink";
+import { parseMapDeepLink } from "../lib/mapDeepLink";
+import { buildPublicationChatPath } from "../lib/publicationChat";
 import { DraggableMapPanel } from "../components/landing/DraggableMapPanel";
 import { MapResultsRail } from "../components/landing/MapResultsRail";
 import { MapSearchHub } from "../components/landing/MapSearchHub";
@@ -25,6 +26,7 @@ type MapSearchFilters = {
 };
 
 export function HomePage() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mapDeepLink = useMemo(
     () => parseMapDeepLink(searchParams.toString()),
@@ -43,7 +45,6 @@ export function HomePage() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedPublicationId, setSelectedPublicationId] = useState<number | null>(null);
   const [mapExpanded, setMapExpanded] = useState(false);
-  const navigate = useNavigate();
   const [focusPubId, setFocusPubId] = useState<number | null>(null);
   const [deepLinkPub, setDeepLinkPub] = useState<Publication | null>(null);
   const mapChromeBoundsRef = useRef<HTMLElement | null>(null);
@@ -57,11 +58,10 @@ export function HomePage() {
   useEffect(() => {
     const id = mapDeepLink.publicationId;
     if (!id) return;
-    if (mapDeepLink.panel === "summary") {
-      navigate(buildPublicationSummaryPath(id), { replace: true });
-      return;
-    }
     setFocusPubId(id);
+    if (mapDeepLink.panel === "summary") {
+      navigate(buildPublicationChatPath(id), { replace: true });
+    }
   }, [mapDeepLink.publicationId, mapDeepLink.panel, navigate]);
 
   useEffect(() => {

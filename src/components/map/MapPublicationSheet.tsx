@@ -1,7 +1,7 @@
 import { Eye, FileText, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
-import { buildPublicationSummaryPath } from "../../lib/mapDeepLink";
+import { buildPublicationChatPath } from "../../lib/publicationChat";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
@@ -73,7 +73,7 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
 
         <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/80 p-3 sm:flex-row">
           <Link
-            to={buildPublicationSummaryPath(publication.id)}
+            to={buildPublicationChatPath(publication.id)}
             onClick={onClose}
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
           >

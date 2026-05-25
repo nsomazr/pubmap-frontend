@@ -1,18 +1,21 @@
-import { lazy, Suspense, useEffect } from "react";
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useNavigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthScreen, AuthScreenLoading } from "./components/auth/AuthScreen";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { SummaryNavigationBridge } from "./components/navigation/SummaryNavigationBridge";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
 import { OnboardingPage } from "./pages/auth/OnboardingPage";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 import { GreAssistant } from "./components/assistant/GreAssistant";
-import { registerAppNavigate } from "./lib/appNavigate";
 
 const PublicationDetailPage = lazy(() =>
   import("./pages/PublicationDetailPage").then((m) => ({ default: m.PublicationDetailPage }))
+);
+const PublicationChatPage = lazy(() =>
+  import("./pages/PublicationChatPage").then((m) => ({ default: m.PublicationChatPage }))
 );
 const ForumPage = lazy(() => import("./pages/ForumPage").then((m) => ({ default: m.ForumPage })));
 const ForumCategoryPage = lazy(() =>
@@ -142,6 +145,7 @@ function AppRoutes() {
           <Route path="/onboarding" element={<OnboardingPage />} />
         </Route>
         <Route path="/publication/:id" element={<PublicationDetailPage />} />
+        <Route path="/publication/:id/chat" element={<PublicationChatPage />} />
         <Route path="/researcher/:id" element={<ResearcherProfilePage />} />
         <Route path="/doi/:doi" element={<DoiRedirectPage />} />
         <Route path="/forum" element={<ForumPage />} />
@@ -183,21 +187,10 @@ function AppRoutes() {
   );
 }
 
-function AppNavigationRegistrar() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    registerAppNavigate(navigate);
-    return () => registerAppNavigate(null);
-  }, [navigate]);
-
-  return null;
-}
-
 function AppShell() {
   return (
     <>
-      <AppNavigationRegistrar />
+      <SummaryNavigationBridge />
       <AppRoutes />
       <GreAssistant />
     </>

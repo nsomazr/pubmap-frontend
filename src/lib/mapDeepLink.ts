@@ -18,16 +18,14 @@ export function parseMapDeepLink(search: string): MapDeepLinkState {
   return { publicationId, panel, affiliation, location };
 }
 
-export function buildPublicationSummaryPath(publicationId: number): string {
-  return `/publication/${publicationId}?summary=1`;
-}
-
 export function buildMapFocusPath(
   publicationId: number,
   opts?: { panel?: MapDeepLinkPanel }
 ): string {
+  if (opts?.panel === "summary") {
+    return `/publication/${publicationId}/chat`;
+  }
   const params = new URLSearchParams({ pub: String(publicationId) });
-  if (opts?.panel) params.set("panel", opts.panel);
   return `/?${params.toString()}`;
 }
 
