@@ -80,7 +80,7 @@ function CountryMarker({
         <br />
         {point.count.toLocaleString()} publications
       </Tooltip>
-      <Popup closeButton autoPan>
+      <Popup closeButton autoPan className="stats-density-popup">
         <div className="min-w-[10rem] space-y-2 text-sm">
           <p className="font-semibold text-ink">{point.country}</p>
           <p className="text-slate-600">
@@ -89,7 +89,7 @@ function CountryMarker({
           </p>
           <Link
             to={buildMapLocationPath(point.country)}
-            className="inline-flex items-center rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700"
+            className="stats-density-popup-action inline-flex items-center rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold no-underline transition hover:bg-brand-700"
           >
             View studies on map
           </Link>

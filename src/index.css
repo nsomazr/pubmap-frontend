@@ -1098,6 +1098,22 @@ body {
   border-bottom-right-radius: 1.5rem;
 }
 
+.stats-density-popup .leaflet-popup-content-wrapper {
+  border-radius: 0.75rem;
+}
+
+.stats-density-popup .leaflet-popup-content {
+  margin: 0.75rem 0.875rem;
+}
+
+.stats-density-popup .stats-density-popup-action,
+.stats-density-popup .stats-density-popup-action:visited,
+.stats-density-popup .stats-density-popup-action:hover,
+.stats-density-popup .stats-density-popup-action:active {
+  color: #fff !important;
+  text-decoration: none !important;
+}
+
 .gre-map--embedded .leaflet-bottom.leaflet-right {
   bottom: 0.75rem;
   right: 0.75rem;
