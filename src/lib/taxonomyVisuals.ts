@@ -20,6 +20,27 @@ import type { Publication, SubCategory, SubcategoryVisual } from "../types";
 export const DEFAULT_ACCENT = "#3b5bdb";
 export const DEFAULT_ICON_KEY = "layers";
 
+const STATIC_SUBCATEGORY_LOGOS: Record<string, string> = {
+  "engineering geology": "/assets/geologysubcategorieslogo/Engineering Geology.png",
+  "environmental geology": "/assets/geologysubcategorieslogo/Environmental Geology.png",
+  geochemistry: "/assets/geologysubcategorieslogo/Geochemistry.png",
+  "geological mapping": "/assets/geologysubcategorieslogo/Geological Mapping.png",
+  "geological remote sensing":
+    "/assets/geologysubcategorieslogo/Geological Remote Sensing.png",
+  "geomorphology & surface processes":
+    "/assets/geologysubcategorieslogo/Geomorphology&Surface Processes.png",
+  geophysics: "/assets/geologysubcategorieslogo/Geophysics.png",
+  hydrogeology: "/assets/geologysubcategorieslogo/Hydrogeogy.png",
+  "igneous & metamorphic petrology":
+    "/assets/geologysubcategorieslogo/Ignous&MetamorphicPetrology.png",
+  "natural resources & economic geology":
+    "/assets/geologysubcategorieslogo/Natural Resources&Economic Geology.png",
+  "paleontology & palynology":
+    "/assets/geologysubcategorieslogo/Paleontology&Palynology.png",
+  sedimentology: "/assets/geologysubcategorieslogo/Sedimentology.png",
+  volcanology: "/assets/geologysubcategorieslogo/Volcanology.png",
+};
+
 const SUBCATEGORY_VISUALS: Record<string, Omit<SubcategoryVisual, "name" | "category_name">> = {
   "engineering geology": { icon_key: "hard-hat", accent_color: "#3b5bdb" },
   "environmental geology": { icon_key: "leaf", accent_color: "#0d9488" },
@@ -71,7 +92,13 @@ function isHexColor(value: string | undefined | null) {
 function isIconPath(value?: string | null) {
   if (!value || isHexColor(value)) return false;
   const text = value.trim();
-  return text.startsWith("uploads/") || text.startsWith("media/") || text.includes("/");
+  return (
+    text.startsWith("uploads/") ||
+    text.startsWith("media/") ||
+    text.startsWith("assets/") ||
+    text.startsWith("/assets/") ||
+    text.includes("/")
+  );
 }
 
 export function resolveCategoryVisual(
@@ -109,13 +136,15 @@ export function resolveSubcategoryVisual(
     (isHexColor(options?.iconField) ? options!.iconField!.trim() : null) ||
     preset?.accent_color ||
     category.accent_color;
+  const staticLogo = STATIC_SUBCATEGORY_LOGOS[key];
 
   return {
     name: (name || "").trim() || "Research area",
     category_name: options?.categoryName?.trim() || category.name,
     icon_key: preset?.icon_key || category.icon_key,
     accent_color: accent,
-    logo_url: isIconPath(options?.iconField) ? options!.iconField!.trim() : undefined,
+    logo_url:
+      (isIconPath(options?.iconField) ? options!.iconField!.trim() : undefined) || staticLogo,
   };
 }
 

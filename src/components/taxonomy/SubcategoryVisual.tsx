@@ -29,7 +29,11 @@ interface Props {
 
 export function SubcategoryVisual({ visual, size = "sm", className = "", title }: Props) {
   const Icon = taxonomyIcon(visual.icon_key);
-  const logoSrc = mediaUrl(visual.logo_url);
+  const rawLogo = (visual.logo_url || "").trim();
+  const logoSrc =
+    rawLogo.startsWith("/assets/") || rawLogo.startsWith("assets/")
+      ? `/${rawLogo.replace(/^\/+/, "")}`
+      : mediaUrl(rawLogo);
 
   if (logoSrc) {
     return (
