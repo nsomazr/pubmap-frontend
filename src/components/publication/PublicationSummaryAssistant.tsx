@@ -22,7 +22,7 @@ type FollowUpItem = {
 interface Props {
   publicationId: number;
   autoGenerate?: boolean;
-  layout?: "detail" | "dock";
+  layout?: "detail" | "dock" | "study-location";
   className?: string;
   scrollContainerRef?: RefObject<HTMLDivElement | null>;
 }
@@ -90,9 +90,11 @@ export function PublicationSummaryAssistant({
       const { publicationId: requestedId } = (event as CustomEvent<GreSummaryRequestDetail>).detail;
       if (requestedId === publicationId) {
         runSummary();
-        if (layout === "detail") {
+        const scrollTargetId =
+          layout === "study-location" ? "study-location" : layout === "detail" ? "publication-summary" : null;
+        if (scrollTargetId) {
           window.setTimeout(() => {
-            document.getElementById("publication-summary")?.scrollIntoView({
+            document.getElementById(scrollTargetId)?.scrollIntoView({
               behavior: "smooth",
               block: "start",
             });
@@ -183,6 +185,7 @@ export function PublicationSummaryAssistant({
   const canAskFollowUp = Boolean(summary.trim()) && !summaryLoading && !followUpLoading;
   const isDock = layout === "dock";
   const isDetail = layout === "detail";
+  const isStudyLocation = layout === "study-location";
   const wrapperClass = isDetail ? "contents" : className;
 
   return (
@@ -204,9 +207,11 @@ export function PublicationSummaryAssistant({
           className={
             isDock
               ? "space-y-3"
-              : isDetail
-                ? "col-span-full mt-2 rounded-2xl border border-brand-100 bg-brand-50/40 p-5 sm:col-span-2"
-                : "mt-6 rounded-2xl border border-brand-100 bg-brand-50/40 p-5"
+              : isStudyLocation
+                ? "study-location-summary space-y-3 border-t border-brand-100 bg-brand-50/40 px-4 py-4 sm:px-6"
+                : isDetail
+                  ? "col-span-full mt-2 rounded-2xl border border-brand-100 bg-brand-50/40 p-5 sm:col-span-2"
+                  : "mt-6 rounded-2xl border border-brand-100 bg-brand-50/40 p-5"
           }
         >
           {!isDock && (

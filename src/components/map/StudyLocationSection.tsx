@@ -6,10 +6,17 @@ import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import { UserAvatar } from "../ui/UserAvatar";
+import { PublicationSummaryAssistant } from "../publication/PublicationSummaryAssistant";
 import { ResearchMap } from "./ResearchMap";
 import { requestPublicationSummary } from "./publicationPopupSummary";
 
-function StudyLocationInfoPanel({ publication }: { publication: Publication }) {
+function StudyLocationInfoPanel({
+  publication,
+  onGetSummary,
+}: {
+  publication: Publication;
+  onGetSummary: () => void;
+}) {
   const author =
     publication.author?.full_name ||
     `${publication.author?.firstname ?? ""} ${publication.author?.lastname ?? ""}`.trim();
@@ -61,7 +68,7 @@ function StudyLocationInfoPanel({ publication }: { publication: Publication }) {
         </div>
         <button
           type="button"
-          onClick={() => requestPublicationSummary(publication.id)}
+          onClick={onGetSummary}
           className="inline-flex items-center justify-center rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 sm:shrink-0"
         >
           Get summary
@@ -77,6 +84,11 @@ interface Props {
 
 export function StudyLocationSection({ publication }: Props) {
   const [expanded, setExpanded] = useState(false);
+
+  const handleGetSummary = () => {
+    setExpanded(false);
+    requestPublicationSummary(publication.id);
+  };
 
   useEffect(() => {
     if (!expanded) return;
@@ -124,7 +136,7 @@ export function StudyLocationSection({ publication }: Props) {
           <div className="relative min-h-0 flex-1">
             <ResearchMap {...mapProps} height="100%" />
           </div>
-          <StudyLocationInfoPanel publication={publication} />
+          <StudyLocationInfoPanel publication={publication} onGetSummary={handleGetSummary} />
         </div>
       </div>,
       document.body
@@ -132,7 +144,7 @@ export function StudyLocationSection({ publication }: Props) {
 
   return (
     <>
-      <section className="gre-card gre-card--study-map overflow-visible p-0">
+      <section id="study-location" className="gre-card gre-card--study-map overflow-visible p-0">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-brand-600" />
@@ -148,7 +160,8 @@ export function StudyLocationSection({ publication }: Props) {
           </button>
         </div>
         <ResearchMap {...mapProps} height="380px" />
-        <StudyLocationInfoPanel publication={publication} />
+        <StudyLocationInfoPanel publication={publication} onGetSummary={handleGetSummary} />
+        <PublicationSummaryAssistant publicationId={publication.id} layout="study-location" />
       </section>
       {expandOverlay}
     </>

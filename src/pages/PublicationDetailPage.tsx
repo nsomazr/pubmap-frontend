@@ -5,7 +5,6 @@ import { AlertTriangle } from "lucide-react";
 import { formatGrePaperTitle } from "../lib/grePaperTitle";
 import api from "../lib/api";
 import { ReportPlagiarismDialog } from "../components/publication/ReportPlagiarismDialog";
-import { PublicationSummaryAssistant } from "../components/publication/PublicationSummaryAssistant";
 import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import { ResearcherRankInline } from "../components/rankings/ResearcherRankInline";
 import { StarRating } from "../components/rankings/StarRating";
@@ -116,34 +115,28 @@ export function PublicationDetailPage() {
             accessType={pub.gre?.access_type}
           />
 
-          <section
-            id="publication-summary"
-            className="gre-card grid grid-cols-1 gap-4 p-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-6 sm:p-8"
-          >
-            <div className="min-w-0 flex-1">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">Abstract</h2>
-              <p className="mt-4 text-base leading-relaxed text-slate-700">
-                {abstractPlain?.trim() || "No abstract provided."}
+          <section className="gre-card p-6 sm:p-8">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">Abstract</h2>
+            <p className="mt-4 text-base leading-relaxed text-slate-700">
+              {abstractPlain?.trim() || "No abstract provided."}
+            </p>
+            {pub.keywords && pub.keywords.length > 0 && (
+              <p className="mt-4 text-sm text-slate-600">
+                <span className="font-semibold text-slate-700">Keywords: </span>
+                {pub.keywords.join(", ")}
               </p>
-              {pub.keywords && pub.keywords.length > 0 && (
-                <p className="mt-4 text-sm text-slate-600">
-                  <span className="font-semibold text-slate-700">Keywords: </span>
-                  {pub.keywords.join(", ")}
-                </p>
-              )}
-              {pub.funder?.trim() && (
-                <p className="mt-4 text-sm text-slate-600">
-                  <span className="font-semibold text-slate-700">Project funders: </span>
-                  {pub.funder.trim()}
-                </p>
-              )}
-              {pub.gre?.gre_doi && (
-                <div className="mt-4">
-                  <GreDoiBadge greDoi={pub.gre.gre_doi} greDoiUrl={pub.gre.gre_doi_url} />
-                </div>
-              )}
-            </div>
-            <PublicationSummaryAssistant publicationId={pub.id} layout="detail" />
+            )}
+            {pub.funder?.trim() && (
+              <p className="mt-4 text-sm text-slate-600">
+                <span className="font-semibold text-slate-700">Project funders: </span>
+                {pub.funder.trim()}
+              </p>
+            )}
+            {pub.gre?.gre_doi && (
+              <div className="mt-4">
+                <GreDoiBadge greDoi={pub.gre.gre_doi} greDoiUrl={pub.gre.gre_doi_url} />
+              </div>
+            )}
           </section>
 
           <PublicationDownloadPanel
