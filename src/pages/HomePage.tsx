@@ -24,6 +24,7 @@ type MapSearchFilters = {
   author: string;
   affiliation: string;
   title: string;
+  location: string;
   categoryId: string;
   subCategoryId: string;
 };
@@ -37,6 +38,7 @@ export function HomePage() {
   const [author, setAuthor] = useState("");
   const [affiliation, setAffiliation] = useState("");
   const [title, setTitle] = useState("");
+  const [location, setLocation] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [subCategoryId, setSubCategoryId] = useState("");
   const [searching, setSearching] = useState(false);
@@ -74,6 +76,13 @@ export function HomePage() {
   }, [mapDeepLink.affiliation]);
 
   useEffect(() => {
+    if (mapDeepLink.location) {
+      setLocation(mapDeepLink.location);
+      skipAutoSearchRef.current = false;
+    }
+  }, [mapDeepLink.location]);
+
+  useEffect(() => {
     const onSummary = (e: Event) => {
       const { publicationId } = (e as CustomEvent<GreSummaryRequestDetail>).detail;
       setSummaryPubId(publicationId);
@@ -105,6 +114,7 @@ export function HomePage() {
         author: debouncedAuthor,
         affiliation: debouncedAffiliation,
         title: debouncedTitle,
+        location,
         categoryId,
         subCategoryId,
       };
@@ -116,6 +126,7 @@ export function HomePage() {
             author: active.author || undefined,
             affiliation: active.affiliation || undefined,
             title: active.title || undefined,
+            location: active.location || undefined,
             category: active.categoryId || undefined,
             sub_category: active.subCategoryId || undefined,
           },
@@ -134,7 +145,7 @@ export function HomePage() {
         setSearching(false);
       }
     },
-    [debouncedAuthor, debouncedAffiliation, debouncedTitle, categoryId, subCategoryId]
+    [debouncedAuthor, debouncedAffiliation, debouncedTitle, location, categoryId, subCategoryId]
   );
 
   const handleSearch = async (e?: React.FormEvent) => {
@@ -145,6 +156,7 @@ export function HomePage() {
         author,
         affiliation,
         title,
+        location,
         categoryId,
         subCategoryId,
       },
@@ -156,6 +168,7 @@ export function HomePage() {
     setAuthor("");
     setAffiliation("");
     setTitle("");
+    setLocation("");
     setCategoryId("");
     setSubCategoryId("");
     setResults(null);
@@ -171,6 +184,7 @@ export function HomePage() {
       debouncedAuthor ||
       debouncedAffiliation ||
       debouncedTitle ||
+      location ||
       categoryId ||
       subCategoryId;
     if (!hasFilter) return;
@@ -179,6 +193,7 @@ export function HomePage() {
     debouncedAuthor,
     debouncedAffiliation,
     debouncedTitle,
+    location,
     categoryId,
     subCategoryId,
     runSearch,

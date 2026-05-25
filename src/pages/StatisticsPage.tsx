@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   greAccentBadge,
   greBarPrimary,
@@ -23,7 +24,7 @@ import { formatGrePaperTitle } from "../lib/grePaperTitle";
 import api from "../lib/api";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { AnimatedCounter } from "../components/stats/AnimatedCounter";
-import { CountryHeatGrid } from "../components/stats/CountryHeatGrid";
+import { CountryHeatGrid, CountryHeatGridHint } from "../components/stats/CountryHeatGrid";
 import { HorizontalBarChart } from "../components/stats/HorizontalBarChart";
 import { StatsDensityMap } from "../components/stats/StatsDensityMap";
 import { TrendLineChart } from "../components/stats/TrendLineChart";
@@ -82,6 +83,8 @@ function Section({
 }
 
 export function StatisticsPage() {
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ["stats", "public"],
     queryFn: async () => {
@@ -173,11 +176,23 @@ export function StatisticsPage() {
               title="Publications by country"
               subtitle="Inferred from study location labels on the map"
             >
-              <CountryHeatGrid countries={data.publications_by_country} />
+              <CountryHeatGrid
+                countries={data.publications_by_country}
+                selectedCountry={selectedCountry}
+                onCountrySelect={setSelectedCountry}
+              />
+              <CountryHeatGridHint selectedCountry={selectedCountry} />
             </Section>
 
             <Section title="Geographic heatmap" subtitle="Publication density by country centroid">
-              <StatsDensityMap points={data.map_heatmap} />
+              <StatsDensityMap
+                points={data.map_heatmap}
+                selectedCountry={selectedCountry}
+                onCountrySelect={setSelectedCountry}
+              />
+              <p className="mt-3 text-xs text-slate-500">
+                Click a region to see its publication count and open those studies on the main map.
+              </p>
             </Section>
           </div>
 

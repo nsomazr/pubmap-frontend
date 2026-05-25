@@ -4,6 +4,7 @@ export interface MapDeepLinkState {
   publicationId: number | null;
   panel: MapDeepLinkPanel | null;
   affiliation: string | null;
+  location: string | null;
 }
 
 export function parseMapDeepLink(search: string): MapDeepLinkState {
@@ -13,7 +14,8 @@ export function parseMapDeepLink(search: string): MapDeepLinkState {
   const panelRaw = params.get("panel");
   const panel: MapDeepLinkPanel | null = panelRaw === "summary" ? "summary" : null;
   const affiliation = params.get("affiliation")?.trim() || null;
-  return { publicationId, panel, affiliation };
+  const location = params.get("location")?.trim() || null;
+  return { publicationId, panel, affiliation, location };
 }
 
 export function buildMapFocusPath(
@@ -23,6 +25,10 @@ export function buildMapFocusPath(
   const params = new URLSearchParams({ pub: String(publicationId) });
   if (opts?.panel) params.set("panel", opts.panel);
   return `/?${params.toString()}`;
+}
+
+export function buildMapLocationPath(location: string): string {
+  return `/?${new URLSearchParams({ location }).toString()}`;
 }
 
 export function extractNotificationPath(link?: string | null): string | null {

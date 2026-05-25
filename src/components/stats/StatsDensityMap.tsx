@@ -1,10 +1,16 @@
-import { CircleMarker, MapContainer, TileLayer, Tooltip } from "react-leaflet";
+import { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+import L from "leaflet";
+import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import type { PublicStatsHeatmapPoint } from "../../types";
+import { buildMapLocationPath } from "../../lib/mapDeepLink";
 import "leaflet/dist/leaflet.css";
 
 interface Props {
   points: PublicStatsHeatmapPoint[];
   height?: string;
+  selectedCountry?: string | null;
+  onCountrySelect?: (country: string) => void;
 }
 
 function radiusForCount(count: number, max: number) {
@@ -14,7 +20,91 @@ function radiusForCount(count: number, max: number) {
   return minR + (count / max) * (maxR - minR);
 }
 
-export function StatsDensityMap({ points, height = "22rem" }: Props) {
+function FlyToCountry({
+  points,
+  selectedCountry,
+}: {
+  points: PublicStatsHeatmapPoint[];
+  selectedCountry?: string | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!selectedCountry) return;
+    const point = points.find((row) => row.country === selectedCountry);
+    if (!point) return;
+    map.flyTo([point.latitude, point.longitude], 5, { duration: 0.65 });
+  }, [map, points, selectedCountry]);
+
+  return null;
+}
+
+function CountryMarker({
+  point,
+  max,
+  selected,
+  onSelect,
+}: {
+  point: PublicStatsHeatmapPoint;
+  max: number;
+  selected: boolean;
+  onSelect?: (country: string) => void;
+}) {
+  const markerRef = useRef<L.CircleMarker>(null);
+
+  useEffect(() => {
+    if (selected) {
+      markerRef.current?.openPopup();
+      return;
+    }
+    markerRef.current?.closePopup();
+  }, [selected]);
+
+  return (
+    <CircleMarker
+      ref={markerRef}
+      center={[point.latitude, point.longitude]}
+      radius={radiusForCount(point.count, max)}
+      pathOptions={{
+        color: selected ? "#0f766e" : "#64748b",
+        fillColor: selected ? "#14b8a6" : "#94a3b8",
+        fillOpacity: selected ? 0.55 : 0.35,
+        weight: selected ? 2 : 1,
+      }}
+      eventHandlers={{
+        click: () => onSelect?.(point.country),
+      }}
+    >
+      <Tooltip direction="top" offset={[0, -4]} opacity={0.95}>
+        <span className="font-semibold">{point.country}</span>
+        <br />
+        {point.count.toLocaleString()} publications
+      </Tooltip>
+      <Popup closeButton autoPan>
+        <div className="min-w-[10rem] space-y-2 text-sm">
+          <p className="font-semibold text-ink">{point.country}</p>
+          <p className="text-slate-600">
+            {point.count.toLocaleString()} published{" "}
+            {point.count === 1 ? "study" : "studies"} in this region
+          </p>
+          <Link
+            to={buildMapLocationPath(point.country)}
+            className="inline-flex items-center rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700"
+          >
+            View studies on map
+          </Link>
+        </div>
+      </Popup>
+    </CircleMarker>
+  );
+}
+
+export function StatsDensityMap({
+  points,
+  height = "22rem",
+  selectedCountry,
+  onCountrySelect,
+}: Props) {
   if (points.length === 0) {
     return (
       <div
@@ -42,24 +132,15 @@ export function StatsDensityMap({ points, height = "22rem" }: Props) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <FlyToCountry points={points} selectedCountry={selectedCountry} />
         {points.map((point) => (
-          <CircleMarker
+          <CountryMarker
             key={point.country}
-            center={[point.latitude, point.longitude]}
-            radius={radiusForCount(point.count, max)}
-            pathOptions={{
-              color: "#0d9488",
-              fillColor: "#3b82f6",
-              fillOpacity: 0.45,
-              weight: 1,
-            }}
-          >
-            <Tooltip direction="top" offset={[0, -4]} opacity={0.95}>
-              <span className="font-semibold">{point.country}</span>
-              <br />
-              {point.count.toLocaleString()} publications
-            </Tooltip>
-          </CircleMarker>
+            point={point}
+            max={max}
+            selected={selectedCountry === point.country}
+            onSelect={onCountrySelect}
+          />
         ))}
       </MapContainer>
     </div>
