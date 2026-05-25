@@ -27,7 +27,10 @@ import {
   ManuscriptSectionsEditor,
   type ManuscriptFields,
 } from "../../components/publication/ManuscriptSectionsEditor";
-import { PublicationDocumentUpload } from "../../components/publication/PublicationDocumentUpload";
+import {
+  PublicationDocumentUpload,
+  type ExtractedDocumentPayload,
+} from "../../components/publication/PublicationDocumentUpload";
 import {
   PublicationAccessTypeGate,
 } from "../../components/publication/PublicationAccessTypeGate";
@@ -36,7 +39,7 @@ import { PublicationPaperPreview } from "../../components/publication/Publicatio
 import { SubmissionReviewDialog } from "../../components/publication/SubmissionReviewDialog";
 import { Textarea } from "../../components/ui/Textarea";
 import { useAuth } from "../../context/AuthContext";
-import api from "../../lib/api";
+import api, { parseApiError } from "../../lib/api";
 import { PublicationFiguresEditor } from "../../components/publication/PublicationFiguresEditor";
 import { PublicationSupplementaryUpload } from "../../components/publication/PublicationSupplementaryUpload";
 import {
@@ -78,6 +81,32 @@ function formatKeywords(keywords?: string[] | null): string {
   return Array.isArray(keywords) ? keywords.join(", ") : "";
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function extractedTextToHtml(value?: string | null): string {
+  const text = (value || "").trim();
+  if (!text) return "";
+  return text
+    .split(/\n{2,}/)
+    .map((block) => `<p>${escapeHtml(block).replace(/\n/g, "<br />")}</p>`)
+    .join("");
+}
+
+type ExtractionStatus = "idle" | "extracting" | "ready" | "error";
+
+type ExtractionUiState = {
+  status: ExtractionStatus;
+  warnings: string[];
+  engine?: string;
+};
+
 type ComposerTab = "editor" | "preview";
 
 export function PublicationManagePage() {
@@ -115,7 +144,12 @@ export function PublicationManagePage() {
   const [figures, setFigures] = useState<PublicationFigure[]>([]);
   const [error, setError] = useState("");
   const [pendingDocument, setPendingDocument] = useState<File | null>(null);
+  const [extractionUi, setExtractionUi] = useState<ExtractionUiState>({
+    status: "idle",
+    warnings: [],
+  });
   const [submitReviewOpen, setSubmitReviewOpen] = useState(false);
+  const isClosedAccess = gre.access_type === "closed";
 
   type SaveOptions = { thenSubmit?: boolean };
 
@@ -144,6 +178,34 @@ export function PublicationManagePage() {
       keywords: setKeywords,
     };
     setters[key](value);
+  }, []);
+
+  const applyExtractedDocument = useCallback((payload: ExtractedDocumentPayload) => {
+    setTitle((current) => current.trim() || (payload.title || "").trim());
+    setAbstract((current) =>
+      hasTextContent(current) ? current : extractedTextToHtml(payload.abstract)
+    );
+    setIntroduction((current) =>
+      hasTextContent(current) ? current : extractedTextToHtml(payload.introduction)
+    );
+    setMethods((current) => (hasTextContent(current) ? current : extractedTextToHtml(payload.methods)));
+    setResults((current) => (hasTextContent(current) ? current : extractedTextToHtml(payload.results)));
+    setFindings((current) =>
+      hasTextContent(current) ? current : extractedTextToHtml(payload.findings)
+    );
+    setConclusion((current) =>
+      hasTextContent(current) ? current : extractedTextToHtml(payload.conclusion)
+    );
+    setReferences((current) =>
+      hasTextContent(current) ? current : extractedTextToHtml(payload.references)
+    );
+    setFunder((current) => current.trim() || (payload.funder || "").trim());
+    setKeywords((current) => current.trim() || (payload.keywords || "").trim());
+    setExtractionUi({
+      status: "ready",
+      warnings: payload.warnings ?? [],
+      engine: payload.extraction_engine,
+    });
   }, []);
 
   const { data: categories = [] } = useQuery({
@@ -240,6 +302,46 @@ export function PublicationManagePage() {
     const el = document.getElementById("claims");
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [location.search, pub?.id]);
+
+  const extractDocumentMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const form = new FormData();
+      form.append("document", file);
+      const { data } = await api.post<ExtractedDocumentPayload>(
+        "/publications/extract_document/",
+        form,
+        {
+          params: { use_ai: 1 },
+        }
+      );
+      return data;
+    },
+    onMutate: () => {
+      setExtractionUi({
+        status: "extracting",
+        warnings: [],
+      });
+    },
+    onSuccess: (data) => {
+      applyExtractedDocument(data);
+    },
+    onError: (err) => {
+      setExtractionUi({
+        status: "error",
+        warnings: [parseApiError(err, "Could not extract sections from that file.")],
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (!pendingDocument || isClosedAccess) {
+      if (!pendingDocument) {
+        setExtractionUi({ status: "idle", warnings: [] });
+      }
+      return;
+    }
+    extractDocumentMutation.mutate(pendingDocument);
+  }, [pendingDocument, isClosedAccess]);
 
   const buildCollaboratorsPayload = (): Collaborator[] => {
     if (submitterRole === "coauthor") {
@@ -381,7 +483,6 @@ export function PublicationManagePage() {
 
   const existingDocPath = pub?.documents?.[0]?.document ?? null;
   const hasDocument = Boolean(pendingDocument || existingDocPath);
-  const isClosedAccess = gre.access_type === "closed";
   const showComposer = accessTypeChosen || !isNew;
 
   const subVisual = useMemo(() => {
@@ -520,6 +621,9 @@ export function PublicationManagePage() {
       : openHasSource);
 
   const getSaveValidationError = (): string | null => {
+    if (extractionUi.status === "extracting") {
+      return "Please wait while GRE extracts manuscript sections from the uploaded paper.";
+    }
     if (!title.trim()) return "Please add a title.";
     if (!abstract.trim()) return "Please add an abstract.";
     if (!subCategoryId) return "Please select a category and subcategory.";
@@ -823,7 +927,7 @@ export function PublicationManagePage() {
                 <p className="mt-1 text-sm text-slate-500">
                   {isClosedAccess
                     ? "Title and category appear on the map and in search."
-                    : "Title, abstract, and category appear in search; readers open your uploaded paper or external link after approval."}
+                    : "Upload your paper to auto-fill the manuscript sections, then review and edit them before publishing."}
                 </p>
               </div>
               <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
@@ -835,44 +939,7 @@ export function PublicationManagePage() {
                 onSubCategoryChange={setSubCategoryId}
                 required
               />
-              {!isClosedAccess && (
-                <>
-                  <Textarea
-                    label="Abstract"
-                    value={abstract}
-                    onChange={(e) => setAbstract(e.target.value)}
-                    rows={5}
-                    required
-                  />
-                  <Input
-                    label="Keywords"
-                    value={keywords}
-                    onChange={(e) => setKeywords(e.target.value)}
-                    placeholder="climate, remote sensing, East Africa (comma-separated)"
-                  />
-                  <Input
-                    label="Funder (optional)"
-                    value={funder}
-                    onChange={(e) => setFunder(e.target.value)}
-                    placeholder="Grant or funding source"
-                  />
-                </>
-              )}
             </section>
-
-            {isClosedAccess && (
-              <section className="gre-card overflow-visible p-6 sm:p-8">
-                <div className="border-b border-slate-100 pb-5">
-                  <h2 className="text-lg font-bold text-ink">Manuscript sections</h2>
-                  <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">
-                    Complete all required sections. Use <strong>Paper preview</strong> to see the reader layout.
-                  </p>
-                </div>
-                <div className="mt-6">
-                  <ManuscriptSectionsEditor fields={manuscript} onChange={setManuscript} />
-                </div>
-              </section>
-            )}
 
             <section className="gre-card p-6">
               <PublicationAccessFields
@@ -884,22 +951,86 @@ export function PublicationManagePage() {
                 openUploadSlot={
                   !isClosedAccess ? (
                     isNew ? (
-                      <ManuscriptUploadField
-                        file={pendingDocument}
-                        onFileChange={setPendingDocument}
-                        existingDocumentPath={existingDocPath}
-                        disabled={isReadOnly}
-                      />
+                      <div className="space-y-3">
+                        <ManuscriptUploadField
+                          file={pendingDocument}
+                          onFileChange={setPendingDocument}
+                          existingDocumentPath={existingDocPath}
+                          disabled={isReadOnly}
+                        />
+                        <div className="rounded-xl border border-brand-100 bg-brand-50/40 px-4 py-3 text-sm text-slate-600">
+                          <p>
+                            GRE will extract the abstract, introduction, methods, results, findings,
+                            conclusion, funding, keywords, and references from your uploaded paper using
+                            Surya OCR. You can edit everything before saving.
+                          </p>
+                          {extractionUi.status === "extracting" && (
+                            <p className="mt-2 flex items-center gap-2 font-medium text-brand-700">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Extracting manuscript sections from the uploaded paper…
+                            </p>
+                          )}
+                          {extractionUi.status === "ready" && (
+                            <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
+                              Autofill ready{extractionUi.engine ? ` · ${extractionUi.engine}` : ""}
+                            </p>
+                          )}
+                          {extractionUi.status === "error" && extractionUi.warnings[0] && (
+                            <p className="mt-2 text-sm text-red-600">{extractionUi.warnings[0]}</p>
+                          )}
+                          {extractionUi.status !== "error" &&
+                            extractionUi.warnings.map((warning) => (
+                              <p key={warning} className="mt-2 text-sm text-amber-700">
+                                {warning}
+                              </p>
+                            ))}
+                        </div>
+                      </div>
                     ) : id ? (
                       <PublicationDocumentUpload
                         publicationId={Number(id)}
                         documents={pub?.documents}
                         disabled={isReadOnly}
+                        extractOnUpload
+                        onExtracted={applyExtractedDocument}
                       />
                     ) : null
                   ) : undefined
                 }
               />
+            </section>
+
+            <section className="gre-card overflow-visible p-6 sm:p-8">
+              <div className="border-b border-slate-100 pb-5">
+                <h2 className="text-lg font-bold text-ink">Manuscript sections</h2>
+                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">
+                  {isClosedAccess ? (
+                    <>
+                      Complete all required sections. Use <strong>Paper preview</strong> to see the
+                      reader layout.
+                    </>
+                  ) : (
+                    <>
+                      Open-access uploads can auto-fill these sections from the paper. Review and refine
+                      them here before saving.
+                    </>
+                  )}
+                </p>
+              </div>
+              <div className="mt-6">
+                {extractionUi.status === "ready" && (
+                  <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900">
+                    Extracted manuscript content is ready{extractionUi.engine ? ` using ${extractionUi.engine}` : ""}.
+                    You can edit every section below before saving.
+                  </div>
+                )}
+                {extractionUi.status === "error" && extractionUi.warnings[0] && (
+                  <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {extractionUi.warnings[0]}
+                  </div>
+                )}
+                <ManuscriptSectionsEditor fields={manuscript} onChange={setManuscript} />
+              </div>
             </section>
           </>
         )}
@@ -1056,7 +1187,11 @@ export function PublicationManagePage() {
         </section>
 
         <div className="publication-submit-bar sticky bottom-4 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-lg backdrop-blur-md">
-          <Button type="submit" variant="secondary" disabled={saveMutation.isPending && !submitReviewOpen}>
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={extractionUi.status === "extracting" || (saveMutation.isPending && !submitReviewOpen)}
+          >
             {saveMutation.isPending && !submitReviewOpen ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -1067,7 +1202,11 @@ export function PublicationManagePage() {
           {(isNew || canSubmit) && (
             <Button
               type="button"
-              disabled={!readyToSubmit || (saveMutation.isPending && submitReviewOpen)}
+              disabled={
+                extractionUi.status === "extracting" ||
+                !readyToSubmit ||
+                (saveMutation.isPending && submitReviewOpen)
+              }
               onClick={openSubmitReview}
             >
               <Send className="h-4 w-4" />

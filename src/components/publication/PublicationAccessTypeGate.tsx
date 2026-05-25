@@ -16,11 +16,12 @@ const OPTIONS: {
   {
     type: "open",
     title: "Open access",
-    summary: "Publish the full manuscript on GRE after review.",
+    summary: "Publish the full manuscript on GRE after review, with manuscript sections auto-filled from your upload.",
     icon: Unlock,
     points: [
-      "Complete title, abstract, category, and map location.",
-      "Upload the original PDF and/or add a link to the journal copy.",
+      "Complete title, category, and map location.",
+      "Upload the original PDF to auto-fill the abstract, methods, results, and other sections with Surya OCR.",
+      "Review and edit the extracted sections before submitting.",
       "Readers access the full paper on GRE after approval.",
     ],
   },

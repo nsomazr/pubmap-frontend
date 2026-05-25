@@ -365,7 +365,7 @@ export function HomePage() {
         )}
 
         {!resultsRailOpen && (
-          <div className="pointer-events-none absolute bottom-32 right-4 z-[1000] hidden w-[min(100%,240px)] md:block lg:bottom-28 lg:right-6">
+          <div className="pointer-events-none absolute bottom-32 z-[1000] hidden w-[min(100%,240px)] md:right-16 md:block lg:bottom-28 lg:right-20">
             <GreAdPlacement
               placement="sidebar"
               limit={6}

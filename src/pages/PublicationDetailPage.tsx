@@ -150,17 +150,26 @@ export function PublicationDetailPage() {
           />
 
           {hasPdf && docPath ? (
-            <section className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-7">
-                <div>
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
-                    Manuscript PDF
-                  </h2>
-                  <p className="mt-1 text-xs text-slate-500">Full open-access paper</p>
+            <>
+              <section className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-7">
+                  <div>
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
+                      Manuscript PDF
+                    </h2>
+                    <p className="mt-1 text-xs text-slate-500">Full open-access paper</p>
+                  </div>
                 </div>
+                <PdfPreview documentPath={docPath} className="min-h-[min(50vh,420px)] rounded-none border-0 sm:min-h-[min(75vh,900px)]" />
+              </section>
+              <div className="space-y-4">
+                <PublicationManuscriptSection title="Introduction" body={pub.introduction} />
+                <PublicationManuscriptSection title="Methods" body={pub.methods} />
+                <PublicationManuscriptSection title="Results" body={pub.results} />
+                <PublicationManuscriptSection title="Findings / discussion" body={pub.findings} />
+                <PublicationManuscriptSection title="Conclusion" body={pub.conclusion} />
               </div>
-              <PdfPreview documentPath={docPath} className="min-h-[min(50vh,420px)] rounded-none border-0 sm:min-h-[min(75vh,900px)]" />
-            </section>
+            </>
           ) : !isClosed || hasUploadedManuscript ? (
             <div className="space-y-4">
               <PublicationManuscriptSection title="Introduction" body={pub.introduction} />

@@ -13,6 +13,25 @@ interface Props {
   documents?: Publication["documents"];
   disabled?: boolean;
   disabledHint?: string;
+  extractOnUpload?: boolean;
+  onExtracted?: (payload: ExtractedDocumentPayload) => void;
+}
+
+export interface ExtractedDocumentPayload {
+  title?: string;
+  abstract?: string;
+  introduction?: string;
+  methods?: string;
+  results?: string;
+  findings?: string;
+  conclusion?: string;
+  funder?: string;
+  references?: string;
+  keywords?: string;
+  warnings?: string[];
+  section_notes?: Record<string, string>;
+  extraction_engine?: string;
+  success?: boolean;
 }
 
 export function PublicationDocumentUpload({
@@ -20,6 +39,8 @@ export function PublicationDocumentUpload({
   documents = [],
   disabled,
   disabledHint,
+  extractOnUpload = false,
+  onExtracted,
 }: Props) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -29,10 +50,20 @@ export function PublicationDocumentUpload({
     mutationFn: async (file: File) => {
       const form = new FormData();
       form.append("document", file);
-      await api.post(`/publications/${publicationId}/upload_document/`, form);
+      const { data } = await api.post<{ extracted?: ExtractedDocumentPayload }>(
+        `/publications/${publicationId}/upload_document/`,
+        form,
+        {
+          params: extractOnUpload ? { extract: 1, use_ai: 1 } : undefined,
+        }
+      );
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setLocalError("");
+      if (data?.extracted && onExtracted) {
+        onExtracted(data.extracted);
+      }
       queryClient.invalidateQueries({ queryKey: ["publication-edit", String(publicationId)] });
     },
     onError: (err: { response?: { data?: { detail?: string } } }) => {
