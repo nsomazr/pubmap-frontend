@@ -89,7 +89,10 @@ async function consumeAssistantStream(
             done?: boolean;
             error?: string;
           };
-          if (data.error) handlers.onError?.(data.error);
+          if (data.error) {
+            handlers.onError?.(data.error);
+            handlers.onDone?.();
+          }
           if (data.token) handlers.onToken(data.token);
           if (data.done) handlers.onDone?.();
         } catch {

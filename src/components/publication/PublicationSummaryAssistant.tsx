@@ -130,6 +130,7 @@ export function PublicationSummaryAssistant({
                 item.id === itemId ? { ...item, loading: false, error: message } : item
               )
             );
+            setFollowUpLoading(false);
           },
           onDone: () => {
             setFollowUps((items) =>
@@ -193,9 +194,25 @@ export function PublicationSummaryAssistant({
         </p>
       </div>
       {item.error ? (
-        <p className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-sm text-amber-900 ring-1 ring-amber-100">
-          {item.error}
-        </p>
+        <div className="space-y-2">
+          <p className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-sm text-amber-900 ring-1 ring-amber-100">
+            {item.error}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setFollowUps((items) =>
+                items.map((row) =>
+                  row.id === item.id ? { ...row, error: undefined, loading: false, answer: "" } : row
+                )
+              );
+              setQuestion(item.question);
+            }}
+            className="text-xs font-semibold text-brand-700 hover:text-brand-800"
+          >
+            Retry this question
+          </button>
+        </div>
       ) : (
         <div className="flex gap-2.5">
           <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
