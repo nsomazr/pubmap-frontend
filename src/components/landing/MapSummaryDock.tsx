@@ -1,9 +1,9 @@
-import { ChevronDown, ChevronUp, GripVertical, MapPin, Sparkles, X } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, MapPin, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { PublicationSummaryAssistant } from "../publication/PublicationSummaryAssistant";
+import { UserAvatar } from "../ui/UserAvatar";
 import { useMapPanelLayout } from "../../context/MapPanelLayoutContext";
-import { greAccentBadge } from "../../lib/greTheme";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import type { Publication } from "../../types";
 
@@ -98,9 +98,11 @@ export function MapSummaryDock({ publication, onClose }: Props) {
         <header className="map-summary-dock-header">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <SummaryDragHandle />
-            <span className={`${greAccentBadge} h-9 w-9 shrink-0 rounded-xl shadow-md`}>
-              <Sparkles className="h-4 w-4" />
-            </span>
+            <UserAvatar
+              user={publication.author}
+              size="md"
+              className="!h-9 !w-9 shrink-0 !border-2 !text-[11px]"
+            />
             <div className="min-w-0 flex-1 text-left">
               <p className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
                 Research summary

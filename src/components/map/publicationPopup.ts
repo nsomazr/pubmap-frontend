@@ -1,8 +1,7 @@
 import type { Publication } from "../../types";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { assets } from "../../lib/brand";
-import { effectiveProfilePhoto } from "../../lib/profilePhoto";
-import { mediaUrl } from "../../lib/mediaUrl";
+import { resolveProfilePhotoSrc } from "../../lib/profilePhoto";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { userInitials } from "../../lib/userDisplay";
 
@@ -15,15 +14,20 @@ export function buildPublicationPopupHtml(
   const author =
     pub.author?.full_name ||
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
-  const authorPhotoRaw = effectiveProfilePhoto(pub.author?.photo);
-  const authorPhoto = authorPhotoRaw ? mediaUrl(authorPhotoRaw) : null;
+  const authorPhoto = resolveProfilePhotoSrc(
+    pub.author?.photo,
+    pub.author?.updated_at
+  );
   const initials = userInitials(pub.author);
   const views = pub.views_count ?? 0;
   const downloads = pub.downloads_count ?? 0;
   const subVisual = publicationSubcategoryVisual(pub);
 
   const avatarHtml = authorPhoto
-    ? `<img class="gre-popup-avatar" src="${escapeAttr(authorPhoto)}" alt="" />`
+    ? `<span class="gre-popup-avatar-wrap">
+        <img class="gre-popup-avatar" src="${escapeAttr(authorPhoto)}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.hidden=false;" />
+        <span class="gre-popup-avatar gre-popup-avatar--initials" hidden>${escapeHtml(initials)}</span>
+      </span>`
     : `<span class="gre-popup-avatar gre-popup-avatar--initials">${escapeHtml(initials)}</span>`;
 
   const subcategoryHtml = subVisual

@@ -1192,6 +1192,16 @@ body {
   min-width: 200px;
 }
 
+.gre-popup-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.gre-popup-avatar-wrap .gre-popup-avatar--initials[hidden] {
+  display: none;
+}
+
 .gre-popup-head {
   display: flex;
   align-items: flex-start;
