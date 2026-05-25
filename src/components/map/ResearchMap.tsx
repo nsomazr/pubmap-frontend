@@ -83,6 +83,11 @@ export function ResearchMap({
   const mapZoomPosition = embedded ? "topright" : zoomPosition;
   const [embeddedPopupOpen, setEmbeddedPopupOpen] = useState(false);
   const [overlaySuppressed, setOverlaySuppressed] = useState(false);
+  const [overlayDismissed, setOverlayDismissed] = useState(false);
+
+  useEffect(() => {
+    setOverlayDismissed(false);
+  }, [focusPublicationId]);
 
   useEffect(() => {
     if (!embedded || focusPublicationId == null) return;
@@ -97,7 +102,11 @@ export function ResearchMap({
   }, [embedded, focusPublicationId]);
 
   const showEmbeddedOverlay =
-    embedded && focusedPublication && !embeddedPopupOpen && !overlaySuppressed;
+    embedded &&
+    focusedPublication &&
+    !embeddedPopupOpen &&
+    !overlaySuppressed &&
+    !overlayDismissed;
 
   return (
     <div
@@ -129,7 +138,12 @@ export function ResearchMap({
           />
         )}
       </MapContainer>
-      {showEmbeddedOverlay && <MapFocusedPublicationCard publication={focusedPublication} />}
+      {showEmbeddedOverlay && (
+        <MapFocusedPublicationCard
+          publication={focusedPublication}
+          onClose={() => setOverlayDismissed(true)}
+        />
+      )}
     </div>
   );
 }

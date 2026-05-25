@@ -1,31 +1,41 @@
 import { resolveApiBaseUrl } from "./apiBaseUrl";
 
+/** Origin that serves uploaded files (/media, /storage). */
+function resolveMediaOrigin(): string {
+  const api = resolveApiBaseUrl();
+  if (api.startsWith("http")) {
+    return api.replace(/\/api\/?$/, "");
+  }
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return "";
+}
+
 /** Resolve Laravel/Django media paths or absolute URLs for images and PDFs. */
 export function mediaUrl(path?: string | null): string | null {
   if (!path) return null;
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  if (path.startsWith("/")) return path;
 
-  const clean = path.replace(/^\/+/, "");
+  const normalized = path.replace(/^\/+/, "");
 
-  // Dev: same-origin paths so Vite proxies /media and /storage to the API (fixes PDF iframe preview)
+  // Dev: same-origin paths so Vite proxies /media and /storage to the backend.
   if (import.meta.env.DEV && typeof window !== "undefined") {
-    if (clean.startsWith("storage/")) return `/${clean}`;
-    if (clean.startsWith("media/")) return `/${clean}`;
-    return `/media/${clean}`;
+    if (normalized.startsWith("storage/")) return `/${normalized}`;
+    if (normalized.startsWith("media/")) return `/${normalized}`;
+    return `/media/${normalized}`;
   }
 
-  const api = resolveApiBaseUrl();
-  const origin = api.startsWith("/")
-    ? (typeof window !== "undefined" ? window.location.origin : "")
-    : api.replace(/\/api\/?$/, "");
-  if (clean.startsWith("storage/")) {
-    return `${origin}/${clean}`;
+  const origin = resolveMediaOrigin();
+  if (!origin) return null;
+
+  if (normalized.startsWith("storage/")) {
+    return `${origin}/${normalized}`;
   }
-  if (clean.startsWith("media/")) {
-    return `${origin}/${clean}`;
+  if (normalized.startsWith("media/")) {
+    return `${origin}/${normalized}`;
   }
-  return `${origin}/media/${clean}`;
+  return `${origin}/media/${normalized}`;
 }
 
 export function isHexColor(value?: string | null): boolean {

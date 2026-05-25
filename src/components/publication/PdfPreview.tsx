@@ -33,9 +33,11 @@ function NoPdfAvailable({ className = "" }: { className?: string }) {
 function PdfLoadFailed({
   className = "",
   openUrl,
+  detail,
 }: {
   className?: string;
   openUrl?: string | null;
+  detail?: string | null;
 }) {
   return (
     <div
@@ -43,7 +45,9 @@ function PdfLoadFailed({
     >
       <FileText className="h-10 w-10 text-slate-400" />
       <p className="mt-3 text-sm font-medium text-slate-700">Unable to preview this PDF</p>
-      <p className="mt-1 text-xs text-slate-500">Try opening it in a new tab.</p>
+      <p className="mt-1 text-xs text-slate-500">
+        {detail || "Try opening it in a new tab."}
+      </p>
       {openUrl && (
         <a
           href={openUrl}
@@ -100,6 +104,7 @@ export function PdfPreview({
   const [remoteBlobUrl, setRemoteBlobUrl] = useState<string | null>(null);
   const [remoteLoadError, setRemoteLoadError] = useState(false);
   const [remoteHttpStatus, setRemoteHttpStatus] = useState<number | null>(null);
+  const [remoteErrorDetail, setRemoteErrorDetail] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -122,21 +127,31 @@ export function PdfPreview({
       setRemoteBlobUrl(null);
       setRemoteLoadError(false);
       setRemoteHttpStatus(null);
+      setRemoteErrorDetail(null);
       return;
     }
     let revoked: string | null = null;
     let cancelled = false;
     setRemoteLoadError(false);
     setRemoteHttpStatus(null);
+    setRemoteErrorDetail(null);
 
     const token = localStorage.getItem("access_token");
     fetch(remoteUrl, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
-      .then((res) => {
+      .then(async (res) => {
         if (!res.ok) {
+          let detail: string | null = null;
+          try {
+            const payload = (await res.json()) as { detail?: string };
+            detail = payload.detail?.trim() || null;
+          } catch {
+            detail = null;
+          }
           if (!cancelled) {
             setRemoteHttpStatus(res.status);
+            setRemoteErrorDetail(detail);
             setRemoteLoadError(true);
           }
           throw new Error(`HTTP ${res.status}`);
@@ -232,7 +247,7 @@ export function PdfPreview({
     if (fileMissing) {
       return <NoPdfAvailable className={className} />;
     }
-    return <PdfLoadFailed className={className} openUrl={remoteUrl} />;
+    return <PdfLoadFailed className={className} openUrl={remoteUrl} detail={remoteErrorDetail} />;
   }
 
   if (!src) {
