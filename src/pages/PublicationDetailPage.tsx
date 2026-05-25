@@ -52,6 +52,7 @@ export function PublicationDetailPage() {
 
   const docPath = pub?.documents?.[0]?.document ?? null;
   const isClosed = pub?.gre?.access_type === "closed";
+  const hasUploadedManuscript = Boolean(docPath);
   const hasPdf = Boolean(docPath?.toLowerCase().endsWith(".pdf")) && !isClosed;
 
   if (isLoading) {
@@ -161,7 +162,7 @@ export function PublicationDetailPage() {
               </div>
               <PdfPreview documentPath={docPath} className="min-h-[min(50vh,420px)] rounded-none border-0 sm:min-h-[min(75vh,900px)]" />
             </section>
-          ) : (
+          ) : !isClosed || hasUploadedManuscript ? (
             <div className="space-y-4">
               <PublicationManuscriptSection title="Introduction" body={pub.introduction} />
               <PublicationManuscriptSection title="Methods" body={pub.methods} />
@@ -169,7 +170,7 @@ export function PublicationDetailPage() {
               <PublicationManuscriptSection title="Findings / discussion" body={pub.findings} />
               <PublicationManuscriptSection title="Conclusion" body={pub.conclusion} />
             </div>
-          )}
+          ) : null}
 
           {(pub.figures?.length ?? 0) > 0 && (
             <PublicationFiguresEditor
