@@ -924,6 +924,63 @@ export function PublicationManagePage() {
 
         {composerTab === "editor" && (
           <>
+            {!isClosedAccess && (
+              <section className="gre-card space-y-4 p-6">
+                <div>
+                  <h2 className="text-lg font-bold text-ink">Original paper</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Upload the manuscript first so GRE can auto-fill the title and manuscript sections
+                    before you continue editing.
+                  </p>
+                </div>
+                {isNew ? (
+                  <div className="space-y-3">
+                    <ManuscriptUploadField
+                      file={pendingDocument}
+                      onFileChange={setPendingDocument}
+                      existingDocumentPath={existingDocPath}
+                      disabled={isReadOnly}
+                    />
+                    <div className="rounded-xl border border-brand-100 bg-brand-50/40 px-4 py-3 text-sm text-slate-600">
+                      <p>
+                        GRE will extract the title, abstract, introduction, methods, results,
+                        findings, conclusion, funding, keywords, and references from your uploaded
+                        paper using Surya OCR. You can edit everything before saving.
+                      </p>
+                      {extractionUi.status === "extracting" && (
+                        <p className="mt-2 flex items-center gap-2 font-medium text-brand-700">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Extracting manuscript details from the uploaded paper…
+                        </p>
+                      )}
+                      {extractionUi.status === "ready" && (
+                        <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
+                          Autofill ready{extractionUi.engine ? ` · ${extractionUi.engine}` : ""}
+                        </p>
+                      )}
+                      {extractionUi.status === "error" && extractionUi.warnings[0] && (
+                        <p className="mt-2 text-sm text-red-600">{extractionUi.warnings[0]}</p>
+                      )}
+                      {extractionUi.status !== "error" &&
+                        extractionUi.warnings.map((warning) => (
+                          <p key={warning} className="mt-2 text-sm text-amber-700">
+                            {warning}
+                          </p>
+                        ))}
+                    </div>
+                  </div>
+                ) : id ? (
+                  <PublicationDocumentUpload
+                    publicationId={Number(id)}
+                    documents={pub?.documents}
+                    disabled={isReadOnly}
+                    extractOnUpload
+                    onExtracted={applyExtractedDocument}
+                  />
+                ) : null}
+              </section>
+            )}
+
             <section className="gre-card space-y-4 p-6">
               <div>
                 <h2 className="text-lg font-bold text-ink">Publication details</h2>
@@ -951,55 +1008,6 @@ export function PublicationManagePage() {
                 accessLocked={isNew && accessTypeChosen}
                 onChangeAccess={!isNew ? handleAccessTypeSelect : undefined}
                 disabled={isReadOnly}
-                openUploadSlot={
-                  !isClosedAccess ? (
-                    isNew ? (
-                      <div className="space-y-3">
-                        <ManuscriptUploadField
-                          file={pendingDocument}
-                          onFileChange={setPendingDocument}
-                          existingDocumentPath={existingDocPath}
-                          disabled={isReadOnly}
-                        />
-                        <div className="rounded-xl border border-brand-100 bg-brand-50/40 px-4 py-3 text-sm text-slate-600">
-                          <p>
-                            GRE will extract the abstract, introduction, methods, results, findings,
-                            conclusion, funding, keywords, and references from your uploaded paper using
-                            Surya OCR. You can edit everything before saving.
-                          </p>
-                          {extractionUi.status === "extracting" && (
-                            <p className="mt-2 flex items-center gap-2 font-medium text-brand-700">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Extracting manuscript sections from the uploaded paper…
-                            </p>
-                          )}
-                          {extractionUi.status === "ready" && (
-                            <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
-                              Autofill ready{extractionUi.engine ? ` · ${extractionUi.engine}` : ""}
-                            </p>
-                          )}
-                          {extractionUi.status === "error" && extractionUi.warnings[0] && (
-                            <p className="mt-2 text-sm text-red-600">{extractionUi.warnings[0]}</p>
-                          )}
-                          {extractionUi.status !== "error" &&
-                            extractionUi.warnings.map((warning) => (
-                              <p key={warning} className="mt-2 text-sm text-amber-700">
-                                {warning}
-                              </p>
-                            ))}
-                        </div>
-                      </div>
-                    ) : id ? (
-                      <PublicationDocumentUpload
-                        publicationId={Number(id)}
-                        documents={pub?.documents}
-                        disabled={isReadOnly}
-                        extractOnUpload
-                        onExtracted={applyExtractedDocument}
-                      />
-                    ) : null
-                  ) : undefined
-                }
               />
             </section>
 

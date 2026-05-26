@@ -22,17 +22,20 @@ export function PublicationAccessFields({
   openUploadSlot,
 }: Props) {
   const isClosed = gre.access_type === "closed";
+  const hasOpenUploadSlot = Boolean(openUploadSlot);
 
   return (
     <section className="space-y-5">
       <div>
         <h3 className="text-sm font-bold uppercase tracking-wider text-brand-600">
-          {isClosed ? "Publisher access" : "Original paper & links"}
+          {isClosed ? "Publisher access" : hasOpenUploadSlot ? "Original paper & links" : "Access links"}
         </h3>
         <p className="mt-1 text-sm text-slate-600">
           {isClosed
             ? "Link to where readers can access the full paper (journal, repository, or publisher page)."
-            : "Upload the original paper for GRE, link to a journal copy, or both."}
+            : hasOpenUploadSlot
+              ? "Upload the original paper for GRE, link to a journal copy, or both."
+              : "Add journal or DOI links that readers can use alongside the uploaded paper."}
         </p>
         {accessLocked ? (
           <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
