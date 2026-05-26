@@ -8,7 +8,9 @@ import {
   MessageSquare,
   Share2,
   ThumbsUp,
+  X,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 import { useEffect, useMemo, useState } from "react";
 import api from "../../lib/api";
 import { summaryPdfUrl } from "../../lib/publicationGre";
@@ -46,6 +48,7 @@ export function PublicationDownloadPanel({
   const toast = useToast();
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewDiscussions, setPreviewDiscussions] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [likesCount, setLikesCount] = useState(initialLikesCount);
   const [likedByMe, setLikedByMe] = useState(initialLikedByMe);
   const [shareCount, setShareCount] = useState(initialShareCount);
@@ -76,6 +79,20 @@ export function PublicationDownloadPanel({
   useEffect(() => {
     setShareCount(initialShareCount);
   }, [initialShareCount]);
+
+  useEffect(() => {
+    if (!actionsOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActionsOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [actionsOpen]);
 
   const recordDownload = () => {
     api.post("/stats/record/", { publication_id: publicationId, type: "download" }).catch(() => {});
@@ -110,6 +127,7 @@ export function PublicationDownloadPanel({
       title: "Paper link copied",
       description: "The publication link is ready to paste.",
     });
+    setActionsOpen(false);
     void recordShare("copy_link");
   };
 
@@ -143,11 +161,184 @@ export function PublicationDownloadPanel({
         title: publicationTitle || "GRE publication",
         url: publicationHref,
       });
+      setActionsOpen(false);
       void recordShare("native_share");
     } catch {
       /* user cancelled */
     }
   };
+
+  const actionButtonClass =
+    "inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50";
+
+  const actionsDialog =
+    actionsOpen && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[2600] flex items-end justify-center bg-slate-900/50 p-4 sm:items-center"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="publication-actions-title"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setActionsOpen(false);
+            }}
+          >
+            <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+                <div>
+                  <h3 id="publication-actions-title" className="text-lg font-semibold text-ink">
+                    Share and download
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Preview the GRE PDF, download files, and share this publication.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActionsOpen(false)}
+                  className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-ink"
+                  aria-label="Close actions"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="max-h-[75vh] space-y-3 overflow-y-auto px-5 py-5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewOpen((open) => !open);
+                    setActionsOpen(false);
+                  }}
+                  className={`${actionButtonClass} ${
+                    previewOpen ? "border-brand-300 bg-brand-50 text-brand-800" : ""
+                  }`}
+                >
+                  {previewOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {previewOpen ? "Hide preview" : "Preview PDF"}
+                </button>
+
+                <a
+                  href={summaryPdfUrl(publicationId)}
+                  onClick={() => {
+                    recordDownload();
+                    setActionsOpen(false);
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
+                >
+                  <FileText className="h-4 w-4" />
+                  GRE publication PDF
+                </a>
+
+                {!closedAccess && fullUrl && (
+                  <a
+                    href={fullUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      recordDownload();
+                      setActionsOpen(false);
+                    }}
+                    className={`${actionButtonClass} border-brand-200 bg-brand-50 text-brand-800 hover:bg-brand-100`}
+                  >
+                    <Download className="h-4 w-4" />
+                    Full paper (uploaded PDF)
+                  </a>
+                )}
+
+                {closedAccess && (
+                  <a
+                    href={summaryPdfUrl(publicationId, { discussions: true })}
+                    onClick={() => {
+                      recordDownload();
+                      setActionsOpen(false);
+                    }}
+                    className={actionButtonClass}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    GRE PDF + discussions
+                  </a>
+                )}
+
+                {gre?.external_url && (
+                  <a
+                    href={gre.external_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setActionsOpen(false)}
+                    className={actionButtonClass}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    {closedAccess ? "Publisher access" : "External publication"}
+                  </a>
+                )}
+
+                <button type="button" onClick={handleCopyLink} className={actionButtonClass}>
+                  <Copy className="h-4 w-4" />
+                  Copy paper link
+                </button>
+
+                <a
+                  href={linkedInShareUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => {
+                    void recordShare("linkedin");
+                    setActionsOpen(false);
+                  }}
+                  className={actionButtonClass}
+                >
+                  <Share2 className="h-4 w-4" />
+                  LinkedIn
+                </a>
+
+                <a
+                  href={whatsappShareUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => {
+                    void recordShare("whatsapp");
+                    setActionsOpen(false);
+                  }}
+                  className={actionButtonClass}
+                >
+                  <Share2 className="h-4 w-4" />
+                  WhatsApp
+                </a>
+
+                {"share" in navigator && (
+                  <button type="button" onClick={handleNativeShare} className={actionButtonClass}>
+                    <Share2 className="h-4 w-4" />
+                    Share
+                  </button>
+                )}
+
+                {supplementary.map((doc) => {
+                  const href = doc.document.startsWith("http") ? doc.document : mediaUrl(doc.document);
+                  if (!href) return null;
+                  return (
+                    <a
+                      key={doc.id}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => {
+                        recordDownload();
+                        setActionsOpen(false);
+                      }}
+                      className={actionButtonClass}
+                    >
+                      <Download className="h-4 w-4" />
+                      {doc.label || "Supplementary file"}
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
 
   return (
     <section className="rounded-2xl bg-white p-5 ring-1 ring-slate-200/80 sm:p-6">
@@ -176,115 +367,15 @@ export function PublicationDownloadPanel({
           {shareCount} share{shareCount === 1 ? "" : "s"}
         </span>
       </div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap">
-        <a
-          href={summaryPdfUrl(publicationId)}
-          onClick={recordDownload}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 xl:w-auto"
-        >
-          <FileText className="h-4 w-4" />
-          GRE publication PDF
-        </a>
+      <div className="mt-4">
         <button
           type="button"
-          onClick={() => setPreviewOpen((open) => !open)}
-          className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition xl:w-auto ${
-            previewOpen
-              ? "border-brand-300 bg-brand-50 text-brand-800"
-              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-          }`}
-        >
-          {previewOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {previewOpen ? "Hide preview" : "Preview PDF"}
-        </button>
-        {!closedAccess && fullUrl && (
-          <a
-            href={fullUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={recordDownload}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-800 hover:bg-brand-100 xl:w-auto"
-          >
-            <Download className="h-4 w-4" />
-            Full paper (uploaded PDF)
-          </a>
-        )}
-        {closedAccess && (
-          <a
-            href={summaryPdfUrl(publicationId, { discussions: true })}
-            onClick={recordDownload}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 xl:w-auto"
-          >
-            <MessageSquare className="h-4 w-4" />
-            GRE PDF + discussions
-          </a>
-        )}
-        {gre?.external_url && (
-          <a
-            href={gre.external_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-slate-50 xl:w-auto"
-          >
-            <ExternalLink className="h-4 w-4" />
-            {closedAccess ? "Publisher access" : "External publication"}
-          </a>
-        )}
-        <button
-          type="button"
-          onClick={handleCopyLink}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 xl:w-auto"
-        >
-          <Copy className="h-4 w-4" />
-          Copy paper link
-        </button>
-        <a
-          href={linkedInShareUrl}
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => void recordShare("linkedin")}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 xl:w-auto"
+          onClick={() => setActionsOpen(true)}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
         >
           <Share2 className="h-4 w-4" />
-          LinkedIn
-        </a>
-        <a
-          href={whatsappShareUrl}
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => void recordShare("whatsapp")}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 xl:w-auto"
-        >
-          <Share2 className="h-4 w-4" />
-          WhatsApp
-        </a>
-        {"share" in navigator && (
-          <button
-            type="button"
-            onClick={handleNativeShare}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 xl:w-auto"
-          >
-            <Share2 className="h-4 w-4" />
-            Share
-          </button>
-        )}
-        {supplementary.map((doc) => {
-          const href = doc.document.startsWith("http") ? doc.document : mediaUrl(doc.document);
-          if (!href) return null;
-          return (
-            <a
-              key={doc.id}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={recordDownload}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 xl:w-auto"
-            >
-              <Download className="h-4 w-4" />
-              {doc.label || "Supplementary file"}
-            </a>
-          );
-        })}
+          Share and download options
+        </button>
       </div>
 
       {previewOpen && (
@@ -308,6 +399,7 @@ export function PublicationDownloadPanel({
           />
         </div>
       )}
+      {actionsDialog}
     </section>
   );
 }
