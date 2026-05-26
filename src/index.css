@@ -1807,6 +1807,10 @@ body {
   font-size: 0.9375rem;
   line-height: 1.65;
   color: #0f172a;
+  text-align: justify;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
 }
 
 .gre-manuscript-ckeditor .ck-editor__editable:focus,
@@ -1818,6 +1822,7 @@ body {
 
 .gre-manuscript-ckeditor .ck-editor__editable p {
   margin-bottom: 0.65em;
+  text-align: justify;
 }
 
 .gre-manuscript-ckeditor .ck-editor__editable h2,
@@ -1847,6 +1852,10 @@ body {
 .gre-manuscript-ckeditor .ck-editor__editable ol {
   padding-left: 1.35rem;
   margin-bottom: 0.65em;
+}
+
+.gre-manuscript-ckeditor .ck-editor__editable li {
+  text-align: justify;
 }
 
 .gre-manuscript-ckeditor .ck-placeholder::before {
