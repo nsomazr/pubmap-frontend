@@ -366,15 +366,16 @@ export function PublicationDownloadPanel({
           <Share2 className="h-3.5 w-3.5" />
           {shareCount} share{shareCount === 1 ? "" : "s"}
         </span>
-      </div>
-      <div className="mt-4">
         <button
           type="button"
           onClick={() => setActionsOpen(true)}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
+          className="inline-flex items-center gap-2 px-1 py-1.5 text-xs font-semibold text-brand-700 transition hover:text-brand-800"
         >
+          <span className="text-slate-300" aria-hidden>
+            |
+          </span>
           <Share2 className="h-4 w-4" />
-          Share and download options
+          Share and download
         </button>
       </div>
 
