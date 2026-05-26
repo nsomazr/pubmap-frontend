@@ -31,11 +31,11 @@ function GreBrandBlock({
   accessType,
 }: Pick<PublicationPaperHeaderProps, "draft" | "accessType">) {
   return (
-    <div className="flex w-[5.25rem] shrink-0 flex-col items-center gap-2 sm:w-[6.5rem]">
+    <div className="flex w-[4.25rem] shrink-0 flex-col items-center gap-1.5 sm:w-[6.5rem] sm:gap-2">
       <img
         src={assets.logo}
         alt="Global Research Exchange"
-        className="h-16 w-16 shrink-0 object-contain sm:h-[4.5rem] sm:w-[4.5rem]"
+        className="h-12 w-12 shrink-0 object-contain sm:h-[4.5rem] sm:w-[4.5rem]"
       />
       <div className="flex flex-wrap items-center justify-center gap-2">
         {draft && (
@@ -88,10 +88,10 @@ function CategoryTopBadge({
             fit="contain"
             clip={false}
             shadow={false}
-            className="!h-16 !w-16 !rounded-none sm:!h-[5.25rem] sm:!w-[5.25rem]"
+            className="!h-12 !w-12 !rounded-none sm:!h-[5.25rem] sm:!w-[5.25rem]"
           />
         ) : (
-          <span className="flex h-14 w-14 items-center justify-center border border-slate-200 bg-white text-lg font-bold text-slate-600 sm:h-20 sm:w-20 sm:text-xl">
+          <span className="flex h-12 w-12 items-center justify-center border border-slate-200 bg-white text-sm font-bold text-slate-600 sm:h-20 sm:w-20 sm:text-xl">
             {label.slice(0, 2).toUpperCase()}
           </span>
         )}
@@ -201,14 +201,14 @@ export function PublicationPaperHeader({
 
   return (
     <header className="publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="grid gap-3 border-b border-slate-100 bg-white px-4 py-4 sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] sm:items-center sm:px-7">
-        <div className="mx-auto sm:mx-0">
+      <div className="grid grid-cols-[4.25rem_minmax(0,1fr)_4.25rem] items-center gap-3 border-b border-slate-100 bg-white px-3 py-4 sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] sm:px-7">
+        <div className="justify-self-start">
           <GreBrandBlock draft={draft} accessType={accessType} />
         </div>
         <div className="flex min-w-0 items-center justify-center">
           <PlatformNameBadge />
         </div>
-        <div className="mx-auto sm:mx-0 sm:justify-self-end">
+        <div className="justify-self-end">
           <CategoryTopBadge visual={subVisual} name={subCategoryName || subVisual?.name} />
         </div>
       </div>
