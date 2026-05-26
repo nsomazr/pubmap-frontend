@@ -9,6 +9,7 @@ import { PublicationSummaryAssistant } from "../components/publication/Publicati
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
 import { SubcategoryVisual } from "../components/taxonomy/SubcategoryVisual";
+import { buildPublicationPath, publicationPublicApiPath } from "../lib/publicationPaths";
 import type { Publication } from "../types";
 
 export function PublicationChatPage() {
@@ -18,7 +19,7 @@ export function PublicationChatPage() {
   const { data: pub, isLoading, isError } = useQuery({
     queryKey: ["publication", id],
     queryFn: async () => {
-      const { data } = await api.get<Publication>(`/publications/${id}/public/`);
+      const { data } = await api.get<Publication>(publicationPublicApiPath(id!));
       return data;
     },
     enabled: !!id,
@@ -75,7 +76,7 @@ export function PublicationChatPage() {
         { label: "Home", to: "/" },
         {
           label: crumbTitle.slice(0, 48) + (crumbTitle.length > 48 ? "…" : ""),
-          to: `/publication/${pub.id}`,
+          to: buildPublicationPath(pub.id, pub.encoded_id),
         },
         { label: "Chat" },
       ]}
@@ -112,7 +113,7 @@ export function PublicationChatPage() {
               </div>
             </div>
             <Link
-              to={`/publication/${pub.id}`}
+              to={buildPublicationPath(pub.id, pub.encoded_id)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-700 sm:ml-auto sm:w-auto"
             >
               <ExternalLink className="h-4 w-4" />

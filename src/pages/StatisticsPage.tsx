@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatGrePaperTitle } from "../lib/grePaperTitle";
+import { buildPublicationPath } from "../lib/publicationPaths";
 import api from "../lib/api";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { AnimatedCounter } from "../components/stats/AnimatedCounter";
@@ -303,7 +304,7 @@ export function StatisticsPage() {
                   {data.most_discussed_papers.map((paper, index) => (
                     <Link
                       key={paper.id}
-                      to={`/publication/${paper.id}`}
+                      to={buildPublicationPath(paper.id, paper.encoded_id)}
                       className="group flex gap-4 rounded-xl bg-slate-50 px-4 py-3 ring-1 ring-slate-100 transition hover:bg-brand-50/60 hover:ring-brand-200"
                     >
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-sm font-bold text-brand-700 ring-1 ring-brand-100">

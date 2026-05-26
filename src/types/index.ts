@@ -534,6 +534,7 @@ export interface PublicStatsTrendPoint {
 
 export interface PublicStatsDiscussedPaper {
   id: number;
+  encoded_id?: string;
   title: string;
   short_number?: string;
   conversations: number;

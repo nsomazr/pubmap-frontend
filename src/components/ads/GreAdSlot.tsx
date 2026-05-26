@@ -9,6 +9,7 @@ import {
   type GreAd,
 } from "../../lib/ads";
 import { mediaUrl } from "../../lib/mediaUrl";
+import { buildPublicationPath } from "../../lib/publicationPaths";
 
 type Variant = "compact" | "banner" | "card";
 
@@ -42,7 +43,7 @@ function AdItem({
 }) {
   const tracked = useRef(false);
   const href = ad.publication_id
-    ? `/publication/${ad.publication_id}`
+    ? buildPublicationPath(ad.publication_id, ad.publication_encoded_id)
     : adLinkHref(ad.link);
   const external = !ad.publication_id && isExternalAdLink(ad.link);
   const imageSrc = resolveImage(ad.image);

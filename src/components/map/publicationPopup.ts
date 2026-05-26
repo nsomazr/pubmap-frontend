@@ -36,11 +36,13 @@ export function buildPublicationPopupHtml(
         <span>${escapeHtml(subVisual.name)}</span>
       </div>`
     : "";
+  const publicationPath = `/publication/${escapeAttr(pub.encoded_id || String(pub.id))}`;
+  const publicationChatPath = `${publicationPath}/chat`;
 
   const viewLink =
     options?.variant === "detail"
       ? ""
-      : `<a href="/publication/${pub.id}" class="gre-popup-link">View publication</a>`;
+      : `<a href="${publicationPath}" class="gre-popup-link">View publication</a>`;
 
   return `
     <div class="gre-popup-inner">
@@ -60,7 +62,7 @@ export function buildPublicationPopupHtml(
         <span>⬇ ${downloads}</span>
       </div>
       <div class="gre-popup-actions">
-        <a href="/publication/${pub.id}/chat" class="gre-popup-summary-btn" data-pub-id="${pub.id}">
+        <a href="${publicationChatPath}" class="gre-popup-summary-btn" data-pub-id="${pub.id}">
           Get summary
         </a>
         ${viewLink}

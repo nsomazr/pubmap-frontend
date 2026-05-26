@@ -1,3 +1,1 @@
-export function buildPublicationChatPath(publicationId: number): string {
-  return `/publication/${publicationId}/chat`;
-}
+export { buildPublicationChatPath } from "./publicationPaths";

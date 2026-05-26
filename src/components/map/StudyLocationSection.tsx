@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { buildPublicationChatPath } from "../../lib/publicationChat";
+import { buildPublicationPath } from "../../lib/publicationPaths";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
 import { PublicationIdentityRow } from "../publication/PublicationIdentityRow";
@@ -50,12 +51,20 @@ function StudyLocationInfoPanel({
             {downloads} downloads
           </span>
         </div>
-        <Link
-          to={chatPath}
-          className="inline-flex items-center justify-center rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 sm:shrink-0"
-        >
-          Get summary
-        </Link>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Link
+            to={chatPath}
+            className="inline-flex items-center justify-center rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50 sm:shrink-0"
+          >
+            Get summary
+          </Link>
+          <Link
+            to={buildPublicationPath(publication.id, publication.encoded_id)}
+            className="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 sm:shrink-0"
+          >
+            View publication
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -67,7 +76,7 @@ interface Props {
 
 export function StudyLocationSection({ publication }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const chatPath = buildPublicationChatPath(publication.id);
+  const chatPath = buildPublicationChatPath(publication.id, publication.encoded_id);
 
   useEffect(() => {
     if (!expanded) return;

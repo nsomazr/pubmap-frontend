@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp, GripVertical, MapPin, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { PublicationSummaryAssistant } from "../publication/PublicationSummaryAssistant";
+import { buildPublicationPath } from "../../lib/publicationPaths";
 import { UserAvatar } from "../ui/UserAvatar";
 import { useMapPanelLayout } from "../../context/MapPanelLayoutContext";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
@@ -155,7 +156,7 @@ export function MapSummaryDock({ publication, onClose }: Props) {
             Drag the handle to move this panel
           </p>
           <Link
-            to={`/publication/${publication.id}`}
+            to={buildPublicationPath(publication.id, publication.encoded_id)}
             className="inline-flex w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700"
           >
             View full publication

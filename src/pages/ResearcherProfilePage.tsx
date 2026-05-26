@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Building2, FileText, Users } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { formatGrePaperTitle } from "../lib/grePaperTitle";
+import { buildPublicationPath } from "../lib/publicationPaths";
 import api from "../lib/api";
 import { institutionMapUrl } from "../lib/institutionLinks";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
@@ -135,7 +136,7 @@ export function ResearcherProfilePage() {
               authored_publications.map((pub) => (
                 <li key={pub.id}>
                   <Link
-                    to={`/publication/${pub.id}`}
+                    to={buildPublicationPath(pub.id, pub.encoded_id)}
                     className="block rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 text-sm transition hover:border-brand-200 hover:bg-white"
                   >
                     <p className="font-semibold text-ink">
@@ -163,7 +164,7 @@ export function ResearcherProfilePage() {
               co_authored_publications.map((pub) => (
                 <li key={pub.id}>
                   <Link
-                    to={`/publication/${pub.id}`}
+                    to={buildPublicationPath(pub.id, pub.encoded_id)}
                     className="block rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 text-sm transition hover:border-brand-200 hover:bg-white"
                   >
                     <p className="font-semibold text-ink">

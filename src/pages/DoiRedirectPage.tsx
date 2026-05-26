@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, useParams } from "react-router-dom";
 import api from "../lib/api";
+import { buildPublicationPath } from "../lib/publicationPaths";
 import type { Publication } from "../types";
 
 export function DoiRedirectPage() {
@@ -27,5 +28,5 @@ export function DoiRedirectPage() {
       </div>
     );
   }
-  return <Navigate to={`/publication/${data.id}`} replace />;
+  return <Navigate to={buildPublicationPath(data.id, data.encoded_id)} replace />;
 }

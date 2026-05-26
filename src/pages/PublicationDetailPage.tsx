@@ -22,6 +22,7 @@ import { StudyLocationSection } from "../components/map/StudyLocationSection";
 import { abstractPlainText } from "../lib/abstractText";
 import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
 import { authorBylineFromPublication } from "../lib/publicationAuthors";
+import { publicationPublicApiPath } from "../lib/publicationPaths";
 import type { Publication } from "../types";
 
 function formatPublishedDate(value?: string): string | undefined {
@@ -38,7 +39,7 @@ export function PublicationDetailPage() {
   const { data: pub, isLoading, isError } = useQuery({
     queryKey: ["publication", id],
     queryFn: async () => {
-      const { data } = await api.get<Publication>(`/publications/${id}/public/`);
+      const { data } = await api.get<Publication>(publicationPublicApiPath(id!));
       return data;
     },
     enabled: !!id,

@@ -49,6 +49,7 @@ import {
   type PublicationAccessType,
   type PublicationGre,
 } from "../../lib/publicationGre";
+import { buildPublicationPath } from "../../lib/publicationPaths";
 import { resolveSubcategoryFromModel } from "../../lib/taxonomyVisuals";
 import { canReviewPublication, isPlatformAdmin } from "../../lib/userAccess";
 import type { Category, Collaborator, Coordinate, Publication, PublicationFigure } from "../../types";
@@ -1241,7 +1242,7 @@ export function PublicationManagePage() {
           )}
           {!isNew && pub?.status === 3 && (
             <Link
-              to={`/publication/${id}`}
+              to={buildPublicationPath(pub.id, pub.encoded_id)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-100"
             >
               <Eye className="h-4 w-4" />

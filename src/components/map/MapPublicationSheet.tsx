@@ -2,6 +2,7 @@ import { Eye, FileText, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { buildPublicationChatPath } from "../../lib/publicationChat";
+import { buildPublicationPath } from "../../lib/publicationPaths";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
 import { PublicationIdentityRow } from "../publication/PublicationIdentityRow";
@@ -57,14 +58,14 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
 
         <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/80 p-3 sm:flex-row">
           <Link
-            to={buildPublicationChatPath(publication.id)}
+            to={buildPublicationChatPath(publication.id, publication.encoded_id)}
             onClick={onClose}
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
           >
             Get summary
           </Link>
           <Link
-            to={`/publication/${publication.id}`}
+            to={buildPublicationPath(publication.id, publication.encoded_id)}
             onClick={onClose}
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
           >

@@ -6,6 +6,7 @@ import { Button } from "../../components/ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 import { fetchMeeting, formatMeetingDate, MEETING_TYPE_LABELS, MEETING_VISIBILITY_LABELS } from "../../lib/meetings";
+import { buildPublicationPath } from "../../lib/publicationPaths";
 
 export function MeetDetailPage() {
   const { id } = useParams();
@@ -257,7 +258,14 @@ export function MeetDetailPage() {
                   <Button
                     className="mt-3"
                     variant="ghost"
-                    onClick={() => navigate(`/publication/${meeting.publication?.id}`)}
+                    onClick={() =>
+                      navigate(
+                        buildPublicationPath(
+                          meeting.publication?.id,
+                          meeting.publication?.encoded_id
+                        )
+                      )
+                    }
                   >
                     Open publication
                   </Button>

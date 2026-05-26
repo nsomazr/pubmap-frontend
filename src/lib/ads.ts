@@ -19,6 +19,7 @@ export interface GreAd {
   sponsor_label: string;
   description: string;
   publication_id: number | null;
+  publication_encoded_id?: string | null;
   sort_order: number;
 }
 

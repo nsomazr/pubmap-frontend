@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { buildPublicationChatPath } from "../../lib/publicationChat";
+import { buildPublicationPath } from "../../lib/publicationPaths";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { ResearcherRankInline } from "../rankings/ResearcherRankInline";
 import { SubcategoryBadge } from "../taxonomy/SubcategoryBadge";
@@ -149,7 +150,7 @@ export function MapResultsRail({
                       style={{ animationDelay: `${i * 30}ms` }}
                     >
                       <Link
-                        to={`/publication/${pub.id}`}
+                        to={buildPublicationPath(pub.id, pub.encoded_id)}
                         className="flex gap-3 p-3.5 pb-2.5"
                       >
                         <UserAvatar
@@ -188,14 +189,14 @@ export function MapResultsRail({
                       </Link>
                       <div className="flex flex-col gap-2 px-3.5 pb-3.5 sm:flex-row">
                         <Link
-                          to={buildPublicationChatPath(pub.id)}
+                          to={buildPublicationChatPath(pub.id, pub.encoded_id)}
                           className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:border-brand-300 hover:bg-brand-100"
                         >
                           <Sparkles className="h-3.5 w-3.5" />
                           Get summary
                         </Link>
                         <Link
-                          to={`/publication/${pub.id}`}
+                          to={buildPublicationPath(pub.id, pub.encoded_id)}
                           className="flex flex-1 items-center justify-center rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-700"
                         >
                           View PDF
