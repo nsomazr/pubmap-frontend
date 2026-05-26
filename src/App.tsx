@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthScreen, AuthScreenLoading } from "./components/auth/AuthScreen";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SummaryNavigationBridge } from "./components/navigation/SummaryNavigationBridge";
+import { ToastProvider } from "./components/ui/ToastProvider";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
@@ -232,9 +233,11 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
-          <AppShell />
-        </BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter>
+            <AppShell />
+          </BrowserRouter>
+        </ToastProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  Ban,
   Clock3,
   Copy,
   ExternalLink,
@@ -10,11 +11,14 @@ import {
   Users,
   Video,
 } from "lucide-react";
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
+import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
+import { useToast } from "../../components/ui/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
-import api from "../../lib/api";
+import api, { parseApiError } from "../../lib/api";
 import {
   fetchMeeting,
   formatMeetingDate,
@@ -29,6 +33,9 @@ export function MeetDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const toast = useToast();
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [confirmEndOpen, setConfirmEndOpen] = useState(false);
 
   const { data: meeting, isLoading } = useQuery({
     queryKey: ["meeting", id],
@@ -38,12 +45,56 @@ export function MeetDetailPage() {
 
   const startMeeting = useMutation({
     mutationFn: () => api.post(`/meetings/${id}/start/`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["meeting", id] }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["meeting", id] });
+      toast.success({
+        title: "Meeting started",
+        description: "Participants can now enter the live room.",
+      });
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not start meeting",
+        description: parseApiError(error, "Could not start the meeting."),
+      });
+    },
   });
 
   const endMeeting = useMutation({
     mutationFn: () => api.post(`/meetings/${id}/end/`, { host_notes: meeting?.host_notes || "" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["meeting", id] }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["meeting", id] });
+      toast.success({
+        title: "Meeting ended",
+        description: "The archive is now available for review.",
+      });
+      navigate(`/dashboard/meetings/${id}/archive`);
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not end meeting",
+        description: parseApiError(error, "Could not end the meeting."),
+      });
+    },
+  });
+
+  const cancelMeeting = useMutation({
+    mutationFn: () => api.delete(`/meetings/${id}/`),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["meeting", id] });
+      await queryClient.invalidateQueries({ queryKey: ["meetings"] });
+      toast.success({
+        title: "Meeting cancelled",
+        description: "Cancelled meetings stay out of the archive.",
+      });
+      navigate("/dashboard/meetings?scope=cancelled");
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not cancel meeting",
+        description: parseApiError(error, "Could not cancel the meeting."),
+      });
+    },
   });
 
   const canManage = !!meeting?.can_manage;
@@ -53,6 +104,10 @@ export function MeetDetailPage() {
     if (!meeting?.meeting_link) return;
     try {
       await navigator.clipboard.writeText(meeting.meeting_link);
+      toast.success({
+        title: "Meeting link copied",
+        description: "The share link was copied to your clipboard.",
+      });
     } catch {
       window.prompt("Copy meeting link", meeting.meeting_link);
     }
@@ -127,7 +182,11 @@ export function MeetDetailPage() {
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Archive</p>
               <p className="mt-2 text-sm font-semibold text-ink">
-                {meeting.status === "ended" ? "Ready for review" : "Builds after meeting ends"}
+                {meeting.status === "ended"
+                  ? "Ready for review"
+                  : meeting.status === "cancelled"
+                    ? "No archive is created for cancelled meetings"
+                    : "Builds only after you end a live meeting"}
               </p>
             </div>
           </div>
@@ -172,11 +231,21 @@ export function MeetDetailPage() {
                 Start meeting
               </Button>
             )}
+            {canManage && meeting.status === "scheduled" && (
+              <Button
+                variant="danger"
+                loading={cancelMeeting.isPending}
+                onClick={() => setConfirmCancelOpen(true)}
+              >
+                <Ban className="h-4 w-4" />
+                Cancel meeting
+              </Button>
+            )}
             {canManage && meeting.status === "live" && (
               <Button
                 variant="danger"
                 loading={endMeeting.isPending}
-                onClick={() => endMeeting.mutate()}
+                onClick={() => setConfirmEndOpen(true)}
               >
                 End meeting
               </Button>
@@ -286,7 +355,9 @@ export function MeetDetailPage() {
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-5 text-sm text-slate-500">
-              {meeting.status === "ended"
+              {meeting.status === "cancelled"
+                ? "This meeting was cancelled before completion, so no archive summary will be generated."
+                : meeting.status === "ended"
                 ? "The meeting ended, but the archive summary is not ready yet."
                 : "When the meeting ends, the archive page will show the full transcript, summary, and recording."}
             </div>
@@ -380,6 +451,36 @@ export function MeetDetailPage() {
           )}
         </aside>
       </section>
+
+      <ConfirmDialog
+        open={confirmCancelOpen}
+        title="Cancel this meeting?"
+        description="Cancelled meetings do not create an archive and cannot be joined."
+        confirmLabel="Cancel meeting"
+        cancelLabel="Keep meeting"
+        tone="danger"
+        loading={cancelMeeting.isPending}
+        onClose={() => setConfirmCancelOpen(false)}
+        onConfirm={() => {
+          cancelMeeting.mutate();
+          setConfirmCancelOpen(false);
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmEndOpen}
+        title="End this meeting?"
+        description="This will close the live room and finalize the GRE archive for this session."
+        confirmLabel="End meeting"
+        cancelLabel="Keep meeting live"
+        tone="danger"
+        loading={endMeeting.isPending}
+        onClose={() => setConfirmEndOpen(false)}
+        onConfirm={() => {
+          endMeeting.mutate();
+          setConfirmEndOpen(false);
+        }}
+      />
     </div>
   );
 }

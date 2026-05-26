@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
+import { useToast } from "../../components/ui/ToastProvider";
 import { Input } from "../../components/ui/Input";
 import { RequiredFieldsLegend } from "../../components/ui/RequiredField";
 import { Select } from "../../components/ui/Select";
@@ -42,6 +43,7 @@ export function MeetManagePage() {
   const isNew = !id;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
   const [peopleSearch, setPeopleSearch] = useState("");
@@ -142,9 +144,19 @@ export function MeetManagePage() {
       setError("");
       queryClient.invalidateQueries({ queryKey: ["meetings"] });
       queryClient.invalidateQueries({ queryKey: ["meeting", id] });
+      toast.success({
+        title: isNew ? "Meeting created" : "Meeting updated",
+        description: isNew
+          ? "The GRE meeting is ready to share."
+          : "The GRE meeting details were updated.",
+      });
       navigate(`/dashboard/meetings/${data.id}`);
     },
-    onError: (err) => setError(parseApiError(err, "Could not save the meeting.")),
+    onError: (err) => {
+      const detail = parseApiError(err, "Could not save the meeting.");
+      setError(detail);
+      toast.error({ title: "Could not save meeting", description: detail });
+    },
   });
 
   const addParticipant = useMutation({
@@ -156,15 +168,33 @@ export function MeetManagePage() {
     onSuccess: () => {
       setPeopleSearch("");
       queryClient.invalidateQueries({ queryKey: ["meeting", id] });
+      toast.success({
+        title: "Participant added",
+        description: "The person was added to the meeting.",
+      });
     },
-    onError: (err) => setError(parseApiError(err, "Could not add that participant.")),
+    onError: (err) => {
+      const detail = parseApiError(err, "Could not add that participant.");
+      setError(detail);
+      toast.error({ title: "Could not add participant", description: detail });
+    },
   });
 
   const removeParticipant = useMutation({
     mutationFn: (participantId: number) =>
       api.post<MeetParticipant[]>(`/meetings/${id}/participants/${participantId}/remove/`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["meeting", id] }),
-    onError: (err) => setError(parseApiError(err, "Could not remove that participant.")),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meeting", id] });
+      toast.success({
+        title: "Participant removed",
+        description: "The participant was removed from the meeting.",
+      });
+    },
+    onError: (err) => {
+      const detail = parseApiError(err, "Could not remove that participant.");
+      setError(detail);
+      toast.error({ title: "Could not remove participant", description: detail });
+    },
   });
 
   return (

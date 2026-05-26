@@ -19,8 +19,10 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
+import { useToast } from "../components/ui/ToastProvider";
 import { useAuth } from "../context/AuthContext";
 import { assistantHealth, assistantSummarizeTextStream } from "../lib/assistant";
 import api, { parseApiError } from "../lib/api";
@@ -127,6 +129,7 @@ export function MeetRoomPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const toast = useToast();
   const [text, setText] = useState("");
   const [chatError, setChatError] = useState("");
   const [roomError, setRoomError] = useState("");
@@ -145,6 +148,7 @@ export function MeetRoomPage() {
   const [copilotError, setCopilotError] = useState("");
   const [copilotLoading, setCopilotLoading] = useState(false);
   const [copilotQuestion, setCopilotQuestion] = useState("");
+  const [confirmEndOpen, setConfirmEndOpen] = useState(false);
   const roomContainerRef = useRef<HTMLDivElement | null>(null);
   const jitsiApiRef = useRef<JitsiMeetExternalAPIInstance | null>(null);
   const copilotAbortRef = useRef<AbortController | null>(null);
@@ -226,9 +230,19 @@ export function MeetRoomPage() {
 
   const startMeeting = useMutation({
     mutationFn: () => api.post(`/meetings/${meetingId}/start/`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
-      queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
+      await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      toast.success({
+        title: "Meeting started",
+        description: "The live room is now open for participants.",
+      });
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not start meeting",
+        description: parseApiError(error, "Could not start the meeting."),
+      });
     },
   });
 
@@ -237,23 +251,53 @@ export function MeetRoomPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
       queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      toast.success({
+        title: "Meeting ended",
+        description: "The archive is being prepared now.",
+      });
       if (meetingId) navigate(`/dashboard/meetings/${meetingId}/archive`);
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not end meeting",
+        description: parseApiError(error, "Could not end the meeting."),
+      });
     },
   });
 
   const startRecording = useMutation({
     mutationFn: () => api.post(`/meetings/${meetingId}/recording/start/`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
-      queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      await queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
+      toast.success({
+        title: "Recording requested",
+        description: "GRE asked Jitsi to start recording this meeting.",
+      });
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not start recording",
+        description: parseApiError(error, "Could not request recording."),
+      });
     },
   });
 
   const stopRecording = useMutation({
     mutationFn: () => api.post(`/meetings/${meetingId}/recording/stop/`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
-      queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      await queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
+      toast.success({
+        title: "Recording stop requested",
+        description: "GRE asked Jitsi to stop recording this meeting.",
+      });
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not stop recording",
+        description: parseApiError(error, "Could not stop recording."),
+      });
     },
   });
 
@@ -403,6 +447,10 @@ export function MeetRoomPage() {
     if (!link) return;
     try {
       await navigator.clipboard.writeText(link);
+      toast.success({
+        title: "Meeting link copied",
+        description: "The share link was copied to your clipboard.",
+      });
     } catch {
       window.prompt("Copy meeting link", link);
     }
@@ -494,9 +542,14 @@ export function MeetRoomPage() {
       if (!directUrl) {
         throw new Error("Could not create the external room URL.");
       }
-      window.open(directUrl, "_blank", "noopener,noreferrer");
+      window.location.assign(directUrl);
     } catch (error) {
-      setRoomError(parseApiError(error, "Could not open the external room."));
+      const detail = parseApiError(error, "Could not open the external room.");
+      setRoomError(detail);
+      toast.error({
+        title: "Could not join in browser",
+        description: detail,
+      });
     }
   };
 
@@ -547,6 +600,25 @@ export function MeetRoomPage() {
           </p>
           <Link to={`/dashboard/meetings/${activeMeeting.id}/archive`}>
             <Button>Open archive</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeMeeting?.status === "cancelled") {
+    return (
+      <div className="mx-auto max-w-5xl p-4 sm:p-6">
+        <div className="gre-card space-y-5 p-6">
+          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Meeting cancelled
+          </p>
+          <h1 className="text-2xl font-bold text-ink">{activeMeeting.title}</h1>
+          <p className="text-sm text-slate-600">
+            This scheduled meeting was cancelled before it started, so no archive was created.
+          </p>
+          <Link to={`/dashboard/meetings/${activeMeeting.id}`}>
+            <Button>Open meeting details</Button>
           </Link>
         </div>
       </div>
@@ -621,7 +693,7 @@ export function MeetRoomPage() {
             )}
             <Button variant="secondary" onClick={handleOpenExternalRoom}>
               <ExternalLink className="h-4 w-4" />
-              Open external room
+              Join in browser
             </Button>
             {isModerator && isLive && activeMeeting?.recording_status !== "recording" && (
               <Button variant="ghost" loading={startRecording.isPending} onClick={handleStartRecording}>
@@ -634,7 +706,11 @@ export function MeetRoomPage() {
               </Button>
             )}
             {canManage && (
-              <Button variant="danger" loading={endMeeting.isPending} onClick={handleEndConference}>
+              <Button
+                variant="danger"
+                loading={endMeeting.isPending}
+                onClick={() => setConfirmEndOpen(true)}
+              >
                 End meeting
               </Button>
             )}
@@ -697,7 +773,7 @@ export function MeetRoomPage() {
                     </Button>
                     <Button variant="secondary" onClick={handleOpenExternalRoom}>
                       <ExternalLink className="h-4 w-4" />
-                      Open external room
+                      Join in browser
                     </Button>
                   </div>
                   {joinMutation.isError && (
@@ -722,7 +798,7 @@ export function MeetRoomPage() {
                     </Button>
                     <Button onClick={handleOpenExternalRoom}>
                       <ExternalLink className="h-4 w-4" />
-                      Open external room
+                      Join in browser
                     </Button>
                   </div>
                 </div>
@@ -774,7 +850,11 @@ export function MeetRoomPage() {
                   </Button>
                 )}
                 {canManage && (
-                  <Button variant="danger" loading={endMeeting.isPending} onClick={handleEndConference}>
+                  <Button
+                    variant="danger"
+                    loading={endMeeting.isPending}
+                    onClick={() => setConfirmEndOpen(true)}
+                  >
                     End meeting
                   </Button>
                 )}
@@ -953,6 +1033,21 @@ export function MeetRoomPage() {
           </aside>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmEndOpen}
+        title="End this meeting?"
+        description="This will close the live room for everyone and finalize the GRE archive."
+        confirmLabel="End meeting"
+        cancelLabel="Keep meeting live"
+        tone="danger"
+        loading={endMeeting.isPending}
+        onClose={() => setConfirmEndOpen(false)}
+        onConfirm={() => {
+          handleEndConference();
+          setConfirmEndOpen(false);
+        }}
+      />
     </div>
   );
 }

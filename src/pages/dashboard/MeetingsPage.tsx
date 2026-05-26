@@ -10,12 +10,14 @@ import type { MeetSession } from "../../types";
 const tabs = [
   { id: "upcoming", label: "Upcoming", icon: Calendar },
   { id: "live", label: "Live", icon: Radio },
-  { id: "mine", label: "My meetings", icon: Video },
+  { id: "mine", label: "Hosted", icon: Video },
   { id: "archived", label: "Archived", icon: Calendar },
+  { id: "cancelled", label: "Cancelled", icon: Calendar },
 ] as const;
 
 function MeetingCard({ meeting }: { meeting: MeetSession }) {
   const isArchived = meeting.status === "ended";
+  const isCancelled = meeting.status === "cancelled";
   const roomLabel = meeting.status === "live" ? "Open live room" : "Join room";
   const archiveId = formatMeetingId(meeting.id);
 
@@ -36,6 +38,8 @@ function MeetingCard({ meeting }: { meeting: MeetSession }) {
           className={`rounded-full px-3 py-1 text-xs font-semibold ${
             meeting.status === "live"
               ? "bg-red-50 text-red-700"
+              : isCancelled
+                ? "bg-amber-50 text-amber-700"
               : isArchived
                 ? "bg-slate-100 text-slate-600"
                 : "bg-brand-50 text-brand-700"
@@ -43,6 +47,8 @@ function MeetingCard({ meeting }: { meeting: MeetSession }) {
         >
           {meeting.status === "live"
             ? "Live"
+            : isCancelled
+              ? "Cancelled"
             : isArchived
               ? "Archived"
               : formatMeetingDate(meeting.scheduled_at)}
@@ -51,6 +57,12 @@ function MeetingCard({ meeting }: { meeting: MeetSession }) {
 
       {meeting.description && (
         <p className="line-clamp-3 text-sm leading-relaxed text-slate-600">{meeting.description}</p>
+      )}
+
+      {isCancelled && (
+        <p className="text-sm text-amber-700">
+          Cancelled meetings stay out of the archive and cannot be joined.
+        </p>
       )}
 
       <div className="flex flex-wrap gap-2 text-xs text-slate-500">
@@ -67,7 +79,7 @@ function MeetingCard({ meeting }: { meeting: MeetSession }) {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {!isArchived && meeting.can_join && (
+        {!isArchived && !isCancelled && meeting.can_join && (
           <Link to={`/meet/${meeting.join_slug}`}>
             <Button>{roomLabel}</Button>
           </Link>
@@ -80,7 +92,7 @@ function MeetingCard({ meeting }: { meeting: MeetSession }) {
             <Button>Open archive</Button>
           </Link>
         )}
-        {meeting.can_manage && !isArchived && (
+        {meeting.can_manage && !isArchived && !isCancelled && (
           <Link to={`/dashboard/meetings/${meeting.id}/edit`}>
             <Button variant="ghost">Edit</Button>
           </Link>
@@ -121,7 +133,7 @@ export function MeetingsPage() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -137,7 +149,13 @@ export function MeetingsPage() {
             <div>
               <p className="font-semibold text-ink">{label}</p>
               <p className="text-xs text-slate-500">
-                {id === "mine" ? "Meetings you host" : id === "archived" ? "Past recordings and summaries" : "Research sessions on GRE"}
+                {id === "mine"
+                  ? "Meetings you host that are still active"
+                  : id === "archived"
+                    ? "Ended meetings with archive records"
+                    : id === "cancelled"
+                      ? "Scheduled meetings cancelled before archive"
+                      : "Research sessions on GRE"}
               </p>
             </div>
           </button>

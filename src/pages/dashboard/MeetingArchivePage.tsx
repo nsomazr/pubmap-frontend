@@ -1,8 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, FileText, Trash2, Users, Video } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Download, ExternalLink, FileText, Trash2, Users, Video } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
+import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
+import { useToast } from "../../components/ui/ToastProvider";
 import api, { parseApiError } from "../../lib/api";
 import { fetchMeeting, formatMeetingDate, formatMeetingId } from "../../lib/meetings";
 import { buildPublicationPath } from "../../lib/publicationPaths";
@@ -25,6 +28,8 @@ export function MeetingArchivePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const toast = useToast();
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const { data: meeting, isLoading } = useQuery({
     queryKey: ["meeting-archive", id],
@@ -40,7 +45,17 @@ export function MeetingArchivePage() {
       await queryClient.invalidateQueries({ queryKey: ["meetings"] });
       queryClient.removeQueries({ queryKey: ["meeting", id] });
       queryClient.removeQueries({ queryKey: ["meeting-archive", id] });
+      toast.success({
+        title: "Archived meeting deleted",
+        description: "The meeting archive and saved transcript were removed.",
+      });
       navigate("/dashboard/meetings?scope=archived");
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not delete archive",
+        description: parseApiError(error, "Could not delete this archived meeting."),
+      });
     },
   });
 
@@ -51,6 +66,33 @@ export function MeetingArchivePage() {
   const archiveId = formatMeetingId(meeting.id);
   const messageCount = meeting.chat_messages?.length ?? 0;
   const participantCount = meeting.participants?.length ?? meeting.participant_count ?? 0;
+
+  const downloadSummary = () => {
+    const parts = [
+      `${meeting.title} archive`,
+      `Meeting ID: ${archiveId}`,
+      `Status: ${meeting.status}`,
+      `Scheduled: ${formatMeetingDate(meeting.scheduled_at)}`,
+      `Ended: ${meeting.ended_at ? formatMeetingDate(meeting.ended_at) : "N/A"}`,
+      "",
+      "Summary",
+      "-------",
+      (meeting.summary || "Summary not available yet.").trim(),
+    ];
+    const blob = new Blob([parts.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${archiveId.toLowerCase()}-summary.txt`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    toast.success({
+      title: "Summary downloaded",
+      description: "The meeting summary was downloaded as a text file.",
+    });
+  };
 
   return (
     <div className="animate-fade-up space-y-8">
@@ -66,14 +108,15 @@ export function MeetingArchivePage() {
               <ArrowLeft className="h-4 w-4" />
               Back to meeting
             </Link>
+            <Button variant="secondary" onClick={downloadSummary}>
+              <Download className="h-4 w-4" />
+              Download summary
+            </Button>
             {meeting.can_manage && (
               <Button
                 variant="danger"
                 loading={deleteMeeting.isPending}
-                onClick={() => {
-                  if (!window.confirm("Delete this archived meeting and its saved archive?")) return;
-                  deleteMeeting.mutate();
-                }}
+                onClick={() => setConfirmDeleteOpen(true)}
               >
                 <Trash2 className="h-4 w-4" />
                 Delete archive
@@ -182,12 +225,6 @@ export function MeetingArchivePage() {
                 ))}
               </div>
             )}
-
-            {deleteMeeting.isError && (
-              <p className="text-sm text-red-600">
-                {parseApiError(deleteMeeting.error, "Could not delete this archived meeting.")}
-              </p>
-            )}
           </div>
         </div>
 
@@ -284,6 +321,21 @@ export function MeetingArchivePage() {
           )}
         </aside>
       </section>
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Delete archived meeting?"
+        description="This will permanently remove the archived meeting, saved messages, and related archive data."
+        confirmLabel="Delete archive"
+        cancelLabel="Keep archive"
+        tone="danger"
+        loading={deleteMeeting.isPending}
+        onClose={() => setConfirmDeleteOpen(false)}
+        onConfirm={() => {
+          deleteMeeting.mutate();
+          setConfirmDeleteOpen(false);
+        }}
+      />
     </div>
   );
 }
