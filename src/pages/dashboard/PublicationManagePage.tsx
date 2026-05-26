@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import {
   AlertCircle,
   Eye,
@@ -103,6 +104,8 @@ function extractedTextToHtml(value?: string | null): string {
 
 function formatExtractionEngine(engine?: string): string {
   switch ((engine || "").toLowerCase()) {
+    case "tesseract":
+      return "Tesseract OCR";
     case "olmocr":
       return "olmOCR";
     case "surya_ocr":
@@ -329,16 +332,43 @@ export function PublicationManagePage() {
 
   const extractDocumentMutation = useMutation({
     mutationFn: async (file: File) => {
-      const form = new FormData();
-      form.append("document", file);
-      const { data } = await api.post<ExtractedDocumentPayload>(
-        "/publications/extract_document/",
-        form,
-        {
-          params: { use_ai: 1 },
+      const buildForm = () => {
+        const form = new FormData();
+        form.append("document", file);
+        return form;
+      };
+
+      try {
+        const { data } = await api.post<ExtractedDocumentPayload>(
+          "/publications/extract_document/",
+          buildForm(),
+          {
+            params: { use_ai: 1 },
+          }
+        );
+        return data;
+      } catch (error) {
+        const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+        if (status && status < 500 && status !== 401 && status !== 429) {
+          throw error;
         }
-      );
-      return data;
+
+        const { data } = await api.post<ExtractedDocumentPayload>(
+          "/publications/extract_document/",
+          buildForm(),
+          {
+            params: { use_ai: 0 },
+          }
+        );
+        const warnings = data.warnings ?? [];
+        return {
+          ...data,
+          warnings: [
+            ...warnings,
+            "AI-assisted extraction was unavailable, so GRE retried with OCR-only extraction.",
+          ],
+        };
+      }
     },
     onMutate: () => {
       setExtractionUi({
