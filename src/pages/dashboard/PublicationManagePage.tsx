@@ -101,6 +101,22 @@ function extractedTextToHtml(value?: string | null): string {
     .join("");
 }
 
+function formatExtractionEngine(engine?: string): string {
+  switch ((engine || "").toLowerCase()) {
+    case "olmocr":
+      return "olmOCR";
+    case "surya_ocr":
+    case "surya":
+      return "Surya OCR";
+    case "pdf_text":
+      return "Standard PDF text";
+    case "plain_text":
+      return "Plain text";
+    default:
+      return engine || "Unknown";
+  }
+}
+
 type ExtractionStatus = "idle" | "extracting" | "ready" | "error";
 
 type ExtractionUiState = {
@@ -934,7 +950,7 @@ export function PublicationManagePage() {
                       <p>
                         GRE will extract the title, abstract, introduction, methods, results,
                         findings, conclusion, funding, keywords, and references from your uploaded
-                        paper using Surya OCR. You can edit everything before saving.
+                        paper using GRE document OCR. You can edit everything before saving.
                       </p>
                       {extractionUi.status === "extracting" && (
                         <p className="mt-2 flex items-center gap-2 font-medium text-brand-700">
@@ -945,6 +961,9 @@ export function PublicationManagePage() {
                       {extractionUi.status === "ready" && (
                         <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
                           Autofill ready
+                          {extractionUi.engine
+                            ? ` - ${formatExtractionEngine(extractionUi.engine)}`
+                            : ""}
                         </p>
                       )}
                       {extractionUi.status === "error" && extractionUi.warnings[0] && (
@@ -1018,7 +1037,35 @@ export function PublicationManagePage() {
               <div className="mt-6">
                 {extractionUi.status === "ready" && (
                   <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900">
-                    Extracted manuscript content is ready. You can edit every section below before saving.
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span>
+                        Extracted manuscript content is ready. You can edit every section below before
+                        saving.
+                      </span>
+                      {extractionUi.engine && (
+                        <span className="rounded-full bg-white/80 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800">
+                          Engine: {formatExtractionEngine(extractionUi.engine)}
+                        </span>
+                      )}
+                      {extractionUi.engine === "pdf_text" && (
+                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800">
+                          Fallback path
+                        </span>
+                      )}
+                    </div>
+                    {extractionUi.warnings.length > 0 && (
+                      <div className="mt-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-3 text-sm text-amber-900">
+                        <p className="font-semibold">Extraction notes</p>
+                        <ul className="mt-2 space-y-2 text-sm">
+                          {extractionUi.warnings.map((warning) => (
+                            <li key={warning} className="flex gap-2">
+                              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                              <span>{warning}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
                 {extractionUi.status === "error" && extractionUi.warnings[0] && (
