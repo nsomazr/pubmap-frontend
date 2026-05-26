@@ -955,7 +955,7 @@ export function PublicationManagePage() {
                       )}
                       {extractionUi.status === "ready" && (
                         <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
-                          Autofill ready{extractionUi.engine ? ` · ${extractionUi.engine}` : ""}
+                          Autofill ready
                         </p>
                       )}
                       {extractionUi.status === "error" && extractionUi.warnings[0] && (
@@ -1031,8 +1031,7 @@ export function PublicationManagePage() {
               <div className="mt-6">
                 {extractionUi.status === "ready" && (
                   <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900">
-                    Extracted manuscript content is ready{extractionUi.engine ? ` using ${extractionUi.engine}` : ""}.
-                    You can edit every section below before saving.
+                    Extracted manuscript content is ready. You can edit every section below before saving.
                   </div>
                 )}
                 {extractionUi.status === "error" && extractionUi.warnings[0] && (
