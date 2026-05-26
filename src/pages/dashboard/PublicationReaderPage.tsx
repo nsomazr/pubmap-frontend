@@ -63,7 +63,8 @@ export function PublicationReaderPage() {
     );
   }
 
-  const docPath = pub.documents?.[0]?.document ?? null;
+  const manuscript = pub.documents?.find((doc) => !doc.kind || doc.kind === "manuscript") ?? null;
+  const docPath = manuscript?.document ?? null;
   const isClosed = pub.gre?.access_type === "closed";
   const hasUploadedManuscript = Boolean(docPath);
   const hasPdf = Boolean(docPath?.toLowerCase().endsWith(".pdf")) && !isClosed;

@@ -44,7 +44,8 @@ function dedupeAuthorTeam<
     if (!name) continue;
 
     const userId = person.user_id;
-    const key = userId ? `uid:${userId}` : `name:${authorNameKey(name)}`;
+    const nameKey = authorNameKey(name);
+    const key = userId ? `uid:${userId}|name:${nameKey}` : `name:${nameKey}`;
     if (seen.has(key)) continue;
 
     seen.add(key);

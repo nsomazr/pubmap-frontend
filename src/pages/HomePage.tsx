@@ -357,9 +357,8 @@ export function HomePage() {
             collapsed={resultsRailCollapsed}
             onToggleCollapse={() => setResultsRailCollapsed((c) => !c)}
             onClose={() => {
-              userDismissedResultsRailRef.current = true;
-              setResultsRailOpen(false);
-              setResultsRailCollapsed(false);
+              userDismissedResultsRailRef.current = false;
+              clearFilters();
             }}
           />
         )}

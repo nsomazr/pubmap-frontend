@@ -116,7 +116,7 @@ export interface Publication {
   collaborators?: Collaborator[];
   co_authors?: PublicationCoAuthors;
   photos?: { id: number; photo: string; caption?: string }[];
-  documents?: { id: number; document: string }[];
+  documents?: GreDocument[];
   introduction?: string;
   methods?: string;
   results?: string;
