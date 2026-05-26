@@ -1,4 +1,15 @@
-import { ChevronLeft, ChevronRight, MapPin, Sparkles, X } from "lucide-react";
+import {
+  BookOpenText,
+  Building2,
+  ChevronLeft,
+  ChevronRight,
+  GraduationCap,
+  MapPin,
+  MessageSquare,
+  Sparkles,
+  Users,
+  X,
+} from "lucide-react";
 import { useRef } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
@@ -11,7 +22,7 @@ import { UserAvatar } from "../ui/UserAvatar";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { authorDisplayName } from "../../lib/userDisplay";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
-import type { Publication } from "../../types";
+import type { Publication, ResearcherRanking } from "../../types";
 
 interface Props {
   publications: Publication[];
@@ -19,6 +30,146 @@ interface Props {
   collapsed: boolean;
   onToggleCollapse: () => void;
   onClose: () => void;
+}
+
+type ResearcherResult = {
+  key: string;
+  userId?: number | null;
+  name: string;
+  affiliation: string;
+  photo?: string;
+  ranking?: ResearcherRanking;
+  primarySubfield?: string;
+  interests: string[];
+  totalPublications: number;
+  totalDiscussions: number;
+};
+
+type InstitutionResult = {
+  key: string;
+  label: string;
+  totalPublications: number;
+  totalResearchers: number;
+  totalDiscussions: number;
+  leadingSubfields: string[];
+  mainInterests: string[];
+};
+
+function topValues(items: string[], limit = 3) {
+  const counts = new Map<string, number>();
+  for (const item of items) {
+    const value = (item || "").trim();
+    if (!value) continue;
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit)
+    .map(([value]) => value);
+}
+
+function collectResearcherResults(publications: Publication[]): ResearcherResult[] {
+  const grouped = new Map<string, Publication[]>();
+  for (const pub of publications) {
+    const author = pub.author;
+    const name =
+      authorDisplayName(author) ||
+      `${author?.firstname ?? ""} ${author?.lastname ?? ""}`.trim();
+    if (!name) continue;
+    const key = author?.id ? `user:${author.id}` : `name:${name.toLowerCase()}`;
+    grouped.set(key, [...(grouped.get(key) ?? []), pub]);
+  }
+
+  return [...grouped.entries()]
+    .map(([key, pubs]) => {
+      const lead = pubs[0];
+      const author = lead.author;
+      const interests = [
+        ...new Set(
+          pubs.flatMap((pub) => (pub.author?.interests ?? []).map((interest) => interest.label))
+        ),
+      ].slice(0, 4);
+      return {
+        key,
+        userId: author?.id,
+        name:
+          authorDisplayName(author) ||
+          `${author?.firstname ?? ""} ${author?.lastname ?? ""}`.trim() ||
+          "Researcher",
+        affiliation: author?.affiliation || "",
+        photo: author?.photo,
+        ranking: author?.ranking,
+        primarySubfield: topValues(
+          pubs.map((pub) => pub.subfield_name || pub.sub_category_name || "")
+        )[0],
+        interests,
+        totalPublications: pubs.length,
+        totalDiscussions: pubs.reduce((sum, pub) => sum + (pub.discussions_count ?? 0), 0),
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.totalPublications - a.totalPublications ||
+        b.totalDiscussions - a.totalDiscussions ||
+        a.name.localeCompare(b.name)
+    );
+}
+
+function collectInstitutionResults(publications: Publication[]): InstitutionResult[] {
+  const grouped = new Map<
+    string,
+    {
+      label: string;
+      publications: Publication[];
+      researcherIds: Set<number>;
+      researcherNames: Set<string>;
+      subfields: string[];
+      interests: string[];
+    }
+  >();
+
+  for (const pub of publications) {
+    const raw = (pub.author?.affiliation || pub.coordinates?.institution || "").trim();
+    if (!raw) continue;
+    const key = raw.toLowerCase();
+    const entry = grouped.get(key) ?? {
+      label: raw,
+      publications: [],
+      researcherIds: new Set<number>(),
+      researcherNames: new Set<string>(),
+      subfields: [],
+      interests: [],
+    };
+    entry.publications.push(pub);
+    if (pub.author?.id) entry.researcherIds.add(pub.author.id);
+    const name = authorDisplayName(pub.author);
+    if (name) entry.researcherNames.add(name);
+    if (pub.subfield_name || pub.sub_category_name) {
+      entry.subfields.push(pub.subfield_name || pub.sub_category_name || "");
+    }
+    entry.interests.push(...(pub.author?.interests ?? []).map((interest) => interest.label));
+    grouped.set(key, entry);
+  }
+
+  return [...grouped.entries()]
+    .map(([key, entry]) => ({
+      key,
+      label: entry.label,
+      totalPublications: entry.publications.length,
+      totalResearchers: entry.researcherIds.size || entry.researcherNames.size,
+      totalDiscussions: entry.publications.reduce(
+        (sum, pub) => sum + (pub.discussions_count ?? 0),
+        0
+      ),
+      leadingSubfields: topValues(entry.subfields, 3),
+      mainInterests: topValues(entry.interests, 4),
+    }))
+    .sort(
+      (a, b) =>
+        b.totalPublications - a.totalPublications ||
+        b.totalResearchers - a.totalResearchers ||
+        a.label.localeCompare(b.label)
+    );
 }
 
 function formatLocation(pub: Publication): string | null {
@@ -73,7 +224,9 @@ export function MapResultsRail({
     </button>
   );
 
-  const countLabel = `${publications.length} publication${publications.length !== 1 ? "s" : ""}`;
+  const countLabel = `${publications.length} matching paper${publications.length !== 1 ? "s" : ""}`;
+  const researcherResults = collectResearcherResults(publications).slice(0, 6);
+  const institutionResults = collectInstitutionResults(publications).slice(0, 6);
 
   const sheet = (
     <>
@@ -116,6 +269,13 @@ export function MapResultsRail({
                 Search results
               </p>
               <p className="mt-0.5 text-lg font-bold leading-tight text-ink">{countLabel}</p>
+              {(researcherResults.length > 0 || institutionResults.length > 0) && (
+                <p className="mt-1 text-xs text-slate-500">
+                  {researcherResults.length} researcher match
+                  {researcherResults.length === 1 ? "" : "es"} · {institutionResults.length} institution
+                  {institutionResults.length === 1 ? "" : "s"}
+                </p>
+              )}
             </div>
             <button
               type="button"
@@ -139,74 +299,228 @@ export function MapResultsRail({
               <p className="mt-1 text-xs text-slate-400">Try different search terms.</p>
             </div>
           ) : (
-            <ul className="space-y-2.5 gre-stagger">
-              {publications.map((pub, i) => {
-                const location = formatLocation(pub);
-                const subVisual = publicationSubcategoryVisual(pub);
-                return (
-                  <li key={pub.id}>
-                    <article
-                      className="group overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:bg-white hover:shadow-md"
-                      style={{ animationDelay: `${i * 30}ms` }}
-                    >
-                      <Link
-                        to={buildPublicationPath(pub.id, pub.encoded_id)}
-                        className="flex gap-3 p-3.5 pb-2.5"
-                      >
-                        <UserAvatar
-                          user={pub.author}
-                          size="sm"
-                          className="h-11 w-11 rounded-xl border-2 text-sm"
-                        />
-                        <div className="min-w-0 flex-1 text-left">
-                          <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink group-hover:text-brand-700">
-                            {formatGrePaperTitle(pub.title, pub.short_number)}
-                          </p>
-                          <p className="mt-1 truncate text-xs text-slate-500">
-                            {authorDisplayName(pub.author) ||
-                              `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim()}
-                          </p>
-                          <div className="mt-1.5">
-                            <ResearcherRankInline ranking={pub.author?.ranking} compact />
-                          </div>
-                          {location && (
-                            <p className="mt-1 flex items-start gap-1 text-xs text-slate-600">
-                              <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-teal-600" />
-                              <span className="line-clamp-2">{location}</span>
-                            </p>
-                          )}
-                          {pub.abstract?.trim() && (
-                            <p className="mt-2 line-clamp-2 text-xs leading-snug text-slate-600">
-                              {pub.abstract.replace(/<[^>]+>/g, "").slice(0, 220)}
-                            </p>
-                          )}
-                          {subVisual ? (
-                            <div className="mt-2">
-                              <SubcategoryBadge visual={subVisual} size="xs" />
+            <div className="space-y-6 gre-stagger">
+              {researcherResults.length > 0 && (
+                <section className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-brand-600" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
+                      Researchers
+                    </h3>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {researcherResults.map((person) => (
+                      <li key={person.key}>
+                        <article className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5 transition hover:border-brand-200 hover:bg-white hover:shadow-md">
+                          <div className="flex gap-3">
+                            <UserAvatar
+                              name={person.name}
+                              photoUrl={person.photo}
+                              size="sm"
+                              className="h-11 w-11 rounded-xl border-2 text-sm"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-semibold text-ink">
+                                    {person.name}
+                                  </p>
+                                  {person.affiliation && (
+                                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
+                                      {person.affiliation}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="shrink-0">
+                                  <ResearcherRankInline ranking={person.ranking} compact />
+                                </div>
+                              </div>
+                              <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-600">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
+                                  <BookOpenText className="h-3 w-3 text-brand-600" />
+                                  {person.totalPublications} publication
+                                  {person.totalPublications === 1 ? "" : "s"}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
+                                  <MessageSquare className="h-3 w-3 text-teal-600" />
+                                  {person.totalDiscussions} discussion
+                                  {person.totalDiscussions === 1 ? "" : "s"}
+                                </span>
+                              </div>
+                              {person.primarySubfield && (
+                                <p className="mt-2 text-xs text-slate-600">
+                                  <span className="font-semibold text-slate-700">Primary subfield: </span>
+                                  {person.primarySubfield}
+                                </p>
+                              )}
+                              {person.interests.length > 0 && (
+                                <p className="mt-1 line-clamp-2 text-xs text-slate-600">
+                                  <span className="font-semibold text-slate-700">
+                                    Research interests:{" "}
+                                  </span>
+                                  {person.interests.join(", ")}
+                                </p>
+                              )}
+                              {person.userId && (
+                                <Link
+                                  to={`/researcher/${person.userId}`}
+                                  className="mt-2 inline-flex text-xs font-semibold text-brand-600 hover:underline"
+                                >
+                                  Open researcher profile
+                                </Link>
+                              )}
                             </div>
-                          ) : null}
-                        </div>
-                      </Link>
-                      <div className="flex flex-col gap-2 px-3.5 pb-3.5 sm:flex-row">
-                        <Link
-                          to={buildPublicationChatPath(pub.id, pub.encoded_id)}
-                          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:border-brand-300 hover:bg-brand-100"
+                          </div>
+                        </article>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {institutionResults.length > 0 && (
+                <section className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-brand-600" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
+                      Institutions
+                    </h3>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {institutionResults.map((institution) => (
+                      <li key={institution.key}>
+                        <article className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5 transition hover:border-brand-200 hover:bg-white hover:shadow-md">
+                          <div className="flex gap-3">
+                            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">
+                              <Building2 className="h-5 w-5" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-ink">{institution.label}</p>
+                              <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-600">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
+                                  <BookOpenText className="h-3 w-3 text-brand-600" />
+                                  {institution.totalPublications} publication
+                                  {institution.totalPublications === 1 ? "" : "s"}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
+                                  <Users className="h-3 w-3 text-teal-600" />
+                                  {institution.totalResearchers} researcher
+                                  {institution.totalResearchers === 1 ? "" : "s"}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
+                                  <MessageSquare className="h-3 w-3 text-brand-600" />
+                                  {institution.totalDiscussions} discussion
+                                  {institution.totalDiscussions === 1 ? "" : "s"}
+                                </span>
+                              </div>
+                              {institution.leadingSubfields.length > 0 && (
+                                <p className="mt-2 line-clamp-2 text-xs text-slate-600">
+                                  <span className="font-semibold text-slate-700">
+                                    Leading publication areas:{" "}
+                                  </span>
+                                  {institution.leadingSubfields.join(", ")}
+                                </p>
+                              )}
+                              {institution.mainInterests.length > 0 && (
+                                <p className="mt-1 line-clamp-2 text-xs text-slate-600">
+                                  <span className="font-semibold text-slate-700">
+                                    Main specializations:{" "}
+                                  </span>
+                                  {institution.mainInterests.join(", ")}
+                                </p>
+                              )}
+                              <Link
+                                to={`/?affiliation=${encodeURIComponent(institution.label)}`}
+                                className="mt-2 inline-flex text-xs font-semibold text-brand-600 hover:underline"
+                              >
+                                Search this institution on the map
+                              </Link>
+                            </div>
+                          </div>
+                        </article>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              <section className="space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <BookOpenText className="h-4 w-4 text-brand-600" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
+                    Papers
+                  </h3>
+                </div>
+                <ul className="space-y-2.5">
+                  {publications.map((pub, i) => {
+                    const location = formatLocation(pub);
+                    const subVisual = publicationSubcategoryVisual(pub);
+                    return (
+                      <li key={pub.id}>
+                        <article
+                          className="group overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:bg-white hover:shadow-md"
+                          style={{ animationDelay: `${i * 30}ms` }}
                         >
-                          <Sparkles className="h-3.5 w-3.5" />
-                          Get summary
-                        </Link>
-                        <Link
-                          to={buildPublicationPath(pub.id, pub.encoded_id)}
-                          className="flex flex-1 items-center justify-center rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-700"
-                        >
-                          View PDF
-                        </Link>
-                      </div>
-                    </article>
-                  </li>
-                );
-              })}
-            </ul>
+                          <Link
+                            to={buildPublicationPath(pub.id, pub.encoded_id)}
+                            className="flex gap-3 p-3.5 pb-2.5"
+                          >
+                            <UserAvatar
+                              user={pub.author}
+                              size="sm"
+                              className="h-11 w-11 rounded-xl border-2 text-sm"
+                            />
+                            <div className="min-w-0 flex-1 text-left">
+                              <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink group-hover:text-brand-700">
+                                {formatGrePaperTitle(pub.title, pub.short_number)}
+                              </p>
+                              <p className="mt-1 truncate text-xs text-slate-500">
+                                {authorDisplayName(pub.author) ||
+                                  `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim()}
+                              </p>
+                              <div className="mt-1.5">
+                                <ResearcherRankInline ranking={pub.author?.ranking} compact />
+                              </div>
+                              {location && (
+                                <p className="mt-1 flex items-start gap-1 text-xs text-slate-600">
+                                  <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-teal-600" />
+                                  <span className="line-clamp-2">{location}</span>
+                                </p>
+                              )}
+                              {pub.abstract?.trim() && (
+                                <p className="mt-2 line-clamp-2 text-xs leading-snug text-slate-600">
+                                  {pub.abstract.replace(/<[^>]+>/g, "").slice(0, 220)}
+                                </p>
+                              )}
+                              {subVisual ? (
+                                <div className="mt-2">
+                                  <SubcategoryBadge visual={subVisual} size="xs" />
+                                </div>
+                              ) : null}
+                            </div>
+                          </Link>
+                          <div className="flex flex-col gap-2 px-3.5 pb-3.5 sm:flex-row">
+                            <Link
+                              to={buildPublicationChatPath(pub.id, pub.encoded_id)}
+                              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:border-brand-300 hover:bg-brand-100"
+                            >
+                              <Sparkles className="h-3.5 w-3.5" />
+                              Get summary
+                            </Link>
+                            <Link
+                              to={buildPublicationPath(pub.id, pub.encoded_id)}
+                              className="flex flex-1 items-center justify-center rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-700"
+                            >
+                              View paper
+                            </Link>
+                          </div>
+                        </article>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            </div>
           )}
         </div>
       </aside>

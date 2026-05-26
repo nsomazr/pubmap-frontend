@@ -31,11 +31,11 @@ function GreBrandBlock({
   accessType,
 }: Pick<PublicationPaperHeaderProps, "draft" | "accessType">) {
   return (
-    <div className="flex w-[4.75rem] shrink-0 flex-col items-center gap-2 sm:w-[6rem]">
+    <div className="flex w-[5.25rem] shrink-0 flex-col items-center gap-2 sm:w-[6.5rem]">
       <img
         src={assets.logo}
         alt="Global Research Exchange"
-        className="h-14 w-14 shrink-0 object-contain sm:h-16 sm:w-16"
+        className="h-16 w-16 shrink-0 object-contain sm:h-[4.5rem] sm:w-[4.5rem]"
       />
       <div className="flex flex-wrap items-center justify-center gap-2">
         {draft && (
@@ -59,8 +59,10 @@ function PlatformNameBadge() {
       <span className="text-[11px] font-bold uppercase leading-tight tracking-[0.12em] sm:text-[15px] sm:tracking-[0.14em]">
         Global Research Exchange
       </span>
-      <span className="mt-1.5 text-[9px] font-medium leading-tight tracking-[0.02em] text-slate-50 sm:mt-2 sm:text-[11px] sm:tracking-[0.03em]">
-        Sharing research, connecting experts, advancing discovery.
+      <span className="mt-1.5 flex w-full items-center gap-2 text-[9px] font-medium leading-tight tracking-[0.02em] text-slate-50 sm:mt-2 sm:text-[11px] sm:tracking-[0.03em]">
+        <span className="h-px flex-1 bg-white/50" />
+        <span>Sharing research, connecting experts, advancing discovery</span>
+        <span className="h-px flex-1 bg-white/50" />
       </span>
     </div>
   );
@@ -86,7 +88,7 @@ function CategoryTopBadge({
             fit="contain"
             clip={false}
             shadow={false}
-            className="!h-14 !w-14 !rounded-none sm:!h-20 sm:!w-20"
+            className="!h-16 !w-16 !rounded-none sm:!h-[5.25rem] sm:!w-[5.25rem]"
           />
         ) : (
           <span className="flex h-14 w-14 items-center justify-center border border-slate-200 bg-white text-lg font-bold text-slate-600 sm:h-20 sm:w-20 sm:text-xl">
@@ -109,7 +111,6 @@ function buildMetaRows({
   teamSize,
   greDoi,
   greNumber,
-  accessType,
 }: Pick<
   PublicationPaperHeaderProps,
   | "publishedLabel"
@@ -122,16 +123,18 @@ function buildMetaRows({
   | "teamSize"
   | "greDoi"
   | "greNumber"
-  | "accessType"
 >) {
   const rows: { label: string; value: string; secondaryValue?: string }[] = [];
   const paperCode = grePaperCode(greNumber);
 
+  if (paperCode) {
+    rows.push({ label: "Paper number", value: paperCode });
+  }
   if (publishedLabel) {
-    rows.push({ label: "Published on", value: publishedLabel });
+    rows.push({ label: "Published Online", value: publishedLabel });
   }
   if (location) {
-    rows.push({ label: "Study location", value: location });
+    rows.push({ label: "Area", value: location });
   }
   if (funder?.trim()) {
     rows.push({ label: "Funder", value: funder.trim() });
@@ -149,20 +152,12 @@ function buildMetaRows({
       value: `${replies} replies · ${authors} author${authors === 1 ? "" : "s"}`,
     });
   }
-  if (accessType) {
-    rows.push({
-      label: "Access",
-      value: accessType === "closed" ? "Restricted access" : "Open access",
-    });
-  }
   if (greDoi?.trim()) {
     rows.push({
-      label: "GRE DOI",
+      label: "DOI",
       value: greDoi.trim().toUpperCase(),
-      secondaryValue: paperCode ? `Paper number: ${paperCode}` : undefined,
+      secondaryValue: undefined,
     });
-  } else if (paperCode) {
-    rows.push({ label: "Paper number", value: paperCode });
   }
 
   return rows;
@@ -200,14 +195,13 @@ export function PublicationPaperHeader({
     teamSize,
     greDoi,
     greNumber,
-    accessType,
   });
   const leftMetaRows = metaRows.filter((_, index) => index % 2 === 0);
   const rightMetaRows = metaRows.filter((_, index) => index % 2 === 1);
 
   return (
     <header className="publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="grid grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] items-center gap-3 border-b border-slate-100 bg-white px-4 py-4 sm:grid-cols-[6rem_minmax(0,1fr)_6rem] sm:px-7">
+      <div className="grid grid-cols-[5.25rem_minmax(0,1fr)_5.25rem] items-center gap-3 border-b border-slate-100 bg-white px-4 py-4 sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] sm:px-7">
         <GreBrandBlock draft={draft} accessType={accessType} />
         <div className="flex min-w-0 items-center justify-center">
           <PlatformNameBadge />

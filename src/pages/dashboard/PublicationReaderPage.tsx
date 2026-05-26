@@ -1,45 +1,47 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
-import { formatGrePaperTitle } from "../lib/grePaperTitle";
-import api from "../lib/api";
-import { ReportPlagiarismDialog } from "../components/publication/ReportPlagiarismDialog";
-import { GreAdPlacement } from "../components/ads/GreAdSlot";
-import { ResearcherRankInline } from "../components/rankings/ResearcherRankInline";
-import { StarRating } from "../components/rankings/StarRating";
-import { GreDoiBadge } from "../components/publication/GreDoiBadge";
-import { PdfPreview } from "../components/publication/PdfPreview";
-import { PublicationDiscussions } from "../components/publication/PublicationDiscussions";
-import { CoAuthorsPanel } from "../components/publication/CoAuthorsPanel";
-import { PublicationDownloadPanel } from "../components/publication/PublicationDownloadPanel";
-import { PublicationFiguresEditor } from "../components/publication/PublicationFiguresEditor";
-import { PublicationManuscriptSection } from "../components/publication/PublicationManuscriptSection";
-import { PublicationPaperHeader } from "../components/publication/PublicationPaperHeader";
-import { UserAvatar } from "../components/ui/UserAvatar";
-import { PublicPageLayout } from "../components/layout/PublicPageLayout";
-import { StudyLocationSection } from "../components/map/StudyLocationSection";
-import { abstractPlainText } from "../lib/abstractText";
-import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
-import { authorBylineFromPublication } from "../lib/publicationAuthors";
-import { publicationPublicApiPath } from "../lib/publicationPaths";
-import type { Publication } from "../types";
+import { Link, Navigate, useParams } from "react-router-dom";
+import { AlertTriangle, ArrowLeft, PencilLine } from "lucide-react";
+import api from "../../lib/api";
+import { formatGrePaperTitle } from "../../lib/grePaperTitle";
+import { ReportPlagiarismDialog } from "../../components/publication/ReportPlagiarismDialog";
+import { GreAdPlacement } from "../../components/ads/GreAdSlot";
+import { ResearcherRankInline } from "../../components/rankings/ResearcherRankInline";
+import { StarRating } from "../../components/rankings/StarRating";
+import { GreDoiBadge } from "../../components/publication/GreDoiBadge";
+import { PdfPreview } from "../../components/publication/PdfPreview";
+import { PublicationDiscussions } from "../../components/publication/PublicationDiscussions";
+import { CoAuthorsPanel } from "../../components/publication/CoAuthorsPanel";
+import { PublicationDownloadPanel } from "../../components/publication/PublicationDownloadPanel";
+import { PublicationFiguresEditor } from "../../components/publication/PublicationFiguresEditor";
+import { PublicationManuscriptSection } from "../../components/publication/PublicationManuscriptSection";
+import { PublicationPaperHeader } from "../../components/publication/PublicationPaperHeader";
+import { UserAvatar } from "../../components/ui/UserAvatar";
+import { StudyLocationSection } from "../../components/map/StudyLocationSection";
+import { abstractPlainText } from "../../lib/abstractText";
+import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
+import { authorBylineFromPublication } from "../../lib/publicationAuthors";
+import type { Publication } from "../../types";
 
 function formatPublishedDate(value?: string): string | undefined {
   if (!value) return undefined;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return undefined;
-  return date.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+  return date.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
-export function PublicationDetailPage() {
+export function PublicationReaderPage() {
   const { id } = useParams();
   const [reportOpen, setReportOpen] = useState(false);
 
   const { data: pub, isLoading, isError } = useQuery({
-    queryKey: ["publication", id],
+    queryKey: ["publication-reader", id],
     queryFn: async () => {
-      const { data } = await api.get<Publication>(publicationPublicApiPath(id!));
+      const { data } = await api.get<Publication>(`/publications/${id}/reader/`);
       return data;
     },
     enabled: !!id,
@@ -51,32 +53,20 @@ export function PublicationDetailPage() {
     }
   }, [pub?.id]);
 
-  const docPath = pub?.documents?.[0]?.document ?? null;
-  const isClosed = pub?.gre?.access_type === "closed";
-  const hasUploadedManuscript = Boolean(docPath);
-  const hasPdf = Boolean(docPath?.toLowerCase().endsWith(".pdf")) && !isClosed;
-
-  if (isLoading) {
-    return (
-      <PublicPageLayout compactHero title="Publication" crumbs={[{ label: "Home", to: "/" }]}>
-        <p className="text-slate-500">Loading…</p>
-      </PublicPageLayout>
-    );
-  }
-
+  if (!id) return <Navigate to="/dashboard/publications" replace />;
+  if (isLoading) return <p className="text-slate-500">Loading publication...</p>;
   if (isError || !pub) {
     return (
-      <PublicPageLayout
-        compactHero
-        title="Not found"
-        crumbs={[{ label: "Home", to: "/" }]}
-        back={{ to: "/", label: "Back to map" }}
-      >
-        <p className="text-slate-600">Publication not found or not yet published.</p>
-      </PublicPageLayout>
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-600">
+        Publication not found.
+      </div>
     );
   }
 
+  const docPath = pub.documents?.[0]?.document ?? null;
+  const isClosed = pub.gre?.access_type === "closed";
+  const hasUploadedManuscript = Boolean(docPath);
+  const hasPdf = Boolean(docPath?.toLowerCase().endsWith(".pdf")) && !isClosed;
   const authorName =
     pub.author?.full_name ||
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
@@ -85,22 +75,27 @@ export function PublicationDetailPage() {
   const locationLabel = [pub.coordinates?.location, pub.coordinates?.institution]
     .filter(Boolean)
     .join(" · ");
-
   const crumbTitle = formatGrePaperTitle(pub.title, pub.short_number);
 
   return (
-    <PublicPageLayout
-      wide
-      compactHero
-      accent="blue"
-      title="Publication"
-      crumbs={[
-        { label: "Home", to: "/" },
-        {
-          label: crumbTitle.slice(0, 48) + (crumbTitle.length > 48 ? "…" : ""),
-        },
-      ]}
-    >
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          to="/dashboard/publications"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-200"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to publications
+        </Link>
+        <Link
+          to={`/dashboard/publications/${pub.id}`}
+          className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
+        >
+          <PencilLine className="h-4 w-4" />
+          Edit publication
+        </Link>
+      </div>
+
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="gre-section-stack min-w-0 space-y-5">
           <PublicationPaperHeader
@@ -109,7 +104,7 @@ export function PublicationDetailPage() {
             funder={pub.funder}
             authorByline={authorBylineFromPublication(pub)}
             subVisual={subVisual}
-            subCategoryName={pub.sub_category_name}
+            subCategoryName={pub.subfield_name || pub.sub_category_name}
             publishedLabel={formatPublishedDate(pub.created_at)}
             location={locationLabel || undefined}
             viewsCount={pub.views_count ?? 0}
@@ -162,10 +157,13 @@ export function PublicationDetailPage() {
                     <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
                       Manuscript PDF
                     </h2>
-                    <p className="mt-1 text-xs text-slate-500">Full open-access paper</p>
+                    <p className="mt-1 text-xs text-slate-500">Full uploaded paper</p>
                   </div>
                 </div>
-                <PdfPreview documentPath={docPath} className="min-h-[min(50vh,420px)] rounded-none border-0 sm:min-h-[min(75vh,900px)]" />
+                <PdfPreview
+                  documentPath={docPath}
+                  className="min-h-[min(50vh,420px)] rounded-none border-0 sm:min-h-[min(75vh,900px)]"
+                />
               </section>
               <div className="space-y-4">
                 <PublicationManuscriptSection title="Introduction" body={pub.introduction} />
@@ -195,7 +193,6 @@ export function PublicationDetailPage() {
           )}
 
           {pub.coordinates && <StudyLocationSection publication={pub} />}
-
           <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
           <CoAuthorsPanel publication={pub} />
 
@@ -259,6 +256,6 @@ export function PublicationDetailPage() {
           onClose={() => setReportOpen(false)}
         />
       )}
-    </PublicPageLayout>
+    </div>
   );
 }

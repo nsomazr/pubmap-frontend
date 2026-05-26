@@ -151,14 +151,14 @@ export function ManagersPage() {
     <div className="animate-fade-up space-y-8">
       <PageHeader
         title="Managers"
-        description="Assign and remove subcategory managers who review submissions for specific research fields."
+        description="Assign and remove subfield managers who review submissions for specific research fields."
         action={
           <Link
             to="/dashboard/categories"
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-200"
           >
             <ClipboardList className="h-4 w-4" />
-            Categories
+            Fields
           </Link>
         }
       />
@@ -172,12 +172,12 @@ export function ManagersPage() {
 
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <Select
-            label="Subcategory"
+            label="Subfield"
             value={subcategoryId}
             required
             onChange={(e) => setSubcategoryId(e.target.value)}
           >
-            <option value="">Select subcategory…</option>
+            <option value="">Select subfield…</option>
             {filteredSubcategories.map((subcategory) => (
               <option key={subcategory.id} value={String(subcategory.id)}>
                 {subcategory.category_name} / {subcategory.name}
@@ -191,7 +191,7 @@ export function ManagersPage() {
                 <p className="mt-1">{selectedSubcategory.category_name}</p>
               </>
             ) : (
-              <p>Select the subcategory this manager should review.</p>
+              <p>Select the subfield this manager should review.</p>
             )}
           </div>
         </div>
@@ -208,7 +208,7 @@ export function ManagersPage() {
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-ink">Assign an existing user</h3>
               <p className="mt-1 text-sm text-slate-500">
-                Search active researchers, then assign the selected user to this subcategory.
+                Search active researchers, then assign the selected user to this subfield.
               </p>
             </div>
             <Input
@@ -294,7 +294,7 @@ export function ManagersPage() {
               <div>
                 <h3 className="text-sm font-semibold text-ink">Create a new manager user</h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Add the user here and assign them to the selected subcategory in one step.
+                  Add the user here and assign them to the selected subfield in one step.
                 </p>
               </div>
             </div>
@@ -359,7 +359,7 @@ export function ManagersPage() {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
         <p className="text-xs text-slate-500">
-          Managers can access the review queue only for their assigned subcategories. Platform admins
+          Managers can access the review queue only for their assigned subfields. Platform admins
           already have full review access.
         </p>
       </section>
@@ -368,7 +368,7 @@ export function ManagersPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-ink">
             <UserCog className="h-5 w-5 text-brand-600" />
-            Subcategory managers
+            Subfield managers
           </h2>
           <div className="relative w-full sm:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

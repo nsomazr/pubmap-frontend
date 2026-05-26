@@ -48,7 +48,7 @@ function CategoryManagersLink({ categoryId, count }: { categoryId: number; count
   return (
     <div className="border-t border-slate-100 bg-white px-4 py-3">
       <p className="text-xs text-slate-500">
-        {count} manager{count === 1 ? "" : "s"} assigned to this category.
+        {count} manager{count === 1 ? "" : "s"} assigned to this field.
       </p>
       <Link
         to={`/dashboard/managers?category=${categoryId}`}
@@ -90,7 +90,7 @@ function CategoryCard({
             <StatusPill status={category.status} />
           </div>
           <p className="mt-1 text-xs text-slate-500">
-            {subs.length} subcategor{subs.length === 1 ? "y" : "ies"} · used on map & forum
+            {subs.length} subfield{subs.length === 1 ? "" : "s"} · used on map & forum
           </p>
         </div>
       </div>
@@ -98,7 +98,7 @@ function CategoryCard({
       <div className="min-h-0 flex-1 px-4 py-3">
         {subs.length === 0 ? (
           <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 px-3 py-4 text-center text-xs text-slate-500">
-            No subcategories yet. Add one below.
+            No subfields yet. Add one below.
           </p>
         ) : (
           <ul className="max-h-44 space-y-2 overflow-y-auto">
@@ -126,11 +126,11 @@ function CategoryCard({
           type="text"
           value={subDraft}
           onChange={(e) => onSubDraftChange(e.target.value)}
-          placeholder="New subcategory name…"
+          placeholder="New subfield name…"
           className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
         />
         <PaperLogoUploadField
-          label="Subcategory paper logo"
+          label="Subfield paper logo"
           file={subIconFile}
           onChange={onSubIconChange}
         />
@@ -142,7 +142,7 @@ function CategoryCard({
           disabled={!subDraft.trim()}
         >
           <Plus className="h-4 w-4" />
-          Add subcategory
+          Add subfield
         </Button>
       </form>
 
@@ -206,7 +206,7 @@ export function CategoriesPage() {
       setFormError("");
       invalidateTaxonomy(queryClient);
     },
-    onError: () => setFormError("Could not create category. It may already exist."),
+    onError: () => setFormError("Could not create field. It may already exist."),
   });
 
   const createSubMutation = useMutation({
@@ -237,14 +237,14 @@ export function CategoriesPage() {
       setFormError("");
       invalidateTaxonomy(queryClient);
     },
-    onError: () => setFormError("Could not add subcategory. Check the name and try again."),
+    onError: () => setFormError("Could not add subfield. Check the name and try again."),
   });
 
   return (
     <div className="animate-fade-up space-y-8">
       <PageHeader
-        title="Categories"
-        description="Manage the research taxonomy, paper logos, and subcategories used on publications."
+        title="Fields"
+        description="Manage the research taxonomy, paper logos, and subfields used on publications."
         action={
           <Link
             to="/"
@@ -266,7 +266,7 @@ export function CategoriesPage() {
             </span>
             <div>
               <p className="text-2xl font-bold tabular-nums text-ink">{stats.categories}</p>
-              <p className="text-xs font-medium text-slate-600">Categories</p>
+              <p className="text-xs font-medium text-slate-600">Fields</p>
             </div>
           </div>
         </div>
@@ -277,7 +277,7 @@ export function CategoriesPage() {
             </span>
             <div>
               <p className="text-2xl font-bold tabular-nums text-ink">{stats.subcategories}</p>
-              <p className="text-xs font-medium text-slate-600">Subcategories</p>
+              <p className="text-xs font-medium text-slate-600">Subfields</p>
             </div>
           </div>
         </div>
@@ -297,7 +297,7 @@ export function CategoriesPage() {
       <section className="gre-card space-y-5 p-6">
         <h2 className="flex items-center gap-2 font-semibold text-ink">
           <Plus className="h-5 w-5 text-brand-600" />
-          New category
+          New field
         </h2>
         <form
           className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
@@ -308,19 +308,19 @@ export function CategoriesPage() {
           }}
         >
           <Input
-            label="Category name"
+            label="Field name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Geology, Environmental Science…"
           />
           <PaperLogoUploadField
-            label="Category paper logo"
+            label="Field paper logo"
             file={categoryLogo}
             onChange={setCategoryLogo}
           />
           <div className="flex items-end">
             <Button type="submit" loading={createCategoryMutation.isPending}>
-              Add category
+              Add field
             </Button>
           </div>
         </form>
@@ -343,7 +343,7 @@ export function CategoriesPage() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search categories or subcategories…"
+              placeholder="Search fields or subfields…"
               className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
             />
           </div>
@@ -358,11 +358,11 @@ export function CategoriesPage() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={FolderTree}
-            title={query ? "No matches" : "No categories yet"}
+            title={query ? "No matches" : "No fields yet"}
             description={
               query
                 ? "Try a different search term or clear the filter."
-                : "Create your first research category above. Subcategories can be added inside each card."
+                : "Create your first research field above. Subfields can be added inside each card."
             }
           />
         ) : (

@@ -302,10 +302,10 @@ export function CategorySubcategoryPicker({
   subCategoryId,
   onCategoryChange,
   onSubCategoryChange,
-  categoryLabel = "Category",
-  subCategoryLabel = "Subcategory",
-  categoryPlaceholder = "Select category",
-  subCategoryPlaceholder = "Select subcategory",
+  categoryLabel = "Field",
+  subCategoryLabel = "Subfield",
+  categoryPlaceholder = "Select field",
+  subCategoryPlaceholder = "Select subfield",
   required,
   filterMode = false,
   variant = "default",
@@ -367,9 +367,9 @@ export function CategorySubcategoryPicker({
     subCategories.length === 0
       ? filterMode
         ? categoryId
-          ? "No subcategories in this category"
-          : "All subcategories"
-        : "Choose a category first"
+          ? "No subfields in this field"
+          : "All subfields"
+        : "Choose a field first"
       : subCategoryPlaceholder;
 
   const gridClass =

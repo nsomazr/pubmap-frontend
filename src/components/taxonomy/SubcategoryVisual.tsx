@@ -56,6 +56,8 @@ export function SubcategoryVisual({
         <img
           src={logoSrc}
           alt=""
+          loading="lazy"
+          decoding="async"
           className={`h-full w-full ${fit === "contain" ? "object-contain" : "object-cover"}`}
           style={shadow ? { boxShadow: `0 4px 14px -6px ${visual.accent_color}55` } : undefined}
         />

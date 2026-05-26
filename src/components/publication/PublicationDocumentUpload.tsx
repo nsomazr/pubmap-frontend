@@ -90,8 +90,9 @@ export function PublicationDocumentUpload({
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-500">
-        Attach the original paper (PDF or Word). It will be available to readers for open-access
-        publications after approval.
+        Attach the original paper (PDF or Word). GRE can extract content from both open and closed
+        papers. Open papers show the uploaded file publicly after approval, while closed papers keep it
+        visible only to the paper owner.
       </p>
       {disabled && disabledHint && (
         <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{disabledHint}</p>

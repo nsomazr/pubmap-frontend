@@ -82,7 +82,6 @@ export function PublicationAccessFields({
           onChange={(e) => onChange({ ...gre, external_url: e.target.value })}
           placeholder="https://journal.example.org/full-text-article"
           disabled={disabled}
-          required
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -109,8 +108,8 @@ export function PublicationAccessFields({
         <>
           <p className="flex items-start gap-2 rounded-xl border border-brand-100 bg-brand-50/50 px-3 py-2.5 text-xs text-slate-600">
             <Link2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
-            The access link is shown on your GRE publication so readers can request or read the full paper
-            from the publisher.
+            The access link is shown on your GRE publication so readers can request or read the full
+            paper from the publisher, while the uploaded original stays visible only to the paper owner.
           </p>
           <Textarea
             label="Author summary (for GRE summary PDF)"

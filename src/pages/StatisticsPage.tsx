@@ -145,7 +145,7 @@ export function StatisticsPage() {
 
           <div className="grid gap-6 xl:grid-cols-2">
             <Section
-              title="Publications by category"
+              title="Publications by field"
               subtitle="Distribution across GRE research domains"
             >
               <HorizontalBarChart
@@ -158,8 +158,8 @@ export function StatisticsPage() {
             </Section>
 
             <Section
-              title="Publications by subcategory"
-              subtitle="Top thematic areas within each domain"
+              title="Publications by subfield"
+              subtitle="Top thematic areas within each field"
             >
               <HorizontalBarChart
                 items={data.publications_by_subcategory.map((row) => ({
@@ -207,7 +207,7 @@ export function StatisticsPage() {
 
             <Section
               title="Trending topics"
-              subtitle="Subcategories with the most new publications (90 days)"
+              subtitle="Subfields with the most new publications (90 days)"
             >
               {data.trending_topics.length === 0 ? (
                 <p className="rounded-xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">

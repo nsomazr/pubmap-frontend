@@ -55,6 +55,9 @@ const PublicationsPage = lazy(() =>
 const PublicationManagePage = lazy(() =>
   import("./pages/dashboard/PublicationManagePage").then((m) => ({ default: m.PublicationManagePage }))
 );
+const PublicationReaderPage = lazy(() =>
+  import("./pages/dashboard/PublicationReaderPage").then((m) => ({ default: m.PublicationReaderPage }))
+);
 const AccountPage = lazy(() =>
   import("./pages/dashboard/AccountPage").then((m) => ({ default: m.AccountPage }))
 );
@@ -193,6 +196,7 @@ function AppRoutes() {
           <Route path="publications" element={<PublicationsPage />} />
           <Route path="publications/new" element={<PublicationManagePage />} />
           <Route path="publications/:id" element={<PublicationManagePage />} />
+          <Route path="publications/:id/reader" element={<PublicationReaderPage />} />
           <Route path="account" element={<AccountPage />} />
           <Route path="messages" element={<MessagesPage />} />
           <Route path="review" element={<AdminReviewPage />} />

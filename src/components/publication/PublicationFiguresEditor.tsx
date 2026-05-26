@@ -129,6 +129,8 @@ export function PublicationFiguresEditor({ publicationId, figures, onChange, rea
                     <img
                       src={src}
                       alt={captionText || figureLabel(fig, index)}
+                      loading="lazy"
+                      decoding="async"
                       className="aspect-[4/3] w-full object-cover transition group-hover:scale-[1.02]"
                     />
                   ) : (
@@ -189,6 +191,7 @@ export function PublicationFiguresEditor({ publicationId, figures, onChange, rea
             <img
               src={mediaUrl(preview.photo) || ""}
               alt={preview.caption || "Figure preview"}
+              loading="eager"
               className="max-h-[80vh] max-w-full rounded-lg shadow-2xl"
             />
             {(preview.caption || "").trim() && (

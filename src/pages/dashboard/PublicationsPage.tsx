@@ -216,12 +216,17 @@ export function PublicationsPage() {
               : claimSummary?.open_count
                 ? `${claimSummary.open_count} plagiarism claim${claimSummary.open_count === 1 ? "" : "s"} under review.`
                 : NEXT_STEP[pub.status] ?? "";
+            const readerTarget = `/dashboard/publications/${pub.id}/reader`;
             const editTarget = claimSummary?.needs_author_action
               ? `/dashboard/publications/${pub.id}?focus=claims`
-              : `/dashboard/publications/${pub.id}`;
+              : pub.status === 2
+                ? `/dashboard/publications/${pub.id}?focus=feedback`
+                : `/dashboard/publications/${pub.id}`;
             const target = reviewPending
               ? `/dashboard/review?pub=${pub.id}`
-              : editTarget;
+              : pub.status === 3
+                ? readerTarget
+                : editTarget;
             return (
             <Link
               key={pub.id}

@@ -28,6 +28,8 @@ interface Props {
   compactHero?: boolean;
   /** Optional back link rendered above page content, aligned with the hero. */
   back?: PageBack;
+  /** Optional visual shown beside the hero heading. */
+  heroVisual?: React.ReactNode;
 }
 
 const accentStyles: Record<
@@ -58,6 +60,7 @@ export function PublicPageLayout({
   badge,
   compactHero = false,
   back,
+  heroVisual,
 }: Props) {
   const a = accentStyles[accent];
   const contentShell = wide ? "max-w-[1600px]" : "max-w-5xl";
@@ -112,35 +115,40 @@ export function PublicPageLayout({
               ))}
             </nav>
           )}
-          {badge && (
-            <span
-              className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ring-1 ${a.badge} ${
-                compactHero ? "mb-2" : "mb-4"
-              }`}
-            >
-              {badge}
-            </span>
-          )}
-          <h1
-            className={`gre-display max-w-4xl font-bold tracking-tight text-white ${
-              compactHero
-                ? "text-2xl sm:text-3xl lg:text-4xl"
-                : "text-4xl sm:text-5xl lg:text-6xl"
-            }`}
-          >
-            {title}
-          </h1>
-          {subtitle && (
-            <p
-              className={`gre-readable max-w-2xl text-white/80 ${
-                compactHero
-                  ? "mt-2 text-sm sm:text-base"
-                  : "mt-5 text-lg sm:text-xl"
-              }`}
-            >
-              {subtitle}
-            </p>
-          )}
+          <div className={`flex items-start gap-4 ${compactHero ? "sm:gap-5" : "sm:gap-6"}`}>
+            {heroVisual ? <div className="shrink-0">{heroVisual}</div> : null}
+            <div className="min-w-0">
+              {badge && (
+                <span
+                  className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ring-1 ${a.badge} ${
+                    compactHero ? "mb-2" : "mb-4"
+                  }`}
+                >
+                  {badge}
+                </span>
+              )}
+              <h1
+                className={`gre-display max-w-4xl font-bold tracking-tight text-white ${
+                  compactHero
+                    ? "text-2xl sm:text-3xl lg:text-4xl"
+                    : "text-4xl sm:text-5xl lg:text-6xl"
+                }`}
+              >
+                {title}
+              </h1>
+              {subtitle && (
+                <p
+                  className={`gre-readable max-w-2xl text-white/80 ${
+                    compactHero
+                      ? "mt-2 text-sm sm:text-base"
+                      : "mt-5 text-lg sm:text-xl"
+                  }`}
+                >
+                  {subtitle}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
         <div
           className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#f8fafc] to-transparent ${

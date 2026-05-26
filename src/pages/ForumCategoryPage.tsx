@@ -10,6 +10,8 @@ import { Textarea } from "../components/ui/Textarea";
 import { useAuth } from "../context/AuthContext";
 import { DefaultBanner } from "../components/ui/DefaultBanner";
 import { greFormPanelClass } from "../lib/formStyles";
+import { resolveSubcategoryFromModel } from "../lib/taxonomyVisuals";
+import { SubcategoryVisual } from "../components/taxonomy/SubcategoryVisual";
 import api from "../lib/api";
 import type { SubCategory, Topic } from "../types";
 
@@ -74,13 +76,27 @@ export function ForumCategoryPage() {
       compactHero
       wide
       accent="blue"
-      badge={sub?.category_name}
+      badge={sub?.field_name || sub?.category_name}
       title={sub?.name ?? "Forum"}
-      subtitle="Browse topics and start a new discussion in this field."
+      subtitle="Browse topics and start a new discussion in this subfield."
+      heroVisual={(() => {
+        const visual = sub ? resolveSubcategoryFromModel(sub) : null;
+        return visual ? (
+          <SubcategoryVisual
+            visual={visual}
+            size="lg"
+            fit="contain"
+            clip={false}
+            shadow={false}
+            className="!h-16 !w-16 !rounded-none sm:!h-20 sm:!w-20"
+            title={sub?.name}
+          />
+        ) : null;
+      })()}
       crumbs={[
         { label: "Home", to: "/" },
         { label: "Forum", to: "/forum" },
-        { label: sub?.name ?? "Category" },
+        { label: sub?.name ?? "Subfield" },
       ]}
     >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">

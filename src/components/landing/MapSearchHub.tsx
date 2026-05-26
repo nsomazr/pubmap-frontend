@@ -303,7 +303,7 @@ export function MapSearchHub({
         >
           <Search className="h-5 w-5 shrink-0 text-brand-600" />
           <span className="min-w-0 flex-1 truncate text-sm text-slate-500">
-            {hasInput ? summary : "Search publications, authors, institutions…"}
+            {hasInput ? summary : "Search publications, researchers, institutions…"}
           </span>
           {(activeFilterCount > 0 || hasInput) && (
             <span className="shrink-0 rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-bold text-white">
@@ -344,7 +344,7 @@ export function MapSearchHub({
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-ink">Search map</h2>
           <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-            Find publications by title, author, or institution
+            Find publications by title, researcher, or institution
           </p>
         </div>
         <button
@@ -377,7 +377,7 @@ export function MapSearchHub({
         />
         <MapSearchField
           icon={User}
-          label="Author"
+          label="Researcher"
           placeholder="Researcher name"
           value={author}
           onChange={onAuthorChange}
@@ -405,7 +405,7 @@ export function MapSearchHub({
       {(showFilters || categoryId || subCategoryId) && (
         <div className="border-t border-slate-100 bg-gradient-to-b from-slate-50/90 to-white px-4 py-4">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            Research area
+            Research field
           </p>
           <CategorySubcategoryPicker
             categories={categories}
@@ -419,10 +419,10 @@ export function MapSearchHub({
             onSubCategoryChange={onSubCategoryChange}
             filterMode
             variant="map"
-            categoryLabel="Category"
-            subCategoryLabel="Subcategory"
-            categoryPlaceholder="All categories"
-            subCategoryPlaceholder="All subcategories"
+            categoryLabel="Field"
+            subCategoryLabel="Subfield"
+            categoryPlaceholder="All fields"
+            subCategoryPlaceholder="All subfields"
           />
         </div>
       )}

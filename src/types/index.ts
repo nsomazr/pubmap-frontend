@@ -2,6 +2,7 @@ export interface UserInterest {
   id: number;
   label: string;
   sub_category_id?: number | null;
+  subfield_id?: number | null;
   source?: string;
   usage_count?: number;
 }
@@ -32,6 +33,8 @@ export interface User {
   ranking?: ResearcherRanking;
   managed_categories?: { id: number; name: string }[];
   managed_subcategories?: { id: number; name: string; category_id: number; category_name?: string }[];
+  managed_fields?: { id: number; name: string }[];
+  managed_subfields?: { id: number; name: string; field_id: number; field_name?: string }[];
   is_category_manager?: boolean;
 }
 
@@ -61,6 +64,7 @@ export interface Institution {
   id: number;
   label: string;
   normalized?: string;
+  country_code?: string;
   usage_count?: number;
 }
 
@@ -96,11 +100,18 @@ export interface Publication {
   author?: User;
   sub_category_id?: number;
   sub_category_name?: string;
+  subfield_id?: number;
+  subfield_name?: string;
   category_id?: number;
+  field_id?: number;
+  field_name?: string;
   sub_category_visual?: SubcategoryVisual | null;
   views_count?: number;
   downloads_count?: number;
   discussions_count?: number;
+  likes_count?: number;
+  share_count?: number;
+  liked_by_me?: boolean;
   coordinates?: Coordinate;
   collaborators?: Collaborator[];
   co_authors?: PublicationCoAuthors;
@@ -292,6 +303,7 @@ export interface PublicResearcherProfile {
 export interface SubcategoryVisual {
   name: string;
   category_name?: string;
+  field_name?: string;
   icon_key: string;
   accent_color: string;
   logo_url?: string | null;
@@ -302,6 +314,9 @@ export interface SubCategory {
   name: string;
   category_id: number;
   category_name?: string;
+  field_id?: number;
+  field_name?: string;
+  subfield_name?: string;
   icon?: string;
   status: string;
   topic_count?: number;
@@ -311,9 +326,11 @@ export interface SubCategory {
 export interface Category {
   id: number;
   name: string;
+  field_name?: string;
   status: string;
   icon?: string | null;
   sub_categories?: SubCategory[];
+  subfields?: SubCategory[];
   visual?: SubcategoryVisual;
   manager_count?: number;
 }
@@ -323,8 +340,12 @@ export interface CategoryManagerRow {
   user_id: number;
   sub_category_id?: number;
   sub_category_name?: string;
+  subfield_id?: number;
+  subfield_name?: string;
   category_id?: number;
   category_name?: string;
+  field_id?: number;
+  field_name?: string;
   email: string;
   full_name: string;
   affiliation?: string;
@@ -398,8 +419,12 @@ export interface MeetSession {
   status: MeetSessionStatus;
   category_id: number;
   category_name?: string;
+  field_id?: number;
+  field_name?: string;
   sub_category_id: number;
   sub_category_name?: string;
+  subfield_id?: number;
+  subfield_name?: string;
   host_id: number;
   host?: User;
   scheduled_at: string;
@@ -445,6 +470,8 @@ export interface Topic {
   content: string;
   sub_category_id: number;
   sub_category_name?: string;
+  subfield_id?: number;
+  subfield_name?: string;
   author?: User;
   replies_count?: number;
   views_count?: number;
@@ -483,6 +510,8 @@ export interface DashboardStats {
   is_reviewer?: boolean;
   managed_categories?: { id: number; name: string }[];
   managed_subcategories?: { id: number; name: string; category_id: number; category_name?: string }[];
+  managed_fields?: { id: number; name: string }[];
+  managed_subfields?: { id: number; name: string; field_id: number; field_name?: string }[];
 }
 
 export interface PublicStatsTotals {

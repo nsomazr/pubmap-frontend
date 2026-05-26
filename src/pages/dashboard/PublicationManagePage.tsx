@@ -305,6 +305,12 @@ export function PublicationManagePage() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [location.search, pub?.id]);
 
+  useEffect(() => {
+    if (!pub || !location.search.includes("focus=feedback")) return;
+    const el = document.getElementById("feedback");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [location.search, pub?.id]);
+
   const extractDocumentMutation = useMutation({
     mutationFn: async (file: File) => {
       const form = new FormData();
@@ -336,14 +342,12 @@ export function PublicationManagePage() {
   });
 
   useEffect(() => {
-    if (!pendingDocument || isClosedAccess) {
-      if (!pendingDocument) {
-        setExtractionUi({ status: "idle", warnings: [] });
-      }
+    if (!pendingDocument) {
+      setExtractionUi({ status: "idle", warnings: [] });
       return;
     }
     extractDocumentMutation.mutate(pendingDocument);
-  }, [pendingDocument, isClosedAccess]);
+  }, [pendingDocument]);
 
   const buildCollaboratorsPayload = (): Collaborator[] => {
     if (submitterRole === "coauthor") {
@@ -450,7 +454,7 @@ export function PublicationManagePage() {
           return;
         }
       }
-      setError("Could not save publication. Check title, abstract, category, and map location.");
+      setError("Could not save publication. Check the title and abstract, then try again.");
     },
   });
 
@@ -628,22 +632,6 @@ export function PublicationManagePage() {
     }
     if (!title.trim()) return "Please add a title.";
     if (!abstract.trim()) return "Please add an abstract.";
-    if (!subCategoryId) return "Please select a category and subcategory.";
-    if (isClosedAccess && !closedSectionsReady) {
-      return "Restricted publications need introduction, methods, findings/results, and conclusion.";
-    }
-    if (isClosedAccess && !gre.external_url?.trim()) {
-      return "Add the publisher access link before saving.";
-    }
-    if (!isClosedAccess && !openHasSource) {
-      return "Upload the original paper or add an external publication link before saving.";
-    }
-    if (!hasValidCoords(coordinates.latitude, coordinates.longitude)) {
-      return "Please set a map location by searching for a place or clicking on the map.";
-    }
-    if (!coordinates.location.trim()) {
-      return "Please add a location label (or search / pick on the map to fill it automatically).";
-    }
     if (submitterRole === "coauthor" && !leadAuthorName.trim()) {
       return "Please enter the lead author’s name when submitting as a co-author.";
     }
@@ -666,8 +654,8 @@ export function PublicationManagePage() {
     if (!readyToSubmit) {
       setError(
         isClosedAccess
-          ? "Complete title, abstract, all required sections, publisher access link, category, and map location before submitting."
-          : "Complete title, abstract, category, uploaded paper or external link, and map location before submitting."
+          ? "Complete title, abstract, all required sections, the publisher access link, the subfield, and the map location before submitting."
+          : "Complete title, abstract, the subfield, the uploaded paper or external link, and the map location before submitting."
       );
       return;
     }
@@ -789,7 +777,7 @@ export function PublicationManagePage() {
       )}
 
       {!isNew && pub?.status === 2 && (pub.admin_comments?.length ?? 0) > 0 && (
-        <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
+        <section id="feedback" className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-amber-900">
             <AlertCircle className="h-4 w-4" />
             Admin revision notes
@@ -925,13 +913,13 @@ export function PublicationManagePage() {
 
         {composerTab === "editor" && (
           <>
-            {!isClosedAccess && (
-              <section className="gre-card space-y-4 p-6">
+            <section className="gre-card space-y-4 p-6">
                 <div>
                   <h2 className="text-lg font-bold text-ink">Original paper</h2>
                   <p className="mt-1 text-sm text-slate-500">
                     Upload the manuscript first so GRE can auto-fill the title and manuscript sections
-                    before you continue editing.
+                    before you continue editing. Open papers show the uploaded file publicly after
+                    approval; closed papers keep it visible only to the paper owner.
                   </p>
                 </div>
                 {isNew ? (
@@ -979,15 +967,14 @@ export function PublicationManagePage() {
                     onExtracted={applyExtractedDocument}
                   />
                 ) : null}
-              </section>
-            )}
+            </section>
 
             <section className="gre-card space-y-4 p-6">
               <div>
                 <h2 className="text-lg font-bold text-ink">Publication details</h2>
                 <p className="mt-1 text-sm text-slate-500">
                   {isClosedAccess
-                    ? "Title and category appear on the map and in search."
+                    ? "Title and subfield appear on the map and in search."
                     : "Upload your paper to auto-fill the manuscript sections, then review and edit them before publishing."}
                 </p>
               </div>
@@ -998,7 +985,6 @@ export function PublicationManagePage() {
                 subCategoryId={subCategoryId}
                 onCategoryChange={setCategoryId}
                 onSubCategoryChange={setSubCategoryId}
-                required
               />
             </section>
 
@@ -1018,8 +1004,8 @@ export function PublicationManagePage() {
                 <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">
                   {isClosedAccess ? (
                     <>
-                      Complete all required sections. Use <strong>Paper preview</strong> to see the
-                      reader layout.
+                      Closed-access uploads can still auto-fill these sections from the source file.
+                      Use <strong>Paper preview</strong> to see the reader layout.
                     </>
                   ) : (
                     <>
@@ -1227,8 +1213,8 @@ export function PublicationManagePage() {
           {(isNew || canSubmit) && !readyToSubmit && (
             <p className="text-xs text-slate-500">
               {isClosedAccess
-                ? "Complete title, abstract, required sections, publisher access link, category, and map location to submit."
-                : "Complete title, abstract, category, uploaded paper or external link, and map location to submit."}
+                ? "Complete title, abstract, subfield, required sections, publisher access link, and map location to submit."
+                : "Complete title, abstract, subfield, uploaded paper or external link, and map location to submit."}
             </p>
           )}
           {!isNew && isAdmin && !isOwner && (pub?.status === 0 || pub?.status === 2) && (
