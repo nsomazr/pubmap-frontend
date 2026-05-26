@@ -1,5 +1,6 @@
 import { forwardRef, type TextareaHTMLAttributes } from "react";
 import { greFieldClass } from "../../lib/formStyles";
+import { RequiredMark } from "./RequiredField";
 
 interface Props extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -14,6 +15,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, Props>(
         {label && (
           <label htmlFor={inputId} className="block text-sm font-medium text-slate-700">
             {label}
+            {props.required ? <RequiredMark /> : null}
           </label>
         )}
         <textarea

@@ -5,6 +5,7 @@ import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { EmptyState } from "../../components/dashboard/EmptyState";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
+import { RequiredFieldsLegend, RequiredMark } from "../../components/ui/RequiredField";
 import { Select } from "../../components/ui/Select";
 import api from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
@@ -166,11 +167,13 @@ export function ManagersPage() {
           <Plus className="h-5 w-5 text-brand-600" />
           Assign manager
         </h2>
+        <RequiredFieldsLegend />
 
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <Select
             label="Subcategory"
             value={subcategoryId}
+            required
             onChange={(e) => setSubcategoryId(e.target.value)}
           >
             <option value="">Select subcategory…</option>
@@ -208,7 +211,10 @@ export function ManagersPage() {
               </p>
             </div>
             <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">Search user</span>
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                Search user
+                <RequiredMark />
+              </span>
               <input
                 type="search"
                 value={userSearch}
@@ -299,7 +305,10 @@ export function ManagersPage() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">First name</span>
+                <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                  First name
+                  <RequiredMark />
+                </span>
                 <input
                   type="text"
                   value={createForm.firstname}
@@ -310,7 +319,10 @@ export function ManagersPage() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">Last name</span>
+                <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Last name
+                  <RequiredMark />
+                </span>
                 <input
                   type="text"
                   value={createForm.lastname}
@@ -324,7 +336,10 @@ export function ManagersPage() {
 
             <div className="mt-3 grid gap-3">
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">Email</span>
+                <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Email
+                  <RequiredMark />
+                </span>
                 <input
                   type="email"
                   value={createForm.email}

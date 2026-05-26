@@ -1,4 +1,5 @@
 import { forwardRef, type SelectHTMLAttributes } from "react";
+import { RequiredMark } from "./RequiredField";
 
 interface Props extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
@@ -13,6 +14,7 @@ export const Select = forwardRef<HTMLSelectElement, Props>(
         {label && (
           <label htmlFor={inputId} className="block text-sm font-medium text-slate-700">
             {label}
+            {props.required ? <RequiredMark /> : null}
           </label>
         )}
         <select

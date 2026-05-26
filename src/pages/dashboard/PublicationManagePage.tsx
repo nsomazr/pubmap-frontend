@@ -19,6 +19,7 @@ import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { Button } from "../../components/ui/Button";
 import { InstitutionPicker } from "../../components/institutions/InstitutionPicker";
 import { Input } from "../../components/ui/Input";
+import { RequiredFieldsLegend } from "../../components/ui/RequiredField";
 import { CategorySubcategoryPicker } from "../../components/forms/CategorySubcategoryPicker";
 import { PublicationLifecyclePanel } from "../../components/publication/PublicationLifecyclePanel";
 import { AdminPublicationReviewCard } from "../../components/publication/AdminPublicationReviewCard";
@@ -899,6 +900,8 @@ export function PublicationManagePage() {
           )}
         </div>
       )}
+
+      {showComposer && <RequiredFieldsLegend className="-mt-4 mb-6" />}
 
       {showComposer && (
       <form className={`space-y-8${isReadOnly ? " pointer-events-none opacity-60" : ""}`} onSubmit={validateAndSave}>

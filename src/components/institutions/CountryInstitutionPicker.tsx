@@ -6,6 +6,7 @@ import {
   useInstitutionsByCountry,
 } from "../../lib/institutions";
 import { ScrollableSelect } from "../ui/ScrollableSelect";
+import { RequiredMark } from "../ui/RequiredField";
 
 interface Props {
   countryCode: string;
@@ -93,7 +94,7 @@ export function CountryInstitutionPicker({
       <div>
         <label className="mb-1.5 block text-sm font-medium text-ink">
           {countryLabel}
-          {required && <span className="text-red-500"> *</span>}
+          {required ? <RequiredMark /> : null}
         </label>
         <div className="relative">
           {loadingCountries ? (
@@ -127,7 +128,7 @@ export function CountryInstitutionPicker({
         <div>
           <label className="mb-1.5 block text-sm font-medium text-ink">
             {institutionLabel}
-            {required && <span className="text-red-500"> *</span>}
+            {required ? <RequiredMark /> : null}
           </label>
 
           {loadingCatalog && catalog.length === 0 && (

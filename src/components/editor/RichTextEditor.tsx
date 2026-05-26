@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type CSSProperties } from "react";
 import { loadCkEditor } from "../../lib/ckeditorLoader";
+import { RequiredMark } from "../ui/RequiredField";
 
 interface Props {
   label: string;
@@ -90,11 +91,7 @@ export function RichTextEditor({
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <label htmlFor={id} className="text-sm font-semibold text-ink">
           {label}
-          {required && (
-            <span className="ml-1 text-xs font-bold uppercase tracking-wide text-red-500">
-              Required
-            </span>
-          )}
+          {required ? <RequiredMark /> : null}
         </label>
         {hint ? <p className="text-xs text-slate-500">{hint}</p> : null}
       </div>

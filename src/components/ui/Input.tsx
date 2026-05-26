@@ -1,5 +1,6 @@
 import type { InputHTMLAttributes } from "react";
 import { greFieldClass } from "../../lib/formStyles";
+import { RequiredMark } from "./RequiredField";
 
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -13,6 +14,7 @@ export function Input({ label, error, className = "", id, ...props }: Props) {
       {label && (
         <label htmlFor={inputId} className="block text-sm font-medium text-ink">
           {label}
+          {props.required ? <RequiredMark /> : null}
         </label>
       )}
       <input

@@ -13,6 +13,7 @@ import {
   usePopularInstitutions,
   type Institution,
 } from "../../lib/institutions";
+import { RequiredMark } from "../ui/RequiredField";
 
 interface MenuRect {
   left: number;
@@ -168,7 +169,7 @@ export function InstitutionPicker({
       {!hideLabel && (
         <label className="mb-1.5 block text-sm font-medium text-ink">
           {label}
-          {required && <span className="text-red-500"> *</span>}
+          {required ? <RequiredMark /> : null}
         </label>
       )}
       <div className="relative">

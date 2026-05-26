@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import { resolveCategoryVisual, resolveSubcategoryFromModel } from "../../lib/taxonomyVisuals";
 import type { Category, SubCategory, SubcategoryVisual as Visual } from "../../types";
+import { RequiredMark } from "../ui/RequiredField";
 
 interface MenuRect {
   left: number;
@@ -237,7 +238,7 @@ function PickerDropdown({
     <div className="space-y-1.5">
       <label htmlFor={id} className={`block ${labelClass}`}>
         {label}
-        {required && <span className="text-red-500"> *</span>}
+        {required ? <RequiredMark /> : null}
       </label>
       <button
         ref={btnRef}

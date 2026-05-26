@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
+import { RequiredFieldsLegend } from "../../components/ui/RequiredField";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import api, { parseApiError } from "../../lib/api";
@@ -183,6 +184,8 @@ export function MeetManagePage() {
         }
       />
 
+      <RequiredFieldsLegend className="-mt-4" />
+
       <form
         className="gre-card space-y-6 p-6"
         onSubmit={(e) => {
@@ -230,6 +233,7 @@ export function MeetManagePage() {
           <Select
             label="Category"
             value={form.category_id}
+            required
             onChange={(e) =>
               setForm((prev) => ({
                 ...prev,
@@ -250,6 +254,7 @@ export function MeetManagePage() {
           <Select
             label="Subcategory"
             value={form.sub_category_id}
+            required
             onChange={(e) =>
               setForm((prev) => ({
                 ...prev,
