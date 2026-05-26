@@ -31,11 +31,11 @@ function GreBrandBlock({
   accessType,
 }: Pick<PublicationPaperHeaderProps, "draft" | "accessType">) {
   return (
-    <div className="mr-2 flex shrink-0 flex-col items-center gap-2 sm:mr-3">
+    <div className="flex w-[4.75rem] shrink-0 flex-col items-center gap-2 sm:w-[6rem]">
       <img
         src={assets.logo}
         alt="Global Research Exchange"
-        className="h-16 w-16 shrink-0 object-contain"
+        className="h-14 w-14 shrink-0 object-contain sm:h-16 sm:w-16"
       />
       <div className="flex flex-wrap items-center justify-center gap-2">
         {draft && (
@@ -55,11 +55,11 @@ function GreBrandBlock({
 
 function PlatformNameBadge() {
   return (
-    <div className="flex w-full flex-col items-center bg-slate-400 px-6 py-3 text-center text-white shadow-sm sm:px-8 sm:py-3.5">
-      <span className="whitespace-nowrap text-[13px] font-bold uppercase tracking-[0.14em] sm:text-[15px]">
+    <div className="flex w-full flex-col items-center bg-slate-400 px-3 py-2.5 text-center text-white shadow-sm sm:px-8 sm:py-3.5">
+      <span className="text-[11px] font-bold uppercase leading-tight tracking-[0.12em] sm:text-[15px] sm:tracking-[0.14em]">
         Global Research Exchange
       </span>
-      <span className="mt-2 whitespace-nowrap text-[10px] font-medium tracking-[0.03em] text-slate-50 sm:text-[11px]">
+      <span className="mt-1.5 text-[9px] font-medium leading-tight tracking-[0.02em] text-slate-50 sm:mt-2 sm:text-[11px] sm:tracking-[0.03em]">
         Sharing research, connecting experts, advancing discovery.
       </span>
     </div>
@@ -77,7 +77,7 @@ function CategoryTopBadge({
   const label = name || visual?.name || "Research area";
 
   return (
-    <aside className="publication-paper-category shrink-0 pt-1" aria-label={label}>
+    <aside className="publication-paper-category shrink-0" aria-label={label}>
       <div className="flex items-center justify-center">
         {visual ? (
           <SubcategoryVisual
@@ -86,10 +86,10 @@ function CategoryTopBadge({
             fit="contain"
             clip={false}
             shadow={false}
-            className="!h-20 !w-20 !rounded-none"
+            className="!h-14 !w-14 !rounded-none sm:!h-20 sm:!w-20"
           />
         ) : (
-          <span className="flex h-20 w-20 items-center justify-center border border-slate-200 bg-white text-xl font-bold text-slate-600">
+          <span className="flex h-14 w-14 items-center justify-center border border-slate-200 bg-white text-lg font-bold text-slate-600 sm:h-20 sm:w-20 sm:text-xl">
             {label.slice(0, 2).toUpperCase()}
           </span>
         )}
@@ -207,9 +207,9 @@ export function PublicationPaperHeader({
 
   return (
     <header className="publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="flex items-start gap-2 border-b border-slate-100 bg-white px-5 py-4 sm:px-7">
+      <div className="grid grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] items-center gap-3 border-b border-slate-100 bg-white px-4 py-4 sm:grid-cols-[6rem_minmax(0,1fr)_6rem] sm:px-7">
         <GreBrandBlock draft={draft} accessType={accessType} />
-        <div className="flex min-w-0 flex-1 items-center pt-1">
+        <div className="flex min-w-0 items-center justify-center">
           <PlatformNameBadge />
         </div>
         <CategoryTopBadge visual={subVisual} name={subCategoryName || subVisual?.name} />
