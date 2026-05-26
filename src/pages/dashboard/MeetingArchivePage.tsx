@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, FileText, MessagesSquare, Users, Video } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, ExternalLink, FileText, Trash2, Users, Video } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
+import api, { parseApiError } from "../../lib/api";
 import { fetchMeeting, formatMeetingDate, formatMeetingId } from "../../lib/meetings";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 
@@ -23,11 +24,24 @@ function formatMessageTime(value?: string | null) {
 export function MeetingArchivePage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: meeting, isLoading } = useQuery({
     queryKey: ["meeting-archive", id],
     queryFn: () => fetchMeeting(id!),
     enabled: !!id,
+  });
+
+  const deleteMeeting = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/meetings/${id}/`);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["meetings"] });
+      queryClient.removeQueries({ queryKey: ["meeting", id] });
+      queryClient.removeQueries({ queryKey: ["meeting-archive", id] });
+      navigate("/dashboard/meetings?scope=archived");
+    },
   });
 
   if (isLoading || !meeting) {
@@ -52,6 +66,19 @@ export function MeetingArchivePage() {
               <ArrowLeft className="h-4 w-4" />
               Back to meeting
             </Link>
+            {meeting.can_manage && (
+              <Button
+                variant="danger"
+                loading={deleteMeeting.isPending}
+                onClick={() => {
+                  if (!window.confirm("Delete this archived meeting and its saved archive?")) return;
+                  deleteMeeting.mutate();
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete archive
+              </Button>
+            )}
           </div>
         }
       />
@@ -118,8 +145,8 @@ export function MeetingArchivePage() {
 
           <div className="gre-card space-y-4 p-6">
             <div className="flex items-center gap-2">
-              <MessagesSquare className="h-5 w-5 text-brand-600" />
-              <h2 className="text-lg font-semibold text-ink">Message transcript</h2>
+              <FileText className="h-5 w-5 text-brand-600" />
+              <h2 className="text-lg font-semibold text-ink">Messages</h2>
             </div>
             {messageCount === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-5 text-sm text-slate-500">
@@ -154,6 +181,12 @@ export function MeetingArchivePage() {
                   </article>
                 ))}
               </div>
+            )}
+
+            {deleteMeeting.isError && (
+              <p className="text-sm text-red-600">
+                {parseApiError(deleteMeeting.error, "Could not delete this archived meeting.")}
+              </p>
             )}
           </div>
         </div>
