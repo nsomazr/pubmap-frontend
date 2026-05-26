@@ -91,6 +91,8 @@ function buildCopilotPrompt(
     "You are the GRE Meet AI copilot.",
     "Use only the meeting metadata, saved notes, and GRE archive chat provided below.",
     "Do not invent facts, names, decisions, or action items that are not supported by the content.",
+    "If the meeting transcript is still too short or vague, say that there is not enough information yet.",
+    "Do not infer scientific findings, significance, methods, or outcomes from the category or title alone.",
     "Return markdown only.",
     instructions,
     "",
@@ -107,6 +109,17 @@ function buildCopilotPrompt(
     "GRE archive chat transcript:",
     transcript || "No GRE archive chat messages yet.",
   ].join("\n");
+}
+
+function buildExternalRoomUrl(joinData?: {
+  server_url?: string;
+  room_name?: string;
+  token?: string;
+} | null) {
+  if (!joinData?.server_url || !joinData?.room_name || !joinData?.token) return null;
+  const url = new URL(`${joinData.server_url.replace(/\/$/, "")}/${joinData.room_name}`);
+  url.searchParams.set("jwt", joinData.token);
+  return url.toString();
 }
 
 export function MeetRoomPage() {
@@ -458,6 +471,35 @@ export function MeetRoomPage() {
     endMeeting.mutate();
   };
 
+  const prepareRoom = async () => {
+    if (canManage && activeMeeting?.status === "scheduled") {
+      await startMeeting.mutateAsync();
+    }
+    return joinMutation.data ?? (await joinMutation.mutateAsync());
+  };
+
+  const handleEnterRoom = async () => {
+    try {
+      await prepareRoom();
+      setRoomError("");
+    } catch (error) {
+      setRoomError(parseApiError(error, "Could not prepare the meeting room."));
+    }
+  };
+
+  const handleOpenExternalRoom = async () => {
+    try {
+      const joinData = await prepareRoom();
+      const directUrl = buildExternalRoomUrl(joinData);
+      if (!directUrl) {
+        throw new Error("Could not create the external room URL.");
+      }
+      window.open(directUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      setRoomError(parseApiError(error, "Could not open the external room."));
+    }
+  };
+
   const runCopilot = async (task: CopilotTask, question?: string) => {
     if (!activeMeeting) return;
     copilotAbortRef.current?.abort();
@@ -546,9 +588,55 @@ export function MeetRoomPage() {
               <a href={shareLink} target="_blank" rel="noreferrer">
                 <Button variant="ghost">
                   <ExternalLink className="h-4 w-4" />
-                  Open link
+                  Open GRE link
                 </Button>
               </a>
+            )}
+          </div>
+        </div>
+
+        <div className="gre-card flex flex-wrap items-start justify-between gap-4 p-5">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
+              Host controls
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-ink">Start, enter, record, and end the meeting</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Use these controls first. If the embedded room cannot load, continue with the direct
+              external room launcher.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {!isConnected && canManage && activeMeeting?.status === "scheduled" && (
+              <Button loading={startMeeting.isPending || joinMutation.isPending} onClick={handleEnterRoom}>
+                <Radio className="h-4 w-4" />
+                Start and enter room
+              </Button>
+            )}
+            {!isConnected && !(canManage && activeMeeting?.status === "scheduled") && (
+              <Button loading={joinMutation.isPending} onClick={handleEnterRoom}>
+                <Video className="h-4 w-4" />
+                Enter room
+              </Button>
+            )}
+            <Button variant="secondary" onClick={handleOpenExternalRoom}>
+              <ExternalLink className="h-4 w-4" />
+              Open external room
+            </Button>
+            {isModerator && isLive && activeMeeting?.recording_status !== "recording" && (
+              <Button variant="ghost" loading={startRecording.isPending} onClick={handleStartRecording}>
+                Start recording
+              </Button>
+            )}
+            {isModerator && isLive && activeMeeting?.recording_status === "recording" && (
+              <Button variant="ghost" loading={stopRecording.isPending} onClick={handleStopRecording}>
+                Stop recording
+              </Button>
+            )}
+            {canManage && (
+              <Button variant="danger" loading={endMeeting.isPending} onClick={handleEndConference}>
+                End meeting
+              </Button>
             )}
           </div>
         </div>
@@ -586,8 +674,11 @@ export function MeetRoomPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-3">
-                    <Button loading={joinMutation.isPending} onClick={() => joinMutation.mutate()}>
-                      {joinMutation.isPending ? (
+                    <Button
+                      loading={joinMutation.isPending || startMeeting.isPending}
+                      onClick={handleEnterRoom}
+                    >
+                      {joinMutation.isPending || startMeeting.isPending ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
                           Preparing room
@@ -604,14 +695,10 @@ export function MeetRoomPage() {
                         </>
                       )}
                     </Button>
-                    {shareLink && (
-                      <a href={shareLink} target="_blank" rel="noreferrer">
-                        <Button variant="secondary">
-                          <ExternalLink className="h-4 w-4" />
-                          Open external room
-                        </Button>
-                      </a>
-                    )}
+                    <Button variant="secondary" onClick={handleOpenExternalRoom}>
+                      <ExternalLink className="h-4 w-4" />
+                      Open external room
+                    </Button>
                   </div>
                   {joinMutation.isError && (
                     <p className="text-sm text-red-600">
@@ -633,14 +720,10 @@ export function MeetRoomPage() {
                       <RefreshCcw className="h-4 w-4" />
                       Retry embed
                     </Button>
-                    {shareLink && (
-                      <a href={shareLink} target="_blank" rel="noreferrer">
-                        <Button>
-                          <ExternalLink className="h-4 w-4" />
-                          Open external room
-                        </Button>
-                      </a>
-                    )}
+                    <Button onClick={handleOpenExternalRoom}>
+                      <ExternalLink className="h-4 w-4" />
+                      Open external room
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -658,7 +741,7 @@ export function MeetRoomPage() {
 
           <aside className="space-y-6">
             <div className="gre-card space-y-4 p-5">
-              <h2 className="text-lg font-semibold text-ink">Room controls</h2>
+              <h2 className="text-lg font-semibold text-ink">Quick room actions</h2>
               <p className="text-sm text-slate-500">
                 GRE manages the archive and notes while Jitsi runs the live video room.
               </p>
