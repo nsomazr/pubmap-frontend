@@ -38,6 +38,11 @@ export function formatMeetingDate(date?: string | null) {
   }
 }
 
+export function formatMeetingId(id?: number | null) {
+  if (!id) return "";
+  return `GRE-MEET-${String(id).padStart(6, "0")}`;
+}
+
 export async function fetchMeetings(params?: Record<string, string | number | undefined>) {
   const { data } = await api.get<MeetSession[] | { results: MeetSession[] }>("/meetings/", { params });
   return Array.isArray(data) ? data : (data.results ?? []);

@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { useAuth } from "../../context/AuthContext";
-import { fetchMeetings, formatMeetingDate, MEETING_TYPE_LABELS } from "../../lib/meetings";
+import { fetchMeetings, formatMeetingDate, formatMeetingId, MEETING_TYPE_LABELS } from "../../lib/meetings";
 import type { MeetSession } from "../../types";
 
 const tabs = [
@@ -17,6 +17,7 @@ const tabs = [
 function MeetingCard({ meeting }: { meeting: MeetSession }) {
   const isArchived = meeting.status === "ended";
   const roomLabel = meeting.status === "live" ? "Open live room" : "Join room";
+  const archiveId = formatMeetingId(meeting.id);
 
   return (
     <article className="gre-card flex flex-col gap-4 p-5">
@@ -29,6 +30,7 @@ function MeetingCard({ meeting }: { meeting: MeetSession }) {
           <p className="mt-1 text-sm text-slate-500">
             {meeting.category_name} / {meeting.sub_category_name}
           </p>
+          <p className="mt-2 text-xs font-medium text-slate-400">{archiveId}</p>
         </div>
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -71,8 +73,13 @@ function MeetingCard({ meeting }: { meeting: MeetSession }) {
           </Link>
         )}
         <Link to={`/dashboard/meetings/${meeting.id}`}>
-          <Button variant="secondary">{isArchived ? "View archive" : "View details"}</Button>
+          <Button variant="secondary">View details</Button>
         </Link>
+        {isArchived && (
+          <Link to={`/dashboard/meetings/${meeting.id}/archive`}>
+            <Button>Open archive</Button>
+          </Link>
+        )}
         {meeting.can_manage && !isArchived && (
           <Link to={`/dashboard/meetings/${meeting.id}/edit`}>
             <Button variant="ghost">Edit</Button>

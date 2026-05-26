@@ -84,6 +84,9 @@ const MeetManagePage = lazy(() =>
 const MeetDetailPage = lazy(() =>
   import("./pages/dashboard/MeetDetailPage").then((m) => ({ default: m.MeetDetailPage }))
 );
+const MeetingArchivePage = lazy(() =>
+  import("./pages/dashboard/MeetingArchivePage").then((m) => ({ default: m.MeetingArchivePage }))
+);
 const AdsPage = lazy(() => import("./pages/dashboard/AdsPage").then((m) => ({ default: m.AdsPage })));
 const AdminOperationsPage = lazy(() =>
   import("./pages/dashboard/AdminOperationsPage").then((m) => ({ default: m.AdminOperationsPage }))
@@ -199,6 +202,7 @@ function AppRoutes() {
           <Route path="meetings" element={<MeetingsPage />} />
           <Route path="meetings/new" element={<MeetManagePage />} />
           <Route path="meetings/:id" element={<MeetDetailPage />} />
+          <Route path="meetings/:id/archive" element={<MeetingArchivePage />} />
           <Route path="meetings/:id/edit" element={<MeetManagePage />} />
           <Route path="ads" element={<AdsPage />} />
           <Route path="operations" element={<AdminOperationsPage />} />

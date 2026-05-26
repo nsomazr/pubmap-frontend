@@ -44,7 +44,15 @@ export function loadJitsiExternalApi(baseUrl: string): Promise<void> {
     script.src = scriptUrl;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Could not load the Jitsi Meet embed script."));
+    script.onerror = () => {
+      loadedScripts.delete(scriptUrl);
+      try {
+        script.remove();
+      } catch {
+        // Ignore cleanup errors.
+      }
+      reject(new Error("Could not load the Jitsi Meet embed script."));
+    };
     document.body.appendChild(script);
   });
   loadedScripts.set(scriptUrl, promise);
