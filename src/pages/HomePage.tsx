@@ -42,6 +42,7 @@ export function HomePage() {
   const [results, setResults] = useState<Publication[] | null>(null);
   const [resultsRailOpen, setResultsRailOpen] = useState(false);
   const [resultsRailCollapsed, setResultsRailCollapsed] = useState(false);
+  const [searchPanelOpen, setSearchPanelOpen] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedPublicationId, setSelectedPublicationId] = useState<number | null>(null);
   const [mapExpanded, setMapExpanded] = useState(false);
@@ -167,6 +168,7 @@ export function HomePage() {
 
   useEffect(() => {
     if (skipAutoSearchRef.current) return;
+    if (searchPanelOpen) return;
     const hasFilter =
       debouncedAuthor ||
       debouncedAffiliation ||
@@ -183,6 +185,7 @@ export function HomePage() {
     location,
     categoryId,
     subCategoryId,
+    searchPanelOpen,
     runSearch,
   ]);
 
@@ -318,6 +321,7 @@ export function HomePage() {
             searchError={searchError}
             hasResults={hasSearched}
             resultsPanelVisible={resultsRailOpen && !resultsRailCollapsed}
+            onOpenChange={setSearchPanelOpen}
             onOpenResults={() => {
               userDismissedResultsRailRef.current = false;
               setResultsRailOpen(true);

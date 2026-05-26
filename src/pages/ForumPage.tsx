@@ -56,12 +56,12 @@ export function ForumPage() {
       subtitle="Choose a research area to browse topics and join the conversation."
       crumbs={[{ label: "Home", to: "/" }, { label: "Forum" }]}
     >
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
           <button
             type="button"
             onClick={() => setCategoryFilter("all")}
-            className={`gre-interactive rounded-full px-4 py-2 text-sm font-semibold ${
+            className={`gre-interactive shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${
               categoryFilter === "all"
                 ? "gre-gradient-bar text-white shadow-md shadow-brand-600/25"
                 : "bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-brand-200"
@@ -74,7 +74,7 @@ export function ForumPage() {
               key={c.id}
               type="button"
               onClick={() => setCategoryFilter(String(c.id))}
-              className={`gre-interactive rounded-full px-4 py-2 text-sm font-semibold ${
+              className={`gre-interactive shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${
                 categoryFilter === String(c.id)
                   ? "gre-gradient-bar text-white shadow-md shadow-brand-600/25"
                   : "bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-brand-200"
@@ -91,7 +91,7 @@ export function ForumPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="gre-skeleton h-[5.5rem]" />
           ))}
@@ -102,9 +102,9 @@ export function ForumPage() {
           <p className="mt-3 font-medium text-slate-600">No forums in this category</p>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 gre-stagger">
-          {filtered.map((sub) => (
-            <ForumCategoryCard key={sub.id} sub={sub} />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 gre-stagger">
+          {filtered.map((sub, index) => (
+            <ForumCategoryCard key={sub.id} sub={sub} priorityImage={index < 6} />
           ))}
         </div>
       )}
@@ -120,7 +120,7 @@ export function ForumPage() {
               <li key={t.id}>
                 <Link
                   to={`/forum/topic/${t.id}`}
-                  className="gre-interactive flex items-center gap-4 px-5 py-4 hover:bg-brand-50/50"
+                  className="gre-interactive flex items-center gap-3 px-4 py-4 hover:bg-brand-50/50 sm:gap-4 sm:px-5"
                 >
                   <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
                     <DefaultBanner kind="forum" seed={t.id} compact />
@@ -132,7 +132,7 @@ export function ForumPage() {
                       {t.author?.full_name && ` · ${t.author.full_name}`}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs text-slate-400">
+                  <span className="hidden shrink-0 text-xs text-slate-400 sm:inline">
                     {t.replies_count ?? 0} replies · {t.views_count ?? 0} views
                   </span>
                 </Link>

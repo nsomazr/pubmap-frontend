@@ -54,8 +54,8 @@ export function PublicationDetailPage() {
   const manuscript = pub?.documents?.find((doc) => !doc.kind || doc.kind === "manuscript") ?? null;
   const docPath = manuscript?.document ?? null;
   const isClosed = pub?.gre?.access_type === "closed";
-  const hasUploadedManuscript = Boolean(docPath);
-  const hasPdf = Boolean(docPath?.toLowerCase().endsWith(".pdf")) && !isClosed;
+  const showManuscriptContent = Boolean(docPath?.trim()) && !isClosed;
+  const showPdfPreview = showManuscriptContent && Boolean(docPath?.toLowerCase().endsWith(".pdf"));
 
   if (isLoading) {
     return (
@@ -86,6 +86,13 @@ export function PublicationDetailPage() {
   const locationLabel = [pub.coordinates?.location, pub.coordinates?.institution]
     .filter(Boolean)
     .join(" · ");
+  const manuscriptSections = [
+    { title: "Introduction", body: pub.introduction },
+    { title: "Methods", body: pub.methods },
+    { title: "Results", body: pub.results },
+    { title: "Findings / discussion", body: pub.findings },
+    { title: "Conclusion", body: pub.conclusion },
+  ].filter((section) => Boolean(section.body?.trim()));
 
   const crumbTitle = formatGrePaperTitle(pub.title, pub.short_number);
 
@@ -155,8 +162,9 @@ export function PublicationDetailPage() {
             initialShareCount={pub.share_count ?? 0}
           />
 
-          {hasPdf && docPath ? (
+          {showManuscriptContent && (
             <>
+              {showPdfPreview && docPath && (
               <section className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-7">
                   <div>
@@ -168,23 +176,20 @@ export function PublicationDetailPage() {
                 </div>
                 <PdfPreview documentPath={docPath} className="min-h-[min(50vh,420px)] rounded-none border-0 sm:min-h-[min(75vh,900px)]" />
               </section>
-              <div className="space-y-4">
-                <PublicationManuscriptSection title="Introduction" body={pub.introduction} />
-                <PublicationManuscriptSection title="Methods" body={pub.methods} />
-                <PublicationManuscriptSection title="Results" body={pub.results} />
-                <PublicationManuscriptSection title="Findings / discussion" body={pub.findings} />
-                <PublicationManuscriptSection title="Conclusion" body={pub.conclusion} />
-              </div>
+              )}
+              {manuscriptSections.length > 0 && (
+                <div className="space-y-4">
+                  {manuscriptSections.map((section) => (
+                    <PublicationManuscriptSection
+                      key={section.title}
+                      title={section.title}
+                      body={section.body}
+                    />
+                  ))}
+                </div>
+              )}
             </>
-          ) : !isClosed || hasUploadedManuscript ? (
-            <div className="space-y-4">
-              <PublicationManuscriptSection title="Introduction" body={pub.introduction} />
-              <PublicationManuscriptSection title="Methods" body={pub.methods} />
-              <PublicationManuscriptSection title="Results" body={pub.results} />
-              <PublicationManuscriptSection title="Findings / discussion" body={pub.findings} />
-              <PublicationManuscriptSection title="Conclusion" body={pub.conclusion} />
-            </div>
-          ) : null}
+          )}
 
           {(pub.figures?.length ?? 0) > 0 && (
             <PublicationFiguresEditor

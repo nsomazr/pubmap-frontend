@@ -115,9 +115,13 @@ export function PublicPageLayout({
               ))}
             </nav>
           )}
-          <div className={`flex items-start gap-4 ${compactHero ? "sm:gap-5" : "sm:gap-6"}`}>
-            {heroVisual ? <div className="shrink-0">{heroVisual}</div> : null}
-            <div className="min-w-0">
+          <div
+            className={`flex flex-col gap-4 ${
+              compactHero ? "sm:flex-row sm:items-start sm:gap-5" : "sm:flex-row sm:items-start sm:gap-6"
+            }`}
+          >
+            {heroVisual ? <div className="mx-auto shrink-0 sm:mx-0">{heroVisual}</div> : null}
+            <div className={`min-w-0 ${heroVisual ? "text-center sm:text-left" : ""}`}>
               {badge && (
                 <span
                   className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ring-1 ${a.badge} ${

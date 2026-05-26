@@ -34,6 +34,7 @@ interface Props {
   hasResults: boolean;
   /** When true, the mobile results sheet is expanded (hide duplicate results chip). */
   resultsPanelVisible?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onOpenResults: () => void;
   onAuthorChange: (v: string) => void;
   onAffiliationChange: (v: string) => void;
@@ -163,6 +164,7 @@ export function MapSearchHub({
   searchError = null,
   hasResults,
   resultsPanelVisible = false,
+  onOpenChange,
   onOpenResults,
   onAuthorChange,
   onAffiliationChange,
@@ -242,6 +244,10 @@ export function MapSearchHub({
   useEffect(() => {
     if (categoryId || subCategoryId) setShowFilters(true);
   }, [categoryId, subCategoryId]);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   useEffect(() => {
     if (!open) return;

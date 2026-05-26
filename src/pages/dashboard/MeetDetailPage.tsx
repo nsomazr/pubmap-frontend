@@ -4,6 +4,7 @@ import {
   Ban,
   Clock3,
   Copy,
+  Trash2,
   ExternalLink,
   FileText,
   MessagesSquare,
@@ -35,6 +36,7 @@ export function MeetDetailPage() {
   const { user } = useAuth();
   const toast = useToast();
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
 
   const { data: meeting, isLoading } = useQuery({
@@ -93,6 +95,25 @@ export function MeetDetailPage() {
       toast.error({
         title: "Could not cancel meeting",
         description: parseApiError(error, "Could not cancel the meeting."),
+      });
+    },
+  });
+
+  const deleteCancelledMeeting = useMutation({
+    mutationFn: () => api.delete(`/meetings/${id}/`),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["meetings"] });
+      queryClient.removeQueries({ queryKey: ["meeting", id] });
+      toast.success({
+        title: "Cancelled meeting deleted",
+        description: "The cancelled meeting was permanently removed.",
+      });
+      navigate("/dashboard/meetings?scope=cancelled");
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not delete meeting",
+        description: parseApiError(error, "Could not delete this cancelled meeting."),
       });
     },
   });
@@ -239,6 +260,16 @@ export function MeetDetailPage() {
               >
                 <Ban className="h-4 w-4" />
                 Cancel meeting
+              </Button>
+            )}
+            {canManage && meeting.status === "cancelled" && (
+              <Button
+                variant="danger"
+                loading={deleteCancelledMeeting.isPending}
+                onClick={() => setConfirmDeleteOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete meeting
               </Button>
             )}
             {canManage && meeting.status === "live" && (
@@ -464,6 +495,21 @@ export function MeetDetailPage() {
         onConfirm={() => {
           cancelMeeting.mutate();
           setConfirmCancelOpen(false);
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Delete this cancelled meeting?"
+        description="This will permanently remove the cancelled meeting and any saved participant or message data."
+        confirmLabel="Delete meeting"
+        cancelLabel="Keep meeting"
+        tone="danger"
+        loading={deleteCancelledMeeting.isPending}
+        onClose={() => setConfirmDeleteOpen(false)}
+        onConfirm={() => {
+          deleteCancelledMeeting.mutate();
+          setConfirmDeleteOpen(false);
         }}
       />
 

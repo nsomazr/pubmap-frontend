@@ -8,7 +8,7 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { RequiredFieldsLegend, RequiredMark } from "../../components/ui/RequiredField";
 import { Select } from "../../components/ui/Select";
-import api from "../../lib/api";
+import api, { parseApiError } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
 import { isPlatformAdmin } from "../../lib/userAccess";
 import type { Category, CategoryManagerRow, User } from "../../types";
@@ -74,7 +74,7 @@ export function ManagersPage() {
     queryKey: ["manager-user-search", userSearch],
     queryFn: async () => {
       const { data } = await api.get<User[] | { results: User[] }>("/users/", {
-        params: { role: 2, status: 1, q: userSearch.trim() },
+        params: { status: 1, q: userSearch.trim() },
       });
       return Array.isArray(data) ? data : (data.results ?? []);
     },
@@ -108,7 +108,8 @@ export function ManagersPage() {
       queryClient.invalidateQueries({ queryKey: ["categories-admin"] });
       queryClient.invalidateQueries({ queryKey: ["manager-user-search"] });
     },
-    onError: () => setError("Could not assign that user as manager for this subcategory."),
+    onError: (err) =>
+      setError(parseApiError(err, "Could not assign that user as manager for this subfield.")),
   });
 
   const createManagerMutation = useMutation({
@@ -128,7 +129,8 @@ export function ManagersPage() {
       queryClient.invalidateQueries({ queryKey: ["categories-admin"] });
       queryClient.invalidateQueries({ queryKey: ["users-admin"] });
     },
-    onError: () => setError("Could not create and assign the manager. Check the details and try again."),
+    onError: (err) =>
+      setError(parseApiError(err, "Could not create and assign the manager.")),
   });
 
   const removeMutation = useMutation({
@@ -208,7 +210,7 @@ export function ManagersPage() {
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-ink">Assign an existing user</h3>
               <p className="mt-1 text-sm text-slate-500">
-                Search active researchers, then assign the selected user to this subfield.
+                Search active users, then assign the selected user to this subfield.
               </p>
             </div>
             <Input

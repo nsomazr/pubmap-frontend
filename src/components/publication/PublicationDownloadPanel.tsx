@@ -16,6 +16,7 @@ import { mediaUrl } from "../../lib/mediaUrl";
 import type { GreDocument, PublicationGre } from "../../lib/publicationGre";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../ui/ToastProvider";
 import { PdfPreview } from "./PdfPreview";
 
 interface Props {
@@ -42,6 +43,7 @@ export function PublicationDownloadPanel({
   initialShareCount = 0,
 }: Props) {
   const { user } = useAuth();
+  const toast = useToast();
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewDiscussions, setPreviewDiscussions] = useState(false);
   const [likesCount, setLikesCount] = useState(initialLikesCount);
@@ -98,8 +100,16 @@ export function PublicationDownloadPanel({
     try {
       await navigator.clipboard.writeText(publicationHref);
     } catch {
+      toast.error({
+        title: "Could not copy paper link",
+        description: "Clipboard access was blocked. Please copy the page URL manually.",
+      });
       return;
     }
+    toast.success({
+      title: "Paper link copied",
+      description: "The publication link is ready to paste.",
+    });
     void recordShare("copy_link");
   };
 
@@ -166,11 +176,11 @@ export function PublicationDownloadPanel({
           {shareCount} share{shareCount === 1 ? "" : "s"}
         </span>
       </div>
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap">
         <a
           href={summaryPdfUrl(publicationId)}
           onClick={recordDownload}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 xl:w-auto"
         >
           <FileText className="h-4 w-4" />
           GRE publication PDF
@@ -178,7 +188,7 @@ export function PublicationDownloadPanel({
         <button
           type="button"
           onClick={() => setPreviewOpen((open) => !open)}
-          className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
+          className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition xl:w-auto ${
             previewOpen
               ? "border-brand-300 bg-brand-50 text-brand-800"
               : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
@@ -193,7 +203,7 @@ export function PublicationDownloadPanel({
             target="_blank"
             rel="noopener noreferrer"
             onClick={recordDownload}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-800 hover:bg-brand-100"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-800 hover:bg-brand-100 xl:w-auto"
           >
             <Download className="h-4 w-4" />
             Full paper (uploaded PDF)
@@ -203,7 +213,7 @@ export function PublicationDownloadPanel({
           <a
             href={summaryPdfUrl(publicationId, { discussions: true })}
             onClick={recordDownload}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 xl:w-auto"
           >
             <MessageSquare className="h-4 w-4" />
             GRE PDF + discussions
@@ -214,7 +224,7 @@ export function PublicationDownloadPanel({
             href={gre.external_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-slate-50"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-slate-50 xl:w-auto"
           >
             <ExternalLink className="h-4 w-4" />
             {closedAccess ? "Publisher access" : "External publication"}
@@ -223,7 +233,7 @@ export function PublicationDownloadPanel({
         <button
           type="button"
           onClick={handleCopyLink}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 xl:w-auto"
         >
           <Copy className="h-4 w-4" />
           Copy paper link
@@ -233,7 +243,7 @@ export function PublicationDownloadPanel({
           target="_blank"
           rel="noreferrer"
           onClick={() => void recordShare("linkedin")}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 xl:w-auto"
         >
           <Share2 className="h-4 w-4" />
           LinkedIn
@@ -243,7 +253,7 @@ export function PublicationDownloadPanel({
           target="_blank"
           rel="noreferrer"
           onClick={() => void recordShare("whatsapp")}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 xl:w-auto"
         >
           <Share2 className="h-4 w-4" />
           WhatsApp
@@ -252,7 +262,7 @@ export function PublicationDownloadPanel({
           <button
             type="button"
             onClick={handleNativeShare}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 xl:w-auto"
           >
             <Share2 className="h-4 w-4" />
             Share
@@ -268,7 +278,7 @@ export function PublicationDownloadPanel({
               target="_blank"
               rel="noopener noreferrer"
               onClick={recordDownload}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 xl:w-auto"
             >
               <Download className="h-4 w-4" />
               {doc.label || "Supplementary file"}

@@ -59,10 +59,10 @@ function PlatformNameBadge() {
       <span className="text-[11px] font-bold uppercase leading-tight tracking-[0.12em] sm:text-[15px] sm:tracking-[0.14em]">
         Global Research Exchange
       </span>
-      <span className="mt-1.5 flex w-full items-center gap-2 text-[9px] font-medium leading-tight tracking-[0.02em] text-slate-50 sm:mt-2 sm:text-[11px] sm:tracking-[0.03em]">
-        <span className="h-px flex-1 bg-white/50" />
-        <span>Sharing research, connecting experts, advancing discovery</span>
-        <span className="h-px flex-1 bg-white/50" />
+      <span className="mt-1.5 grid w-full grid-cols-[minmax(1.75rem,1fr)_auto_minmax(1.75rem,1fr)] items-center gap-2 text-[9px] font-medium leading-tight tracking-[0.02em] text-slate-50 sm:mt-2 sm:gap-3 sm:text-[11px] sm:tracking-[0.03em]">
+        <span className="block h-px w-full bg-white/80" />
+        <span className="text-center">Sharing research, connecting experts, advancing discovery</span>
+        <span className="block h-px w-full bg-white/80" />
       </span>
     </div>
   );
@@ -201,16 +201,20 @@ export function PublicationPaperHeader({
 
   return (
     <header className="publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="grid grid-cols-[5.25rem_minmax(0,1fr)_5.25rem] items-center gap-3 border-b border-slate-100 bg-white px-4 py-4 sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] sm:px-7">
-        <GreBrandBlock draft={draft} accessType={accessType} />
+      <div className="grid gap-3 border-b border-slate-100 bg-white px-4 py-4 sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] sm:items-center sm:px-7">
+        <div className="mx-auto sm:mx-0">
+          <GreBrandBlock draft={draft} accessType={accessType} />
+        </div>
         <div className="flex min-w-0 items-center justify-center">
           <PlatformNameBadge />
         </div>
-        <CategoryTopBadge visual={subVisual} name={subCategoryName || subVisual?.name} />
+        <div className="mx-auto sm:mx-0 sm:justify-self-end">
+          <CategoryTopBadge visual={subVisual} name={subCategoryName || subVisual?.name} />
+        </div>
       </div>
 
       <div className="px-5 py-4 sm:px-7 sm:py-5">
-        <h1 className="text-xl font-bold leading-snug text-ink sm:text-2xl lg:text-[1.65rem] lg:leading-tight">
+        <h1 className="text-lg font-bold leading-snug text-ink sm:text-2xl lg:text-[1.65rem] lg:leading-tight">
           {displayTitle}
         </h1>
         {authorByline && authorByline.authors.length > 0 ? (
@@ -227,7 +231,7 @@ export function PublicationPaperHeader({
 
       {metaRows.length > 0 && (
         <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-3 sm:px-7">
-          <div className="publication-paper-meta inline-flex max-w-full flex-col gap-y-1.5 sm:flex-row sm:gap-x-4">
+          <div className="publication-paper-meta grid max-w-full gap-3 md:grid-cols-2 md:gap-x-4">
             <dl className="space-y-1.5">
               {leftMetaRows.map((row) => (
                 <div key={row.label} className="flex min-w-0 items-start gap-2 text-xs sm:text-sm">

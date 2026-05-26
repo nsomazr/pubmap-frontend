@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { SubcategoryVisual } from "../../types";
 import { taxonomyIcon } from "../../lib/taxonomyVisuals";
 import { mediaUrl } from "../../lib/mediaUrl";
@@ -28,6 +29,7 @@ interface Props {
   fit?: "cover" | "contain";
   clip?: boolean;
   shadow?: boolean;
+  priority?: boolean;
 }
 
 export function SubcategoryVisual({
@@ -38,6 +40,7 @@ export function SubcategoryVisual({
   fit = "cover",
   clip = true,
   shadow = true,
+  priority = false,
 }: Props) {
   const Icon = taxonomyIcon(visual.icon_key);
   const rawLogo = (visual.logo_url || "").trim();
@@ -45,21 +48,45 @@ export function SubcategoryVisual({
     rawLogo.startsWith("/assets/") || rawLogo.startsWith("assets/")
       ? `/${rawLogo.replace(/^\/+/, "")}`
       : mediaUrl(rawLogo);
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  if (logoSrc) {
+  useEffect(() => {
+    setLoaded(false);
+    setFailed(false);
+  }, [logoSrc]);
+
+  const tileShadow = shadow ? { boxShadow: `0 4px 14px -6px ${visual.accent_color}55` } : undefined;
+
+  if (logoSrc && !failed) {
     return (
       <span
-        className={`inline-flex shrink-0 ${clip ? "overflow-hidden" : ""} ${tileSizes[size]} ${className}`}
+        className={`relative inline-flex shrink-0 items-center justify-center ${
+          clip ? "overflow-hidden" : ""
+        } ${tileSizes[size]} ${className}`}
         title={title ?? visual.name}
         aria-hidden={title ? undefined : true}
+        style={tileShadow}
       >
+        <span
+          className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
+            loaded ? "opacity-0" : "opacity-100"
+          }`}
+          style={{ backgroundColor: `${visual.accent_color}14`, color: visual.accent_color }}
+        >
+          <Icon className={iconSizes[size]} strokeWidth={2.2} />
+        </span>
         <img
           src={logoSrc}
           alt=""
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
           decoding="async"
-          className={`h-full w-full ${fit === "contain" ? "object-contain" : "object-cover"}`}
-          style={shadow ? { boxShadow: `0 4px 14px -6px ${visual.accent_color}55` } : undefined}
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          className={`absolute inset-0 h-full w-full transition-opacity duration-300 ${
+            loaded ? "opacity-100" : "opacity-0"
+          } ${fit === "contain" ? "object-contain" : "object-cover"}`}
         />
       </span>
     );
@@ -71,7 +98,7 @@ export function SubcategoryVisual({
       style={{
         backgroundColor: `${visual.accent_color}18`,
         color: visual.accent_color,
-        boxShadow: `0 4px 14px -6px ${visual.accent_color}55`,
+        ...tileShadow,
       }}
       title={title ?? visual.name}
       aria-hidden={title ? undefined : true}
