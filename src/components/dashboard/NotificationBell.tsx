@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { greUnreadBadge } from "../../lib/greTheme";
-import { Bell, CheckCheck, Loader2, X } from "lucide-react";
+import { Bell, CheckCheck, Loader2, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { extractNotificationPath } from "../../lib/mapDeepLink";
 import { notificationVisual } from "../../lib/notificationVisuals";
 import {
+  clearAllNotifications,
   fetchNotifications,
   markAllNotificationsRead,
   markMessageThreadRead,
@@ -67,6 +68,28 @@ export function NotificationBell() {
     },
   });
 
+  const clearAll = useMutation({
+    mutationFn: clearAllNotifications,
+    onSuccess: async () => {
+      queryClient.setQueryData<GreNotification[]>(["notifications"], []);
+      queryClient.setQueryData(["unread-counts"], (old: unknown) => {
+        if (!old || typeof old !== "object") return old;
+        const current = old as {
+          notifications: number;
+          messages: number;
+          byType: Record<string, number>;
+          messagePartners: Record<string, number>;
+        };
+        return {
+          ...current,
+          notifications: 0,
+          byType: {},
+        };
+      });
+      await refreshUnreadState(queryClient);
+    },
+  });
+
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
@@ -123,7 +146,7 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="gre-card absolute right-0 top-full z-50 mt-2 w-[min(100vw-2rem,24rem)] overflow-hidden p-0 shadow-[0_24px_60px_-16px_rgba(15,23,42,0.28)]">
+        <div className="gre-card fixed inset-x-2 top-[calc(env(safe-area-inset-top)+3.75rem)] z-[1200] overflow-hidden p-0 shadow-[0_24px_60px_-16px_rgba(15,23,42,0.28)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:z-50 sm:mt-2 sm:w-[min(100vw-2rem,24rem)]">
           <div className="relative border-b border-slate-100 px-4 py-3">
             <div className="absolute inset-x-0 top-0 h-0.5 gre-gradient-bar" aria-hidden />
             <div className="flex items-center justify-between gap-2">
@@ -145,6 +168,21 @@ export function NotificationBell() {
                     <CheckCheck className="h-4 w-4" />
                   </button>
                 )}
+                {items.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => clearAll.mutate()}
+                    disabled={clearAll.isPending}
+                    className="gre-interactive rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+                    title="Clear notifications"
+                  >
+                    {clearAll.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
@@ -156,7 +194,7 @@ export function NotificationBell() {
             </div>
           </div>
 
-          <div className="max-h-[min(60vh,360px)] overflow-y-auto">
+          <div className="max-h-[min(70dvh,26rem)] overflow-y-auto sm:max-h-[min(60vh,360px)]">
             {isLoading ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="h-5 w-5 animate-spin text-brand-600" />

@@ -5,6 +5,7 @@ import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { EmptyState } from "../../components/dashboard/EmptyState";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
 import { RequiredFieldsLegend, RequiredMark } from "../../components/ui/RequiredField";
 import { Select } from "../../components/ui/Select";
 import api from "../../lib/api";
@@ -197,7 +198,7 @@ export function ManagersPage() {
 
         <div className="grid gap-4 xl:grid-cols-2">
           <form
-            className="rounded-2xl border border-slate-200 bg-white p-4"
+            className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4"
             onSubmit={(e) => {
               e.preventDefault();
               setError("");
@@ -210,19 +211,14 @@ export function ManagersPage() {
                 Search active researchers, then assign the selected user to this subcategory.
               </p>
             </div>
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                Search user
-                <RequiredMark />
-              </span>
-              <input
-                type="search"
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                placeholder="Name, email, or affiliation"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-              />
-            </label>
+            <Input
+              type="search"
+              label="Search user"
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              placeholder="Name, email, or affiliation"
+              required
+            />
 
             <div className="mt-3 rounded-2xl border border-slate-100 bg-slate-50 p-2">
               {selectedUser ? (
@@ -282,7 +278,7 @@ export function ManagersPage() {
           </form>
 
           <form
-            className="rounded-2xl border border-slate-200 bg-white p-4"
+            className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4"
             onSubmit={(e) => {
               e.preventDefault();
               setError("");
@@ -304,62 +300,44 @@ export function ManagersPage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                  First name
-                  <RequiredMark />
-                </span>
-                <input
-                  type="text"
-                  value={createForm.firstname}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, firstname: e.target.value }))
-                  }
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Last name
-                  <RequiredMark />
-                </span>
-                <input
-                  type="text"
-                  value={createForm.lastname}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, lastname: e.target.value }))
-                  }
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                />
-              </label>
+              <Input
+                type="text"
+                label="First name"
+                value={createForm.firstname}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({ ...prev, firstname: e.target.value }))
+                }
+                required
+              />
+              <Input
+                type="text"
+                label="Last name"
+                value={createForm.lastname}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({ ...prev, lastname: e.target.value }))
+                }
+                required
+              />
             </div>
 
             <div className="mt-3 grid gap-3">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Email
-                  <RequiredMark />
-                </span>
-                <input
-                  type="email"
-                  value={createForm.email}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
-                  placeholder="researcher@university.ac.tz"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">Affiliation</span>
-                <input
-                  type="text"
-                  value={createForm.affiliation}
-                  onChange={(e) =>
-                    setCreateForm((prev) => ({ ...prev, affiliation: e.target.value }))
-                  }
-                  placeholder="Institution or affiliation"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                />
-              </label>
+              <Input
+                type="email"
+                label="Email"
+                value={createForm.email}
+                onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
+                placeholder="researcher@university.ac.tz"
+                required
+              />
+              <Input
+                type="text"
+                label="Affiliation"
+                value={createForm.affiliation}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({ ...prev, affiliation: e.target.value }))
+                }
+                placeholder="Institution or affiliation"
+              />
             </div>
 
             <div className="mt-4 flex justify-end">

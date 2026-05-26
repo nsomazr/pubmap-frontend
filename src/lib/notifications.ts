@@ -77,6 +77,10 @@ export async function markAllNotificationsRead(): Promise<void> {
   await api.post("/notifications/mark_all_read/");
 }
 
+export async function clearAllNotifications(): Promise<void> {
+  await api.post("/notifications/clear_all/");
+}
+
 export async function markMessageThreadRead(partnerId: number): Promise<void> {
   await api.post("/messages/mark_thread_read/", { partner_id: partnerId });
 }
