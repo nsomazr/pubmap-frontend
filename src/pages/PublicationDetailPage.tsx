@@ -19,7 +19,7 @@ import { PublicationPaperHeader } from "../components/publication/PublicationPap
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { StudyLocationSection } from "../components/map/StudyLocationSection";
-import { abstractPlainText } from "../lib/abstractText";
+import { ManuscriptContent } from "../components/publication/ManuscriptContent";
 import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
 import { authorBylineFromPublication } from "../lib/publicationAuthors";
 import { publicationPublicApiPath } from "../lib/publicationPaths";
@@ -82,7 +82,6 @@ export function PublicationDetailPage() {
     pub.author?.full_name ||
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
   const subVisual = publicationSubcategoryVisual(pub);
-  const abstractPlain = abstractPlainText(pub.abstract);
   const locationLabel = [pub.coordinates?.location, pub.coordinates?.institution]
     .filter(Boolean)
     .join(" · ");
@@ -130,9 +129,11 @@ export function PublicationDetailPage() {
 
           <section className="gre-card p-6 sm:p-8">
             <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">Abstract</h2>
-            <p className="mt-4 text-base leading-relaxed text-slate-700">
-              {abstractPlain?.trim() || "No abstract provided."}
-            </p>
+            {pub.abstract?.trim() ? (
+              <ManuscriptContent value={pub.abstract} className="mt-4" />
+            ) : (
+              <p className="mt-4 text-base leading-relaxed text-slate-700">No abstract provided.</p>
+            )}
             {pub.keywords && pub.keywords.length > 0 && (
               <p className="mt-4 text-sm text-slate-600">
                 <span className="font-semibold text-slate-700">Keywords: </span>

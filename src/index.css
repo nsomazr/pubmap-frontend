@@ -1659,6 +1659,39 @@ body {
   font-weight: 500;
 }
 
+/* Manuscript reading surfaces (preview, publication page, extracted fields in review) */
+.gre-manuscript-body {
+  text-align: justify;
+  hyphens: auto;
+}
+
+.gre-manuscript-body h1,
+.gre-manuscript-body h2,
+.gre-manuscript-body h3,
+.gre-manuscript-body h4,
+.gre-manuscript-body h5,
+.gre-manuscript-body h6 {
+  text-align: left;
+  hyphens: none;
+}
+
+.gre-manuscript-body .katex-display {
+  text-align: center;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.gre-manuscript-body .latex-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+  color: #475569;
+}
+
+.publication-paper-header h1 {
+  text-align: left;
+  hyphens: none;
+}
+
 /* Rich HTML (CKEditor / CMS output) */
 .gre-html-content p + p {
   margin-top: 1rem;

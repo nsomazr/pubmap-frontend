@@ -1,5 +1,5 @@
-import { abstractPlainText } from "../../lib/abstractText";
 import { PdfPreview } from "./PdfPreview";
+import { ManuscriptContent } from "./ManuscriptContent";
 import { PublicationManuscriptSection } from "./PublicationManuscriptSection";
 import { PublicationPaperHeader } from "./PublicationPaperHeader";
 import type { AuthorByline } from "../../lib/publicationAuthors";
@@ -47,7 +47,6 @@ export function PublicationPaperPreview({
   draft = false,
   showPdf = true,
 }: Props) {
-  const abstractText = abstractPlainText(data.abstract);
   const isClosed = data.accessType === "closed";
   const canShowPdf =
     showPdf && !isClosed && (pendingFile || documentPath?.toLowerCase().endsWith(".pdf"));
@@ -77,9 +76,13 @@ export function PublicationPaperPreview({
 
       <section className="rounded-2xl border border-slate-200/70 bg-white px-5 py-5 sm:px-7 sm:py-6">
         <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">Abstract</h2>
-        <p className="mt-4 text-base leading-relaxed text-slate-700">
-          {abstractText || "Add an abstract to preview how it will appear to readers."}
-        </p>
+        {data.abstract?.trim() ? (
+          <ManuscriptContent value={data.abstract} className="mt-4" />
+        ) : (
+          <p className="mt-4 text-base leading-relaxed text-slate-700">
+            Add an abstract to preview how it will appear to readers.
+          </p>
+        )}
         {data.keywords && data.keywords.length > 0 && (
           <p className="mt-4 text-sm text-slate-600">
             <span className="font-semibold text-slate-700">Keywords: </span>

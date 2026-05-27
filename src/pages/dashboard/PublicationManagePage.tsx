@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { marked } from "marked";
 import {
   AlertCircle,
   Eye,
@@ -30,6 +29,7 @@ import {
   ManuscriptSectionsEditor,
   type ManuscriptFields,
 } from "../../components/publication/ManuscriptSectionsEditor";
+import { ExtractionLoadingPanel } from "../../components/publication/ExtractionLoadingPanel";
 import {
   PublicationDocumentUpload,
   type ExtractedDocumentPayload,
@@ -45,7 +45,7 @@ import { useAuth } from "../../context/AuthContext";
 import api, { parseApiError } from "../../lib/api";
 import { PublicationFiguresEditor } from "../../components/publication/PublicationFiguresEditor";
 import { PublicationSupplementaryUpload } from "../../components/publication/PublicationSupplementaryUpload";
-import { sanitizeHtml } from "../../lib/sanitizeHtml";
+import { renderManuscriptHtml } from "../../lib/renderManuscriptHtml";
 import {
   updatePublicationGre,
   type GreDocument,
@@ -86,121 +86,6 @@ function formatKeywords(keywords?: string[] | null): string {
   return Array.isArray(keywords) ? keywords.join(", ") : "";
 }
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-marked.setOptions({
-  gfm: true,
-  breaks: false,
-});
-
-function looksLikeExtractedStructuralLine(line: string): boolean {
-  const value = line.trim();
-  if (!value) return false;
-  if (/^\d+\s+of\s+\d+$/i.test(value)) return true;
-  if (/^(?:keywords?|key\s+words?)\s*[:\-]/i.test(value)) return true;
-  if (/^\s*(?:[-*+]|(?:\d+|[a-z])[\.\)])\s+/.test(value)) return true;
-  if (/^\s*(?:abstract|summary|introduction|methods?|methodology|results?|findings?|discussion|conclusion|references?|bibliography)\b/i.test(value)) {
-    return true;
-  }
-  if (/(?:https?:\/\/doi\.org\/|doi:\s*)/i.test(value)) return true;
-  return false;
-}
-
-function looksLikeFormulaLine(line: string): boolean {
-  const value = line.trim();
-  if (!value) return false;
-  if (/(?<!\\)\$.*?(?<!\\)\$/.test(value)) return true;
-  if (/\\(?:frac|begin|end|left|right|text|mathrm|mathbf|mathit|sqrt|sum|prod|int|alpha|beta|gamma|delta|theta|lambda|mu|sigma|pi|phi|psi|omega|hat|bar|vec|dot|ddot|label|ref|cite)\b/.test(value)) {
-    return true;
-  }
-  if (/[=<>≈≠±×÷∑∏√∂∫μσλπϕθ]/.test(value)) return true;
-  if (/\b(?:softmax|max|min|argmax|argmin|Q\(|O\(|f\(x\)|g\(x\)|sin\(|cos\(|tan\(|log\(|exp\()/i.test(value)) {
-    return true;
-  }
-  const operatorCount = (value.match(/[=+\-/*^<>()[\]{}]/g) || []).length;
-  const digitCount = (value.match(/\d/g) || []).length;
-  return operatorCount >= 3 && digitCount >= 1;
-}
-
-function reflowExtractedBlock(block: string): string {
-  const lines = block
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (lines.length <= 1) return lines[0] || "";
-
-  const parts: string[] = [];
-  let paragraph: string[] = [];
-
-  const flushParagraph = () => {
-    if (paragraph.length > 0) {
-      parts.push(paragraph.join(" "));
-      paragraph = [];
-    }
-  };
-
-  for (const line of lines) {
-    if (/^\d+\s+of\s+\d+$/i.test(line)) continue;
-    if (looksLikeExtractedStructuralLine(line) || looksLikeFormulaLine(line)) {
-      flushParagraph();
-      parts.push(line);
-      continue;
-    }
-    if (paragraph.length > 0 && paragraph[paragraph.length - 1].endsWith("-")) {
-      paragraph[paragraph.length - 1] = paragraph[paragraph.length - 1].slice(0, -1) + line;
-    } else {
-      paragraph.push(line);
-    }
-  }
-
-  flushParagraph();
-  return parts.join("\n");
-}
-
-function markdownishFromExtractedText(value: string): string {
-  return value
-    .split(/\n{2,}/)
-    .map((block) => reflowExtractedBlock(block))
-    .filter(Boolean)
-    .map((block) =>
-      block
-        .split("\n")
-        .filter(Boolean)
-        .map((line) => {
-          if (/^\s*(?:[-*+]|(?:\d+|[a-z])[\.\)])\s+/.test(line)) return line;
-          if (
-            /^\s*(?:abstract|summary|introduction|methods?|methodology|results?|findings?|discussion|conclusion|references?|bibliography)\b/i.test(
-              line.trim()
-            )
-          ) {
-            return `### ${line.trim()}`;
-          }
-          return line;
-        })
-        .join("\n\n")
-    )
-    .join("\n\n");
-}
-
-function extractedTextToHtml(value?: string | null): string {
-  const text = (value || "").trim();
-  if (!text) return "";
-  if (/<[a-z][\s\S]*>/i.test(text)) {
-    return sanitizeHtml(text);
-  }
-
-  const markdown = markdownishFromExtractedText(text);
-  const rendered = marked.parse(markdown);
-  return sanitizeHtml(typeof rendered === "string" ? rendered : String(rendered));
-}
-
 type ExtractionStatus = "idle" | "extracting" | "ready" | "error";
 
 type ExtractionUiState = {
@@ -209,110 +94,6 @@ type ExtractionUiState = {
   engine?: string;
   sectionNotes?: Record<string, string>;
 };
-
-const EXTRACTION_STEPS = [
-  {
-    title: "Read",
-    detail: "Reading the uploaded paper",
-  },
-  {
-    title: "Detect",
-    detail: "Detecting the title and main sections",
-  },
-  {
-    title: "Prepare",
-    detail: "Preparing fields for your review",
-  },
-] as const;
-
-function ExtractionLoadingPanel({
-  compact = false,
-  activeStep = 0,
-}: {
-  compact?: boolean;
-  activeStep?: number;
-}) {
-  return (
-    <div
-      className={`rounded-2xl border border-brand-200 bg-white/90 shadow-sm ${
-        compact ? "mt-3 px-4 py-4" : "mb-5 px-5 py-5"
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-          <Loader2 className="h-5 w-5 animate-spin" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-brand-900">Extracting manuscript details</p>
-          <p className="mt-1 text-sm leading-relaxed text-slate-600">
-            GRE is reading the file and preparing the title plus manuscript sections for
-            review. This usually takes a moment.
-          </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {EXTRACTION_STEPS.map((step, index) => {
-              const isDone = index < activeStep;
-              const isActive = index === activeStep;
-              return (
-                <div
-                  key={step.title}
-                  className={`rounded-2xl border px-3 py-3 transition ${
-                    isActive
-                      ? "border-brand-300 bg-brand-50/90 shadow-sm"
-                      : isDone
-                        ? "border-emerald-200 bg-emerald-50/80"
-                        : "border-slate-200 bg-slate-50/80"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                        isActive
-                          ? "bg-brand-600 text-white"
-                          : isDone
-                            ? "bg-emerald-600 text-white"
-                            : "bg-slate-200 text-slate-600"
-                      }`}
-                    >
-                      {index + 1}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">
-                        {step.title}
-                      </p>
-                      <p className="text-xs text-slate-600">{step.detail}</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {!compact && (
-            <div className="mt-4 space-y-3">
-              <div className="space-y-2">
-                <div className="h-3 w-28 animate-pulse rounded-full bg-slate-200" />
-                <div className="h-10 animate-pulse rounded-xl bg-slate-100" />
-              </div>
-              <div className="space-y-2">
-                <div className="h-3 w-32 animate-pulse rounded-full bg-slate-200" />
-                <div className="h-24 animate-pulse rounded-2xl bg-slate-100" />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <div className="h-3 w-24 animate-pulse rounded-full bg-slate-200" />
-                  <div className="h-20 animate-pulse rounded-2xl bg-slate-100" />
-                </div>
-                <div className="space-y-2">
-                  <div className="h-3 w-24 animate-pulse rounded-full bg-slate-200" />
-                  <div className="h-20 animate-pulse rounded-2xl bg-slate-100" />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 const COMPOSER_STEPS = [
   {
@@ -418,7 +199,6 @@ export function PublicationManagePage() {
     warnings: [],
     sectionNotes: {},
   });
-  const [activeExtractionStep, setActiveExtractionStep] = useState(0);
   const [submitReviewOpen, setSubmitReviewOpen] = useState(false);
   const isClosedAccess = gre.access_type === "closed";
 
@@ -454,27 +234,27 @@ export function PublicationManagePage() {
   const applyExtractedDocument = useCallback((payload: ExtractedDocumentPayload) => {
     setTitle((current) => current.trim() || (payload.title || "").trim());
     setAbstract((current) =>
-      hasTextContent(current) ? current : extractedTextToHtml(payload.abstract)
+      hasTextContent(current) ? current : renderManuscriptHtml(payload.abstract)
     );
     setIntroduction((current) =>
-      hasTextContent(current) ? current : extractedTextToHtml(payload.introduction)
+      hasTextContent(current) ? current : renderManuscriptHtml(payload.introduction)
     );
-    setMethods((current) => (hasTextContent(current) ? current : extractedTextToHtml(payload.methods)));
-    setResults((current) => (hasTextContent(current) ? current : extractedTextToHtml(payload.results)));
+    setMethods((current) => (hasTextContent(current) ? current : renderManuscriptHtml(payload.methods)));
+    setResults((current) => (hasTextContent(current) ? current : renderManuscriptHtml(payload.results)));
     setFindings((current) =>
-      hasTextContent(current) ? current : extractedTextToHtml(payload.findings)
+      hasTextContent(current) ? current : renderManuscriptHtml(payload.findings)
     );
     setConclusion((current) =>
-      hasTextContent(current) ? current : extractedTextToHtml(payload.conclusion)
+      hasTextContent(current) ? current : renderManuscriptHtml(payload.conclusion)
     );
     setReferences((current) =>
-      hasTextContent(current) ? current : extractedTextToHtml(payload.references)
+      hasTextContent(current) ? current : renderManuscriptHtml(payload.references)
     );
     setFunder((current) => current.trim() || (payload.funder || "").trim());
     setKeywords((current) => current.trim() || (payload.keywords || "").trim());
     setExtractionUi({
       status: "ready",
-      warnings: payload.warnings ?? [],
+      warnings: [...new Set(payload.warnings ?? [])],
       engine: payload.extraction_engine,
       sectionNotes: payload.section_notes ?? {},
     });
@@ -647,18 +427,6 @@ export function PublicationManagePage() {
     }
     extractDocumentMutation.mutate(pendingDocument);
   }, [pendingDocument]);
-
-  useEffect(() => {
-    if (extractionUi.status !== "extracting") {
-      setActiveExtractionStep(0);
-      return;
-    }
-    setActiveExtractionStep(0);
-    const interval = window.setInterval(() => {
-      setActiveExtractionStep((current) => Math.min(current + 1, EXTRACTION_STEPS.length - 1));
-    }, 1400);
-    return () => window.clearInterval(interval);
-  }, [extractionUi.status]);
 
   const buildCollaboratorsPayload = (): Collaborator[] => {
     if (submitterRole === "coauthor") {
@@ -1291,18 +1059,12 @@ export function PublicationManagePage() {
                       )}
                       {extractionUi.status === "ready" && (
                         <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
-                          Autofill ready
+                          Autofill ready — review the manuscript sections in step 3.
                         </p>
                       )}
                       {extractionUi.status === "error" && extractionUi.warnings[0] && (
                         <p className="mt-2 text-sm text-red-600">{extractionUi.warnings[0]}</p>
                       )}
-                      {extractionUi.status !== "error" &&
-                        extractionUi.warnings.map((warning) => (
-                          <p key={warning} className="mt-2 text-sm text-amber-700">
-                            {warning}
-                          </p>
-                        ))}
                     </div>
                   </div>
                 ) : id ? (
@@ -1332,7 +1094,7 @@ export function PublicationManagePage() {
                   </p>
                 )}
                 {extractionUi.status === "extracting" && (
-                  <ExtractionLoadingPanel activeStep={activeExtractionStep} />
+                  <ExtractionLoadingPanel />
                 )}
                 {extractionUi.status === "ready" && (
                   <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900">
@@ -1347,19 +1109,27 @@ export function PublicationManagePage() {
                         </span>
                       )}
                     </div>
-                    {extractionUi.warnings.length > 0 && (
-                      <div className="mt-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-3 text-sm text-amber-900">
-                        <p className="font-semibold">Extraction notes</p>
-                        <ul className="mt-2 space-y-2 text-sm">
-                          {extractionUi.warnings.map((warning) => (
-                            <li key={warning} className="flex gap-2">
-                              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                              <span>{warning}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    <div className="mt-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-3 text-sm text-amber-900">
+                      <p className="font-semibold">Check extracted content</p>
+                      <p className="mt-1 leading-relaxed text-amber-950/90">
+                        Automated extraction can misplace text, skip equations, or merge sections. Please
+                        read each field below and correct anything that does not match your paper before
+                        you save or submit.
+                      </p>
+                      {extractionUi.warnings.length > 0 && (
+                        <>
+                          <p className="mt-3 font-semibold">Extraction notes</p>
+                          <ul className="mt-2 space-y-2">
+                            {[...new Set(extractionUi.warnings)].map((warning) => (
+                              <li key={warning} className="flex gap-2">
+                                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                                <span>{warning}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
                 {extractionUi.status === "error" && extractionUi.warnings[0] && (

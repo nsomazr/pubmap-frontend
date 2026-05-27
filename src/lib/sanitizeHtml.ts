@@ -12,12 +12,19 @@ const ALLOWED_TAGS = new Set([
   "ul",
   "ol",
   "li",
+  "h1",
   "h2",
   "h3",
   "h4",
+  "h5",
+  "h6",
   "blockquote",
   "sub",
   "sup",
+  "span",
+  "div",
+  "pre",
+  "code",
 ]);
 
 const BLOCKED_LINK_PREFIXES = ["javascript:", "data:", "vbscript:"];
@@ -76,6 +83,23 @@ export function sanitizeHtml(html: string): string {
   };
   walk(doc.body);
   return doc.body.innerHTML;
+}
+
+/** Sanitize rendered manuscript HTML (markdown + KaTeX). */
+export function sanitizeManuscriptHtml(html: string): string {
+  if (!html?.trim()) return "";
+
+  if (typeof window !== "undefined") {
+    return DOMPurify.sanitize(html, {
+      USE_PROFILES: { html: true },
+      ADD_TAGS: ["span", "div", "pre", "code", "h1", "h5", "h6"],
+      ADD_ATTR: ["target", "rel", "class", "style", "aria-hidden"],
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
+      FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "input"],
+    });
+  }
+
+  return sanitizeHtml(html);
 }
 
 /** Plain text from PDF/DOCX extraction → HTML for the editor. */
