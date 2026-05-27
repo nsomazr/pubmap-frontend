@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import {
   ArrowLeft,
   Copy,
@@ -169,6 +170,8 @@ export function MeetRoomPage() {
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [embedTimedOut, setEmbedTimedOut] = useState(false);
+  const [pipOpening, setPipOpening] = useState(false);
+  const assistantCaptureUnavailableRef = useRef(false);
 
   const { data: meeting, isLoading } = useQuery({
     queryKey: ["meeting-by-slug", slug],
@@ -461,17 +464,13 @@ export function MeetRoomPage() {
   };
 
   const openMeetingPictureInPicture = async () => {
-    const fallback = slug ? `${window.location.origin.replace(/\/$/, "")}/meet/${slug}` : "";
-    const link = activeMeeting?.meeting_link || fallback;
-    if (!link) {
-      toast.error({
-        title: "Meeting link unavailable",
-        description: "Could not open picture-in-picture without a meeting link.",
-      });
-      return;
-    }
-
+    setPipOpening(true);
     try {
+      const joinData = await prepareRoom();
+      const directUrl = buildExternalRoomUrl(joinData);
+      if (!directUrl) {
+        throw new Error("Could not prepare a direct meeting link for picture-in-picture.");
+      }
       const docPiP = (window as Window & { documentPictureInPicture?: any }).documentPictureInPicture;
       if (docPiP?.requestWindow) {
         const pipWindow = await docPiP.requestWindow({
@@ -482,7 +481,7 @@ export function MeetRoomPage() {
         pipWindow.document.body.style.background = "#020617";
 
         const frame = pipWindow.document.createElement("iframe");
-        frame.src = link;
+        frame.src = directUrl;
         frame.style.width = "100%";
         frame.style.height = "100%";
         frame.style.border = "0";
@@ -497,7 +496,7 @@ export function MeetRoomPage() {
       }
 
       const popup = window.open(
-        link,
+        directUrl,
         "gre-meet-pip",
         "popup=yes,width=480,height=320,noopener,noreferrer"
       );
@@ -517,6 +516,8 @@ export function MeetRoomPage() {
         title: "Could not open picture-in-picture",
         description: error instanceof Error ? error.message : "Unexpected browser error.",
       });
+    } finally {
+      setPipOpening(false);
     }
   };
 
@@ -558,14 +559,14 @@ export function MeetRoomPage() {
     "The embedded meeting is taking too long to start. This is usually a Jitsi network/auth issue.";
   useEffect(() => {
     if (!isConnected || jitsiReady || !!roomError) {
-      setEmbedTimedOut(false);
+      if (embedTimedOut) setEmbedTimedOut(false);
       return;
     }
     const timer = window.setTimeout(() => {
       if (!jitsiReady) setEmbedTimedOut(true);
     }, 12000);
     return () => window.clearTimeout(timer);
-  }, [isConnected, jitsiReady, roomError]);
+  }, [embedTimedOut, isConnected, jitsiReady, roomError]);
   const notesStatusLabel =
     notesState === "saving"
       ? "Saving notes..."
@@ -706,14 +707,19 @@ export function MeetRoomPage() {
 
   useEffect(() => {
     if (!meetingId || !isLive || activeMeeting?.gre_assistant_enabled === false) return;
+    assistantCaptureUnavailableRef.current = false;
 
     const refreshNotes = () => {
+      if (assistantCaptureUnavailableRef.current) return;
       void captureMeetingAssistantNotes(meetingId)
         .then(() => {
           queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
           queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
         })
-        .catch(() => {
+        .catch((error) => {
+          if (axios.isAxiosError(error) && error.response?.status === 404) {
+            assistantCaptureUnavailableRef.current = true;
+          }
           // Silent: capture is best-effort during live meetings.
         });
     };
@@ -911,7 +917,7 @@ export function MeetRoomPage() {
           meetingTitle={headerTitle}
           panels={{
             info: (
-              <div className="space-y-5">
+              <div className="space-y-4">
                 <Link
                   to={meetingId ? `/dashboard/meetings/${meetingId}` : "/dashboard/meetings"}
                   className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"
@@ -935,23 +941,33 @@ export function MeetRoomPage() {
                     {roomParticipants.length === 1 ? "" : "s"}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="secondary" onClick={copyLink}>
-                    <Copy className="h-4 w-4" />
-                    Copy link
-                  </Button>
-                  <Button variant="secondary" onClick={() => void openMeetingPictureInPicture()}>
-                    <PictureInPicture2 className="h-4 w-4" />
-                    Picture in picture
-                  </Button>
-                  {shareLink && (
-                    <a href={shareLink} target="_blank" rel="noreferrer">
-                      <Button variant="ghost">
-                        <ExternalLink className="h-4 w-4" />
-                        Open GRE link
-                      </Button>
-                    </a>
-                  )}
+                <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Share and pop-out
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <Button variant="secondary" className="w-full justify-start sm:justify-center" onClick={copyLink}>
+                      <Copy className="h-4 w-4" />
+                      Copy link
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="w-full justify-start sm:justify-center"
+                      loading={pipOpening}
+                      onClick={() => void openMeetingPictureInPicture()}
+                    >
+                      <PictureInPicture2 className="h-4 w-4" />
+                      Picture in picture
+                    </Button>
+                    {shareLink && (
+                      <a href={shareLink} target="_blank" rel="noreferrer" className="sm:col-span-2">
+                        <Button variant="ghost" className="w-full justify-start sm:justify-center">
+                          <ExternalLink className="h-4 w-4" />
+                          Open GRE link
+                        </Button>
+                      </a>
+                    )}
+                  </div>
                 </div>
                 {!isConnected && (
                   <div className="space-y-3 border-t border-slate-100 pt-4">
@@ -979,11 +995,11 @@ export function MeetRoomPage() {
                     </div>
                   </div>
                 )}
-                <div className="space-y-4 border-t border-slate-100 pt-4">
+                <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                   <p className="text-sm text-slate-500">
                     Recording, browser join, ending the meeting, and copilot drafts are managed here.
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {activeMeeting.status === "scheduled" && (
                       <Button loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
                         Start on GRE
@@ -1007,16 +1023,21 @@ export function MeetRoomPage() {
                         Stop recording
                       </Button>
                     )}
-                    <Button variant="danger" loading={endMeeting.isPending} onClick={() => setConfirmEndOpen(true)}>
+                    <Button
+                      variant="danger"
+                      className="sm:col-span-2"
+                      loading={endMeeting.isPending}
+                      onClick={() => setConfirmEndOpen(true)}
+                    >
                       End meeting
                     </Button>
                   </div>
                   {canManage && (
-                    <div className="space-y-3 border-t border-slate-100 pt-4">
+                    <div className="space-y-3 border-t border-slate-200 pt-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Optional copilot drafts
                       </p>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         <Button
                           type="button"
                           variant="secondary"
