@@ -95,39 +95,6 @@ type ExtractionUiState = {
   sectionNotes?: Record<string, string>;
 };
 
-const COMPOSER_STEPS = [
-  {
-    number: "1",
-    title: "Research setup",
-    detail: "Choose the field and subfield first.",
-  },
-  {
-    number: "2",
-    title: "Source paper",
-    detail: "Upload the manuscript source file.",
-  },
-  {
-    number: "3",
-    title: "Manuscript",
-    detail: "Review the title and manuscript content together.",
-  },
-  {
-    number: "4",
-    title: "Study context",
-    detail: "Confirm location and institution details.",
-  },
-  {
-    number: "5",
-    title: "Contributors",
-    detail: "Set your role and manage co-authors.",
-  },
-  {
-    number: "6",
-    title: "Access & submit",
-    detail: "Set visibility and finish the submission.",
-  },
-] as const;
-
 function ComposerStage({
   number,
   title,
@@ -992,33 +959,6 @@ export function PublicationManagePage() {
 
         {composerTab === "editor" && (
           <>
-            <section className="rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-brand-50/30 p-5 shadow-sm">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
-                  Submission flow
-                </p>
-                <h2 className="mt-1 text-lg font-bold text-ink">Complete your publication in stages</h2>
-              </div>
-              <div className="mt-4 grid gap-3 lg:grid-cols-3">
-                {COMPOSER_STEPS.map((step) => (
-                  <div
-                    key={step.number}
-                    className="rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 shadow-sm"
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
-                        {step.number}
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold text-ink">{step.title}</p>
-                        <p className="mt-1 text-xs leading-relaxed text-slate-500">{step.detail}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
             <ComposerStage
               number="1"
               title="Research setup"
