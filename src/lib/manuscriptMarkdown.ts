@@ -67,10 +67,13 @@ export function isLikelyRenderableLatex(latex: string): boolean {
   const close = (value.match(/\}/g) || []).length;
   if (Math.abs(open - close) > 4) return false;
 
-  const { total, common } = countEnglishWords(value);
-  if (common >= 2 || total > 6) return false;
+  // Allow command-heavy formulas even when OCR introduces many alpha tokens.
+  if (/\\[A-Za-z]+/.test(value)) return true;
 
-  return /\\|[\^_{}]|∫|∑|frac|nabla|mathbb|mathbf|left|right|begin|end|&/.test(value);
+  const { total, common } = countEnglishWords(value);
+  if (common >= 2 || total > 10) return false;
+
+  return /\\|[\^_{}]|∫|∑|frac|nabla|mathbb|mathbf|left|right|begin|end|&|=/.test(value);
 }
 
 /** Remove $...$ / $$...$$ wrappers that were applied to prose by mistake. */
@@ -120,9 +123,9 @@ export function looksLikeFormulaLine(line: string): boolean {
 
   if (/[&]{1,2}/.test(value) && /\\\\/.test(value)) return true;
 
-  if (/^[^a-z]{0,8}[A-Za-z0-9\\_{}^().,;=+\-/*|&\s[\]]+$/.test(value)) {
-    const hasMath = /[=\\]|∫|∑/.test(value);
-    if (hasMath && total <= 4 && common === 0) return true;
+  if (/^[A-Za-z0-9\\_{}^().,;=+\-/*|&\s[\]]+$/.test(value)) {
+    const hasMath = /[=\\_^]|∫|∑/.test(value);
+    if (hasMath && total <= 8 && common === 0) return true;
   }
 
   return false;

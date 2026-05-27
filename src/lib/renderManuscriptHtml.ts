@@ -41,6 +41,9 @@ function normalizeLatexSnippet(latex: string): { body: string; tag?: string } {
   const tag = tagMatch?.[1]?.trim();
   let body = latex.replace(/\\tag\{[^}]+\}/g, "").trim();
   body = repairLatexEnvironments(body);
+  // OCR / JSON-escaped outputs often produce "\\left" or "\ theta".
+  body = body.replace(/\\\\([A-Za-z]+)/g, "\\$1");
+  body = body.replace(/\\\s+([A-Za-z]+)/g, "\\$1");
   body = body.replace(/\\begin\{array\}\s*\{\s*rl\s*\}/gi, "\\begin{aligned}");
   body = body.replace(/\\end\{array\}/gi, "\\end{aligned}");
   body = body.replace(/\{\\underline\{\{\\array\}\}\}/g, "");
