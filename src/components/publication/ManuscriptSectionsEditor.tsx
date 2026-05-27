@@ -1,3 +1,4 @@
+import { AlertCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { RichTextEditor } from "../editor/RichTextEditor";
 import { Input } from "../ui/Input";
@@ -15,8 +16,11 @@ export type ManuscriptFields = {
 };
 
 interface Props {
+  title: string;
+  onTitleChange: (value: string) => void;
   fields: ManuscriptFields;
   onChange: (key: keyof ManuscriptFields, value: string) => void;
+  sectionNotes?: Partial<Record<"title" | keyof ManuscriptFields, string>>;
 }
 
 function ManuscriptGroup({
@@ -39,7 +43,25 @@ function ManuscriptGroup({
   );
 }
 
-export function ManuscriptSectionsEditor({ fields, onChange }: Props) {
+function FieldExtractionNote({ note }: { note?: string }) {
+  if (!note) return null;
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2.5 text-sm text-amber-900">
+      <div className="flex gap-2">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+        <span>{note}</span>
+      </div>
+    </div>
+  );
+}
+
+export function ManuscriptSectionsEditor({
+  title,
+  onTitleChange,
+  fields,
+  onChange,
+  sectionNotes = {},
+}: Props) {
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-brand-100/80 bg-gradient-to-br from-brand-50/50 via-white to-teal-50/30 px-4 py-3.5 text-sm leading-relaxed text-slate-600 sm:px-5">
@@ -54,6 +76,13 @@ export function ManuscriptSectionsEditor({ fields, onChange }: Props) {
         title="Summary"
         description="What readers see first in search and on the publication page."
       >
+        <Input
+          label="Title"
+          value={title}
+          onChange={(e) => onTitleChange(e.target.value)}
+          required
+        />
+        <FieldExtractionNote note={sectionNotes.title} />
         <RichTextEditor
           label="Abstract"
           value={fields.abstract}
@@ -62,12 +91,14 @@ export function ManuscriptSectionsEditor({ fields, onChange }: Props) {
           required
           hint="Plain-language overview of the study."
         />
+        <FieldExtractionNote note={sectionNotes.abstract} />
         <Input
           label="Keywords"
           value={fields.keywords}
           onChange={(e) => onChange("keywords", e.target.value)}
           placeholder="climate, remote sensing, East Africa (comma-separated)"
         />
+        <FieldExtractionNote note={sectionNotes.keywords} />
       </ManuscriptGroup>
 
       <ManuscriptGroup title="Background" description="Context, objectives, and study motivation.">
@@ -77,6 +108,7 @@ export function ManuscriptSectionsEditor({ fields, onChange }: Props) {
           onChange={(v) => onChange("introduction", v)}
           placeholder="Set the research context and objectives…"
         />
+        <FieldExtractionNote note={sectionNotes.introduction} />
       </ManuscriptGroup>
 
       <ManuscriptGroup
@@ -89,12 +121,14 @@ export function ManuscriptSectionsEditor({ fields, onChange }: Props) {
           onChange={(v) => onChange("methods", v)}
           placeholder="Design, data collection, and analysis…"
         />
+        <FieldExtractionNote note={sectionNotes.methods} />
         <RichTextEditor
           label="Results"
           value={fields.results}
           onChange={(v) => onChange("results", v)}
           placeholder="Key outcomes, measurements, and observations…"
         />
+        <FieldExtractionNote note={sectionNotes.results} />
       </ManuscriptGroup>
 
       <ManuscriptGroup title="Discussion & closing" description="Interpretation and takeaways.">
@@ -104,12 +138,14 @@ export function ManuscriptSectionsEditor({ fields, onChange }: Props) {
           onChange={(v) => onChange("findings", v)}
           placeholder="Interpret results and relate them to the literature…"
         />
+        <FieldExtractionNote note={sectionNotes.findings} />
         <RichTextEditor
           label="Conclusion"
           value={fields.conclusion}
           onChange={(v) => onChange("conclusion", v)}
           placeholder="Summarise implications and future work…"
         />
+        <FieldExtractionNote note={sectionNotes.conclusion} />
       </ManuscriptGroup>
 
       <ManuscriptGroup title="Funding & references" description="Acknowledgements and citations.">
@@ -119,6 +155,7 @@ export function ManuscriptSectionsEditor({ fields, onChange }: Props) {
           onChange={(e) => onChange("funder", e.target.value)}
           placeholder="Grant numbers, institutions, or partners"
         />
+        <FieldExtractionNote note={sectionNotes.funder} />
         <RichTextEditor
           label="References"
           value={fields.references}
@@ -126,6 +163,7 @@ export function ManuscriptSectionsEditor({ fields, onChange }: Props) {
           minHeight={140}
           placeholder="List references or paste a bibliography…"
         />
+        <FieldExtractionNote note={sectionNotes.references} />
       </ManuscriptGroup>
     </div>
   );

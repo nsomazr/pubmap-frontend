@@ -116,6 +116,10 @@ function looksLikeExtractedStructuralLine(line: string): boolean {
 function looksLikeFormulaLine(line: string): boolean {
   const value = line.trim();
   if (!value) return false;
+  if (/(?<!\\)\$.*?(?<!\\)\$/.test(value)) return true;
+  if (/\\(?:frac|begin|end|left|right|text|mathrm|mathbf|mathit|sqrt|sum|prod|int|alpha|beta|gamma|delta|theta|lambda|mu|sigma|pi|phi|psi|omega|hat|bar|vec|dot|ddot|label|ref|cite)\b/.test(value)) {
+    return true;
+  }
   if (/[=<>≈≠±×÷∑∏√∂∫μσλπϕθ]/.test(value)) return true;
   if (/\b(?:softmax|max|min|argmax|argmin|Q\(|O\(|f\(x\)|g\(x\)|sin\(|cos\(|tan\(|log\(|exp\()/i.test(value)) {
     return true;
@@ -203,6 +207,7 @@ type ExtractionUiState = {
   status: ExtractionStatus;
   warnings: string[];
   engine?: string;
+  sectionNotes?: Record<string, string>;
 };
 
 const EXTRACTION_STEPS = [
@@ -411,6 +416,7 @@ export function PublicationManagePage() {
   const [extractionUi, setExtractionUi] = useState<ExtractionUiState>({
     status: "idle",
     warnings: [],
+    sectionNotes: {},
   });
   const [activeExtractionStep, setActiveExtractionStep] = useState(0);
   const [submitReviewOpen, setSubmitReviewOpen] = useState(false);
@@ -470,6 +476,7 @@ export function PublicationManagePage() {
       status: "ready",
       warnings: payload.warnings ?? [],
       engine: payload.extraction_engine,
+      sectionNotes: payload.section_notes ?? {},
     });
   }, []);
 
@@ -618,6 +625,7 @@ export function PublicationManagePage() {
       setExtractionUi({
         status: "extracting",
         warnings: [],
+        sectionNotes: {},
       });
     },
     onSuccess: (data) => {
@@ -627,13 +635,14 @@ export function PublicationManagePage() {
       setExtractionUi({
         status: "error",
         warnings: [parseApiError(err, "Could not extract sections from that file.")],
+        sectionNotes: {},
       });
     },
   });
 
   useEffect(() => {
     if (!pendingDocument) {
-      setExtractionUi({ status: "idle", warnings: [] });
+      setExtractionUi({ status: "idle", warnings: [], sectionNotes: {} });
       return;
     }
     extractDocumentMutation.mutate(pendingDocument);
@@ -1317,7 +1326,6 @@ export function PublicationManagePage() {
               }
             >
               <div className="space-y-6">
-                <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
                 {extractionUi.status === "extracting" && (
                   <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-brand-700">
                     Autofill workspace
@@ -1359,7 +1367,13 @@ export function PublicationManagePage() {
                     {extractionUi.warnings[0]}
                   </div>
                 )}
-                <ManuscriptSectionsEditor fields={manuscript} onChange={setManuscript} />
+                <ManuscriptSectionsEditor
+                  title={title}
+                  onTitleChange={setTitle}
+                  fields={manuscript}
+                  onChange={setManuscript}
+                  sectionNotes={extractionUi.sectionNotes}
+                />
               </div>
             </ComposerStage>
 
