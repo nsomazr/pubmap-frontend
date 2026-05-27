@@ -167,6 +167,7 @@ export function MeetRoomPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<MeetRoomDrawerTab>("assistant");
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
   const [embedTimedOut, setEmbedTimedOut] = useState(false);
 
   const { data: meeting, isLoading } = useQuery({
@@ -517,6 +518,26 @@ export function MeetRoomPage() {
         description: error instanceof Error ? error.message : "Unexpected browser error.",
       });
     }
+  };
+
+  const inviteParticipantByEmail = () => {
+    const email = inviteEmail.trim();
+    if (!email) {
+      toast.error({
+        title: "Enter an email",
+        description: "Add an attendee email address before sending an invite.",
+      });
+      return;
+    }
+
+    const fallback = slug ? `${window.location.origin.replace(/\/$/, "")}/meet/${slug}` : "";
+    const link = activeMeeting?.meeting_link || fallback;
+    const subject = encodeURIComponent(`Invitation: ${headerTitle}`);
+    const body = encodeURIComponent(
+      `You are invited to join this GRE meeting.\n\nMeeting: ${headerTitle}\nLink: ${link}`
+    );
+    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+    setInviteEmail("");
   };
 
   const canJoinMeeting =
@@ -914,6 +935,24 @@ export function MeetRoomPage() {
                     {roomParticipants.length === 1 ? "" : "s"}
                   </span>
                 </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" onClick={copyLink}>
+                    <Copy className="h-4 w-4" />
+                    Copy link
+                  </Button>
+                  <Button variant="secondary" onClick={() => void openMeetingPictureInPicture()}>
+                    <PictureInPicture2 className="h-4 w-4" />
+                    Picture in picture
+                  </Button>
+                  {shareLink && (
+                    <a href={shareLink} target="_blank" rel="noreferrer">
+                      <Button variant="ghost">
+                        <ExternalLink className="h-4 w-4" />
+                        Open GRE link
+                      </Button>
+                    </a>
+                  )}
+                </div>
                 {!isConnected && (
                   <div className="space-y-3 border-t border-slate-100 pt-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -940,6 +979,84 @@ export function MeetRoomPage() {
                     </div>
                   </div>
                 )}
+                <div className="space-y-4 border-t border-slate-100 pt-4">
+                  <p className="text-sm text-slate-500">
+                    Recording, browser join, ending the meeting, and copilot drafts are managed here.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {activeMeeting.status === "scheduled" && (
+                      <Button loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
+                        Start on GRE
+                      </Button>
+                    )}
+                    <Button variant="secondary" onClick={() => void handleOpenExternalRoom()}>
+                      <ExternalLink className="h-4 w-4" />
+                      Join in browser
+                    </Button>
+                    {isModerator && isLive && activeMeeting.recording_status !== "recording" && (
+                      <Button
+                        variant="secondary"
+                        loading={startRecording.isPending}
+                        onClick={handleStartRecording}
+                      >
+                        Start recording
+                      </Button>
+                    )}
+                    {isModerator && isLive && activeMeeting.recording_status === "recording" && (
+                      <Button variant="ghost" loading={stopRecording.isPending} onClick={handleStopRecording}>
+                        Stop recording
+                      </Button>
+                    )}
+                    <Button variant="danger" loading={endMeeting.isPending} onClick={() => setConfirmEndOpen(true)}>
+                      End meeting
+                    </Button>
+                  </div>
+                  {canManage && (
+                    <div className="space-y-3 border-t border-slate-100 pt-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Optional copilot drafts
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          loading={copilotLoading}
+                          onClick={() => void runCopilot("notes")}
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Draft notes
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          loading={copilotLoading}
+                          onClick={() => void runCopilot("actions")}
+                        >
+                          Action items
+                        </Button>
+                      </div>
+                      {(copilotOutput || copilotError || copilotLoading) && (
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                          {copilotError ? (
+                            <p className="text-sm text-red-600">{copilotError}</p>
+                          ) : (
+                            <FormattedAssistantText content={copilotOutput} streaming={copilotLoading} />
+                          )}
+                          {copilotOutput && (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className="mt-3"
+                              onClick={() => setNotes(copilotOutput)}
+                            >
+                              Use as host notes
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             ),
             assistant: (
@@ -1040,23 +1157,22 @@ export function MeetRoomPage() {
               ),
               people: (
                 <div className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="secondary" onClick={copyLink}>
-                      <Copy className="h-4 w-4" />
-                      Copy link
-                    </Button>
-                    <Button variant="secondary" onClick={() => void openMeetingPictureInPicture()}>
-                      <PictureInPicture2 className="h-4 w-4" />
-                      Picture in picture
-                    </Button>
-                    {shareLink && (
-                      <a href={shareLink} target="_blank" rel="noreferrer">
-                        <Button variant="ghost">
-                          <ExternalLink className="h-4 w-4" />
-                          Open GRE link
-                        </Button>
-                      </a>
-                    )}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Invite by email
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <input
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(event) => setInviteEmail(event.target.value)}
+                        placeholder="attendee@example.com"
+                        className="min-w-[220px] flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                      />
+                      <Button type="button" variant="secondary" onClick={inviteParticipantByEmail}>
+                        Invite
+                      </Button>
+                    </div>
                   </div>
                   {canManage && activeMeeting.screen_share_moderator_only && (
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
@@ -1183,90 +1299,6 @@ export function MeetRoomPage() {
                   )}
                   {roomParticipants.length === 0 && (
                     <p className="text-sm text-slate-500">No room participants detected yet.</p>
-                  )}
-                </div>
-              ),
-              session: (
-                <div className="space-y-4">
-                  <p className="text-sm text-slate-500">
-                    Recording, external browser join, and ending the meeting are managed here.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {activeMeeting.status === "scheduled" && (
-                      <Button loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
-                        Start on GRE
-                      </Button>
-                    )}
-                    <Button variant="secondary" onClick={() => void handleOpenExternalRoom()}>
-                      <ExternalLink className="h-4 w-4" />
-                      Join in browser
-                    </Button>
-                    {isModerator && isLive && activeMeeting.recording_status !== "recording" && (
-                      <Button
-                        variant="secondary"
-                        loading={startRecording.isPending}
-                        onClick={handleStartRecording}
-                      >
-                        Start recording
-                      </Button>
-                    )}
-                    {isModerator && isLive && activeMeeting.recording_status === "recording" && (
-                      <Button variant="ghost" loading={stopRecording.isPending} onClick={handleStopRecording}>
-                        Stop recording
-                      </Button>
-                    )}
-                    <Button
-                      variant="danger"
-                      loading={endMeeting.isPending}
-                      onClick={() => setConfirmEndOpen(true)}
-                    >
-                      End meeting
-                    </Button>
-                  </div>
-                  {canManage && (
-                    <div className="space-y-3 border-t border-slate-100 pt-4">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Optional copilot drafts
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          loading={copilotLoading}
-                          onClick={() => void runCopilot("notes")}
-                        >
-                          <Sparkles className="h-4 w-4" />
-                          Draft notes
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          loading={copilotLoading}
-                          onClick={() => void runCopilot("actions")}
-                        >
-                          Action items
-                        </Button>
-                      </div>
-                      {(copilotOutput || copilotError || copilotLoading) && (
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                          {copilotError ? (
-                            <p className="text-sm text-red-600">{copilotError}</p>
-                          ) : (
-                            <FormattedAssistantText content={copilotOutput} streaming={copilotLoading} />
-                          )}
-                          {copilotOutput && (
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              className="mt-3"
-                              onClick={() => setNotes(copilotOutput)}
-                            >
-                              Use as host notes
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
                   )}
                 </div>
               ),

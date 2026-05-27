@@ -2,7 +2,7 @@ import { Bot, FileText, Info, LayoutGrid, Settings2, Users, X } from "lucide-rea
 import type { ReactNode } from "react";
 import { Button } from "../ui/Button";
 
-export type MeetRoomDrawerTab = "info" | "assistant" | "chat" | "host" | "people" | "session";
+export type MeetRoomDrawerTab = "info" | "assistant" | "chat" | "host" | "people";
 
 type Props = {
   open: boolean;
@@ -20,7 +20,6 @@ const TABS: { id: MeetRoomDrawerTab; label: string; icon: typeof Bot; hostOnly?:
   { id: "chat", label: "Chat", icon: FileText },
   { id: "host", label: "Host", icon: Settings2, hostOnly: true },
   { id: "people", label: "People", icon: Users },
-  { id: "session", label: "Session", icon: LayoutGrid, hostOnly: true },
 ];
 
 export function MeetRoomToolsDrawer({
