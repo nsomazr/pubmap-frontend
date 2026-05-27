@@ -472,6 +472,8 @@ export function HomePage() {
             institutionResearch={institutionResearch}
             institutionResearchLoading={institutionResearchLoading}
             affiliationQuery={affiliation.trim()}
+            titleQuery={title.trim()}
+            locationQuery={location.trim() || mapRegion?.label || ""}
             open={resultsRailOpen}
             collapsed={resultsRailCollapsed}
             onToggleCollapse={() => setResultsRailCollapsed((c) => !c)}

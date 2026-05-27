@@ -42,6 +42,8 @@ interface Props {
   institutionResearch?: InstitutionResearchResponse | null;
   institutionResearchLoading?: boolean;
   affiliationQuery?: string;
+  titleQuery?: string;
+  locationQuery?: string;
   open: boolean;
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -374,6 +376,8 @@ export function MapResultsRail({
   institutionResearch = null,
   institutionResearchLoading = false,
   affiliationQuery = "",
+  titleQuery = "",
+  locationQuery = "",
   open,
   collapsed,
   onToggleCollapse,
@@ -413,7 +417,6 @@ export function MapResultsRail({
     </button>
   );
 
-  const countLabel = `${publications.length} matching paper${publications.length !== 1 ? "s" : ""}`;
   const hasAuthorSearch = authorQuery.length >= 2;
   const exactResearcher =
     authorResearch?.match_type === "exact" ? authorResearch.exact : null;
@@ -437,6 +440,42 @@ export function MapResultsRail({
     exactResearcher?.publications && exactResearcher.publications.length > 0
       ? exactResearcher.publications
       : publications;
+
+  const hasTitleSearch = titleQuery.trim().length >= 2;
+  const hasLocationSearch = locationQuery.trim().length >= 2;
+
+  const researcherCount = exactResearcher
+    ? 1
+    : fuzzyResearchers.length > 0
+      ? fuzzyResearchers.length
+      : authorResearch?.match_type === "none"
+        ? legacyResearcherResults.length
+        : 0;
+
+  const institutionCount = exactInstitution
+    ? 1
+    : fuzzyInstitutions.length > 0
+      ? fuzzyInstitutions.length
+      : institutionResults.length;
+
+  const countKind = hasTitleSearch
+    ? "paper"
+    : hasAuthorSearch
+      ? "researcher"
+      : hasAffiliationSearch
+        ? "institution"
+        : hasLocationSearch
+          ? "paper"
+          : "paper";
+
+  const countValue =
+    countKind === "researcher"
+      ? researcherCount
+      : countKind === "institution"
+        ? institutionCount
+        : publications.length;
+
+  const countLabel = `${countValue} matching ${countKind}${countValue === 1 ? "" : "s"}`;
 
   const sheet = (
     <>
@@ -645,7 +684,8 @@ export function MapResultsRail({
               {hasAuthorSearch &&
                 !authorResearchLoading &&
                 authorResearch?.match_type === "none" &&
-                publications.length > 0 && (
+                publications.length > 0 &&
+                legacyResearcherResults.length === 0 && (
                   <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                     No exact researcher profile match for &ldquo;{authorQuery}&rdquo;. Showing
                     researcher matches from published papers and the matching publications below.

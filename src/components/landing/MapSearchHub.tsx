@@ -61,7 +61,10 @@ function SuggestionList({
 }) {
   if (items.length === 0) return null;
   return (
-    <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-40 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-slate-900/5">
+    <ul
+      className="absolute left-0 right-0 top-full z-20 mt-1 max-h-40 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-slate-900/5"
+      data-gre-picker-menu
+    >
       {items.map((item) => (
         <li key={item}>
           <button
@@ -69,6 +72,7 @@ function SuggestionList({
             className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-800"
             onMouseDown={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               onPick(item);
             }}
           >
