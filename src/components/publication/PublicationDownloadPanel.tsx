@@ -172,10 +172,13 @@ export function PublicationDownloadPanel({
     "inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50";
 
   const inlineActionClass =
-    "inline-flex flex-1 min-w-[9.5rem] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800 sm:flex-none sm:min-w-0";
+    "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800";
 
   const inlinePrimaryClass =
-    "inline-flex flex-1 min-w-[9.5rem] items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 sm:flex-none sm:min-w-0";
+    "inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700";
+
+  const inlinePillClass =
+    "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800";
 
   const actionsDialog =
     actionsOpen && typeof document !== "undefined"
@@ -353,62 +356,77 @@ export function PublicationDownloadPanel({
         Preview or download the GRE publication PDF, then share or save this paper.
       </p>
 
-      <div className="mt-4 flex flex-col gap-3">
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setPreviewOpen((open) => !open)}
-            className={`${inlineActionClass} ${
-              previewOpen ? "border-brand-300 bg-brand-50 text-brand-800" : ""
-            }`}
-          >
-            {previewOpen ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
-            {previewOpen ? "Hide preview" : "Preview GRE PDF"}
-          </button>
-          <a
-            href={summaryPdfUrl(publicationId)}
-            onClick={() => recordDownload()}
-            className={inlinePrimaryClass}
-          >
-            <Download className="h-4 w-4 shrink-0" />
-            Download GRE PDF
-          </a>
-          {!closedAccess && fullUrl && (
+      <div className="mt-4 space-y-3">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <a
-              href={fullUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={summaryPdfUrl(publicationId)}
               onClick={() => recordDownload()}
-              className={inlineActionClass}
+              className={`${inlinePrimaryClass} w-full sm:w-auto`}
             >
-              <FileText className="h-4 w-4 shrink-0" />
-              Full paper PDF
+              <Download className="h-4 w-4 shrink-0" />
+              Download GRE PDF
             </a>
-          )}
-          {closedAccess && (
-            <a
-              href={summaryPdfUrl(publicationId, { discussions: true })}
-              onClick={() => recordDownload()}
-              className={inlineActionClass}
+            <button
+              type="button"
+              onClick={() => setPreviewOpen((open) => !open)}
+              className={`${inlineActionClass} w-full sm:w-auto ${
+                previewOpen ? "border-brand-300 bg-brand-50 text-brand-800" : ""
+              }`}
             >
-              <MessageSquare className="h-4 w-4 shrink-0" />
-              GRE PDF + discussions
-            </a>
-          )}
-          {gre?.external_url && (
-            <a
-              href={gre.external_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={inlineActionClass}
+              {previewOpen ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
+              {previewOpen ? "Hide preview" : "Preview GRE PDF"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActionsOpen(true)}
+              className={`${inlineActionClass} w-full sm:ml-auto sm:w-auto`}
             >
-              <ExternalLink className="h-4 w-4 shrink-0" />
-              {closedAccess ? "Publisher access" : "External link"}
-            </a>
-          )}
+              <Share2 className="h-4 w-4 shrink-0" />
+              More options
+            </button>
+          </div>
+
+          {(!closedAccess && fullUrl) || closedAccess || gre?.external_url ? (
+            <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-200 pt-2.5">
+              {!closedAccess && fullUrl && (
+                <a
+                  href={fullUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => recordDownload()}
+                  className={inlinePillClass}
+                >
+                  <FileText className="h-4 w-4 shrink-0" />
+                  Full paper PDF
+                </a>
+              )}
+              {closedAccess && (
+                <a
+                  href={summaryPdfUrl(publicationId, { discussions: true })}
+                  onClick={() => recordDownload()}
+                  className={inlinePillClass}
+                >
+                  <MessageSquare className="h-4 w-4 shrink-0" />
+                  PDF + discussions
+                </a>
+              )}
+              {gre?.external_url && (
+                <a
+                  href={gre.external_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={inlinePillClass}
+                >
+                  <ExternalLink className="h-4 w-4 shrink-0" />
+                  {closedAccess ? "Publisher access" : "External link"}
+                </a>
+              )}
+            </div>
+          ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-1">
           <button
             type="button"
             onClick={handleToggleLike}
@@ -427,7 +445,7 @@ export function PublicationDownloadPanel({
             type="button"
             onClick={() => void handleCopyLink()}
             disabled={engagementBusy === "share"}
-            className={inlineActionClass}
+            className={inlinePillClass}
           >
             <Copy className="h-4 w-4 shrink-0" />
             Copy link
@@ -437,7 +455,7 @@ export function PublicationDownloadPanel({
               type="button"
               onClick={() => void handleNativeShare()}
               disabled={engagementBusy === "share"}
-              className={inlineActionClass}
+              className={inlinePillClass}
             >
               <Share2 className="h-4 w-4 shrink-0" />
               Share
@@ -448,16 +466,6 @@ export function PublicationDownloadPanel({
             {shareCount} share{shareCount === 1 ? "" : "s"}
           </span>
         </div>
-
-        <p className="text-center sm:text-left">
-          <button
-            type="button"
-            onClick={() => setActionsOpen(true)}
-            className="text-sm font-semibold text-brand-700 transition hover:text-brand-800"
-          >
-            LinkedIn, WhatsApp, supplementary files…
-          </button>
-        </p>
       </div>
 
       {previewOpen && (
