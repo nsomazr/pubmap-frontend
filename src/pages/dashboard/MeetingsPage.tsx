@@ -18,7 +18,12 @@ const tabs = [
 function MeetingCard({ meeting }: { meeting: MeetSession }) {
   const isArchived = meeting.status === "ended";
   const isCancelled = meeting.status === "cancelled";
-  const roomLabel = meeting.status === "live" ? "Open live room" : "Join room";
+  const roomLabel =
+    meeting.status === "live"
+      ? "Open live room"
+      : meeting.can_manage && meeting.status === "scheduled"
+        ? "Start and join"
+        : "Join room";
   const archiveId = formatMeetingId(meeting.id);
 
   return (

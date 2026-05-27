@@ -27,6 +27,9 @@ import {
   MEETING_TYPE_LABELS,
   MEETING_VISIBILITY_LABELS,
 } from "../../lib/meetings";
+import { MeetHostToolsPanel } from "../../components/meet/MeetHostToolsPanel";
+import { MeetingGreAssistantPanel } from "../../components/meet/MeetingGreAssistantPanel";
+import { FormattedAssistantText } from "../../lib/formatAssistantText";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 
 export function MeetDetailPage() {
@@ -43,23 +46,6 @@ export function MeetDetailPage() {
     queryKey: ["meeting", id],
     queryFn: () => fetchMeeting(id!),
     enabled: !!id,
-  });
-
-  const startMeeting = useMutation({
-    mutationFn: () => api.post(`/meetings/${id}/start/`),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["meeting", id] });
-      toast.success({
-        title: "Meeting started",
-        description: "Participants can now enter the live room.",
-      });
-    },
-    onError: (error) => {
-      toast.error({
-        title: "Could not start meeting",
-        description: parseApiError(error, "Could not start the meeting."),
-      });
-    },
   });
 
   const endMeeting = useMutation({
@@ -216,10 +202,15 @@ export function MeetDetailPage() {
             {meeting.can_join && meeting.status !== "ended" && meeting.status !== "cancelled" && (
               <Link to={`/meet/${meeting.join_slug}`}>
                 <Button>
-                  {meeting.status === "live" ? (
+                  {canManage && meeting.status === "scheduled" ? (
                     <>
                       <Radio className="h-4 w-4" />
-                      Open live room
+                      Start and join room
+                    </>
+                  ) : meeting.status === "live" ? (
+                    <>
+                      <Radio className="h-4 w-4" />
+                      Join live room
                     </>
                   ) : (
                     <>
@@ -246,11 +237,6 @@ export function MeetDetailPage() {
               <Link to={`/dashboard/meetings/${meeting.id}/edit`}>
                 <Button variant="ghost">Edit meeting</Button>
               </Link>
-            )}
-            {canManage && meeting.status === "scheduled" && (
-              <Button loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
-                Start meeting
-              </Button>
             )}
             {canManage && meeting.status === "scheduled" && (
               <Button
@@ -307,39 +293,20 @@ export function MeetDetailPage() {
 
           <div className="gre-card space-y-4 p-6">
             <h2 className="text-lg font-semibold text-ink">Host tools</h2>
-            {!canManage ? (
+            {isHost && meeting.status === "cancelled" ? (
               <p className="text-sm text-slate-500">
-                Only the host or an admin can manage this meeting.
+                This meeting is cancelled. Create a new session if you want to reschedule it.
               </p>
             ) : (
-              <div className="space-y-3">
-                {meeting.status === "live" && (
-                  <Link to={`/meet/${meeting.join_slug}`}>
-                    <Button className="w-full" variant="secondary">
-                      Open live room controls
-                    </Button>
-                  </Link>
-                )}
-                {meeting.recording_url && (
-                  <a href={meeting.recording_url} target="_blank" rel="noreferrer">
-                    <Button className="w-full" variant="secondary">
-                      <ExternalLink className="h-4 w-4" />
-                      Open recording
-                    </Button>
-                  </a>
-                )}
-                {isHost && meeting.status === "cancelled" && (
-                  <p className="text-sm text-slate-500">
-                    This meeting is cancelled. Create a new session if you want to reschedule it.
-                  </p>
-                )}
-                {meeting.status === "live" && (
-                  <p className="text-sm text-slate-500">
-                    Recording, mute-all, participant removal, and end-for-everyone actions run
-                    from the embedded Jitsi room.
-                  </p>
-                )}
-              </div>
+              <MeetHostToolsPanel meeting={meeting} canManage={canManage} />
+            )}
+            {meeting.recording_url && (
+              <a href={meeting.recording_url} target="_blank" rel="noreferrer" className="block">
+                <Button className="w-full" variant="secondary">
+                  <ExternalLink className="h-4 w-4" />
+                  Open recording
+                </Button>
+              </a>
             )}
           </div>
         </aside>
@@ -375,7 +342,16 @@ export function MeetDetailPage() {
             </div>
           </div>
 
-          {meeting.summary ? (
+          {meeting.meeting_minutes ? (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Meeting minutes preview
+              </p>
+              <div className="mt-3 max-h-64 overflow-y-auto text-sm leading-relaxed text-slate-700">
+                <FormattedAssistantText content={meeting.meeting_minutes} />
+              </div>
+            </div>
+          ) : meeting.summary ? (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Summary preview
@@ -416,6 +392,16 @@ export function MeetDetailPage() {
         </div>
 
         <aside className="space-y-6">
+          {(meeting.status === "ended" || meeting.summary_status === "ready") && (
+            <div className="gre-card space-y-4 p-6">
+              <h2 className="text-lg font-semibold text-ink">GRE Assistant</h2>
+              <p className="text-sm text-slate-500">
+                Chat with the meeting minutes and summary from your GRE Meet dashboard.
+              </p>
+              <MeetingGreAssistantPanel meeting={meeting} compact />
+            </div>
+          )}
+
           <div className="gre-card space-y-4 p-6">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-brand-600" />

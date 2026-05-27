@@ -83,7 +83,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {typeof document !== "undefined"
         ? createPortal(
-            <div className="pointer-events-none fixed inset-x-4 top-4 z-[3000] flex flex-col gap-3 sm:left-auto sm:right-6 sm:w-[min(92vw,380px)]">
+            <div className="pointer-events-none fixed inset-x-4 top-4 z-[10100] flex flex-col gap-3 sm:left-auto sm:right-6 sm:w-[min(92vw,380px)]">
               {toasts.map((toast) => {
                 const style = toneStyles[toast.tone];
                 const Icon = style.icon;

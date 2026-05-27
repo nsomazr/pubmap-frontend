@@ -7,6 +7,8 @@ import { Button } from "../../components/ui/Button";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { useToast } from "../../components/ui/ToastProvider";
 import api, { parseApiError } from "../../lib/api";
+import { MeetingGreAssistantPanel } from "../../components/meet/MeetingGreAssistantPanel";
+import { FormattedAssistantText } from "../../lib/formatAssistantText";
 import { fetchMeeting, formatMeetingDate, formatMeetingId } from "../../lib/meetings";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 
@@ -78,6 +80,10 @@ export function MeetingArchivePage() {
       "Summary",
       "-------",
       (meeting.summary || "Summary not available yet.").trim(),
+      "",
+      "Meeting minutes",
+      "---------------",
+      (meeting.meeting_minutes || meeting.summary || "Minutes not available yet.").trim(),
     ];
     const blob = new Blob([parts.join("\n")], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -171,7 +177,16 @@ export function MeetingArchivePage() {
               </div>
             </div>
 
-            {meeting.summary ? (
+            {meeting.meeting_minutes ? (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Full meeting minutes
+                </p>
+                <div className="mt-3 text-sm leading-relaxed text-slate-700">
+                  <FormattedAssistantText content={meeting.meeting_minutes} />
+                </div>
+              </div>
+            ) : meeting.summary ? (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                 <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
                   {meeting.summary}
@@ -229,6 +244,14 @@ export function MeetingArchivePage() {
         </div>
 
         <aside className="space-y-6">
+          <div className="gre-card space-y-4 p-6">
+            <h2 className="text-lg font-semibold text-ink">Chat with GRE Assistant</h2>
+            <p className="text-sm text-slate-500">
+              Ask follow-up questions about the minutes, decisions, and transcript from this meeting.
+            </p>
+            <MeetingGreAssistantPanel meeting={meeting} />
+          </div>
+
           <div className="gre-card space-y-4 p-6">
             <div className="flex items-center gap-2">
               <Video className="h-5 w-5 text-brand-600" />

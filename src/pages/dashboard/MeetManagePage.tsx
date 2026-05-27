@@ -10,6 +10,7 @@ import { RequiredFieldsLegend } from "../../components/ui/RequiredField";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import api, { parseApiError } from "../../lib/api";
+import { MeetHostToolsPanel } from "../../components/meet/MeetHostToolsPanel";
 import {
   fetchMeeting,
   formatMeetingDate,
@@ -366,6 +367,13 @@ export function MeetManagePage() {
           )}
         </div>
       </form>
+
+      {!isNew && meeting && (
+        <section className="gre-card space-y-4 p-6">
+          <h2 className="text-lg font-semibold text-ink">Host tools</h2>
+          <MeetHostToolsPanel meeting={meeting} canManage={!!meeting.can_manage} />
+        </section>
+      )}
 
       {!isNew && meeting && (
         <section className="gre-card space-y-5 p-6">

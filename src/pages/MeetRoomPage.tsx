@@ -1,26 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
-  Bot,
   Copy,
   ExternalLink,
-  FileText,
   Loader2,
   MicOff,
-  MonitorUp,
   Radio,
   RefreshCcw,
   Send,
   Sparkles,
+  ShieldCheck,
   UserX,
-  Users,
   Video,
+  VideoOff,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
-import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { useToast } from "../components/ui/ToastProvider";
 import { useAuth } from "../context/AuthContext";
@@ -32,6 +29,15 @@ import {
   type JitsiParticipantInfo,
   loadJitsiExternalApi,
 } from "../lib/jitsi";
+import { MeetHostToolsPanel } from "../components/meet/MeetHostToolsPanel";
+import {
+  MeetRoomControlsFab,
+  MeetRoomToolsDrawer,
+  type MeetRoomDrawerTab,
+} from "../components/meet/MeetRoomToolsDrawer";
+import { MeetingGreAssistantPanel } from "../components/meet/MeetingGreAssistantPanel";
+import { captureMeetingAssistantNotes } from "../lib/meetAssistant";
+import { buildJitsiConfigOverwrite, meetHostSettingsFromSession } from "../lib/meetHostSettings";
 import {
   fetchMeetingBySlug,
   formatMeetingDate,
@@ -126,6 +132,8 @@ function buildExternalRoomUrl(joinData?: {
 
 export function MeetRoomPage() {
   const { slug } = useParams();
+  const [searchParams] = useSearchParams();
+  const lobbyOnly = searchParams.get("lobby") === "1";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -147,11 +155,17 @@ export function MeetRoomPage() {
   const [copilotOutput, setCopilotOutput] = useState("");
   const [copilotError, setCopilotError] = useState("");
   const [copilotLoading, setCopilotLoading] = useState(false);
-  const [copilotQuestion, setCopilotQuestion] = useState("");
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
   const roomContainerRef = useRef<HTMLDivElement | null>(null);
   const jitsiApiRef = useRef<JitsiMeetExternalAPIInstance | null>(null);
+  const [jitsiReady, setJitsiReady] = useState(false);
+  const [autoJoinFailed, setAutoJoinFailed] = useState(false);
+  const [autoJoining, setAutoJoining] = useState(false);
+  const autoJoinStartedRef = useRef(false);
   const copilotAbortRef = useRef<AbortController | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<MeetRoomDrawerTab>("assistant");
+  const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
 
   const { data: meeting, isLoading } = useQuery({
     queryKey: ["meeting-by-slug", slug],
@@ -356,28 +370,10 @@ export function MeetRoomPage() {
             user?.email,
           email: user?.email,
         },
-        configOverwrite: {
-          prejoinPageEnabled: false,
-          disableDeepLinking: true,
-          startAudioOnly: false,
-          toolbarButtons: [
-            "microphone",
-            "camera",
-            "desktop",
-            "participants-pane",
-            "tileview",
-            "select-background",
-            "settings",
-            "raisehand",
-            "videoquality",
-            "recording",
-            "end-conference",
-            "mute-everyone",
-            "hangup",
-          ],
-        },
+        configOverwrite: buildJitsiConfigOverwrite(meetHostSettingsFromSession(activeMeeting)),
       });
       jitsiApiRef.current = apiInstance;
+      setJitsiReady(true);
       setIsModerator(canManage);
       refreshParticipants();
 
@@ -414,6 +410,7 @@ export function MeetRoomPage() {
 
     return () => {
       cancelled = true;
+      setJitsiReady(false);
       try {
         apiInstance?.dispose?.();
       } catch {
@@ -456,7 +453,14 @@ export function MeetRoomPage() {
     }
   };
 
+  const canJoinMeeting =
+    meeting?.can_join !== false &&
+    (meeting?.status === "scheduled" || meeting?.status === "live");
+
   const isConnected = !!joinMutation.data?.token && !!joinMutation.data?.server_url;
+  const isPreparingRoom =
+    joinMutation.isPending || startMeeting.isPending || autoJoining;
+  const showManualJoin = lobbyOnly || autoJoinFailed || joinMutation.isError;
   const shareLink =
     activeMeeting?.meeting_link ||
     (slug ? `${window.location.origin.replace(/\/$/, "")}/meet/${slug}` : "");
@@ -494,6 +498,25 @@ export function MeetRoomPage() {
     }
   };
 
+  const runParticipantAction = (
+    participantId: string,
+    command: string,
+    successTitle: string,
+    successDescription: string,
+    fallbackError: string
+  ) => {
+    if (!participantId) return;
+    const ok = runModeratorCommand(command, participantId);
+    if (ok) {
+      toast.success({ title: successTitle, description: successDescription });
+    } else {
+      toast.error({
+        title: "Could not run attendee action",
+        description: fallbackError,
+      });
+    }
+  };
+
   const handleStartRecording = async () => {
     try {
       await startRecording.mutateAsync();
@@ -519,21 +542,49 @@ export function MeetRoomPage() {
     endMeeting.mutate();
   };
 
-  const prepareRoom = async () => {
-    if (canManage && activeMeeting?.status === "scheduled") {
+  const prepareRoom = useCallback(async () => {
+    const session = joinMutation.data?.meeting || meeting;
+    if (!session?.id) {
+      throw new Error("Meeting is not ready yet.");
+    }
+    if (session.can_manage && session.status === "scheduled") {
       await startMeeting.mutateAsync();
     }
     return joinMutation.data ?? (await joinMutation.mutateAsync());
-  };
+  }, [joinMutation, meeting, startMeeting]);
 
-  const handleEnterRoom = async () => {
+  const handleEnterRoom = useCallback(async () => {
     try {
+      setAutoJoinFailed(false);
       await prepareRoom();
       setRoomError("");
     } catch (error) {
+      setAutoJoinFailed(true);
       setRoomError(parseApiError(error, "Could not prepare the meeting room."));
     }
-  };
+  }, [prepareRoom]);
+
+  useEffect(() => {
+    autoJoinStartedRef.current = false;
+    setAutoJoinFailed(false);
+    setAutoJoining(false);
+  }, [slug]);
+
+  useEffect(() => {
+    if (lobbyOnly || isLoading || !meeting || !canJoinMeeting) return;
+    if (autoJoinStartedRef.current || joinMutation.data?.token) return;
+    autoJoinStartedRef.current = true;
+    setAutoJoining(true);
+    void handleEnterRoom().finally(() => setAutoJoining(false));
+  }, [
+    canJoinMeeting,
+    handleEnterRoom,
+    isLoading,
+    joinMutation.data?.token,
+    lobbyOnly,
+    meeting?.id,
+    meeting?.status,
+  ]);
 
   const handleOpenExternalRoom = async () => {
     try {
@@ -552,6 +603,28 @@ export function MeetRoomPage() {
       });
     }
   };
+
+  useEffect(() => {
+    if (!meetingId || !isLive || activeMeeting?.gre_assistant_enabled === false) return;
+
+    const refreshNotes = () => {
+      void captureMeetingAssistantNotes(meetingId)
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
+          queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+        })
+        .catch(() => {
+          // Silent: capture is best-effort during live meetings.
+        });
+    };
+
+    const initialTimer = window.setTimeout(refreshNotes, 45000);
+    const interval = window.setInterval(refreshNotes, 120000);
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(interval);
+    };
+  }, [activeMeeting?.gre_assistant_enabled, isLive, meetingId, queryClient, slug]);
 
   const runCopilot = async (task: CopilotTask, question?: string) => {
     if (!activeMeeting) return;
@@ -628,162 +701,142 @@ export function MeetRoomPage() {
   return (
     <div className="min-h-screen bg-slate-100 p-4 sm:p-6">
       <div className="mx-auto max-w-[1600px] space-y-6">
-        <div className="gre-card flex flex-wrap items-start justify-between gap-4 p-6">
-          <div>
-            <Link
-              to={meetingId ? `/dashboard/meetings/${meetingId}` : "/dashboard/meetings"}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to meeting
-            </Link>
-            <h1 className="mt-2 text-2xl font-bold text-ink">{headerTitle}</h1>
-            <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full bg-brand-50 px-2.5 py-1 font-semibold text-brand-700">
-                {archiveId}
-              </span>
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 capitalize text-slate-600">
-                {activeMeeting?.status}
-              </span>
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                {roomParticipants.length} live participant{roomParticipants.length === 1 ? "" : "s"}
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={copyLink}>
-              <Copy className="h-4 w-4" />
-              Copy link
-            </Button>
-            {shareLink && (
-              <a href={shareLink} target="_blank" rel="noreferrer">
-                <Button variant="ghost">
-                  <ExternalLink className="h-4 w-4" />
-                  Open GRE link
-                </Button>
-              </a>
-            )}
-          </div>
-        </div>
-
-        <div className="gre-card flex flex-wrap items-start justify-between gap-4 p-5">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
-              Host controls
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-ink">Start, enter, record, and end the meeting</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Use these controls first. If the embedded room cannot load, continue with the direct
-              external room launcher.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {!isConnected && canManage && activeMeeting?.status === "scheduled" && (
-              <Button loading={startMeeting.isPending || joinMutation.isPending} onClick={handleEnterRoom}>
-                <Radio className="h-4 w-4" />
-                Start and enter room
-              </Button>
-            )}
-            {!isConnected && !(canManage && activeMeeting?.status === "scheduled") && (
-              <Button loading={joinMutation.isPending} onClick={handleEnterRoom}>
-                <Video className="h-4 w-4" />
-                Enter room
-              </Button>
-            )}
-            <Button variant="secondary" onClick={handleOpenExternalRoom}>
-              <ExternalLink className="h-4 w-4" />
-              Join in browser
-            </Button>
-            {isModerator && isLive && activeMeeting?.recording_status !== "recording" && (
-              <Button variant="ghost" loading={startRecording.isPending} onClick={handleStartRecording}>
-                Start recording
-              </Button>
-            )}
-            {isModerator && isLive && activeMeeting?.recording_status === "recording" && (
-              <Button variant="ghost" loading={stopRecording.isPending} onClick={handleStopRecording}>
-                Stop recording
-              </Button>
-            )}
-            {canManage && (
-              <Button
-                variant="danger"
-                loading={endMeeting.isPending}
-                onClick={() => setConfirmEndOpen(true)}
-              >
-                End meeting
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <div className="min-w-0">
-            <div className="gre-card overflow-hidden p-0">
-              <div className="border-b border-slate-200 px-6 py-5">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-lg font-semibold text-ink">Meeting room</h2>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Join the live GRE Meet room, or fall back to the external meeting link if the embedded room cannot load.
-                    </p>
-                  </div>
-                  <div className="min-w-[280px] flex-1">
-                    <Input label="Meeting link" readOnly value={shareLink} />
-                  </div>
+        <div className="min-w-0">
+          <div className="gre-card overflow-hidden p-0">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 p-6">
+              <div>
+                <Link
+                  to={meetingId ? `/dashboard/meetings/${meetingId}` : "/dashboard/meetings"}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to meeting
+                </Link>
+                <h1 className="mt-2 text-2xl font-bold text-ink">{headerTitle}</h1>
+                <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  <span className="rounded-full bg-brand-50 px-2.5 py-1 font-semibold text-brand-700">
+                    {archiveId}
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 capitalize text-slate-600">
+                    {activeMeeting?.status}
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                    {roomParticipants.length} live participant{roomParticipants.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <div className="mt-3">
+                  <p className="text-sm text-slate-500">
+                    Join the live GRE Meet room, or fall back to the external meeting link if the embedded room cannot load.
+                  </p>
                 </div>
               </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="secondary" onClick={copyLink}>
+                  <Copy className="h-4 w-4" />
+                  Copy link
+                </Button>
+                {shareLink && (
+                  <a href={shareLink} target="_blank" rel="noreferrer">
+                    <Button variant="ghost">
+                      <ExternalLink className="h-4 w-4" />
+                      Open GRE link
+                    </Button>
+                  </a>
+                )}
+              </div>
+            </div>
 
-              {!isConnected ? (
-                <div className="flex min-h-[68vh] flex-col items-center justify-center gap-5 p-8 text-center">
+            {!isConnected && showManualJoin && (
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 p-5">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
+                    Join the meeting room
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Automatic join did not complete. Use one of the actions below to enter.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button loading={isPreparingRoom} onClick={() => void handleEnterRoom()}>
+                    {canManage && activeMeeting?.status === "scheduled" ? (
+                      <>
+                        <Radio className="h-4 w-4" />
+                        Start and enter room
+                      </>
+                    ) : (
+                      <>
+                        <Video className="h-4 w-4" />
+                        Enter room
+                      </>
+                    )}
+                  </Button>
+                  <Button variant="secondary" onClick={() => void handleOpenExternalRoom()}>
+                    <ExternalLink className="h-4 w-4" />
+                    Join in browser
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {!isConnected ? (
+              <div className="flex min-h-[68vh] flex-col items-center justify-center gap-5 p-8 text-center">
                   <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 text-brand-700">
-                    <Video className="h-8 w-8" />
+                    {isPreparingRoom && !showManualJoin ? (
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                    ) : (
+                      <Video className="h-8 w-8" />
+                    )}
                   </div>
                   <div>
                     <p className="text-xl font-semibold text-ink">
-                      {activeMeeting?.status === "live" ? "Join the live GRE meeting" : "Ready to enter GRE Meet"}
+                      {isPreparingRoom && !showManualJoin
+                        ? "Joining meeting room…"
+                        : activeMeeting?.status === "live"
+                          ? "Join the live GRE meeting"
+                          : "Ready to enter GRE Meet"}
                     </p>
                     <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">
-                      GRE prepares a signed room token just before you join. The meeting link uses the shareable format
-                      `/meet/gre-xxxx-xxxx`, and camera, microphone, screen share, and moderator tools appear inside the
-                      live room.
+                      {isPreparingRoom && !showManualJoin
+                        ? "GRE is starting the session if needed and opening the video room. This usually takes a few seconds."
+                        : "Use the join actions above if the room does not open automatically."}
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center justify-center gap-3">
-                    <Button
-                      loading={joinMutation.isPending || startMeeting.isPending}
-                      onClick={handleEnterRoom}
-                    >
-                      {joinMutation.isPending || startMeeting.isPending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Preparing room
-                        </>
-                      ) : activeMeeting?.status === "live" ? (
-                        <>
-                          <Radio className="h-4 w-4" />
-                          Join live meeting
-                        </>
-                      ) : (
-                        <>
-                          <Video className="h-4 w-4" />
-                          Enter meeting room
-                        </>
-                      )}
-                    </Button>
-                    <Button variant="secondary" onClick={handleOpenExternalRoom}>
-                      <ExternalLink className="h-4 w-4" />
-                      Join in browser
-                    </Button>
-                  </div>
-                  {joinMutation.isError && (
+                  {showManualJoin && (
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      <Button loading={isPreparingRoom} onClick={() => void handleEnterRoom()}>
+                        {isPreparingRoom ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Preparing room
+                          </>
+                        ) : activeMeeting?.status === "live" ? (
+                          <>
+                            <Radio className="h-4 w-4" />
+                            Join live meeting
+                          </>
+                        ) : (
+                          <>
+                            <Video className="h-4 w-4" />
+                            Enter meeting room
+                          </>
+                        )}
+                      </Button>
+                      <Button variant="secondary" onClick={() => void handleOpenExternalRoom()}>
+                        <ExternalLink className="h-4 w-4" />
+                        Join in browser
+                      </Button>
+                    </div>
+                  )}
+                  {(joinMutation.isError || roomError) && (
                     <p className="text-sm text-red-600">
-                      {parseApiError(joinMutation.error, "Could not join the meeting room.")}
+                      {roomError ||
+                        parseApiError(joinMutation.error, "Could not join the meeting room.")}
                     </p>
                   )}
-                </div>
-              ) : embedUnavailable ? (
-                <div className="flex min-h-[68vh] flex-col items-center justify-center gap-5 p-8 text-center">
+              </div>
+            ) : embedUnavailable ? (
+              <div className="flex min-h-[68vh] flex-col items-center justify-center gap-5 p-8 text-center">
                   <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600">
                     <Video className="h-8 w-8" />
                   </div>
@@ -801,237 +854,346 @@ export function MeetRoomPage() {
                       Join in browser
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <div className="relative h-[calc(100vh-14rem)] min-h-[620px] bg-slate-950">
-                  <div ref={roomContainerRef} className="h-full w-full" />
-                  {roomError && (
-                    <div className="absolute inset-x-4 top-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700 shadow">
-                      {roomError}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="relative h-[calc(100vh-12rem)] min-h-[640px] bg-slate-950">
+                <div ref={roomContainerRef} className="h-full w-full" />
+                {roomError && (
+                  <div className="absolute inset-x-4 top-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700 shadow">
+                    {roomError}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+        </div>
 
-          <aside className="space-y-6">
-            <div className="gre-card space-y-4 p-5">
-              <h2 className="text-lg font-semibold text-ink">Quick room actions</h2>
-              <p className="text-sm text-slate-500">
-                GRE manages the archive and notes while Jitsi runs the live video room.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {canManage && activeMeeting?.status === "scheduled" && (
-                  <Button loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
-                    Start on GRE
-                  </Button>
-                )}
-                {isModerator && isLive && activeMeeting?.recording_status !== "recording" && (
-                  <Button variant="secondary" loading={startRecording.isPending} onClick={handleStartRecording}>
-                    Start recording
-                  </Button>
-                )}
-                {isModerator && isLive && activeMeeting?.recording_status === "recording" && (
-                  <Button variant="ghost" loading={stopRecording.isPending} onClick={handleStopRecording}>
-                    Stop recording
-                  </Button>
-                )}
-                {isModerator && (
-                  <Button variant="secondary" onClick={() => runModeratorCommand("muteEveryone", "audio")}>
-                    <MicOff className="h-4 w-4" />
-                    Mute all
-                  </Button>
-                )}
-                {isModerator && (
-                  <Button variant="secondary" onClick={() => runModeratorCommand("muteEveryone", "video")}>
-                    <MonitorUp className="h-4 w-4" />
-                    Stop cameras
-                  </Button>
-                )}
-                {canManage && (
-                  <Button
-                    variant="danger"
-                    loading={endMeeting.isPending}
-                    onClick={() => setConfirmEndOpen(true)}
-                  >
-                    End meeting
-                  </Button>
-                )}
-              </div>
-              <p className="text-xs leading-relaxed text-slate-500">
-                Local microphone, camera, screen share, and participant layout controls remain inside the Jitsi toolbar under the meeting grid.
-              </p>
-            </div>
+        {isConnected && !drawerOpen && (
+          <MeetRoomControlsFab onClick={() => setDrawerOpen(true)} />
+        )}
 
-            <div className="gre-card space-y-4 p-5">
-              <div className="flex items-center gap-2">
-                <Bot className="h-5 w-5 text-brand-600" />
-                <h2 className="text-lg font-semibold text-ink">AI copilot and note taker</h2>
-              </div>
-              <p className="text-sm text-slate-500">
-                Save meeting notes to GRE and use the AI copilot to draft notes, recaps, and action items from the live archive chat.
-              </p>
-              <Textarea
-                label="Meeting notes"
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                placeholder={
-                  canManage
-                    ? "Capture decisions, next steps, or context for the final archive summary..."
-                    : "The host's saved meeting notes will appear here."
-                }
-                readOnly={!canManage}
-                rows={6}
-              />
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className={`font-medium ${notesState === "error" ? "text-red-600" : "text-slate-500"}`}>
-                  {notesStatusLabel}
-                </span>
-                {notesError && <span className="text-red-600">{notesError}</span>}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="secondary" loading={copilotLoading} onClick={() => void runCopilot("notes")}>
-                  <Sparkles className="h-4 w-4" />
-                  Draft notes
-                </Button>
-                <Button type="button" variant="ghost" loading={copilotLoading} onClick={() => void runCopilot("actions")}>
-                  Action items
-                </Button>
-                <Button type="button" variant="ghost" loading={copilotLoading} onClick={() => void runCopilot("recap")}>
-                  Late-join recap
-                </Button>
-              </div>
-
-              <form
-                className="space-y-3"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (!copilotQuestion.trim()) return;
-                  void runCopilot("question", copilotQuestion);
-                }}
-              >
-                <Textarea
-                  label="Ask the meeting copilot"
-                  value={copilotQuestion}
-                  onChange={(event) => setCopilotQuestion(event.target.value)}
-                  placeholder="What decisions have we made so far? What should happen next?"
-                  rows={3}
-                />
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={!copilotQuestion.trim()} loading={copilotLoading}>
-                    <Bot className="h-4 w-4" />
-                    Ask copilot
-                  </Button>
-                </div>
-              </form>
-
-              {(copilotOutput || copilotError || copilotLoading) && (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-ink">Copilot response</p>
-                    {copilotOutput && canManage && (
-                      <Button type="button" variant="secondary" className="px-3 py-2 text-xs" onClick={() => setNotes(copilotOutput)}>
-                        Use as notes
-                      </Button>
-                    )}
-                  </div>
-                  {copilotError ? (
-                    <p className="mt-3 text-sm text-red-600">{copilotError}</p>
-                  ) : (
-                    <div className="mt-3">
-                      <FormattedAssistantText content={copilotOutput} streaming={copilotLoading} />
+        {activeMeeting && (
+          <MeetRoomToolsDrawer
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            tab={drawerTab}
+            onTabChange={setDrawerTab}
+            canManage={canManage}
+            panels={{
+              assistant: (
+                <div className="space-y-5">
+                  <MeetingGreAssistantPanel meeting={activeMeeting} compact />
+                  {canManage && (
+                    <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Host notes for minutes
+                        </p>
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                          Auto-saved
+                        </span>
+                      </div>
+                      <Textarea
+                        label="Meeting notes"
+                        value={notes}
+                        onChange={(event) => setNotes(event.target.value)}
+                        placeholder="Capture decisions, next steps, or context for the final archive summary..."
+                        rows={4}
+                      />
+                      <p
+                        className={`text-xs font-medium ${notesState === "error" ? "text-red-600" : "text-slate-500"}`}
+                      >
+                        {notesStatusLabel}
+                      </p>
+                      {notesError && <p className="text-xs text-red-600">{notesError}</p>}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-
-            <div className="gre-card space-y-4 p-5">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-brand-600" />
-                <h2 className="text-lg font-semibold text-ink">Live participants</h2>
-              </div>
-              <div className="max-h-56 space-y-2 overflow-y-auto">
-                {roomParticipants.map((participant) => (
-                  <div
-                    key={participant.id}
-                    className="flex items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-ink">
-                        {participant.displayName}
-                        {participant.isLocal ? " · You" : ""}
+              ),
+              chat: (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-500">
+                    Messages here are preserved for GRE Assistant notes, meeting minutes, and the archive.
+                  </p>
+                  <div className="max-h-[50vh] space-y-3 overflow-y-auto rounded-2xl bg-slate-50/80 p-1">
+                    {chat.map((message) => (
+                      <div key={message.id} className="rounded-2xl border border-slate-100 bg-white px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            {message.sender?.full_name ||
+                              `${message.sender?.firstname ?? ""} ${message.sender?.lastname ?? ""}`.trim() ||
+                              message.sender?.email}
+                            {message.sender_id === user?.id ? " · You" : ""}
+                          </p>
+                          <span className="text-[11px] text-slate-400">
+                            {formatChatTimestamp(message.created_at)}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-slate-700">{message.message}</p>
+                      </div>
+                    ))}
+                    {chat.length === 0 && (
+                      <p className="px-3 py-2 text-sm text-slate-500">
+                        No GRE chat messages yet. Start the discussion.
                       </p>
-                      {participant.email && <p className="truncate text-xs text-slate-500">{participant.email}</p>}
-                    </div>
-                    {isModerator && !participant.isLocal && participant.id && (
-                      <Button
-                        variant="ghost"
-                        className="shrink-0 text-red-600 hover:text-red-700"
-                        onClick={() => runModeratorCommand("kickParticipant", participant.id)}
-                      >
-                        <UserX className="h-4 w-4" />
-                      </Button>
                     )}
                   </div>
-                ))}
-                {roomParticipants.length === 0 && <p className="text-sm text-slate-500">No room participants detected yet.</p>}
-              </div>
-            </div>
-
-            <div className="gre-card space-y-4 p-5">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-brand-600" />
-                <h2 className="text-lg font-semibold text-ink">GRE archive chat</h2>
-              </div>
-              <p className="text-sm text-slate-500">
-                Messages here are preserved for the post-meeting summary, AI copilot, and archive review.
-              </p>
-              <div className="max-h-[320px] space-y-3 overflow-y-auto rounded-2xl bg-slate-50/80 p-1">
-                {chat.map((message) => (
-                  <div key={message.id} className="rounded-2xl border border-slate-100 bg-white px-4 py-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        {message.sender?.full_name ||
-                          `${message.sender?.firstname ?? ""} ${message.sender?.lastname ?? ""}`.trim() ||
-                          message.sender?.email}
-                        {message.sender_id === user?.id ? " · You" : ""}
-                      </p>
-                      <span className="text-[11px] text-slate-400">{formatChatTimestamp(message.created_at)}</span>
+                  <form
+                    className="space-y-3"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (!text.trim()) return;
+                      sendChat.mutate();
+                    }}
+                  >
+                    <Textarea
+                      value={text}
+                      onChange={(event) => setText(event.target.value)}
+                      placeholder="Share a point, question, or reaction..."
+                      rows={3}
+                    />
+                    {chatError && <p className="text-sm text-red-600">{chatError}</p>}
+                    <div className="flex justify-end">
+                      <Button type="submit" loading={sendChat.isPending} disabled={!text.trim() || !meetingId}>
+                        <Send className="h-4 w-4" />
+                        Send
+                      </Button>
                     </div>
-                    <p className="mt-1 text-sm text-slate-700">{message.message}</p>
-                  </div>
-                ))}
-                {chat.length === 0 && <p className="px-3 py-2 text-sm text-slate-500">No GRE chat messages yet. Start the discussion.</p>}
-              </div>
-
-              <form
-                className="space-y-3"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (!text.trim()) return;
-                  sendChat.mutate();
-                }}
-              >
-                <Textarea
-                  value={text}
-                  onChange={(event) => setText(event.target.value)}
-                  placeholder="Share a point, question, or reaction..."
-                  rows={3}
-                />
-                {chatError && <p className="text-sm text-red-600">{chatError}</p>}
-                <div className="flex justify-end">
-                  <Button type="submit" loading={sendChat.isPending} disabled={!text.trim() || !meetingId}>
-                    <Send className="h-4 w-4" />
-                    Send
-                  </Button>
+                  </form>
                 </div>
-              </form>
-            </div>
-          </aside>
-        </div>
+              ),
+              host: (
+                <MeetHostToolsPanel
+                  meeting={activeMeeting}
+                  canManage={canManage}
+                  showLiveControls
+                  roomReady={isConnected && jitsiReady}
+                  onMuteEveryone={(mediaType) => runModeratorCommand("muteEveryone", mediaType)}
+                  onStopScreenshare={() => {
+                    if (!runModeratorCommand("muteEveryone", "desktop")) {
+                      runModeratorCommand("toggleShareScreen");
+                    }
+                  }}
+                />
+              ),
+              people: (
+                <div className="space-y-3">
+                  {canManage && activeMeeting.screen_share_moderator_only && (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Per-attendee moderation
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        Select one attendee below, then run actions only for that attendee.
+                      </p>
+                    </div>
+                  )}
+
+                  {roomParticipants.map((participant) => (
+                    <div
+                      key={participant.id}
+                      className={`flex items-center justify-between gap-2 rounded-2xl border px-3 py-2 transition ${
+                        participant.id === selectedParticipantId
+                          ? "border-brand-300 bg-brand-50/70"
+                          : "border-slate-100 bg-slate-50"
+                      }`}
+                      onClick={() => setSelectedParticipantId(participant.id)}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-ink">
+                          {participant.displayName}
+                          {participant.isLocal ? " · You" : ""}
+                        </p>
+                        {participant.email && (
+                          <p className="truncate text-xs text-slate-500">{participant.email}</p>
+                        )}
+                      </div>
+                      {isModerator && !participant.isLocal && participant.id && (
+                        <Button
+                          variant="ghost"
+                          className="shrink-0 text-red-600 hover:text-red-700"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            runParticipantAction(
+                              participant.id,
+                              "kickParticipant",
+                              "Attendee removed",
+                              "The attendee was removed from the meeting.",
+                              "Could not remove this attendee."
+                            );
+                          }}
+                        >
+                          <UserX className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  {canManage && selectedParticipantId && (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Selected attendee actions
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() =>
+                            runParticipantAction(
+                              selectedParticipantId,
+                              "muteParticipant",
+                              "Microphone muted",
+                              "Attendee microphone was muted.",
+                              "Could not mute this attendee's microphone."
+                            )
+                          }
+                        >
+                          <MicOff className="h-4 w-4" />
+                          Mute mic
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() =>
+                            runParticipantAction(
+                              selectedParticipantId,
+                              "muteParticipantVideo",
+                              "Camera turned off",
+                              "Attendee camera was turned off.",
+                              "Could not turn off this attendee's camera."
+                            )
+                          }
+                        >
+                          <VideoOff className="h-4 w-4" />
+                          Turn off video
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() =>
+                            runParticipantAction(
+                              selectedParticipantId,
+                              "grantModerator",
+                              "Screen sharing allowed",
+                              "Attendee can now share screen as a moderator.",
+                              "Could not allow screen sharing for this attendee."
+                            )
+                          }
+                        >
+                          <ShieldCheck className="h-4 w-4" />
+                          Allow share
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          onClick={() =>
+                            runParticipantAction(
+                              selectedParticipantId,
+                              "kickParticipant",
+                              "Attendee removed",
+                              "The attendee was removed from the meeting.",
+                              "Could not remove this attendee."
+                            )
+                          }
+                        >
+                          <UserX className="h-4 w-4" />
+                          Remove attendee
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {roomParticipants.length === 0 && (
+                    <p className="text-sm text-slate-500">No room participants detected yet.</p>
+                  )}
+                </div>
+              ),
+              session: (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-500">
+                    Recording, external browser join, and ending the meeting are managed here.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {activeMeeting.status === "scheduled" && (
+                      <Button loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
+                        Start on GRE
+                      </Button>
+                    )}
+                    <Button variant="secondary" onClick={() => void handleOpenExternalRoom()}>
+                      <ExternalLink className="h-4 w-4" />
+                      Join in browser
+                    </Button>
+                    {isModerator && isLive && activeMeeting.recording_status !== "recording" && (
+                      <Button
+                        variant="secondary"
+                        loading={startRecording.isPending}
+                        onClick={handleStartRecording}
+                      >
+                        Start recording
+                      </Button>
+                    )}
+                    {isModerator && isLive && activeMeeting.recording_status === "recording" && (
+                      <Button variant="ghost" loading={stopRecording.isPending} onClick={handleStopRecording}>
+                        Stop recording
+                      </Button>
+                    )}
+                    <Button
+                      variant="danger"
+                      loading={endMeeting.isPending}
+                      onClick={() => setConfirmEndOpen(true)}
+                    >
+                      End meeting
+                    </Button>
+                  </div>
+                  {canManage && (
+                    <div className="space-y-3 border-t border-slate-100 pt-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Optional copilot drafts
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          loading={copilotLoading}
+                          onClick={() => void runCopilot("notes")}
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Draft notes
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          loading={copilotLoading}
+                          onClick={() => void runCopilot("actions")}
+                        >
+                          Action items
+                        </Button>
+                      </div>
+                      {(copilotOutput || copilotError || copilotLoading) && (
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                          {copilotError ? (
+                            <p className="text-sm text-red-600">{copilotError}</p>
+                          ) : (
+                            <FormattedAssistantText content={copilotOutput} streaming={copilotLoading} />
+                          )}
+                          {copilotOutput && (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className="mt-3"
+                              onClick={() => setNotes(copilotOutput)}
+                            >
+                              Use as host notes
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ),
+            }}
+          />
+        )}
+
       </div>
 
       <ConfirmDialog

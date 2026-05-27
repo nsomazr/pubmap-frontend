@@ -501,6 +501,9 @@ export interface MeetSession {
   recording_error?: string | null;
   summary?: string | null;
   summary_status: MeetSummaryStatus;
+  meeting_minutes?: string | null;
+  assistant_notes?: string | null;
+  gre_assistant_enabled?: boolean;
   participant_count?: number;
   participant_role?: MeetParticipantRole | null;
   can_manage?: boolean;
@@ -512,6 +515,9 @@ export interface MeetSession {
   forum_topic_id?: number | null;
   forum_topic?: Pick<Topic, "id" | "topic" | "sub_category_id" | "sub_category_name"> | null;
   host_notes?: string | null;
+  mute_audio_on_join?: boolean;
+  video_off_on_join?: boolean;
+  screen_share_moderator_only?: boolean;
   participants?: MeetParticipant[];
   chat_messages?: MeetChatMessage[];
   created_at?: string;
