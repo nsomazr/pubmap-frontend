@@ -60,6 +60,27 @@ function getTextContent(el: Element): string {
   return (el.textContent || "").trim();
 }
 
+function needsSpaceBetween(prev: string, next: string): boolean {
+  if (!prev || !next) return false;
+  if (/\s$/.test(prev) || /^\s/.test(next)) return false;
+  if (/^[,.;:!?)\]]/.test(next)) return false;
+  if (/[([$\\]$/.test(prev)) return false;
+  return true;
+}
+
+function joinInlineParts(parts: string[]): string {
+  const merged: string[] = [];
+  for (const part of parts) {
+    if (!part) continue;
+    const last = merged[merged.length - 1];
+    if (last && needsSpaceBetween(last, part)) {
+      merged.push(" ");
+    }
+    merged.push(part);
+  }
+  return merged.join("").replace(/\s+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 function serializeInlineHtml(el: Element): string {
   const parts: string[] = [];
   el.childNodes.forEach((node) => {
@@ -88,7 +109,7 @@ function serializeInlineHtml(el: Element): string {
     }
     parts.push(serializeInlineHtml(child));
   });
-  return parts.join("").replace(/\n{3,}/g, "\n\n").trim();
+  return joinInlineParts(parts);
 }
 
 function tableElementToMarkdown(table: HTMLTableElement): string {
@@ -153,14 +174,28 @@ export function htmlToManuscriptMarkdown(html: string): string {
   if (children.length === 0) return (body.textContent || "").trim();
 
   if (children.length === 1 && children[0].tagName.toLowerCase() === "p") {
-    const markdown = serializeInlineHtml(children[0]);
-    return markdown || (body.textContent || "").trim();
+    const paragraph = children[0];
+    const hasRichInline = paragraph.querySelector("strong, b, em, i, code, a, sub, sup");
+    if (!hasRichInline) {
+      return joinInlineParts([(paragraph.textContent || "").replace(/\s+/g, " ")]);
+    }
+    const markdown = serializeInlineHtml(paragraph);
+    return markdown || joinInlineParts([(paragraph.textContent || "").replace(/\s+/g, " ")]);
   }
 
   return children
     .map((el) => blockElementToMarkdown(el))
     .filter(Boolean)
     .join("\n\n");
+}
+
+/** Wrap LaTeX delimiters that are not already in $...$ / $$...$$. */
+export function wrapLatexDelimiters(text: string): string {
+  let source = text;
+  source = source.replace(/\\\[([\s\S]+?)\\\]/g, (_, body) => `\n\n$$${body.trim()}$$\n\n`);
+  source = source.replace(/\\\(([\s\S]+?)\\\)/g, (_, body) => `$${body.trim()}$`);
+  source = source.replace(/\\begin\{([^}]+)\}([\s\S]*?)\\end\{\1\}/gi, (match) => `\n\n$$${match}$$\n\n`);
+  return source;
 }
 
 /** Insert breaks before headings, theorems, tables, and section numbers embedded in OCR text. */
@@ -276,11 +311,11 @@ export function prepareManuscriptSource(raw: string): string {
   let text = (raw || "").trim();
   if (!text) return "";
 
-  if (isManuscriptHtml(text) && !hasStructuredHtmlBlocks(text)) {
+  if (isManuscriptHtml(text)) {
     text = htmlToManuscriptMarkdown(text);
-  } else if (isManuscriptHtml(text)) {
-    return text;
   }
 
+  text = wrapLatexDelimiters(text);
+  text = normalizeManuscriptSource(wrapRawLatexLines(text));
   return markdownishFromExtractedText(text);
 }

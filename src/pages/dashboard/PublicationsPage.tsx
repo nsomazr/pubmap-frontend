@@ -15,6 +15,7 @@ import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 import { canAccessReviewQueue, isPlatformAdmin } from "../../lib/userAccess";
+import { abstractListingSnippet } from "../../lib/abstractText";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { authorDisplayName } from "../../lib/userDisplay";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
@@ -247,9 +248,11 @@ export function PublicationsPage() {
                     <h3 className="mt-0.5 text-base font-semibold text-ink group-hover:text-brand-700">
                       {formatGrePaperTitle(pub.title, pub.short_number)}
                     </h3>
-                    <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-slate-500">
-                      {pub.abstract}
-                    </p>
+                    {abstractListingSnippet(pub.abstract) ? (
+                      <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-slate-500">
+                        {abstractListingSnippet(pub.abstract)}
+                      </p>
+                    ) : null}
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                       {subVisual && <SubcategoryBadge visual={subVisual} size="xs" />}
                       {pub.coordinates?.location && (

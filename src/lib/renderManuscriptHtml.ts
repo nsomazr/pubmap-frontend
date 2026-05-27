@@ -1,12 +1,6 @@
 import katex from "katex";
 import { marked } from "marked";
-import {
-  hasStructuredHtmlBlocks,
-  isManuscriptHtml,
-  looksLikeFormulaLine,
-  markdownishFromExtractedText,
-  prepareManuscriptSource,
-} from "./manuscriptMarkdown";
+import { looksLikeFormulaLine, prepareManuscriptSource } from "./manuscriptMarkdown";
 import { sanitizeManuscriptHtml } from "./sanitizeHtml";
 
 marked.setOptions({
@@ -69,34 +63,19 @@ function restoreMathPlaceholders(html: string, placeholders: MathPlaceholder[]):
   return output;
 }
 
-function renderMarkdownWithMath(source: string): string {
-  const { text, placeholders } = extractMathPlaceholders(source);
+function renderMarkdownWithMath(markdown: string): string {
+  const { text, placeholders } = extractMathPlaceholders(markdown);
   const parsed = marked.parse(text);
   const html = typeof parsed === "string" ? parsed : String(parsed);
   return restoreMathPlaceholders(html, placeholders);
-}
-
-function renderStructuredHtmlWithMath(source: string): string {
-  const { text, placeholders } = extractMathPlaceholders(source);
-  return restoreMathPlaceholders(text, placeholders);
 }
 
 /** Render manuscript field content (markdown, LaTeX, or CKEditor HTML) for preview and reading. */
 export function renderManuscriptHtml(value?: string | null): string {
   const raw = (value || "").trim();
   if (!raw) return "";
-
-  let html = "";
-  if (isManuscriptHtml(raw) && hasStructuredHtmlBlocks(raw)) {
-    html = renderStructuredHtmlWithMath(raw);
-  } else {
-    const markdown = isManuscriptHtml(raw)
-      ? prepareManuscriptSource(raw)
-      : markdownishFromExtractedText(raw);
-    html = renderMarkdownWithMath(markdown);
-  }
-
-  return sanitizeManuscriptHtml(html);
+  const markdown = prepareManuscriptSource(raw);
+  return sanitizeManuscriptHtml(renderMarkdownWithMath(markdown));
 }
 
 export function hasManuscriptContent(value?: string | null): boolean {

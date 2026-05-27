@@ -13,6 +13,7 @@ import {
 import { useRef } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
+import { abstractListingSnippet } from "../../lib/abstractText";
 import { buildPublicationChatPath } from "../../lib/publicationChat";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { useIsMobile } from "../../hooks/useMediaQuery";
@@ -489,7 +490,7 @@ export function MapResultsRail({
                               )}
                               {pub.abstract?.trim() && (
                                 <p className="mt-2 line-clamp-2 text-xs leading-snug text-slate-600">
-                                  {pub.abstract.replace(/<[^>]+>/g, "").slice(0, 220)}
+                                  {abstractListingSnippet(pub.abstract)}
                                 </p>
                               )}
                               {subVisual ? (
