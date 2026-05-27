@@ -12,7 +12,7 @@ export function ManuscriptContent({ value, className = "" }: ManuscriptContentPr
 
   return (
     <div
-      className={`gre-html-content gre-manuscript-body text-base leading-relaxed text-slate-700 ${className}`.trim()}
+      className={`gre-html-content gre-manuscript-body min-w-0 max-w-full text-base leading-relaxed text-slate-700 ${className}`.trim()}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

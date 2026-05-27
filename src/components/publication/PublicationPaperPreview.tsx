@@ -74,10 +74,10 @@ export function PublicationPaperPreview({
         draft={draft}
       />
 
-      <section className="rounded-2xl border border-slate-200/70 bg-white px-5 py-5 sm:px-7 sm:py-6">
+      <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200/70 bg-white px-5 py-5 sm:px-7 sm:py-6">
         <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">Abstract</h2>
         {data.abstract?.trim() ? (
-          <ManuscriptContent value={data.abstract} className="mt-4" />
+          <ManuscriptContent value={data.abstract} className="mt-4 min-w-0" />
         ) : (
           <p className="mt-4 text-base leading-relaxed text-slate-700">
             Add an abstract to preview how it will appear to readers.

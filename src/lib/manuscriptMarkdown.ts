@@ -17,24 +17,115 @@ export function looksLikeExtractedStructuralLine(line: string): boolean {
   return false;
 }
 
+const COMMON_ENGLISH_WORD =
+  /\b(?:the|and|with|that|this|from|are|was|for|not|can|have|when|where|how|our|their|they|been|will|also|into|than|other|such|only|may|use|using|both|between|however|which|while|these|those|about|after|before|during|through|each|more|most|some|well|paper|model|data|training|method|learning|gradient|equation|estimate|sample|distribution|objective|approach|energy|based|noise|score|matching|expectation|empirical|average|observed|drawback|adding|regularity|negligible|straightforward|challenge|inconsistency|attenuate|approximated|samples)\b/i;
+
+function countEnglishWords(line: string): { total: number; common: number } {
+  const words = line.match(/\b[a-zA-Z]{2,}\b/g) || [];
+  let common = 0;
+  for (const word of words) {
+    if (COMMON_ENGLISH_WORD.test(word)) common += 1;
+  }
+  return { total: words.length, common };
+}
+
+/** Restore spaces when OCR or HTML stripping glued words together. */
+export function repairCollapsedWords(text: string): string {
+  if (!text) return "";
+  const spaces = (text.match(/\s/g) || []).length;
+  const words = (text.match(/\b[a-zA-Z]{4,}\b/g) || []).length;
+  if (spaces >= Math.max(4, words * 0.35)) return text;
+
+  let repaired = text;
+  repaired = repaired.replace(/([,.;:!?)])(?=[A-Za-z(])/g, "$1 ");
+  repaired = repaired.replace(/(\))(?=[A-Za-z])/g, "$1 ");
+  repaired = repaired.replace(/([a-z])([A-Z])/g, "$1 $2");
+  repaired = repaired.replace(/([A-Z]{2,})([A-Z][a-z])/g, "$1 $2");
+  return repaired.replace(/\s+/g, " ").trim();
+}
+
+export function isLikelyProse(text: string): boolean {
+  const value = text.trim();
+  if (!value) return false;
+  if (/\\(?:begin|frac|nabla|int|sum|prod|sqrt|left|right|mathbb|mathrm|mathbf)\b/.test(value)) {
+    return false;
+  }
+  const { total, common } = countEnglishWords(value);
+  if (common >= 2) return true;
+  if (total >= 8) return true;
+  if (/\s/.test(value) && total >= 5) return true;
+  return !/\s/.test(value) && value.length > 48 && total >= 6;
+}
+
+export function isLikelyRenderableLatex(latex: string): boolean {
+  const value = latex.trim();
+  if (!value) return false;
+  if (/\\underline.*\\array/i.test(value) || /\{\{/.test(value)) return false;
+  if (isLikelyProse(value)) return false;
+
+  const open = (value.match(/\{/g) || []).length;
+  const close = (value.match(/\}/g) || []).length;
+  if (Math.abs(open - close) > 4) return false;
+
+  const { total, common } = countEnglishWords(value);
+  if (common >= 2 || total > 6) return false;
+
+  return /\\|[\^_{}]|∫|∑|frac|nabla|mathbb|mathbf|left|right|begin|end|&/.test(value);
+}
+
+/** Remove $...$ / $$...$$ wrappers that were applied to prose by mistake. */
+export function unwrapSpuriousMathDelimiters(text: string): string {
+  let output = text.replace(/\$\$([\s\S]+?)\$\$/g, (_full, inner: string) => {
+    const body = inner.trim();
+    if (isLikelyRenderableLatex(body)) return `$$${inner}$$`;
+    if (isLikelyProse(body) || isLikelyProse(repairCollapsedWords(body))) {
+      return repairCollapsedWords(body);
+    }
+    return `$$${inner}$$`;
+  });
+
+  output = output.replace(/\$([^$\n]+)\$/g, (full, inner: string) => {
+    const body = inner.trim();
+    if (isLikelyRenderableLatex(body)) return full;
+    if (isLikelyProse(body) || isLikelyProse(repairCollapsedWords(body))) {
+      return repairCollapsedWords(body);
+    }
+    return full;
+  });
+
+  return output;
+}
+
 export function looksLikeFormulaLine(line: string): boolean {
   const value = line.trim();
   if (!value) return false;
-  if (/(?<!\\)\$.*?(?<!\\)\$/.test(value)) return true;
+  if (/(?<!\\)\$.*?(?<!\\)\$/.test(value)) return false;
+
+  const { total, common } = countEnglishWords(value);
+  if (common >= 2 || total >= 7) return false;
+
+  if (/\\tag\{/.test(value) && !/\\begin/.test(value)) return false;
+
+  if (/\\begin\{/.test(value) || /\\end\{/.test(value)) {
+    return common === 0 && total <= 4;
+  }
+
   if (
-    /\\(?:frac|begin|end|left|right|text|mathrm|mathbf|mathit|sqrt|sum|prod|int|alpha|beta|gamma|delta|theta|lambda|mu|sigma|pi|phi|psi|omega|hat|bar|vec|dot|ddot|label|ref|cite|pmb|mathbb)\b/.test(
+    /\\(?:frac|nabla|int|sum|prod|sqrt|left|right|mathbb|mathrm|mathbf|boldsymbol|hat|bar|vec|dot|ddot)\b/.test(
       value
     )
   ) {
-    return true;
+    return common <= 1 && total <= 5;
   }
-  if (/[=<>≈≠±×÷∑∏√∂∫μσλπϕθ]/.test(value)) return true;
-  if (/\b(?:softmax|max|min|argmax|argmin|Q\(|O\(|f\(x\)|g\(x\)|sin\(|cos\(|tan\(|log\(|exp\()/i.test(value)) {
-    return true;
+
+  if (/[&]{1,2}/.test(value) && /\\\\/.test(value)) return true;
+
+  if (/^[^a-z]{0,8}[A-Za-z0-9\\_{}^().,;=+\-/*|&\s[\]]+$/.test(value)) {
+    const hasMath = /[=\\]|∫|∑/.test(value);
+    if (hasMath && total <= 4 && common === 0) return true;
   }
-  const operatorCount = (value.match(/[=+\-/*^<>()[\]{}]/g) || []).length;
-  const digitCount = (value.match(/\d/g) || []).length;
-  return operatorCount >= 3 && digitCount >= 1;
+
+  return false;
 }
 
 export function isMarkdownTableRow(line: string): boolean {
@@ -315,6 +406,8 @@ export function prepareManuscriptSource(raw: string): string {
     text = htmlToManuscriptMarkdown(text);
   }
 
+  text = repairCollapsedWords(text);
+  text = unwrapSpuriousMathDelimiters(text);
   text = wrapLatexDelimiters(text);
   text = normalizeManuscriptSource(wrapRawLatexLines(text));
   return markdownishFromExtractedText(text);

@@ -1,6 +1,10 @@
 import katex from "katex";
 import { marked } from "marked";
-import { looksLikeFormulaLine, prepareManuscriptSource } from "./manuscriptMarkdown";
+import {
+  isLikelyRenderableLatex,
+  looksLikeFormulaLine,
+  prepareManuscriptSource,
+} from "./manuscriptMarkdown";
 import { sanitizeManuscriptHtml } from "./sanitizeHtml";
 
 marked.setOptions({
@@ -21,18 +25,48 @@ function escapeHtml(text: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function normalizeLatexSnippet(latex: string): { body: string; tag?: string } {
+  const tagMatch = latex.match(/\\tag\{([^}]+)\}/);
+  const tag = tagMatch?.[1]?.trim();
+  let body = latex.replace(/\\tag\{[^}]+\}/g, "").trim();
+  body = body.replace(/\\begin\{array\}\s*\{\s*rl\s*\}/gi, "\\begin{aligned}");
+  body = body.replace(/\\end\{array\}/gi, "\\end{aligned}");
+  body = body.replace(/\{\\underline\{\{\\array\}\}\}/g, "");
+  return { body, tag };
+}
+
+function latexFallbackHtml(latex: string, displayMode: boolean, tag?: string): string {
+  const tagHtml = tag ? `<span class="eq-tag">(${escapeHtml(tag)})</span>` : "";
+  if (displayMode) {
+    return `<pre class="latex-fallback latex-fallback-block">${escapeHtml(latex)}</pre>${tagHtml}`;
+  }
+  return `<code class="latex-fallback">${escapeHtml(latex)}</code>${tagHtml}`;
+}
+
 function renderLatex(latex: string, displayMode: boolean): string {
-  const trimmed = latex.trim();
-  if (!trimmed) return "";
+  const { body, tag } = normalizeLatexSnippet(latex);
+  if (!body) {
+    return tag ? `<span class="eq-tag">(${escapeHtml(tag)})</span>` : "";
+  }
+
+  if (!isLikelyRenderableLatex(body)) {
+    return latexFallbackHtml(body, displayMode, tag);
+  }
+
   try {
-    return katex.renderToString(trimmed, {
+    const html = katex.renderToString(body, {
       displayMode,
       throwOnError: false,
       strict: "ignore",
       trust: false,
     });
+    if (html.includes("katex-error")) {
+      return latexFallbackHtml(body, displayMode, tag);
+    }
+    const tagHtml = tag ? `<span class="eq-tag">(${escapeHtml(tag)})</span>` : "";
+    return html + tagHtml;
   } catch {
-    return `<code class="latex-fallback">${escapeHtml(trimmed)}</code>`;
+    return latexFallbackHtml(body, displayMode, tag);
   }
 }
 

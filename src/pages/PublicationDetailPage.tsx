@@ -127,10 +127,20 @@ export function PublicationDetailPage() {
             accessType={pub.gre?.access_type}
           />
 
-          <section className="gre-card p-6 sm:p-8">
+          {pub.gre?.gre_doi && (
+            <section className="gre-card p-4 sm:p-5">
+              <GreDoiBadge
+                greDoi={pub.gre.gre_doi}
+                greDoiUrl={pub.gre.gre_doi_url}
+                paperNumber={pub.short_number}
+              />
+            </section>
+          )}
+
+          <section className="gre-card min-w-0 overflow-hidden p-6 sm:p-8">
             <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">Abstract</h2>
             {pub.abstract?.trim() ? (
-              <ManuscriptContent value={pub.abstract} className="mt-4" />
+              <ManuscriptContent value={pub.abstract} className="mt-4 min-w-0" />
             ) : (
               <p className="mt-4 text-base leading-relaxed text-slate-700">No abstract provided.</p>
             )}
@@ -139,15 +149,6 @@ export function PublicationDetailPage() {
                 <span className="font-semibold text-slate-700">Keywords: </span>
                 {pub.keywords.join(", ")}
               </p>
-            )}
-            {pub.gre?.gre_doi && (
-              <div className="mt-4">
-                <GreDoiBadge
-                  greDoi={pub.gre.gre_doi}
-                  greDoiUrl={pub.gre.gre_doi_url}
-                  paperNumber={pub.short_number}
-                />
-              </div>
             )}
           </section>
 

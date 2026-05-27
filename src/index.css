@@ -1661,8 +1661,19 @@ body {
 
 /* Manuscript reading surfaces (preview, publication page, extracted fields in review) */
 .gre-manuscript-body {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   text-align: justify;
   hyphens: auto;
+}
+
+.gre-manuscript-body p,
+.gre-manuscript-body li,
+.gre-manuscript-body blockquote {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .gre-manuscript-body h1,
@@ -1685,6 +1696,27 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.9em;
   color: #475569;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.gre-manuscript-body .latex-fallback-block {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.gre-manuscript-body .eq-tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.9em;
+  color: #64748b;
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
 }
 
 .gre-manuscript-body table {
