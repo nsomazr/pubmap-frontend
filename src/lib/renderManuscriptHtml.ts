@@ -25,13 +25,30 @@ function escapeHtml(text: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function repairLatexEnvironments(latex: string): string {
+  let body = latex;
+  if (/\\begin\{array\}/i.test(body) && /\\end\{aligned\}/i.test(body)) {
+    body = body.replace(/\\begin\{array\}(\{[^}]*\})?/gi, "\\begin{aligned}");
+  }
+  if (/\\begin\{aligned\}/i.test(body) && /\\end\{array\}/i.test(body)) {
+    body = body.replace(/\\end\{array\}/gi, "\\end{aligned}");
+  }
+  return body;
+}
+
 function normalizeLatexSnippet(latex: string): { body: string; tag?: string } {
   const tagMatch = latex.match(/\\tag\{([^}]+)\}/);
   const tag = tagMatch?.[1]?.trim();
   let body = latex.replace(/\\tag\{[^}]+\}/g, "").trim();
+  body = repairLatexEnvironments(body);
   body = body.replace(/\\begin\{array\}\s*\{\s*rl\s*\}/gi, "\\begin{aligned}");
   body = body.replace(/\\end\{array\}/gi, "\\end{aligned}");
   body = body.replace(/\{\\underline\{\{\\array\}\}\}/g, "");
+  body = body.replace(/\\mathbb\s+\{\s*([^}]+)\s*\}/g, "\\mathbb{$1}");
+  body = body.replace(/\\mathbf\s+\{\s*([^}]+)\s*\}/g, "\\mathbf{$1}");
+  body = body.replace(/\\mathrm\s+\{\s*([^}]+)\s*\}/g, "\\mathrm{$1}");
+  body = body.replace(/_\s*\{\s*([^}]+)\s*\}/g, "_{$1}");
+  body = body.replace(/\^\s*\{\s*([^}]+)\s*\}/g, "^{$1}");
   return { body, tag };
 }
 

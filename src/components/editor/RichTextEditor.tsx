@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type CSSProperties } from "react";
 import { loadCkEditor } from "../../lib/ckeditorLoader";
+import { countWords, truncateHtmlToWordLimit } from "../../lib/manuscriptFieldLimits";
 import { RequiredMark } from "../ui/RequiredField";
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
   minHeight?: number;
   required?: boolean;
   hint?: string;
+  maxWords?: number;
 }
 
 export function RichTextEditor({
@@ -20,15 +22,21 @@ export function RichTextEditor({
   minHeight = 176,
   required,
   hint,
+  maxWords,
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Awaited<ReturnType<NonNullable<typeof window.ClassicEditor>["create"]>> | null>(
     null
   );
   const onChangeRef = useRef(onChange);
+  const maxWordsRef = useRef(maxWords);
   const id = useId();
 
   onChangeRef.current = onChange;
+  maxWordsRef.current = maxWords;
+
+  const wordCount = countWords(value);
+  const overLimit = Boolean(maxWords && wordCount > maxWords);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,7 +72,15 @@ export function RichTextEditor({
 
       editor.setData(value || "");
       editor.model.document.on("change:data", () => {
-        onChangeRef.current(editor.getData());
+        let next = editor.getData();
+        const limit = maxWordsRef.current;
+        if (limit && countWords(next) > limit) {
+          next = truncateHtmlToWordLimit(next, limit);
+          if (next !== editor.getData()) {
+            editor.setData(next);
+          }
+        }
+        onChangeRef.current(next);
       });
       editorRef.current = editor;
     })();
@@ -93,7 +109,14 @@ export function RichTextEditor({
           {label}
           {required ? <RequiredMark /> : null}
         </label>
-        {hint ? <p className="text-xs text-slate-500">{hint}</p> : null}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+          {hint ? <p>{hint}</p> : null}
+          {maxWords ? (
+            <p className={overLimit ? "font-medium text-amber-700" : undefined}>
+              {wordCount}/{maxWords} words
+            </p>
+          ) : null}
+        </div>
       </div>
       <div className="gre-manuscript-editor-shell overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100/90">
         <div

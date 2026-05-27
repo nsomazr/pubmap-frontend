@@ -47,6 +47,12 @@ import { PublicationFiguresEditor } from "../../components/publication/Publicati
 import { PublicationSupplementaryUpload } from "../../components/publication/PublicationSupplementaryUpload";
 import { renderManuscriptHtml } from "../../lib/renderManuscriptHtml";
 import {
+  MANUSCRIPT_FIELD_WORD_LIMITS,
+  truncateHtmlToWordLimit,
+  truncateToWordLimit,
+} from "../../lib/manuscriptFieldLimits";
+import { useToast } from "../../components/ui/ToastProvider";
+import {
   updatePublicationGre,
   type GreDocument,
   type PublicationAccessType,
@@ -133,6 +139,7 @@ export function PublicationManagePage() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const toast = useToast();
   const isAdmin = isPlatformAdmin(user);
 
   const [composerTab, setComposerTab] = useState<ComposerTab>("editor");
@@ -198,34 +205,68 @@ export function PublicationManagePage() {
     setters[key](value);
   }, []);
 
-  const applyExtractedDocument = useCallback((payload: ExtractedDocumentPayload) => {
-    setTitle((current) => current.trim() || (payload.title || "").trim());
-    setAbstract((current) =>
-      hasTextContent(current) ? current : renderManuscriptHtml(payload.abstract)
-    );
-    setIntroduction((current) =>
-      hasTextContent(current) ? current : renderManuscriptHtml(payload.introduction)
-    );
-    setMethods((current) => (hasTextContent(current) ? current : renderManuscriptHtml(payload.methods)));
-    setResults((current) => (hasTextContent(current) ? current : renderManuscriptHtml(payload.results)));
-    setFindings((current) =>
-      hasTextContent(current) ? current : renderManuscriptHtml(payload.findings)
-    );
-    setConclusion((current) =>
-      hasTextContent(current) ? current : renderManuscriptHtml(payload.conclusion)
-    );
-    setReferences((current) =>
-      hasTextContent(current) ? current : renderManuscriptHtml(payload.references)
-    );
-    setFunder((current) => current.trim() || (payload.funder || "").trim());
-    setKeywords((current) => current.trim() || (payload.keywords || "").trim());
-    setExtractionUi({
-      status: "ready",
-      warnings: [...new Set(payload.warnings ?? [])],
-      engine: payload.extraction_engine,
-      sectionNotes: payload.section_notes ?? {},
-    });
+  const applyExtractedSection = useCallback((raw: string | undefined, maxWords: number) => {
+    if (!raw?.trim()) return "";
+    return truncateHtmlToWordLimit(renderManuscriptHtml(raw), maxWords);
   }, []);
+
+  const applyExtractedDocument = useCallback(
+    (payload: ExtractedDocumentPayload) => {
+      const limits = MANUSCRIPT_FIELD_WORD_LIMITS;
+      setTitle((current) => {
+        const next = (payload.title || "").trim();
+        if (!next) return current;
+        return (
+          current.trim() ||
+          truncateToWordLimit(next, limits.title)
+        );
+      });
+      setAbstract((current) =>
+        hasTextContent(current) ? current : applyExtractedSection(payload.abstract, limits.abstract)
+      );
+      setIntroduction((current) =>
+        hasTextContent(current)
+          ? current
+          : applyExtractedSection(payload.introduction, limits.introduction)
+      );
+      setMethods((current) =>
+        hasTextContent(current) ? current : applyExtractedSection(payload.methods, limits.methods)
+      );
+      setResults((current) =>
+        hasTextContent(current) ? current : applyExtractedSection(payload.results, limits.results)
+      );
+      setFindings((current) =>
+        hasTextContent(current) ? current : applyExtractedSection(payload.findings, limits.findings)
+      );
+      setConclusion((current) =>
+        hasTextContent(current)
+          ? current
+          : applyExtractedSection(payload.conclusion, limits.conclusion)
+      );
+      setReferences((current) =>
+        hasTextContent(current)
+          ? current
+          : applyExtractedSection(payload.references, 350)
+      );
+      setFunder((current) => {
+        const next = (payload.funder || "").trim();
+        if (!next) return current;
+        return current.trim() || truncateToWordLimit(next, limits.funder);
+      });
+      setKeywords((current) => {
+        const next = (payload.keywords || "").trim();
+        if (!next) return current;
+        return current.trim() || truncateToWordLimit(next, limits.keywords);
+      });
+      setExtractionUi({
+        status: "ready",
+        warnings: [...new Set(payload.warnings ?? [])],
+        engine: payload.extraction_engine,
+        sectionNotes: payload.section_notes ?? {},
+      });
+    },
+    [applyExtractedSection]
+  );
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -676,12 +717,42 @@ export function PublicationManagePage() {
     if (extractionUi.status === "extracting") {
       return "Please wait while GRE extracts manuscript sections from the uploaded paper.";
     }
-    if (!title.trim()) return "Please add a title.";
-    if (!abstract.trim()) return "Please add an abstract.";
+    if (!title.trim()) return "Title is required.";
+    if (!abstract.trim()) return "Abstract is required.";
     if (submitterRole === "coauthor" && !leadAuthorName.trim()) {
-      return "Please enter the lead author’s name when submitting as a co-author.";
+      return "Lead author name is required when submitting as a co-author.";
     }
     return null;
+  };
+
+  const getSubmitValidationError = (): string | null => {
+    const saveErr = getSaveValidationError();
+    if (saveErr) return saveErr;
+    if (!subCategoryId) return "Research subfield is required.";
+    if (!coordinates.location.trim()) return "Map location label is required.";
+    if (!hasValidCoords(coordinates.latitude, coordinates.longitude)) {
+      return "A valid map location is required.";
+    }
+    if (isClosedAccess) {
+      if (!hasTextContent(introduction)) return "Introduction is required for restricted access.";
+      if (!hasTextContent(methods)) return "Methods is required for restricted access.";
+      if (!hasTextContent(results) && !hasTextContent(findings)) {
+        return "Results or Findings — discussion is required for restricted access.";
+      }
+      if (!hasTextContent(conclusion)) return "Conclusion is required for restricted access.";
+      if (!gre.external_url?.trim()) return "Publisher access link is required for restricted access.";
+    } else if (!openHasSource) {
+      return "Upload a manuscript PDF or add an external access link.";
+    }
+    return null;
+  };
+
+  const reportValidationError = (message: string) => {
+    setError(message);
+    toast.error({
+      title: "Missing required field",
+      description: message,
+    });
   };
 
   const validateAndSave = (e: React.FormEvent) => {
@@ -689,7 +760,7 @@ export function PublicationManagePage() {
     setError("");
     const err = getSaveValidationError();
     if (err) {
-      setError(err);
+      reportValidationError(err);
       return;
     }
     saveMutation.mutate({});
@@ -697,17 +768,9 @@ export function PublicationManagePage() {
 
   const openSubmitReview = () => {
     setError("");
-    if (!readyToSubmit) {
-      setError(
-        isClosedAccess
-          ? "Complete title, abstract, all required sections, the publisher access link, the subfield, and the map location before submitting."
-          : "Complete title, abstract, the subfield, the uploaded paper or external link, and the map location before submitting."
-      );
-      return;
-    }
-    const err = getSaveValidationError();
+    const err = getSubmitValidationError();
     if (err) {
-      setError(err);
+      reportValidationError(err);
       return;
     }
     setSubmitReviewOpen(true);

@@ -5,17 +5,21 @@ import { RequiredMark } from "./RequiredField";
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  hint?: string;
 }
 
-export function Input({ label, error, className = "", id, ...props }: Props) {
+export function Input({ label, error, hint, className = "", id, ...props }: Props) {
   const inputId = id || label?.toLowerCase().replace(/\s+/g, "-");
   return (
     <div className="space-y-1.5">
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-ink">
-          {label}
-          {props.required ? <RequiredMark /> : null}
-        </label>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <label htmlFor={inputId} className="block text-sm font-medium text-ink">
+            {label}
+            {props.required ? <RequiredMark /> : null}
+          </label>
+          {hint ? <p className="text-xs text-slate-500">{hint}</p> : null}
+        </div>
       )}
       <input
         id={inputId}

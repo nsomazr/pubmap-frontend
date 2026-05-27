@@ -2,6 +2,12 @@ import { AlertCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { RichTextEditor } from "../editor/RichTextEditor";
 import { Input } from "../ui/Input";
+import {
+  MANUSCRIPT_FIELD_WORD_LIMITS,
+  REFERENCE_ITEM_LIMIT,
+  formatWordLimitHint,
+  truncateToWordLimit,
+} from "../../lib/manuscriptFieldLimits";
 
 export type ManuscriptFields = {
   abstract: string;
@@ -66,9 +72,10 @@ export function ManuscriptSectionsEditor({
     <div className="space-y-6">
       <div className="rounded-2xl border border-brand-100/80 bg-gradient-to-br from-brand-50/50 via-white to-teal-50/30 px-4 py-3.5 text-sm leading-relaxed text-slate-600 sm:px-5">
         <p>
-          <strong className="font-semibold text-brand-800">Results</strong> should list factual outcomes.{" "}
+          Upload extraction fills each section with a <strong className="font-semibold text-brand-800">short summary</strong>,
+          not the full paper. Review and edit before submitting.{" "}
+          <strong className="font-semibold text-brand-800">Results</strong> should list factual outcomes;{" "}
           <strong className="font-semibold text-brand-800">Findings — discussion</strong> holds interpretation.
-          Review each section carefully before submitting.
         </p>
       </div>
 
@@ -79,8 +86,13 @@ export function ManuscriptSectionsEditor({
         <Input
           label="Title"
           value={title}
-          onChange={(e) => onTitleChange(e.target.value)}
+          onChange={(e) =>
+            onTitleChange(
+              truncateToWordLimit(e.target.value, MANUSCRIPT_FIELD_WORD_LIMITS.title)
+            )
+          }
           required
+          hint={formatWordLimitHint("title")}
         />
         <FieldExtractionNote note={sectionNotes.title} />
         <RichTextEditor
@@ -90,13 +102,20 @@ export function ManuscriptSectionsEditor({
           minHeight={160}
           required
           hint="Plain-language overview of the study."
+          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.abstract}
         />
         <FieldExtractionNote note={sectionNotes.abstract} />
         <Input
           label="Keywords"
           value={fields.keywords}
-          onChange={(e) => onChange("keywords", e.target.value)}
+          onChange={(e) =>
+            onChange(
+              "keywords",
+              truncateToWordLimit(e.target.value, MANUSCRIPT_FIELD_WORD_LIMITS.keywords)
+            )
+          }
           placeholder="climate, remote sensing, East Africa (comma-separated)"
+          hint={formatWordLimitHint("keywords")}
         />
         <FieldExtractionNote note={sectionNotes.keywords} />
       </ManuscriptGroup>
@@ -107,6 +126,7 @@ export function ManuscriptSectionsEditor({
           value={fields.introduction}
           onChange={(v) => onChange("introduction", v)}
           placeholder="Set the research context and objectives…"
+          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.introduction}
         />
         <FieldExtractionNote note={sectionNotes.introduction} />
       </ManuscriptGroup>
@@ -120,6 +140,7 @@ export function ManuscriptSectionsEditor({
           value={fields.methods}
           onChange={(v) => onChange("methods", v)}
           placeholder="Design, data collection, and analysis…"
+          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.methods}
         />
         <FieldExtractionNote note={sectionNotes.methods} />
         <RichTextEditor
@@ -127,6 +148,7 @@ export function ManuscriptSectionsEditor({
           value={fields.results}
           onChange={(v) => onChange("results", v)}
           placeholder="Key outcomes, measurements, and observations…"
+          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.results}
         />
         <FieldExtractionNote note={sectionNotes.results} />
       </ManuscriptGroup>
@@ -137,6 +159,7 @@ export function ManuscriptSectionsEditor({
           value={fields.findings}
           onChange={(v) => onChange("findings", v)}
           placeholder="Interpret results and relate them to the literature…"
+          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.findings}
         />
         <FieldExtractionNote note={sectionNotes.findings} />
         <RichTextEditor
@@ -144,6 +167,7 @@ export function ManuscriptSectionsEditor({
           value={fields.conclusion}
           onChange={(v) => onChange("conclusion", v)}
           placeholder="Summarise implications and future work…"
+          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.conclusion}
         />
         <FieldExtractionNote note={sectionNotes.conclusion} />
       </ManuscriptGroup>
@@ -152,8 +176,14 @@ export function ManuscriptSectionsEditor({
         <Input
           label="Funder — acknowledgements"
           value={fields.funder}
-          onChange={(e) => onChange("funder", e.target.value)}
+          onChange={(e) =>
+            onChange(
+              "funder",
+              truncateToWordLimit(e.target.value, MANUSCRIPT_FIELD_WORD_LIMITS.funder)
+            )
+          }
           placeholder="Grant numbers, institutions, or partners"
+          hint={formatWordLimitHint("funder")}
         />
         <FieldExtractionNote note={sectionNotes.funder} />
         <RichTextEditor
@@ -162,6 +192,8 @@ export function ManuscriptSectionsEditor({
           onChange={(v) => onChange("references", v)}
           minHeight={140}
           placeholder="List references or paste a bibliography…"
+          hint={`Up to ${REFERENCE_ITEM_LIMIT} key references (including this paper)`}
+          maxWords={350}
         />
         <FieldExtractionNote note={sectionNotes.references} />
       </ManuscriptGroup>
