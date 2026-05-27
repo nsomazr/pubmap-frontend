@@ -1177,7 +1177,9 @@ export function PublicationManagePage() {
                         paper using GRE document OCR. You can edit everything before saving.
                       </p>
                       {extractionUi.status === "extracting" && (
-                        <ExtractionLoadingPanel compact activeStep={activeExtractionStep} />
+                        <p className="mt-2 text-sm font-medium text-brand-700">
+                          Autofill is in progress. Review the manuscript workspace below.
+                        </p>
                       )}
                       {extractionUi.status === "ready" && (
                         <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
@@ -1253,6 +1255,11 @@ export function PublicationManagePage() {
                 </p>
               </div>
               <div className="mt-6">
+                {extractionUi.status === "extracting" && (
+                  <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-brand-700">
+                    Autofill workspace
+                  </p>
+                )}
                 {extractionUi.status === "extracting" && (
                   <ExtractionLoadingPanel activeStep={activeExtractionStep} />
                 )}
