@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileText, Loader2, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
-import api from "../../lib/api";
+import api, { parseApiError } from "../../lib/api";
 import { mediaUrl } from "../../lib/mediaUrl";
 import type { Publication } from "../../types";
 import { PdfPreview } from "./PdfPreview";
@@ -50,14 +50,37 @@ export function PublicationDocumentUpload({
     mutationFn: async (file: File) => {
       const form = new FormData();
       form.append("document", file);
-      const { data } = await api.post<{ extracted?: ExtractedDocumentPayload }>(
-        `/publications/${publicationId}/upload_document/`,
-        form,
-        {
-          params: extractOnUpload ? { extract: 1, use_ai: 1 } : undefined,
+      try {
+        const { data } = await api.post<{ extracted?: ExtractedDocumentPayload }>(
+          `/publications/${publicationId}/upload_document/`,
+          form,
+          {
+            params: extractOnUpload ? { extract: 1, use_ai: 1 } : undefined,
+          }
+        );
+        return data;
+      } catch (error) {
+        if (!extractOnUpload) throw error;
+        const retryForm = new FormData();
+        retryForm.append("document", file);
+        const { data } = await api.post<{ extracted?: ExtractedDocumentPayload }>(
+          `/publications/${publicationId}/upload_document/`,
+          retryForm,
+          {
+            params: { extract: 1, use_ai: 0, ocr_backend: "tesseract" },
+          }
+        );
+        if (data?.extracted) {
+          data.extracted = {
+            ...data.extracted,
+            warnings: [
+              ...(data.extracted.warnings ?? []),
+              "GRE retried extraction with the Tesseract fallback path after the primary extraction route was unavailable.",
+            ],
+          };
         }
-      );
-      return data;
+        return data;
+      }
     },
     onSuccess: (data) => {
       setLocalError("");
@@ -66,8 +89,8 @@ export function PublicationDocumentUpload({
       }
       queryClient.invalidateQueries({ queryKey: ["publication-edit", String(publicationId)] });
     },
-    onError: (err: { response?: { data?: { detail?: string } } }) => {
-      setLocalError(err.response?.data?.detail || "Upload failed.");
+    onError: (err) => {
+      setLocalError(parseApiError(err, "Upload failed."));
     },
   });
 

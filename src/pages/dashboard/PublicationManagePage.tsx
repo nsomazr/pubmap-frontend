@@ -608,7 +608,7 @@ export function PublicationManagePage() {
           "/publications/extract_document/",
           buildForm(),
           {
-            params: { use_ai: 0 },
+            params: { use_ai: 0, ocr_backend: "tesseract" },
           }
         );
         const warnings = data.warnings ?? [];
@@ -616,7 +616,7 @@ export function PublicationManagePage() {
           ...data,
           warnings: [
             ...warnings,
-            "AI-assisted extraction was unavailable, so GRE retried with OCR-only extraction.",
+            "GRE retried extraction with the Tesseract fallback path after the primary extraction route was unavailable.",
           ],
         };
       }
