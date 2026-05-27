@@ -1,8 +1,8 @@
-import { Bot, FileText, LayoutGrid, Settings2, Users, X } from "lucide-react";
+import { Bot, FileText, Info, LayoutGrid, Settings2, Users, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "../ui/Button";
 
-export type MeetRoomDrawerTab = "assistant" | "chat" | "host" | "people" | "session";
+export type MeetRoomDrawerTab = "info" | "assistant" | "chat" | "host" | "people" | "session";
 
 type Props = {
   open: boolean;
@@ -10,10 +10,12 @@ type Props = {
   tab: MeetRoomDrawerTab;
   onTabChange: (tab: MeetRoomDrawerTab) => void;
   canManage: boolean;
+  meetingTitle?: string;
   panels: Record<MeetRoomDrawerTab, ReactNode>;
 };
 
 const TABS: { id: MeetRoomDrawerTab; label: string; icon: typeof Bot; hostOnly?: boolean }[] = [
+  { id: "info", label: "Meeting", icon: Info },
   { id: "assistant", label: "Assistant", icon: Bot },
   { id: "chat", label: "Chat", icon: FileText },
   { id: "host", label: "Host", icon: Settings2, hostOnly: true },
@@ -27,6 +29,7 @@ export function MeetRoomToolsDrawer({
   tab,
   onTabChange,
   canManage,
+  meetingTitle,
   panels,
 }: Props) {
   const visibleTabs = TABS.filter((item) => !item.hostOnly || canManage);
@@ -47,7 +50,9 @@ export function MeetRoomToolsDrawer({
             <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
               Meeting controls
             </p>
-            <h2 className="text-lg font-semibold text-ink">GRE Meet panel</h2>
+            <h2 className="truncate text-lg font-semibold text-ink">
+              {meetingTitle || "GRE Meet"}
+            </h2>
           </div>
           <Button variant="ghost" className="px-2" onClick={onClose} aria-label="Close panel">
             <X className="h-5 w-5" />

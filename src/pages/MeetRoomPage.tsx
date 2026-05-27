@@ -659,7 +659,7 @@ export function MeetRoomPage() {
   };
 
   if (isLoading || !meeting) {
-    return <div className="gre-skeleton m-4 h-[80vh] rounded-3xl" />;
+    return <div className="gre-skeleton fixed inset-0 bg-slate-950" />;
   }
 
   if (activeMeeting?.status === "ended") {
@@ -699,12 +699,118 @@ export function MeetRoomPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4 sm:p-6">
-      <div className="mx-auto max-w-[1600px] space-y-6">
-        <div className="min-w-0">
-          <div className="gre-card overflow-hidden p-0">
-            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 p-6">
-              <div>
+    <div className="fixed inset-0 z-0 flex flex-col bg-slate-950">
+      {!isConnected ? (
+        <div className="flex h-full flex-col items-center justify-center gap-5 p-6 text-center text-white">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-brand-500/20 text-brand-300">
+            {isPreparingRoom && !showManualJoin ? (
+              <Loader2 className="h-8 w-8 animate-spin" />
+            ) : (
+              <Video className="h-8 w-8" />
+            )}
+          </div>
+          <div>
+            <p className="text-xl font-semibold">
+              {isPreparingRoom && !showManualJoin
+                ? "Joining meeting room…"
+                : activeMeeting?.status === "live"
+                  ? "Join the live GRE meeting"
+                  : "Ready to enter GRE Meet"}
+            </p>
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-400">
+              {isPreparingRoom && !showManualJoin
+                ? "GRE is starting the session if needed and opening the video room. This usually takes a few seconds."
+                : "Open Meeting controls for links, details, and manual join options."}
+            </p>
+          </div>
+          {showManualJoin && (
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Button loading={isPreparingRoom} onClick={() => void handleEnterRoom()}>
+                {isPreparingRoom ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Preparing room
+                  </>
+                ) : activeMeeting?.status === "live" ? (
+                  <>
+                    <Radio className="h-4 w-4" />
+                    Join live meeting
+                  </>
+                ) : (
+                  <>
+                    <Video className="h-4 w-4" />
+                    Enter meeting room
+                  </>
+                )}
+              </Button>
+              <Button variant="secondary" onClick={() => void handleOpenExternalRoom()}>
+                <ExternalLink className="h-4 w-4" />
+                Join in browser
+              </Button>
+            </div>
+          )}
+          {(joinMutation.isError || roomError) && (
+            <p className="text-sm text-red-400">
+              {roomError || parseApiError(joinMutation.error, "Could not join the meeting room.")}
+            </p>
+          )}
+          {!drawerOpen && (
+            <button
+              type="button"
+              onClick={() => {
+                setDrawerTab("info");
+                setDrawerOpen(true);
+              }}
+              className="text-sm font-semibold text-brand-300 underline-offset-2 hover:underline"
+            >
+              Open meeting details
+            </button>
+          )}
+        </div>
+      ) : embedUnavailable ? (
+        <div className="flex h-full flex-col items-center justify-center gap-5 p-6 text-center text-white">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20 text-red-300">
+            <Video className="h-8 w-8" />
+          </div>
+          <div>
+            <p className="text-xl font-semibold">Embedded room unavailable</p>
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-400">{roomError}</p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Button variant="secondary" onClick={() => setRoomRetryKey((value) => value + 1)}>
+              <RefreshCcw className="h-4 w-4" />
+              Retry embed
+            </Button>
+            <Button onClick={handleOpenExternalRoom}>
+              <ExternalLink className="h-4 w-4" />
+              Join in browser
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="relative h-full w-full">
+          <div ref={roomContainerRef} className="h-full w-full" />
+          {roomError && (
+            <div className="absolute inset-x-4 top-4 rounded-2xl bg-red-950/90 px-4 py-3 text-sm text-red-200 shadow">
+              {roomError}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!drawerOpen && <MeetRoomControlsFab onClick={() => setDrawerOpen(true)} />}
+
+      {activeMeeting && (
+        <MeetRoomToolsDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          tab={drawerTab}
+          onTabChange={setDrawerTab}
+          canManage={canManage}
+          meetingTitle={headerTitle}
+          panels={{
+            info: (
+              <div className="space-y-5">
                 <Link
                   to={meetingId ? `/dashboard/meetings/${meetingId}` : "/dashboard/meetings"}
                   className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"
@@ -712,113 +818,38 @@ export function MeetRoomPage() {
                   <ArrowLeft className="h-4 w-4" />
                   Back to meeting
                 </Link>
-                <h1 className="mt-2 text-2xl font-bold text-ink">{headerTitle}</h1>
-                <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <div>
+                  <h3 className="text-lg font-bold text-ink">{headerTitle}</h3>
+                  <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs">
                   <span className="rounded-full bg-brand-50 px-2.5 py-1 font-semibold text-brand-700">
                     {archiveId}
                   </span>
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 capitalize text-slate-600">
-                    {activeMeeting?.status}
+                    {activeMeeting.status}
                   </span>
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                    {roomParticipants.length} live participant{roomParticipants.length === 1 ? "" : "s"}
+                    {roomParticipants.length} live participant
+                    {roomParticipants.length === 1 ? "" : "s"}
                   </span>
                 </div>
-                <div className="mt-3">
-                  <p className="text-sm text-slate-500">
-                    Join the live GRE Meet room, or fall back to the external meeting link if the embedded room cannot load.
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="secondary" onClick={copyLink}>
-                  <Copy className="h-4 w-4" />
-                  Copy link
-                </Button>
-                {shareLink && (
-                  <a href={shareLink} target="_blank" rel="noreferrer">
-                    <Button variant="ghost">
-                      <ExternalLink className="h-4 w-4" />
-                      Open GRE link
-                    </Button>
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {!isConnected && showManualJoin && (
-              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 p-5">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
-                    Join the meeting room
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Automatic join did not complete. Use one of the actions below to enter.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button loading={isPreparingRoom} onClick={() => void handleEnterRoom()}>
-                    {canManage && activeMeeting?.status === "scheduled" ? (
-                      <>
-                        <Radio className="h-4 w-4" />
-                        Start and enter room
-                      </>
-                    ) : (
-                      <>
-                        <Video className="h-4 w-4" />
-                        Enter room
-                      </>
-                    )}
-                  </Button>
-                  <Button variant="secondary" onClick={() => void handleOpenExternalRoom()}>
-                    <ExternalLink className="h-4 w-4" />
-                    Join in browser
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {!isConnected ? (
-              <div className="flex min-h-[68vh] flex-col items-center justify-center gap-5 p-8 text-center">
-                  <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 text-brand-700">
-                    {isPreparingRoom && !showManualJoin ? (
-                      <Loader2 className="h-8 w-8 animate-spin" />
-                    ) : (
-                      <Video className="h-8 w-8" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-xl font-semibold text-ink">
-                      {isPreparingRoom && !showManualJoin
-                        ? "Joining meeting room…"
-                        : activeMeeting?.status === "live"
-                          ? "Join the live GRE meeting"
-                          : "Ready to enter GRE Meet"}
+                {!isConnected && (
+                  <div className="space-y-3 border-t border-slate-100 pt-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Join room
                     </p>
-                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">
-                      {isPreparingRoom && !showManualJoin
-                        ? "GRE is starting the session if needed and opening the video room. This usually takes a few seconds."
-                        : "Use the join actions above if the room does not open automatically."}
-                    </p>
-                  </div>
-                  {showManualJoin && (
-                    <div className="flex flex-wrap items-center justify-center gap-3">
+                    <div className="flex flex-wrap gap-2">
                       <Button loading={isPreparingRoom} onClick={() => void handleEnterRoom()}>
-                        {isPreparingRoom ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Preparing room
-                          </>
-                        ) : activeMeeting?.status === "live" ? (
+                        {canManage && activeMeeting.status === "scheduled" ? (
                           <>
                             <Radio className="h-4 w-4" />
-                            Join live meeting
+                            Start and enter
                           </>
                         ) : (
                           <>
                             <Video className="h-4 w-4" />
-                            Enter meeting room
+                            Enter room
                           </>
                         )}
                       </Button>
@@ -827,60 +858,11 @@ export function MeetRoomPage() {
                         Join in browser
                       </Button>
                     </div>
-                  )}
-                  {(joinMutation.isError || roomError) && (
-                    <p className="text-sm text-red-600">
-                      {roomError ||
-                        parseApiError(joinMutation.error, "Could not join the meeting room.")}
-                    </p>
-                  )}
-              </div>
-            ) : embedUnavailable ? (
-              <div className="flex min-h-[68vh] flex-col items-center justify-center gap-5 p-8 text-center">
-                  <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600">
-                    <Video className="h-8 w-8" />
-                  </div>
-                  <div>
-                    <p className="text-xl font-semibold text-ink">Embedded room unavailable</p>
-                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">{roomError}</p>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-center gap-3">
-                    <Button variant="secondary" onClick={() => setRoomRetryKey((value) => value + 1)}>
-                      <RefreshCcw className="h-4 w-4" />
-                      Retry embed
-                    </Button>
-                    <Button onClick={handleOpenExternalRoom}>
-                      <ExternalLink className="h-4 w-4" />
-                      Join in browser
-                    </Button>
-                  </div>
-              </div>
-            ) : (
-              <div className="relative h-[calc(100vh-12rem)] min-h-[640px] bg-slate-950">
-                <div ref={roomContainerRef} className="h-full w-full" />
-                {roomError && (
-                  <div className="absolute inset-x-4 top-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700 shadow">
-                    {roomError}
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        </div>
-
-        {isConnected && !drawerOpen && (
-          <MeetRoomControlsFab onClick={() => setDrawerOpen(true)} />
-        )}
-
-        {activeMeeting && (
-          <MeetRoomToolsDrawer
-            open={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-            tab={drawerTab}
-            onTabChange={setDrawerTab}
-            canManage={canManage}
-            panels={{
-              assistant: (
+            ),
+            assistant: (
                 <div className="space-y-5">
                   <MeetingGreAssistantPanel meeting={activeMeeting} compact />
                   {canManage && (
@@ -978,6 +960,20 @@ export function MeetRoomPage() {
               ),
               people: (
                 <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="secondary" onClick={copyLink}>
+                      <Copy className="h-4 w-4" />
+                      Copy link
+                    </Button>
+                    {shareLink && (
+                      <a href={shareLink} target="_blank" rel="noreferrer">
+                        <Button variant="ghost">
+                          <ExternalLink className="h-4 w-4" />
+                          Open GRE link
+                        </Button>
+                      </a>
+                    )}
+                  </div>
                   {canManage && activeMeeting.screen_share_moderator_only && (
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -1192,9 +1188,7 @@ export function MeetRoomPage() {
               ),
             }}
           />
-        )}
-
-      </div>
+      )}
 
       <ConfirmDialog
         open={confirmEndOpen}
