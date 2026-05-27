@@ -4,8 +4,10 @@ import {
   ChevronLeft,
   ChevronRight,
   GraduationCap,
+  Loader2,
   MapPin,
   MessageSquare,
+  Reply,
   Sparkles,
   Users,
   X,
@@ -23,10 +25,23 @@ import { UserAvatar } from "../ui/UserAvatar";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { authorDisplayName } from "../../lib/userDisplay";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
-import type { Publication, ResearcherRanking } from "../../types";
+import type {
+  AuthorResearchResponse,
+  InstitutionResearchResponse,
+  InstitutionSearchIdentity,
+  Publication,
+  ResearcherRanking,
+  ResearcherSearchIdentity,
+} from "../../types";
 
 interface Props {
   publications: Publication[];
+  authorResearch?: AuthorResearchResponse | null;
+  authorResearchLoading?: boolean;
+  authorQuery?: string;
+  institutionResearch?: InstitutionResearchResponse | null;
+  institutionResearchLoading?: boolean;
+  affiliationQuery?: string;
   open: boolean;
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -173,19 +188,192 @@ function collectInstitutionResults(publications: Publication[]): InstitutionResu
     );
 }
 
-function formatLocation(pub: Publication): string | null {
-  const c = pub.coordinates;
-  if (!c) return null;
-  const parts = [c.location, c.institution, c.study_area].filter(
-    (p) => p && String(p).trim()
+function InstitutionIdentityCard({
+  institution,
+  compact = false,
+}: {
+  institution: InstitutionSearchIdentity;
+  compact?: boolean;
+}) {
+  return (
+    <article
+      className={`overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 transition hover:border-brand-200 hover:bg-white hover:shadow-md ${
+        compact ? "p-3" : "p-3.5"
+      }`}
+    >
+      <div className="flex gap-3">
+        <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">
+          <Building2 className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-ink">{institution.name}</p>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
+              <BookOpenText className="h-3 w-3 text-brand-600" />
+              {institution.publication_count} publication
+              {institution.publication_count === 1 ? "" : "s"}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
+              <Users className="h-3 w-3 text-teal-600" />
+              {institution.researcher_count} researcher
+              {institution.researcher_count === 1 ? "" : "s"}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
+              <MessageSquare className="h-3 w-3 text-teal-600" />
+              {institution.discussions_count} discussion
+              {institution.discussions_count === 1 ? "" : "s"}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
+              <Reply className="h-3 w-3 text-brand-600" />
+              {institution.responses_count} response
+              {institution.responses_count === 1 ? "" : "s"}
+            </span>
+          </div>
+          {institution.leading_researcher?.name && (
+            <p className="mt-2 text-xs text-slate-600">
+              <span className="font-semibold text-slate-700">Leading researcher: </span>
+              {institution.leading_researcher.user_id ? (
+                <Link
+                  to={`/researcher/${institution.leading_researcher.user_id}`}
+                  className="font-medium text-brand-600 hover:underline"
+                >
+                  {institution.leading_researcher.name}
+                </Link>
+              ) : (
+                institution.leading_researcher.name
+              )}
+              {institution.leading_researcher.publication_count > 0
+                ? ` (${institution.leading_researcher.publication_count} publication${
+                    institution.leading_researcher.publication_count === 1 ? "" : "s"
+                  })`
+                : ""}
+            </p>
+          )}
+          {institution.leading_field?.name && (
+            <p className="mt-1 text-xs text-slate-600">
+              <span className="font-semibold text-slate-700">Leading field: </span>
+              {institution.leading_field.name} ({institution.leading_field.publication_count})
+            </p>
+          )}
+          {institution.leading_subfield?.name && (
+            <p className="mt-1 text-xs text-slate-600">
+              <span className="font-semibold text-slate-700">Leading subfield: </span>
+              {institution.leading_subfield.name} ({institution.leading_subfield.publication_count})
+            </p>
+          )}
+          <Link
+            to={institution.map_url}
+            className="mt-2 inline-flex text-xs font-semibold text-brand-600 hover:underline"
+          >
+            View all papers on map
+          </Link>
+        </div>
+      </div>
+    </article>
   );
-  if (parts.length === 0) return null;
-  const unique = [...new Set(parts.map((p) => String(p).trim()))];
-  return unique.join(" · ");
+}
+
+function ResearcherIdentityCard({
+  person,
+  compact = false,
+}: {
+  person: ResearcherSearchIdentity;
+  compact?: boolean;
+}) {
+  const profilePath =
+    person.profile_url || (person.user_id ? `/researcher/${person.user_id}` : null);
+  const papersPath = person.papers_map_url || (person.name ? `/?author=${encodeURIComponent(person.name)}` : null);
+
+  return (
+    <article
+      className={`overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 transition hover:border-brand-200 hover:bg-white hover:shadow-md ${
+        compact ? "p-3" : "p-3.5"
+      }`}
+    >
+      <div className="flex gap-3">
+        <UserAvatar
+          name={person.name}
+          photoUrl={person.photo}
+          size="sm"
+          className="h-11 w-11 rounded-xl border-2 text-sm"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-ink">{person.name}</p>
+              {person.affiliation && (
+                <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{person.affiliation}</p>
+              )}
+              {!person.has_profile && (
+                <p className="mt-1 text-[11px] font-medium text-amber-800">
+                  Co-author on GRE papers (no platform profile yet)
+                </p>
+              )}
+            </div>
+            {person.ranking ? (
+              <div className="shrink-0">
+                <ResearcherRankInline ranking={person.ranking} compact />
+              </div>
+            ) : null}
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
+              <BookOpenText className="h-3 w-3 text-brand-600" />
+              {person.publication_count} publication
+              {person.publication_count === 1 ? "" : "s"}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
+              <MessageSquare className="h-3 w-3 text-teal-600" />
+              {person.discussions_count} discussion
+              {person.discussions_count === 1 ? "" : "s"}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
+              <Reply className="h-3 w-3 text-brand-600" />
+              {person.responses_count} response
+              {person.responses_count === 1 ? "" : "s"}
+            </span>
+            {person.leading_interest ? (
+              <span className="col-span-2 rounded-full bg-brand-50 px-2 py-1 font-semibold text-brand-800">
+                Leading interest: {person.leading_interest}
+              </span>
+            ) : null}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-3">
+            {profilePath && person.has_profile ? (
+              <Link
+                to={profilePath}
+                className="inline-flex text-xs font-semibold text-brand-600 hover:underline"
+              >
+                View all papers on profile
+              </Link>
+            ) : papersPath ? (
+              <Link
+                to={papersPath}
+                className="inline-flex text-xs font-semibold text-brand-600 hover:underline"
+              >
+                View all papers on map
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function formatLocation(pub: Publication): string | null {
+  const location = pub.coordinates?.location?.trim();
+  return location || null;
 }
 
 export function MapResultsRail({
   publications,
+  authorResearch = null,
+  authorResearchLoading = false,
+  authorQuery = "",
+  institutionResearch = null,
+  institutionResearchLoading = false,
+  affiliationQuery = "",
   open,
   collapsed,
   onToggleCollapse,
@@ -226,8 +414,29 @@ export function MapResultsRail({
   );
 
   const countLabel = `${publications.length} matching paper${publications.length !== 1 ? "s" : ""}`;
-  const researcherResults = collectResearcherResults(publications).slice(0, 6);
-  const institutionResults = collectInstitutionResults(publications).slice(0, 6);
+  const hasAuthorSearch = authorQuery.length >= 2;
+  const exactResearcher =
+    authorResearch?.match_type === "exact" ? authorResearch.exact : null;
+  const fuzzyResearchers =
+    authorResearch?.match_type === "fuzzy" ? authorResearch.candidates : [];
+  const legacyResearcherResults =
+    !hasAuthorSearch || (!exactResearcher && fuzzyResearchers.length === 0)
+      ? collectResearcherResults(publications).slice(0, 6)
+      : [];
+  const hasAffiliationSearch = affiliationQuery.length >= 2;
+  const exactInstitution =
+    institutionResearch?.match_type === "exact" ? institutionResearch.exact : null;
+  const fuzzyInstitutions =
+    institutionResearch?.match_type === "fuzzy" ? institutionResearch.candidates : [];
+  const institutionResults =
+    !hasAffiliationSearch || (!exactInstitution && fuzzyInstitutions.length === 0)
+      ? collectInstitutionResults(publications).slice(0, 6)
+      : [];
+
+  const paperList =
+    exactResearcher?.publications && exactResearcher.publications.length > 0
+      ? exactResearcher.publications
+      : publications;
 
   const sheet = (
     <>
@@ -270,11 +479,29 @@ export function MapResultsRail({
                 Search results
               </p>
               <p className="mt-0.5 text-lg font-bold leading-tight text-ink">{countLabel}</p>
-              {(researcherResults.length > 0 || institutionResults.length > 0) && (
+              {(exactResearcher ||
+                fuzzyResearchers.length > 0 ||
+                legacyResearcherResults.length > 0 ||
+                exactInstitution ||
+                fuzzyInstitutions.length > 0 ||
+                institutionResults.length > 0) && (
                 <p className="mt-1 text-xs text-slate-500">
-                  {researcherResults.length} researcher match
-                  {researcherResults.length === 1 ? "" : "es"} · {institutionResults.length} institution
-                  {institutionResults.length === 1 ? "" : "s"}
+                  {exactResearcher
+                    ? "Exact researcher match"
+                    : fuzzyResearchers.length > 0
+                      ? `${fuzzyResearchers.length} similar researcher${
+                          fuzzyResearchers.length === 1 ? "" : "s"
+                        }`
+                      : legacyResearcherResults.length > 0
+                        ? `${legacyResearcherResults.length} researcher match${
+                            legacyResearcherResults.length === 1 ? "" : "es"
+                          }`
+                        : ""}
+                  {institutionResults.length > 0
+                    ? `${exactResearcher || fuzzyResearchers.length || legacyResearcherResults.length ? " · " : ""}${institutionResults.length} institution${
+                        institutionResults.length === 1 ? "" : "s"
+                      }`
+                    : ""}
                 </p>
               )}
             </div>
@@ -301,7 +528,48 @@ export function MapResultsRail({
             </div>
           ) : (
             <div className="space-y-6 gre-stagger">
-              {researcherResults.length > 0 && (
+              {hasAuthorSearch && authorResearchLoading && (
+                <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                  <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+                  Looking up researchers…
+                </div>
+              )}
+
+              {exactResearcher && (
+                <section className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-brand-600" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
+                      Researcher
+                    </h3>
+                  </div>
+                  <ResearcherIdentityCard person={exactResearcher} />
+                </section>
+              )}
+
+              {!exactResearcher && fuzzyResearchers.length > 0 && (
+                <section className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-brand-600" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
+                      Similar researchers
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    No exact name match for &ldquo;{authorQuery}&rdquo;. Showing close matches from
+                    published papers and co-authors.
+                  </p>
+                  <ul className="space-y-2.5">
+                    {fuzzyResearchers.map((person) => (
+                      <li key={person.key}>
+                        <ResearcherIdentityCard person={person} compact />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {!hasAuthorSearch && legacyResearcherResults.length > 0 && (
                 <section className="space-y-2.5">
                   <div className="flex items-center gap-2">
                     <GraduationCap className="h-4 w-4 text-brand-600" />
@@ -310,7 +578,7 @@ export function MapResultsRail({
                     </h3>
                   </div>
                   <ul className="space-y-2.5">
-                    {researcherResults.map((person) => (
+                    {legacyResearcherResults.map((person) => (
                       <li key={person.key}>
                         <article className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5 transition hover:border-brand-200 hover:bg-white hover:shadow-md">
                           <div className="flex gap-3">
@@ -354,14 +622,6 @@ export function MapResultsRail({
                                   {person.primarySubfield}
                                 </p>
                               )}
-                              {person.interests.length > 0 && (
-                                <p className="mt-1 line-clamp-2 text-xs text-slate-600">
-                                  <span className="font-semibold text-slate-700">
-                                    Research interests:{" "}
-                                  </span>
-                                  {person.interests.join(", ")}
-                                </p>
-                              )}
                               {person.userId && (
                                 <Link
                                   to={`/researcher/${person.userId}`}
@@ -379,6 +639,67 @@ export function MapResultsRail({
                 </section>
               )}
 
+              {hasAuthorSearch &&
+                !authorResearchLoading &&
+                authorResearch?.match_type === "none" &&
+                publications.length > 0 && (
+                  <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    No researcher named &ldquo;{authorQuery}&rdquo; was found on GRE papers. Showing
+                    matching publications below.
+                  </p>
+                )}
+
+              {hasAffiliationSearch && institutionResearchLoading && (
+                <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                  <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+                  Looking up institutions…
+                </div>
+              )}
+
+              {exactInstitution && (
+                <section className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-brand-600" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
+                      Institution
+                    </h3>
+                  </div>
+                  <InstitutionIdentityCard institution={exactInstitution} />
+                </section>
+              )}
+
+              {!exactInstitution && fuzzyInstitutions.length > 0 && (
+                <section className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-brand-600" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
+                      Similar institutions
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    No exact match for &ldquo;{affiliationQuery}&rdquo;. Showing close university and
+                    organization matches on GRE.
+                  </p>
+                  <ul className="space-y-2.5">
+                    {fuzzyInstitutions.map((institution) => (
+                      <li key={institution.key}>
+                        <InstitutionIdentityCard institution={institution} compact />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {hasAffiliationSearch &&
+                !institutionResearchLoading &&
+                institutionResearch?.match_type === "none" &&
+                publications.length > 0 && (
+                  <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    No institution matching &ldquo;{affiliationQuery}&rdquo; was found. Showing
+                    related publications below.
+                  </p>
+                )}
+
               {institutionResults.length > 0 && (
                 <section className="space-y-2.5">
                   <div className="flex items-center gap-2">
@@ -390,54 +711,12 @@ export function MapResultsRail({
                   <ul className="space-y-2.5">
                     {institutionResults.map((institution) => (
                       <li key={institution.key}>
-                        <article className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5 transition hover:border-brand-200 hover:bg-white hover:shadow-md">
-                          <div className="flex gap-3">
-                            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">
-                              <Building2 className="h-5 w-5" />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold text-ink">{institution.label}</p>
-                              <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-600">
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
-                                  <BookOpenText className="h-3 w-3 text-brand-600" />
-                                  {institution.totalPublications} publication
-                                  {institution.totalPublications === 1 ? "" : "s"}
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
-                                  <Users className="h-3 w-3 text-teal-600" />
-                                  {institution.totalResearchers} researcher
-                                  {institution.totalResearchers === 1 ? "" : "s"}
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
-                                  <MessageSquare className="h-3 w-3 text-brand-600" />
-                                  {institution.totalDiscussions} discussion
-                                  {institution.totalDiscussions === 1 ? "" : "s"}
-                                </span>
-                              </div>
-                              {institution.leadingSubfields.length > 0 && (
-                                <p className="mt-2 line-clamp-2 text-xs text-slate-600">
-                                  <span className="font-semibold text-slate-700">
-                                    Leading publication areas:{" "}
-                                  </span>
-                                  {institution.leadingSubfields.join(", ")}
-                                </p>
-                              )}
-                              {institution.mainInterests.length > 0 && (
-                                <p className="mt-1 line-clamp-2 text-xs text-slate-600">
-                                  <span className="font-semibold text-slate-700">
-                                    Main specializations:{" "}
-                                  </span>
-                                  {institution.mainInterests.join(", ")}
-                                </p>
-                              )}
-                              <Link
-                                to={`/?affiliation=${encodeURIComponent(institution.label)}`}
-                                className="mt-2 inline-flex text-xs font-semibold text-brand-600 hover:underline"
-                              >
-                                Search this institution on the map
-                              </Link>
-                            </div>
-                          </div>
+                        <article className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5">
+                          <p className="text-sm font-semibold text-ink">{institution.label}</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {institution.totalPublications} publications ·{" "}
+                            {institution.totalResearchers} researchers
+                          </p>
                         </article>
                       </li>
                     ))}
@@ -446,14 +725,21 @@ export function MapResultsRail({
               )}
 
               <section className="space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <BookOpenText className="h-4 w-4 text-brand-600" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
-                    Papers
-                  </h3>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <BookOpenText className="h-4 w-4 text-brand-600" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
+                      Papers
+                    </h3>
+                  </div>
+                  {exactResearcher && exactResearcher.publication_count > (paperList.length || 0) && (
+                    <p className="text-[11px] text-slate-500">
+                      Showing {paperList.length} of {exactResearcher.publication_count}
+                    </p>
+                  )}
                 </div>
                 <ul className="space-y-2.5">
-                  {publications.map((pub, i) => {
+                  {paperList.map((pub, i) => {
                     const location = formatLocation(pub);
                     const subVisual = publicationSubcategoryVisual(pub);
                     return (

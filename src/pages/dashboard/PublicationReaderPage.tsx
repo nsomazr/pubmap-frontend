@@ -20,7 +20,11 @@ import { UserAvatar } from "../../components/ui/UserAvatar";
 import { StudyLocationSection } from "../../components/map/StudyLocationSection";
 import { ManuscriptContent } from "../../components/publication/ManuscriptContent";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
-import { authorBylineFromPublication } from "../../lib/publicationAuthors";
+import {
+  authorBylineFromPublication,
+  authorBylineWithoutAffiliations,
+} from "../../lib/publicationAuthors";
+import { publicationMapLocationLabel } from "../../lib/publicationMapLocation";
 import type { Publication } from "../../types";
 
 function formatPublishedDate(value?: string): string | undefined {
@@ -72,9 +76,7 @@ export function PublicationReaderPage() {
     pub.author?.full_name ||
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
   const subVisual = publicationSubcategoryVisual(pub);
-  const locationLabel = [pub.coordinates?.location, pub.coordinates?.institution]
-    .filter(Boolean)
-    .join(" · ");
+  const locationLabel = publicationMapLocationLabel(pub);
   const manuscriptSections = [
     { title: "Introduction", body: pub.introduction },
     { title: "Methods", body: pub.methods },
@@ -109,7 +111,7 @@ export function PublicationReaderPage() {
             title={pub.title}
             greNumber={pub.short_number}
             funder={pub.funder}
-            authorByline={authorBylineFromPublication(pub)}
+            authorByline={authorBylineWithoutAffiliations(authorBylineFromPublication(pub))}
             subVisual={subVisual}
             subCategoryName={pub.subfield_name || pub.sub_category_name}
             publishedLabel={formatPublishedDate(pub.created_at)}

@@ -21,7 +21,11 @@ import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { StudyLocationSection } from "../components/map/StudyLocationSection";
 import { ManuscriptContent } from "../components/publication/ManuscriptContent";
 import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
-import { authorBylineFromPublication } from "../lib/publicationAuthors";
+import {
+  authorBylineFromPublication,
+  authorBylineWithoutAffiliations,
+} from "../lib/publicationAuthors";
+import { publicationMapLocationLabel } from "../lib/publicationMapLocation";
 import { publicationPublicApiPath } from "../lib/publicationPaths";
 import type { Publication } from "../types";
 
@@ -82,9 +86,7 @@ export function PublicationDetailPage() {
     pub.author?.full_name ||
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
   const subVisual = publicationSubcategoryVisual(pub);
-  const locationLabel = [pub.coordinates?.location, pub.coordinates?.institution]
-    .filter(Boolean)
-    .join(" · ");
+  const locationLabel = publicationMapLocationLabel(pub);
   const manuscriptSections = [
     { title: "Introduction", body: pub.introduction },
     { title: "Methods", body: pub.methods },
@@ -114,7 +116,7 @@ export function PublicationDetailPage() {
             title={pub.title}
             greNumber={pub.short_number}
             funder={pub.funder}
-            authorByline={authorBylineFromPublication(pub)}
+            authorByline={authorBylineWithoutAffiliations(authorBylineFromPublication(pub))}
             subVisual={subVisual}
             subCategoryName={pub.sub_category_name}
             publishedLabel={formatPublishedDate(pub.created_at)}

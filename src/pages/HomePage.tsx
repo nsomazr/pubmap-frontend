@@ -14,13 +14,21 @@ import { ResearchMap } from "../components/map/ResearchMap";
 import { MapPublicationSheet } from "../components/map/MapPublicationSheet";
 import { assets } from "../lib/brand";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import type { Category, Publication, SubCategory } from "../types";
+import type {
+  AuthorResearchResponse,
+  Category,
+  InstitutionResearchResponse,
+  MapRegionSelection,
+  Publication,
+  SubCategory,
+} from "../types";
 
 type MapSearchFilters = {
   author: string;
   affiliation: string;
   title: string;
   location: string;
+  mapRegion: MapRegionSelection | null;
   categoryId: string;
   subCategoryId: string;
 };
@@ -44,6 +52,13 @@ export function HomePage() {
   const [resultsRailCollapsed, setResultsRailCollapsed] = useState(false);
   const [searchPanelOpen, setSearchPanelOpen] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [authorResearch, setAuthorResearch] = useState<AuthorResearchResponse | null>(null);
+  const [authorResearchLoading, setAuthorResearchLoading] = useState(false);
+  const [institutionResearch, setInstitutionResearch] =
+    useState<InstitutionResearchResponse | null>(null);
+  const [institutionResearchLoading, setInstitutionResearchLoading] = useState(false);
+  const [mapPickMode, setMapPickMode] = useState(false);
+  const [mapRegion, setMapRegion] = useState<MapRegionSelection | null>(null);
   const [selectedPublicationId, setSelectedPublicationId] = useState<number | null>(null);
   const [mapExpanded, setMapExpanded] = useState(false);
   const [focusPubId, setFocusPubId] = useState<number | null>(null);
@@ -103,23 +118,53 @@ export function HomePage() {
         affiliation: debouncedAffiliation,
         title: debouncedTitle,
         location,
+        mapRegion,
         categoryId,
         subCategoryId,
       };
       setSearching(true);
       setSearchError(null);
+      const authorQuery = active.author.trim();
+      const affiliationQuery = active.affiliation.trim();
       try {
-        const { data } = await api.get<Publication[]>("/map/search/", {
+        const pubsRequest = api.get<Publication[]>("/map/search/", {
           params: {
-            author: active.author || undefined,
-            affiliation: active.affiliation || undefined,
+            author: authorQuery || undefined,
+            affiliation: affiliationQuery || undefined,
             title: active.title || undefined,
-            location: active.location || undefined,
+            location: active.mapRegion ? undefined : active.location || undefined,
+            lat: active.mapRegion?.lat,
+            lng: active.mapRegion?.lng,
+            radius_km: active.mapRegion?.radiusKm,
             category: active.categoryId || undefined,
             sub_category: active.subCategoryId || undefined,
           },
         });
-        setResults(data);
+        const researcherRequest =
+          authorQuery.length >= 2
+            ? api.get<AuthorResearchResponse>("/map/researchers/search/", {
+                params: { q: authorQuery },
+              })
+            : Promise.resolve(null);
+        const institutionRequest =
+          affiliationQuery.length >= 2
+            ? api.get<InstitutionResearchResponse>("/map/institutions/search/", {
+                params: { q: affiliationQuery },
+              })
+            : Promise.resolve(null);
+
+        setAuthorResearchLoading(authorQuery.length >= 2);
+        setInstitutionResearchLoading(affiliationQuery.length >= 2);
+        const [pubsResponse, researcherResponse, institutionResponse] = await Promise.all([
+          pubsRequest,
+          researcherRequest,
+          institutionRequest,
+        ]);
+        setResults(pubsResponse.data);
+        setAuthorResearch(researcherResponse ? researcherResponse.data : null);
+        setInstitutionResearch(
+          institutionResponse ? institutionResponse.data : null
+        );
         if (options?.revealResults) {
           userDismissedResultsRailRef.current = false;
           setResultsRailOpen(true);
@@ -129,11 +174,23 @@ export function HomePage() {
         }
       } catch {
         setSearchError("Search failed. Check your connection and try again.");
+        setAuthorResearch(null);
+        setInstitutionResearch(null);
       } finally {
         setSearching(false);
+        setAuthorResearchLoading(false);
+        setInstitutionResearchLoading(false);
       }
     },
-    [debouncedAuthor, debouncedAffiliation, debouncedTitle, location, categoryId, subCategoryId]
+    [
+      debouncedAuthor,
+      debouncedAffiliation,
+      debouncedTitle,
+      location,
+      mapRegion,
+      categoryId,
+      subCategoryId,
+    ]
   );
 
   const handleSearch = async (e?: React.FormEvent) => {
@@ -145,6 +202,7 @@ export function HomePage() {
         affiliation,
         title,
         location,
+        mapRegion,
         categoryId,
         subCategoryId,
       },
@@ -152,14 +210,48 @@ export function HomePage() {
     );
   };
 
+  const handleMapRegionPick = useCallback(
+    (lat: number, lng: number) => {
+      const selection: MapRegionSelection = {
+        lat,
+        lng,
+        radiusKm: 80,
+        label: `Map region (${lat.toFixed(2)}, ${lng.toFixed(2)})`,
+      };
+      setMapRegion(selection);
+      setLocation("");
+      setMapPickMode(false);
+      skipAutoSearchRef.current = false;
+      void runSearch(
+        {
+          author,
+          affiliation,
+          title,
+          location: "",
+          mapRegion: selection,
+          categoryId,
+          subCategoryId,
+        },
+        { revealResults: true }
+      );
+    },
+    [author, affiliation, title, categoryId, subCategoryId, runSearch]
+  );
+
   const clearFilters = () => {
     setAuthor("");
     setAffiliation("");
     setTitle("");
     setLocation("");
+    setMapRegion(null);
+    setMapPickMode(false);
     setCategoryId("");
     setSubCategoryId("");
     setResults(null);
+    setAuthorResearch(null);
+    setAuthorResearchLoading(false);
+    setInstitutionResearch(null);
+    setInstitutionResearchLoading(false);
     setResultsRailOpen(false);
     setResultsRailCollapsed(false);
     userDismissedResultsRailRef.current = false;
@@ -174,6 +266,7 @@ export function HomePage() {
       debouncedAffiliation ||
       debouncedTitle ||
       location ||
+      mapRegion ||
       categoryId ||
       subCategoryId;
     if (!hasFilter) return;
@@ -183,6 +276,7 @@ export function HomePage() {
     debouncedAffiliation,
     debouncedTitle,
     location,
+    mapRegion,
     categoryId,
     subCategoryId,
     searchPanelOpen,
@@ -270,6 +364,9 @@ export function HomePage() {
               className="rounded-none border-0"
               mapExpanded={mapExpanded}
               onMapExpandedChange={setMapExpanded}
+              mapPickMode={mapPickMode}
+              mapRegion={mapRegion}
+              onMapRegionPick={handleMapRegionPick}
               onPublicationSelect={(publication) =>
                 setSelectedPublicationId(publication?.id ?? null)
               }
@@ -311,6 +408,9 @@ export function HomePage() {
             author={author}
             affiliation={affiliation}
             title={title}
+            location={location}
+            mapPickMode={mapPickMode}
+            mapRegionLabel={mapRegion?.label}
             categoryId={categoryId}
             subCategoryId={subCategoryId}
             categories={categories}
@@ -330,6 +430,15 @@ export function HomePage() {
             onAuthorChange={setAuthor}
             onAffiliationChange={setAffiliation}
             onTitleChange={setTitle}
+            onLocationChange={(value) => {
+              setLocation(value);
+              if (value.trim()) setMapRegion(null);
+            }}
+            onMapPickModeChange={setMapPickMode}
+            onMapRegionClear={() => {
+              setMapRegion(null);
+              setMapPickMode(false);
+            }}
             onCategoryChange={setCategoryId}
             onSubCategoryChange={setSubCategoryId}
             onSearch={handleSearch}
@@ -357,6 +466,12 @@ export function HomePage() {
         {resultsRailOpen && (
           <MapResultsRail
             publications={publications}
+            authorResearch={authorResearch}
+            authorResearchLoading={authorResearchLoading}
+            authorQuery={author.trim()}
+            institutionResearch={institutionResearch}
+            institutionResearchLoading={institutionResearchLoading}
+            affiliationQuery={affiliation.trim()}
             open={resultsRailOpen}
             collapsed={resultsRailCollapsed}
             onToggleCollapse={() => setResultsRailCollapsed((c) => !c)}

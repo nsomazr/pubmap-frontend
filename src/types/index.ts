@@ -300,6 +300,68 @@ export interface PublicResearcherProfile {
   institution_map_url?: string;
 }
 
+export interface ResearcherSearchIdentity {
+  key: string;
+  name: string;
+  affiliation: string;
+  photo?: string;
+  user_id?: number | null;
+  has_profile: boolean;
+  profile_url?: string | null;
+  papers_map_url?: string | null;
+  publication_count: number;
+  discussions_count: number;
+  responses_count: number;
+  leading_interest: string;
+  ranking?: ResearcherRanking;
+  publications?: Publication[];
+}
+
+export interface AuthorResearchResponse {
+  query: string;
+  match_type: "exact" | "fuzzy" | "none";
+  exact: ResearcherSearchIdentity | null;
+  candidates: ResearcherSearchIdentity[];
+}
+
+export interface InstitutionLeadingArea {
+  name: string;
+  publication_count: number;
+}
+
+export interface InstitutionLeadingResearcher {
+  name: string;
+  user_id?: number | null;
+  publication_count: number;
+}
+
+export interface InstitutionSearchIdentity {
+  key: string;
+  name: string;
+  map_url: string;
+  publication_count: number;
+  researcher_count: number;
+  discussions_count: number;
+  responses_count: number;
+  leading_researcher: InstitutionLeadingResearcher;
+  leading_field: InstitutionLeadingArea;
+  leading_subfield: InstitutionLeadingArea;
+}
+
+export interface InstitutionResearchResponse {
+  query: string;
+  match_type: "exact" | "fuzzy" | "none";
+  exact: InstitutionSearchIdentity | null;
+  candidates: InstitutionSearchIdentity[];
+}
+
+export type MapRegionSelection = {
+  lat: number;
+  lng: number;
+  radiusKm: number;
+  label: string;
+};
+
 export interface SubcategoryVisual {
   name: string;
   category_name?: string;

@@ -3,6 +3,7 @@ import {
   BookOpen,
   ChevronRight,
   GripVertical,
+  MapPin,
   Search,
   SlidersHorizontal,
   User,
@@ -23,6 +24,9 @@ interface Props {
   author: string;
   affiliation: string;
   title: string;
+  location: string;
+  mapPickMode: boolean;
+  mapRegionLabel?: string;
   categoryId: string;
   subCategoryId: string;
   categories: Category[];
@@ -39,6 +43,9 @@ interface Props {
   onAuthorChange: (v: string) => void;
   onAffiliationChange: (v: string) => void;
   onTitleChange: (v: string) => void;
+  onLocationChange: (v: string) => void;
+  onMapPickModeChange: (enabled: boolean) => void;
+  onMapRegionClear: () => void;
   onCategoryChange: (v: string) => void;
   onSubCategoryChange: (v: string) => void;
   onSearch: (e?: React.FormEvent) => void;
@@ -154,6 +161,9 @@ export function MapSearchHub({
   author,
   affiliation,
   title,
+  location,
+  mapPickMode,
+  mapRegionLabel,
   categoryId,
   subCategoryId,
   categories,
@@ -169,6 +179,9 @@ export function MapSearchHub({
   onAuthorChange,
   onAffiliationChange,
   onTitleChange,
+  onLocationChange,
+  onMapPickModeChange,
+  onMapRegionClear,
   onCategoryChange,
   onSubCategoryChange,
   onSearch,
@@ -182,7 +195,8 @@ export function MapSearchHub({
   const panelRef = useRef<HTMLDivElement>(null);
 
   const activeFilterCount = [categoryId, subCategoryId].filter(Boolean).length;
-  const hasInput = author || affiliation || title || categoryId || subCategoryId;
+  const hasInput =
+    author || affiliation || title || location || mapRegionLabel || categoryId || subCategoryId;
 
   const filterChips = useMemo(
     () =>
@@ -190,6 +204,8 @@ export function MapSearchHub({
         author,
         affiliation,
         title,
+        location,
+        mapRegionLabel,
         categoryId,
         subCategoryId,
         categories,
@@ -197,6 +213,8 @@ export function MapSearchHub({
         onAuthorChange,
         onAffiliationChange,
         onTitleChange,
+        onLocationChange,
+        onMapRegionClear,
         onCategoryChange,
         onSubCategoryChange,
       }),
@@ -204,6 +222,8 @@ export function MapSearchHub({
       author,
       affiliation,
       title,
+      location,
+      mapRegionLabel,
       categoryId,
       subCategoryId,
       categories,
@@ -211,6 +231,9 @@ export function MapSearchHub({
       onAuthorChange,
       onAffiliationChange,
       onTitleChange,
+      onLocationChange,
+      onMapPickModeChange,
+      onMapRegionClear,
       onCategoryChange,
       onSubCategoryChange,
     ]
@@ -270,7 +293,7 @@ export function MapSearchHub({
 
   const summary =
     filterChips.map((c) => c.label).join(" · ") ||
-    [author, affiliation, title].filter(Boolean).join(" · ") ||
+    [author, affiliation, title, mapRegionLabel || location].filter(Boolean).join(" · ") ||
     "Search publications on the map";
 
   const filterChipsRow =
@@ -406,6 +429,34 @@ export function MapSearchHub({
             <option key={inst} value={inst} />
           ))}
         </datalist>
+        <div className="space-y-2">
+          <MapSearchField
+            icon={MapPin}
+            label="Location"
+            placeholder="Place name or region"
+            value={location}
+            onChange={onLocationChange}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              onLocationChange("");
+              onMapPickModeChange(!mapPickMode);
+            }}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-semibold transition ${
+              mapPickMode
+                ? "border-brand-300 bg-brand-50 text-brand-800"
+                : "border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:bg-brand-50/60"
+            }`}
+          >
+            <MapPin className="h-3.5 w-3.5" />
+            {mapPickMode
+              ? "Click the map to set search region…"
+              : mapRegionLabel
+                ? `Region: ${mapRegionLabel}`
+                : "Select region on map"}
+          </button>
+        </div>
       </div>
 
       {(showFilters || categoryId || subCategoryId) && (

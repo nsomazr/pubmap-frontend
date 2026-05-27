@@ -60,8 +60,8 @@ export function buildPublicationFollowUpSuggestions(
     push("What were the key findings?");
   }
 
-  if (pub.coordinates?.location || pub.coordinates?.study_area || pub.coordinates?.institution) {
-    const place = pub.coordinates.study_area?.trim() || pub.coordinates.location?.trim();
+  if (pub.coordinates?.location?.trim()) {
+    const place = pub.coordinates.location.trim();
     push(place ? `Tell me about the study location in ${place}.` : "Where was this study conducted?");
   }
 

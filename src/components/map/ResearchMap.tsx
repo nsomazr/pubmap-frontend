@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import type { Publication } from "../../types";
 import { PublicationMarkerLayer } from "./PublicationMarkerLayer";
 import { MapExpandControl } from "./MapExpandControl";
+import { MapRegionPicker } from "./MapRegionPicker";
+import type { MapRegionSelection } from "../../types";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
@@ -37,6 +39,9 @@ interface Props {
   mapExpanded?: boolean;
   onMapExpandedChange?: (expanded: boolean) => void;
   onPublicationSelect?: (publication: Publication | null) => void;
+  mapPickMode?: boolean;
+  mapRegion?: MapRegionSelection | null;
+  onMapRegionPick?: (lat: number, lng: number) => void;
 }
 
 export function ResearchMap({
@@ -49,6 +54,9 @@ export function ResearchMap({
   mapExpanded = false,
   onMapExpandedChange,
   onPublicationSelect,
+  mapPickMode = false,
+  mapRegion = null,
+  onMapRegionPick,
 }: Props) {
   const withCoords = publications.filter(
     (p) => p.coordinates?.latitude && p.coordinates?.longitude
@@ -60,8 +68,13 @@ export function ResearchMap({
   return (
     <div
       style={{ height }}
-      className={`gre-map ts-map relative w-full ${embedded ? "gre-map--embedded" : "gre-map--landing"} ${className || "rounded-none border-0 shadow-none"}`}
+      className={`gre-map ts-map relative w-full ${embedded ? "gre-map--embedded" : "gre-map--landing"} ${mapPickMode ? "gre-map--pick-mode" : ""} ${className || "rounded-none border-0 shadow-none"}`}
     >
+      {mapPickMode && (
+        <div className="pointer-events-none absolute left-1/2 top-3 z-[1002] -translate-x-1/2 rounded-full bg-brand-600/95 px-4 py-2 text-xs font-semibold text-white shadow-lg">
+          Click the map to search this region
+        </div>
+      )}
       <MapContainer
         center={[-6.37, 34.89]}
         zoom={5}
@@ -80,7 +93,14 @@ export function ResearchMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {!focusPublicationId && <FitBounds pubs={withCoords} />}
+        {!focusPublicationId && !mapRegion && <FitBounds pubs={withCoords} />}
+        {onMapRegionPick && (
+          <MapRegionPicker
+            enabled={mapPickMode}
+            region={mapRegion}
+            onPick={onMapRegionPick}
+          />
+        )}
         <PublicationMarkerLayer
           publications={publications}
           focusPublicationId={focusPublicationId}

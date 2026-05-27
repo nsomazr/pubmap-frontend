@@ -14,6 +14,8 @@ export function buildMapFilterChips(props: {
   author: string;
   affiliation: string;
   title: string;
+  location: string;
+  mapRegionLabel?: string;
   categoryId: string;
   subCategoryId: string;
   categories: Category[];
@@ -21,6 +23,8 @@ export function buildMapFilterChips(props: {
   onAuthorChange: (v: string) => void;
   onAffiliationChange: (v: string) => void;
   onTitleChange: (v: string) => void;
+  onLocationChange: (v: string) => void;
+  onMapRegionClear: () => void;
   onCategoryChange: (v: string) => void;
   onSubCategoryChange: (v: string) => void;
 }): ActiveMapFilter[] {
@@ -44,6 +48,19 @@ export function buildMapFilterChips(props: {
       key: "affiliation",
       label: `Institution: ${props.affiliation.trim()}`,
       onRemove: () => props.onAffiliationChange(""),
+    });
+  }
+  if (props.mapRegionLabel) {
+    chips.push({
+      key: "map-region",
+      label: props.mapRegionLabel,
+      onRemove: props.onMapRegionClear,
+    });
+  } else if (props.location.trim()) {
+    chips.push({
+      key: "location",
+      label: `Location: ${props.location.trim()}`,
+      onRemove: () => props.onLocationChange(""),
     });
   }
   if (props.categoryId) {

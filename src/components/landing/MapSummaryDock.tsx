@@ -14,10 +14,8 @@ interface Props {
 }
 
 function formatLocation(pub: Publication): string | null {
-  const c = pub.coordinates;
-  if (!c) return null;
-  const parts = [c.location, c.institution].filter((p) => p && String(p).trim());
-  return parts.length ? parts.join(" · ") : null;
+  const location = pub.coordinates?.location?.trim();
+  return location || null;
 }
 
 function SummaryDragHandle() {

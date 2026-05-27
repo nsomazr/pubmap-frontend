@@ -61,7 +61,7 @@ function PlatformNameBadge() {
       </span>
       <span className="mt-1.5 grid w-full grid-cols-[minmax(1.75rem,1fr)_auto_minmax(1.75rem,1fr)] items-center gap-2 text-[9px] font-medium leading-tight tracking-[0.02em] text-slate-50 sm:mt-2 sm:gap-3 sm:text-[11px] sm:tracking-[0.03em]">
         <span className="block h-px w-full bg-white/80" />
-        <span className="text-center">Sharing research, connecting experts, advancing discovery</span>
+        <span className="text-center">sharing research, connecting experts, advancing discovery</span>
         <span className="block h-px w-full bg-white/80" />
       </span>
     </div>

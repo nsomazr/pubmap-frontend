@@ -1071,6 +1071,14 @@ body {
   overflow: hidden;
 }
 
+.gre-map--pick-mode .leaflet-container {
+  cursor: crosshair !important;
+}
+
+.gre-map--pick-mode .leaflet-interactive {
+  cursor: crosshair !important;
+}
+
 .gre-map--landing .leaflet-pane.leaflet-popup-pane {
   z-index: 1200;
 }

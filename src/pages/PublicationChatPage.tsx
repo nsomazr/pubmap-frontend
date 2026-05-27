@@ -9,6 +9,7 @@ import { PublicationSummaryAssistant } from "../components/publication/Publicati
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
 import { SubcategoryVisual } from "../components/taxonomy/SubcategoryVisual";
+import { publicationMapLocationLabel } from "../lib/publicationMapLocation";
 import { buildPublicationPath, publicationPublicApiPath } from "../lib/publicationPaths";
 import type { Publication } from "../types";
 
@@ -59,9 +60,7 @@ export function PublicationChatPage() {
     pub.author?.full_name ||
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
   const subVisual = publicationSubcategoryVisual(pub);
-  const locationLabel = [pub.coordinates?.location, pub.coordinates?.institution]
-    .filter(Boolean)
-    .join(" · ");
+  const locationLabel = publicationMapLocationLabel(pub);
   const crumbTitle = formatGrePaperTitle(pub.title, pub.short_number);
 
   return (

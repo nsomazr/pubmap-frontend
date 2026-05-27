@@ -160,3 +160,11 @@ export function authorBylineFromPublication(publication: Publication): AuthorByl
   const coAuthors = publication.co_authors ?? publicationCoAuthorsFromPublication(publication);
   return buildAuthorByline(coAuthors.team);
 }
+
+/** Author names for public paper headers (no university / affiliation footnotes). */
+export function authorBylineWithoutAffiliations(byline: AuthorByline): AuthorByline {
+  return {
+    authors: byline.authors.map((author) => ({ ...author, affiliationIndices: [] })),
+    affiliations: [],
+  };
+}

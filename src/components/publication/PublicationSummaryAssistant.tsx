@@ -6,9 +6,12 @@ import {
   assistantSummarizePublicationStream,
   type SummaryFollowUpTurn,
 } from "../../lib/assistant";
+import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
+import { buildPublicationPath } from "../../lib/publicationPaths";
 import { buildPublicationFollowUpSuggestions } from "../../lib/publicationFollowUpSuggestions";
 import type { Publication } from "../../types";
+import { PublicationSummaryActions } from "./PublicationSummaryActions";
 
 type FollowUpItem = {
   id: string;
@@ -194,6 +197,30 @@ export function PublicationSummaryAssistant({
   const isDock = layout === "dock";
   const isPage = layout === "page";
 
+  const publicationHref = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}${buildPublicationPath(publicationId, publication?.encoded_id)}`;
+  }, [publicationId, publication?.encoded_id]);
+
+  const publicationTitle = useMemo(
+    () =>
+      publication
+        ? formatGrePaperTitle(publication.title, publication.short_number)
+        : undefined,
+    [publication]
+  );
+
+  const summaryActions =
+    summary.trim() && !summaryLoading ? (
+      <PublicationSummaryActions
+        summary={summary}
+        publicationTitle={publicationTitle}
+        publicationHref={publicationHref}
+        onRegenerate={() => void runSummary()}
+        regenerating={summaryLoading}
+      />
+    ) : null;
+
   const suggestionChips =
     visibleSuggestions.length > 0 ? (
       <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -314,6 +341,7 @@ export function PublicationSummaryAssistant({
               <div className="text-sm leading-relaxed text-slate-800">
                 <FormattedAssistantText content={summary} streaming={summaryLoading} />
               </div>
+              {summaryActions}
             </div>
           ) : null}
 
@@ -357,7 +385,10 @@ export function PublicationSummaryAssistant({
             Generating summary…
           </span>
         ) : (
-          <FormattedAssistantText content={summary} streaming={summaryLoading} />
+          <>
+            <FormattedAssistantText content={summary} streaming={summaryLoading} />
+            {summaryActions}
+          </>
         )}
       </div>
 
