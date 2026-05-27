@@ -11,7 +11,7 @@ import {
   Send,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { LocationPicker } from "../../components/map/LocationPicker";
 import { PageHeader } from "../../components/dashboard/PageHeader";
@@ -306,6 +306,68 @@ function ExtractionLoadingPanel({
         </div>
       </div>
     </div>
+  );
+}
+
+const COMPOSER_STEPS = [
+  {
+    number: "1",
+    title: "Research setup",
+    detail: "Choose the field and subfield first.",
+  },
+  {
+    number: "2",
+    title: "Source paper",
+    detail: "Upload the manuscript source file.",
+  },
+  {
+    number: "3",
+    title: "Manuscript",
+    detail: "Review the title and manuscript content together.",
+  },
+  {
+    number: "4",
+    title: "Study context",
+    detail: "Confirm location and institution details.",
+  },
+  {
+    number: "5",
+    title: "Contributors",
+    detail: "Set your role and manage co-authors.",
+  },
+  {
+    number: "6",
+    title: "Access & submit",
+    detail: "Set visibility and finish the submission.",
+  },
+] as const;
+
+function ComposerStage({
+  number,
+  title,
+  description,
+  children,
+}: {
+  number: string;
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="gre-card overflow-visible p-6 sm:p-8">
+      <div className="border-b border-slate-100 pb-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white shadow-sm">
+            {number}
+          </span>
+          <div>
+            <h2 className="text-lg font-bold text-ink">{title}</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">{description}</p>
+          </div>
+        </div>
+      </div>
+      <div className="mt-6">{children}</div>
+    </section>
   );
 }
 
@@ -1153,15 +1215,52 @@ export function PublicationManagePage() {
 
         {composerTab === "editor" && (
           <>
-            <section className="gre-card space-y-4 p-6">
-                <div>
-                  <h2 className="text-lg font-bold text-ink">Original paper</h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Upload the manuscript first so GRE can auto-fill the title and manuscript sections
-                    before you continue editing. Open papers show the uploaded file publicly after
-                    approval; closed papers keep it visible only to the paper owner.
-                  </p>
-                </div>
+            <section className="rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-brand-50/30 p-5 shadow-sm">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
+                  Submission flow
+                </p>
+                <h2 className="mt-1 text-lg font-bold text-ink">Complete your publication in stages</h2>
+              </div>
+              <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                {COMPOSER_STEPS.map((step) => (
+                  <div
+                    key={step.number}
+                    className="rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 shadow-sm"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
+                        {step.number}
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-ink">{step.title}</p>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-500">{step.detail}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <ComposerStage
+              number="1"
+              title="Research setup"
+              description="Choose the field and subfield first so GRE can place the paper correctly across discovery and review."
+            >
+              <CategorySubcategoryPicker
+                categories={categories}
+                categoryId={categoryId}
+                subCategoryId={subCategoryId}
+                onCategoryChange={setCategoryId}
+                onSubCategoryChange={setSubCategoryId}
+              />
+            </ComposerStage>
+
+            <ComposerStage
+              number="2"
+              title="Source paper"
+              description="Upload the manuscript source before continuing. Open papers show the uploaded file publicly after approval, while closed papers keep it visible only to the paper owner."
+            >
                 {isNew ? (
                   <div className="space-y-3">
                     <ManuscriptUploadField
@@ -1206,55 +1305,19 @@ export function PublicationManagePage() {
                     onExtracted={applyExtractedDocument}
                   />
                 ) : null}
-            </section>
+            </ComposerStage>
 
-            <section className="gre-card space-y-4 p-6">
-              <div>
-                <h2 className="text-lg font-bold text-ink">Publication details</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {isClosedAccess
-                    ? "Title and subfield appear on the map and in search."
-                    : "Upload your paper to auto-fill the manuscript sections, then review and edit them before publishing."}
-                </p>
-              </div>
-              <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-              <CategorySubcategoryPicker
-                categories={categories}
-                categoryId={categoryId}
-                subCategoryId={subCategoryId}
-                onCategoryChange={setCategoryId}
-                onSubCategoryChange={setSubCategoryId}
-              />
-            </section>
-
-            <section className="gre-card p-6">
-              <PublicationAccessFields
-                gre={gre}
-                onChange={setGre}
-                accessLocked={isNew && accessTypeChosen}
-                onChangeAccess={!isNew ? handleAccessTypeSelect : undefined}
-                disabled={isReadOnly}
-              />
-            </section>
-
-            <section className="gre-card overflow-visible p-6 sm:p-8">
-              <div className="border-b border-slate-100 pb-5">
-                <h2 className="text-lg font-bold text-ink">Manuscript sections</h2>
-                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">
-                  {isClosedAccess ? (
-                    <>
-                      Closed-access uploads can still auto-fill these sections from the source file.
-                      Use <strong>Paper preview</strong> to see the reader layout.
-                    </>
-                  ) : (
-                    <>
-                      Open-access uploads can auto-fill these sections from the paper. Review and refine
-                      them here before saving.
-                    </>
-                  )}
-                </p>
-              </div>
-              <div className="mt-6">
+            <ComposerStage
+              number="3"
+              title="Manuscript"
+              description={
+                isClosedAccess
+                  ? "Start with the title here, then review the closed-access manuscript sections filled from the source file."
+                  : "Start with the title here, then review and refine the manuscript sections filled from the paper."
+              }
+            >
+              <div className="space-y-6">
+                <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
                 {extractionUi.status === "extracting" && (
                   <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-brand-700">
                     Autofill workspace
@@ -1298,38 +1361,26 @@ export function PublicationManagePage() {
                 )}
                 <ManuscriptSectionsEditor fields={manuscript} onChange={setManuscript} />
               </div>
-            </section>
-          </>
-        )}
+            </ComposerStage>
 
-        {!isClosedAccess && !isNew && id && (
-          <PublicationSupplementaryUpload
-            publicationId={Number(id)}
-            documents={pub?.documents as GreDocument[] | undefined}
-          />
-        )}
-
-        {!isNew && id && (
-          <PublicationFiguresEditor
-            publicationId={Number(id)}
-            figures={figures}
-            onChange={setFigures}
-          />
-        )}
-
-        <section className="gre-card p-6">
-          <h2 className="mb-1 font-semibold text-ink">Where does this study take place?</h2>
-          <p className="mb-5 text-sm text-slate-500">
-            Search for a city or landmark, or click the map. Coordinates are filled automatically.
-          </p>
+        <ComposerStage
+          number="4"
+          title="Study context"
+          description="Confirm where the study takes place. Search for a city or landmark, or click the map to fill coordinates automatically."
+        >
           <LocationPicker
             value={coordinates}
             onChange={setCoordinates}
             institutionDefault={user?.affiliation || ""}
           />
-        </section>
+        </ComposerStage>
 
-        <section className="gre-card space-y-4 p-6">
+        <ComposerStage
+          number="5"
+          title="Contributors"
+          description="Confirm your role on the paper, then add any additional co-authors and their affiliations."
+        >
+        <section className="space-y-4">
           <div>
             <h2 className="font-semibold text-ink">Your role on this publication</h2>
             <p className="mt-1 text-sm text-slate-500">
@@ -1383,7 +1434,7 @@ export function PublicationManagePage() {
           )}
         </section>
 
-        <section className="gre-card space-y-4 p-6">
+        <section className="mt-8 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-semibold text-ink">Additional co-authors</h2>
@@ -1452,6 +1503,38 @@ export function PublicationManagePage() {
             </div>
           ))}
         </section>
+        </ComposerStage>
+
+        <ComposerStage
+          number="6"
+          title="Access & submit"
+          description="Set visibility at the end, then review any additional files before submitting the publication."
+        >
+          <div className="space-y-8">
+            <PublicationAccessFields
+              gre={gre}
+              onChange={setGre}
+              accessLocked={isNew && accessTypeChosen}
+              onChangeAccess={!isNew ? handleAccessTypeSelect : undefined}
+              disabled={isReadOnly}
+            />
+
+            {!isClosedAccess && !isNew && id && (
+              <PublicationSupplementaryUpload
+                publicationId={Number(id)}
+                documents={pub?.documents as GreDocument[] | undefined}
+              />
+            )}
+
+            {!isNew && id && (
+              <PublicationFiguresEditor
+                publicationId={Number(id)}
+                figures={figures}
+                onChange={setFigures}
+              />
+            )}
+          </div>
+        </ComposerStage>
 
         <div className="publication-submit-bar sticky bottom-4 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-lg backdrop-blur-md">
           <Button
@@ -1506,6 +1589,8 @@ export function PublicationManagePage() {
             </Link>
           )}
         </div>
+          </>
+        )}
       </form>
       )}
 
