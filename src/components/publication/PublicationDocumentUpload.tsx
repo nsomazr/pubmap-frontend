@@ -7,6 +7,8 @@ import type { Publication } from "../../types";
 import { PdfPreview } from "./PdfPreview";
 
 const ACCEPT = ".pdf,.doc,.docx,.txt,.rtf";
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+const MAX_FILE_SIZE_LABEL = "25 MB";
 
 interface Props {
   publicationId: number;
@@ -104,6 +106,10 @@ export function PublicationDocumentUpload({
 
   const onPick = (file: File | null) => {
     if (!file || disabled) return;
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setLocalError(`File must be ${MAX_FILE_SIZE_LABEL} or smaller.`);
+      return;
+    }
     setLocalError("");
     uploadMutation.mutate(file);
   };

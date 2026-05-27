@@ -3,6 +3,8 @@ import { useRef, useState } from "react";
 import { PdfPreview } from "./PdfPreview";
 
 const ACCEPT = ".pdf,.doc,.docx,.txt,.rtf";
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+const MAX_FILE_SIZE_LABEL = "25 MB";
 
 interface Props {
   file: File | null;
@@ -19,8 +21,23 @@ export function ManuscriptUploadField({
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [localError, setLocalError] = useState("");
 
   const hasPreview = Boolean(file || existingDocumentPath);
+
+  const handlePickedFile = (nextFile: File | null) => {
+    if (!nextFile) {
+      setLocalError("");
+      onFileChange(null);
+      return;
+    }
+    if (nextFile.size > MAX_FILE_SIZE_BYTES) {
+      setLocalError(`File must be ${MAX_FILE_SIZE_LABEL} or smaller.`);
+      return;
+    }
+    setLocalError("");
+    onFileChange(nextFile);
+  };
 
   return (
     <div className="space-y-4">
@@ -38,7 +55,7 @@ export function ManuscriptUploadField({
           e.preventDefault();
           setDragOver(false);
           const f = e.dataTransfer.files?.[0];
-          if (f) onFileChange(f);
+          if (f) handlePickedFile(f);
         }}
         onClick={() => !disabled && inputRef.current?.click()}
         onKeyDown={(e) => e.key === "Enter" && !disabled && inputRef.current?.click()}
@@ -56,7 +73,10 @@ export function ManuscriptUploadField({
           accept={ACCEPT}
           className="hidden"
           disabled={disabled}
-          onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            handlePickedFile(e.target.files?.[0] ?? null);
+            e.target.value = "";
+          }}
         />
         <FileUp className="mx-auto h-10 w-10 text-brand-500" />
         <p className="mt-3 text-sm font-semibold text-ink">
@@ -64,6 +84,7 @@ export function ManuscriptUploadField({
         </p>
         <p className="mt-1 text-xs text-slate-500">PDF, DOCX, DOC, TXT, or RTF · max 25 MB</p>
       </div>
+      {localError && <p className="text-sm text-red-600">{localError}</p>}
 
       {(file || existingDocumentPath) && (
         <div className="flex flex-wrap gap-2">
