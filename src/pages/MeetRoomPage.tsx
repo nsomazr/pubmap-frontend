@@ -44,6 +44,7 @@ import {
   fetchMeetingBySlug,
   formatMeetingDate,
   formatMeetingId,
+  inviteMeetingByEmail,
   joinMeetingRoom,
 } from "../lib/meetings";
 import type { MeetChatMessage, MeetSession } from "../types";
@@ -171,6 +172,7 @@ export function MeetRoomPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [embedTimedOut, setEmbedTimedOut] = useState(false);
   const [pipOpening, setPipOpening] = useState(false);
+  const [inviteSending, setInviteSending] = useState(false);
   const assistantCaptureUnavailableRef = useRef(false);
 
   const { data: meeting, isLoading } = useQuery({
@@ -469,60 +471,53 @@ export function MeetRoomPage() {
       const joinData = await prepareRoom();
       const directUrl = buildExternalRoomUrl(joinData);
       if (!directUrl) {
-        throw new Error("Could not prepare a direct meeting link for picture-in-picture.");
+        throw new Error("Could not prepare a direct Jitsi room link for picture-in-picture.");
       }
-      const docPiP = (window as Window & { documentPictureInPicture?: any }).documentPictureInPicture;
+
+      const popupFeatures = "popup=yes,width=960,height=640,noopener,noreferrer";
+      const docPiP = (window as Window & { documentPictureInPicture?: { requestWindow?: (opts: { width: number; height: number }) => Promise<Window> } }).documentPictureInPicture;
       if (docPiP?.requestWindow) {
-        const pipWindow = await docPiP.requestWindow({
-          width: 480,
-          height: 320,
-        });
-        pipWindow.document.body.style.margin = "0";
-        pipWindow.document.body.style.background = "#020617";
-
-        const frame = pipWindow.document.createElement("iframe");
-        frame.src = directUrl;
-        frame.style.width = "100%";
-        frame.style.height = "100%";
-        frame.style.border = "0";
-        frame.allow =
-          "camera; microphone; fullscreen; display-capture; autoplay; clipboard-write; encrypted-media";
-        pipWindow.document.body.appendChild(frame);
-        toast.success({
-          title: "Picture-in-picture opened",
-          description: "Meeting popped out into a floating window.",
-        });
-        return;
+        try {
+          const pipWindow = await docPiP.requestWindow({
+            width: 960,
+            height: 640,
+          });
+          pipWindow.location.href = directUrl;
+          toast.success({
+            title: "Picture-in-picture opened",
+            description: "Meeting opened in a floating Jitsi window.",
+          });
+          return;
+        } catch {
+          // Fall through to popup if browser blocks document PiP navigation.
+        }
       }
 
-      const popup = window.open(
-        directUrl,
-        "gre-meet-pip",
-        "popup=yes,width=480,height=320,noopener,noreferrer"
-      );
+      const popup = window.open(directUrl, "gre-meet-pip", popupFeatures);
       if (!popup) {
         toast.error({
           title: "Popup blocked",
-          description: "Allow popups for this site to open a mini meeting window.",
+          description: "Allow popups for this site to open the meeting pop-out window.",
         });
         return;
       }
       toast.success({
-        title: "Mini meeting window opened",
-        description: "Using popup mode because native picture-in-picture is unavailable.",
+        title: "Meeting pop-out opened",
+        description: "The Jitsi room opened in a separate window.",
       });
     } catch (error) {
       toast.error({
         title: "Could not open picture-in-picture",
-        description: error instanceof Error ? error.message : "Unexpected browser error.",
+        description: parseApiError(error, "Could not open the meeting pop-out window."),
       });
     } finally {
       setPipOpening(false);
     }
   };
 
-  const inviteParticipantByEmail = () => {
+  const inviteParticipantByEmail = async () => {
     const email = inviteEmail.trim();
+    if (!meetingId) return;
     if (!email) {
       toast.error({
         title: "Enter an email",
@@ -531,14 +526,26 @@ export function MeetRoomPage() {
       return;
     }
 
-    const fallback = slug ? `${window.location.origin.replace(/\/$/, "")}/meet/${slug}` : "";
-    const link = activeMeeting?.meeting_link || fallback;
-    const subject = encodeURIComponent(`Invitation: ${headerTitle}`);
-    const body = encodeURIComponent(
-      `You are invited to join this GRE meeting.\n\nMeeting: ${headerTitle}\nLink: ${link}`
-    );
-    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
-    setInviteEmail("");
+    setInviteSending(true);
+    try {
+      const result = await inviteMeetingByEmail(meetingId, { email });
+      setInviteEmail("");
+      toast.success({
+        title: "Invitation sent",
+        description: result.user_found
+          ? `${email} received a GRE Meet invite email and in-app notification.`
+          : `${email} received a GRE Meet invite email with join instructions.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
+    } catch (error) {
+      toast.error({
+        title: "Could not send invite",
+        description: parseApiError(error, "Could not send the meeting invitation email."),
+      });
+    } finally {
+      setInviteSending(false);
+    }
   };
 
   const canJoinMeeting =
@@ -1178,23 +1185,34 @@ export function MeetRoomPage() {
               ),
               people: (
                 <div className="space-y-3">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Invite by email
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <input
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(event) => setInviteEmail(event.target.value)}
-                        placeholder="attendee@example.com"
-                        className="min-w-[220px] flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                      />
-                      <Button type="button" variant="secondary" onClick={inviteParticipantByEmail}>
-                        Invite
-                      </Button>
+                  {canManage && (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Invite by email
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        GRE sends a formatted invitation with meeting details and join link.
+                      </p>
+                      <form
+                        className="mt-2 flex flex-col gap-2 sm:flex-row"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void inviteParticipantByEmail();
+                        }}
+                      >
+                        <input
+                          type="email"
+                          value={inviteEmail}
+                          onChange={(event) => setInviteEmail(event.target.value)}
+                          placeholder="attendee@example.com"
+                          className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                        />
+                        <Button type="submit" variant="secondary" loading={inviteSending} className="sm:shrink-0">
+                          Send invite
+                        </Button>
+                      </form>
                     </div>
-                  </div>
+                  )}
                   {canManage && activeMeeting.screen_share_moderator_only && (
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">

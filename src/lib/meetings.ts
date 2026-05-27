@@ -68,6 +68,17 @@ export async function fetchMeetingParticipants(id: number) {
   return data;
 }
 
+export async function inviteMeetingByEmail(
+  meetingId: number,
+  payload: { email: string; message?: string }
+) {
+  const { data } = await api.post<{ detail: string; email: string; user_found: boolean }>(
+    `/meetings/${meetingId}/invite-email/`,
+    payload
+  );
+  return data;
+}
+
 export async function fetchMeetingChat(id: number) {
   const { data } = await api.get<MeetChatMessage[]>(`/meetings/${id}/chat/`);
   return data;
