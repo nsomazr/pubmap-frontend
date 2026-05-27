@@ -5,6 +5,7 @@ import {
   ExternalLink,
   Loader2,
   MicOff,
+  PictureInPicture2,
   Radio,
   RefreshCcw,
   Send,
@@ -166,6 +167,7 @@ export function MeetRoomPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<MeetRoomDrawerTab>("assistant");
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
+  const [embedTimedOut, setEmbedTimedOut] = useState(false);
 
   const { data: meeting, isLoading } = useQuery({
     queryKey: ["meeting-by-slug", slug],
@@ -353,6 +355,7 @@ export function MeetRoomPage() {
 
     const boot = async () => {
       setRoomError("");
+      setJitsiReady(false);
       await loadJitsiExternalApi(joinData.server_url);
       if (cancelled || !roomContainerRef.current || !window.JitsiMeetExternalAPI) return;
 
@@ -373,11 +376,14 @@ export function MeetRoomPage() {
         configOverwrite: buildJitsiConfigOverwrite(meetHostSettingsFromSession(activeMeeting)),
       });
       jitsiApiRef.current = apiInstance;
-      setJitsiReady(true);
       setIsModerator(canManage);
       refreshParticipants();
 
-      const onJoined = () => refreshParticipants();
+      const onJoined = () => {
+        setJitsiReady(true);
+        setEmbedTimedOut(false);
+        refreshParticipants();
+      };
       const onParticipantJoined = () => refreshParticipants();
       const onParticipantLeft = () => refreshParticipants();
       const onRoleChanged = (payload: { role?: string }) => {
@@ -453,6 +459,66 @@ export function MeetRoomPage() {
     }
   };
 
+  const openMeetingPictureInPicture = async () => {
+    const fallback = slug ? `${window.location.origin.replace(/\/$/, "")}/meet/${slug}` : "";
+    const link = activeMeeting?.meeting_link || fallback;
+    if (!link) {
+      toast.error({
+        title: "Meeting link unavailable",
+        description: "Could not open picture-in-picture without a meeting link.",
+      });
+      return;
+    }
+
+    try {
+      const docPiP = (window as Window & { documentPictureInPicture?: any }).documentPictureInPicture;
+      if (docPiP?.requestWindow) {
+        const pipWindow = await docPiP.requestWindow({
+          width: 480,
+          height: 320,
+        });
+        pipWindow.document.body.style.margin = "0";
+        pipWindow.document.body.style.background = "#020617";
+
+        const frame = pipWindow.document.createElement("iframe");
+        frame.src = link;
+        frame.style.width = "100%";
+        frame.style.height = "100%";
+        frame.style.border = "0";
+        frame.allow =
+          "camera; microphone; fullscreen; display-capture; autoplay; clipboard-write; encrypted-media";
+        pipWindow.document.body.appendChild(frame);
+        toast.success({
+          title: "Picture-in-picture opened",
+          description: "Meeting popped out into a floating window.",
+        });
+        return;
+      }
+
+      const popup = window.open(
+        link,
+        "gre-meet-pip",
+        "popup=yes,width=480,height=320,noopener,noreferrer"
+      );
+      if (!popup) {
+        toast.error({
+          title: "Popup blocked",
+          description: "Allow popups for this site to open a mini meeting window.",
+        });
+        return;
+      }
+      toast.success({
+        title: "Mini meeting window opened",
+        description: "Using popup mode because native picture-in-picture is unavailable.",
+      });
+    } catch (error) {
+      toast.error({
+        title: "Could not open picture-in-picture",
+        description: error instanceof Error ? error.message : "Unexpected browser error.",
+      });
+    }
+  };
+
   const canJoinMeeting =
     meeting?.can_join !== false &&
     (meeting?.status === "scheduled" || meeting?.status === "live");
@@ -465,7 +531,20 @@ export function MeetRoomPage() {
     activeMeeting?.meeting_link ||
     (slug ? `${window.location.origin.replace(/\/$/, "")}/meet/${slug}` : "");
   const archiveId = activeMeeting ? formatMeetingId(activeMeeting.id) : "";
-  const embedUnavailable = isConnected && !!roomError && !jitsiApiRef.current;
+  const embedUnavailable = isConnected && !jitsiReady && (embedTimedOut || !!roomError);
+  const embedStatusMessage =
+    roomError ||
+    "The embedded meeting is taking too long to start. This is usually a Jitsi network/auth issue.";
+  useEffect(() => {
+    if (!isConnected || jitsiReady || !!roomError) {
+      setEmbedTimedOut(false);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      if (!jitsiReady) setEmbedTimedOut(true);
+    }, 12000);
+    return () => window.clearTimeout(timer);
+  }, [isConnected, jitsiReady, roomError]);
   const notesStatusLabel =
     notesState === "saving"
       ? "Saving notes..."
@@ -699,7 +778,8 @@ export function MeetRoomPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-0 flex flex-col bg-slate-950">
+    <div className="fixed inset-0 z-0 bg-slate-950 p-2 sm:p-3">
+      <div className="relative h-full w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-2xl">
       {!isConnected ? (
         <div className="flex h-full flex-col items-center justify-center gap-5 p-6 text-center text-white">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-brand-500/20 text-brand-300">
@@ -774,7 +854,7 @@ export function MeetRoomPage() {
           </div>
           <div>
             <p className="text-xl font-semibold">Embedded room unavailable</p>
-            <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-400">{roomError}</p>
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-400">{embedStatusMessage}</p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Button variant="secondary" onClick={() => setRoomRetryKey((value) => value + 1)}>
@@ -964,6 +1044,10 @@ export function MeetRoomPage() {
                     <Button variant="secondary" onClick={copyLink}>
                       <Copy className="h-4 w-4" />
                       Copy link
+                    </Button>
+                    <Button variant="secondary" onClick={() => void openMeetingPictureInPicture()}>
+                      <PictureInPicture2 className="h-4 w-4" />
+                      Picture in picture
                     </Button>
                     {shareLink && (
                       <a href={shareLink} target="_blank" rel="noreferrer">
@@ -1189,6 +1273,7 @@ export function MeetRoomPage() {
             }}
           />
       )}
+      </div>
 
       <ConfirmDialog
         open={confirmEndOpen}
