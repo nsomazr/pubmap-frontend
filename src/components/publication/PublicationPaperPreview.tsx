@@ -91,6 +91,14 @@ export function PublicationPaperPreview({
         )}
       </section>
 
+      <div className="space-y-4">
+        <PublicationManuscriptSection title="Introduction" body={data.introduction} />
+        <PublicationManuscriptSection title="Methods" body={data.methods} />
+        <PublicationManuscriptSection title="Results" body={data.results} />
+        <PublicationManuscriptSection title="Findings — discussion" body={data.findings} />
+        <PublicationManuscriptSection title="Conclusion" body={data.conclusion} />
+      </div>
+
       {canShowPdf && (
         <section className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white">
           <div className="border-b border-slate-100 px-5 py-3 sm:px-7">
@@ -108,14 +116,6 @@ export function PublicationPaperPreview({
           />
         </section>
       )}
-
-      <div className="space-y-4">
-        <PublicationManuscriptSection title="Introduction" body={data.introduction} />
-        <PublicationManuscriptSection title="Methods" body={data.methods} />
-        <PublicationManuscriptSection title="Results" body={data.results} />
-        <PublicationManuscriptSection title="Findings — discussion" body={data.findings} />
-        <PublicationManuscriptSection title="Conclusion" body={data.conclusion} />
-      </div>
     </div>
   );
 }
