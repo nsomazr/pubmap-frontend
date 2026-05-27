@@ -569,12 +569,15 @@ export function MapResultsRail({
                 </section>
               )}
 
-              {!hasAuthorSearch && legacyResearcherResults.length > 0 && (
+              {( !hasAuthorSearch || authorResearch?.match_type === "none") &&
+                legacyResearcherResults.length > 0 && (
                 <section className="space-y-2.5">
                   <div className="flex items-center gap-2">
                     <GraduationCap className="h-4 w-4 text-brand-600" />
                     <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
-                      Researchers
+                      {hasAuthorSearch && authorResearch?.match_type === "none"
+                        ? "Researchers from papers"
+                        : "Researchers"}
                     </h3>
                   </div>
                   <ul className="space-y-2.5">
