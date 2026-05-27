@@ -360,7 +360,12 @@ export function MapSearchHub({
       onSubmit={(e) => {
         e.preventDefault();
         onSearch(e);
-        setOpen(false);
+        const submitter = (e.nativeEvent as SubmitEvent).submitter as
+          | HTMLButtonElement
+          | null;
+        if (submitter?.dataset.closePanelOnSubmit === "true") {
+          setOpen(false);
+        }
       }}
       className={`map-search-hub-form overflow-hidden rounded-2xl bg-white/95 shadow-xl shadow-slate-900/15 ring-1 ring-white/90 backdrop-blur-xl${
         isCompact
@@ -518,6 +523,7 @@ export function MapSearchHub({
         </div>
         <button
           type="submit"
+          data-close-panel-on-submit="true"
           disabled={searching}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-60"
         >
