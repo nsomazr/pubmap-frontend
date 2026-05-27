@@ -1,6 +1,6 @@
 import { AlertCircle } from "lucide-react";
 import type { ReactNode } from "react";
-import { RichTextEditor } from "../editor/RichTextEditor";
+import { ManuscriptRichTextField } from "./ManuscriptRichTextField";
 import { Input } from "../ui/Input";
 
 export type ManuscriptFields = {
@@ -67,7 +67,7 @@ export function ManuscriptSectionsEditor({
       <div className="rounded-2xl border border-brand-100/80 bg-gradient-to-br from-brand-50/50 via-white to-teal-50/30 px-4 py-3.5 text-sm leading-relaxed text-slate-600 sm:px-5">
         <p>
           <strong className="font-semibold text-brand-800">Results</strong> should list factual outcomes.{" "}
-          <strong className="font-semibold text-brand-800">Findings / discussion</strong> holds interpretation.
+          <strong className="font-semibold text-brand-800">Findings — discussion</strong> holds interpretation.
           Review each section carefully before submitting.
         </p>
       </div>
@@ -83,7 +83,7 @@ export function ManuscriptSectionsEditor({
           required
         />
         <FieldExtractionNote note={sectionNotes.title} />
-        <RichTextEditor
+        <ManuscriptRichTextField
           label="Abstract"
           value={fields.abstract}
           onChange={(v) => onChange("abstract", v)}
@@ -102,7 +102,7 @@ export function ManuscriptSectionsEditor({
       </ManuscriptGroup>
 
       <ManuscriptGroup title="Background" description="Context, objectives, and study motivation.">
-        <RichTextEditor
+        <ManuscriptRichTextField
           label="Introduction"
           value={fields.introduction}
           onChange={(v) => onChange("introduction", v)}
@@ -115,14 +115,14 @@ export function ManuscriptSectionsEditor({
         title="Methods & results"
         description="How the work was done and what was observed."
       >
-        <RichTextEditor
+        <ManuscriptRichTextField
           label="Methods"
           value={fields.methods}
           onChange={(v) => onChange("methods", v)}
           placeholder="Design, data collection, and analysis…"
         />
         <FieldExtractionNote note={sectionNotes.methods} />
-        <RichTextEditor
+        <ManuscriptRichTextField
           label="Results"
           value={fields.results}
           onChange={(v) => onChange("results", v)}
@@ -132,14 +132,14 @@ export function ManuscriptSectionsEditor({
       </ManuscriptGroup>
 
       <ManuscriptGroup title="Discussion & closing" description="Interpretation and takeaways.">
-        <RichTextEditor
-          label="Findings / discussion"
+        <ManuscriptRichTextField
+          label="Findings — discussion"
           value={fields.findings}
           onChange={(v) => onChange("findings", v)}
           placeholder="Interpret results and relate them to the literature…"
         />
         <FieldExtractionNote note={sectionNotes.findings} />
-        <RichTextEditor
+        <ManuscriptRichTextField
           label="Conclusion"
           value={fields.conclusion}
           onChange={(v) => onChange("conclusion", v)}
@@ -150,13 +150,13 @@ export function ManuscriptSectionsEditor({
 
       <ManuscriptGroup title="Funding & references" description="Acknowledgements and citations.">
         <Input
-          label="Funder / acknowledgements"
+          label="Funder — acknowledgements"
           value={fields.funder}
           onChange={(e) => onChange("funder", e.target.value)}
           placeholder="Grant numbers, institutions, or partners"
         />
         <FieldExtractionNote note={sectionNotes.funder} />
-        <RichTextEditor
+        <ManuscriptRichTextField
           label="References"
           value={fields.references}
           onChange={(v) => onChange("references", v)}

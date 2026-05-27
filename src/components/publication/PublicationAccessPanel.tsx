@@ -47,7 +47,7 @@ export function PublicationAccessPanel({ gre, onChange, disabled }: Props) {
           }`}
         >
           <Lock className="h-5 w-5 text-slate-700" />
-          <p className="mt-2 font-semibold text-ink">Restricted / closed</p>
+          <p className="mt-2 font-semibold text-ink">Restricted — closed</p>
           <p className="mt-1 text-xs text-slate-600">Structured sections + GRE summary PDF (no full PDF on map)</p>
         </button>
       </div>
@@ -62,7 +62,7 @@ export function PublicationAccessPanel({ gre, onChange, disabled }: Props) {
           disabled={disabled}
         />
         <Input
-          label="Reference / source URL"
+          label="Reference — source URL"
           type="url"
           value={gre.reference_url || ""}
           onChange={(e) => onChange({ ...gre, reference_url: e.target.value })}

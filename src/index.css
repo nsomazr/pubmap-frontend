@@ -1687,6 +1687,49 @@ body {
   color: #475569;
 }
 
+.gre-manuscript-body table {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+  font-size: 0.95em;
+  line-height: 1.45;
+}
+
+.gre-manuscript-body th,
+.gre-manuscript-body td {
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 0.65rem;
+  vertical-align: top;
+  text-align: left;
+}
+
+.gre-manuscript-body th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.gre-manuscript-body thead th {
+  text-align: center;
+}
+
+.gre-manuscript-body hr {
+  margin: 1.25rem 0;
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.gre-manuscript-body strong,
+.gre-manuscript-body b {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.gre-manuscript-body em,
+.gre-manuscript-body i {
+  font-style: italic;
+}
+
 .publication-paper-header h1 {
   text-align: left;
   hyphens: none;

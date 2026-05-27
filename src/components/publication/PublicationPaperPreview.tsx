@@ -113,7 +113,7 @@ export function PublicationPaperPreview({
         <PublicationManuscriptSection title="Introduction" body={data.introduction} />
         <PublicationManuscriptSection title="Methods" body={data.methods} />
         <PublicationManuscriptSection title="Results" body={data.results} />
-        <PublicationManuscriptSection title="Findings / discussion" body={data.findings} />
+        <PublicationManuscriptSection title="Findings — discussion" body={data.findings} />
         <PublicationManuscriptSection title="Conclusion" body={data.conclusion} />
       </div>
     </div>

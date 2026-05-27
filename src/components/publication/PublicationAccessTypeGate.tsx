@@ -27,7 +27,7 @@ const OPTIONS: {
   },
   {
     type: "closed",
-    title: "Restricted / closed access",
+    title: "Restricted — closed access",
     summary: "Publish structured GRE summaries without sharing the full PDF.",
     icon: Lock,
     points: [

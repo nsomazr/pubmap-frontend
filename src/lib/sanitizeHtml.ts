@@ -92,7 +92,22 @@ export function sanitizeManuscriptHtml(html: string): string {
   if (typeof window !== "undefined") {
     return DOMPurify.sanitize(html, {
       USE_PROFILES: { html: true },
-      ADD_TAGS: ["span", "div", "pre", "code", "h1", "h5", "h6"],
+      ADD_TAGS: [
+        "span",
+        "div",
+        "pre",
+        "code",
+        "h1",
+        "h5",
+        "h6",
+        "table",
+        "thead",
+        "tbody",
+        "tr",
+        "th",
+        "td",
+        "hr",
+      ],
       ADD_ATTR: ["target", "rel", "class", "style", "aria-hidden"],
       ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
       FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "input"],

@@ -89,7 +89,7 @@ export function PublicationDetailPage() {
     { title: "Introduction", body: pub.introduction },
     { title: "Methods", body: pub.methods },
     { title: "Results", body: pub.results },
-    { title: "Findings / discussion", body: pub.findings },
+    { title: "Findings — discussion", body: pub.findings },
     { title: "Conclusion", body: pub.conclusion },
   ].filter((section) => Boolean(section.body?.trim()));
 
