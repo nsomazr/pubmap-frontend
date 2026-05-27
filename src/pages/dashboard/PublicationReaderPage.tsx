@@ -134,6 +134,18 @@ export function PublicationReaderPage() {
             </section>
           )}
 
+          <PublicationDownloadPanel
+            publicationId={pub.id}
+            encodedId={pub.encoded_id}
+            gre={pub.gre}
+            documents={pub.documents}
+            isClosed={isClosed}
+            publicationTitle={crumbTitle}
+            initialLikesCount={pub.likes_count ?? 0}
+            initialLikedByMe={pub.liked_by_me ?? false}
+            initialShareCount={pub.share_count ?? 0}
+          />
+
           <section className="gre-card min-w-0 overflow-hidden p-6 sm:p-8">
             <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">Abstract</h2>
             {pub.abstract?.trim() ? (
@@ -148,18 +160,6 @@ export function PublicationReaderPage() {
               </p>
             )}
           </section>
-
-          <PublicationDownloadPanel
-            publicationId={pub.id}
-            encodedId={pub.encoded_id}
-            gre={pub.gre}
-            documents={pub.documents}
-            isClosed={isClosed}
-            publicationTitle={crumbTitle}
-            initialLikesCount={pub.likes_count ?? 0}
-            initialLikedByMe={pub.liked_by_me ?? false}
-            initialShareCount={pub.share_count ?? 0}
-          />
 
           {showManuscriptContent && (
             <>
