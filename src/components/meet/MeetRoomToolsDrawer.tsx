@@ -37,7 +37,10 @@ export function MeetRoomToolsDrawer({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[2147483646] flex justify-end pointer-events-auto">
+    <div
+      className="fixed inset-0 z-[2147483646] flex justify-end pointer-events-auto"
+      style={{ zIndex: 2147483647 }}
+    >
       <button
         type="button"
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px]"
@@ -99,6 +102,7 @@ export function MeetRoomControlsFab({
       type="button"
       onClick={onClick}
       className="fixed bottom-6 right-6 z-[2147483645] pointer-events-auto inline-flex items-center gap-2 rounded-full bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-700"
+      style={{ zIndex: 2147483647 }}
     >
       <LayoutGrid className="h-4 w-4" />
       {label}
