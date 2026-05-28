@@ -3,6 +3,7 @@ import { Loader2, MapPin, Maximize2, Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  Circle,
   MapContainer,
   Marker,
   TileLayer,
@@ -14,17 +15,19 @@ import { assets } from "../../lib/brand";
 import {
   formatCoords,
   hasValidCoords,
-  reverseGeocode,
+  reverseGeocodeRegion,
   searchPlaces,
   type GeocodeResult,
 } from "../../lib/geocode";
+import { formatRegionRadiusLabel, MAP_REGION_RADIUS_KM } from "../../lib/mapRegion";
 import { InstitutionPicker } from "../institutions/InstitutionPicker";
 import type { Coordinate } from "../../types";
 import "leaflet/dist/leaflet.css";
 
 const DEFAULT_CENTER: [number, number] = [-6.37, 34.89];
 const DEFAULT_ZOOM = 5;
-const PIN_ZOOM = 13;
+/** Map zoom when a region is selected (province / district scale, not street level). */
+const REGION_CENTER_ZOOM = 8;
 
 const pinIcon = L.icon({
   iconUrl: assets.marker,
@@ -32,11 +35,12 @@ const pinIcon = L.icon({
   iconAnchor: [18, 36],
 });
 
-function MapFlyTo({ lat, lng, zoom }: { lat: number; lng: number; zoom?: number }) {
+function MapFitRegion({ lat, lng, radiusKm }: { lat: number; lng: number; radiusKm: number }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([lat, lng], zoom ?? PIN_ZOOM, { duration: 0.6 });
-  }, [lat, lng, zoom, map]);
+    const bounds = L.circle([lat, lng], { radius: radiusKm * 1000 }).getBounds();
+    map.fitBounds(bounds, { padding: [32, 32], maxZoom: 11 });
+  }, [lat, lng, radiusKm, map]);
   return null;
 }
 
@@ -102,7 +106,17 @@ function LocationMapView({
       <MapInvalidateSize />
       {hasPin && (
         <>
-          <MapFlyTo lat={lat} lng={lng} zoom={PIN_ZOOM} />
+          <MapFitRegion lat={lat} lng={lng} radiusKm={MAP_REGION_RADIUS_KM} />
+          <Circle
+            center={[lat, lng]}
+            radius={MAP_REGION_RADIUS_KM * 1000}
+            pathOptions={{
+              color: "#3b5bdb",
+              fillColor: "#3b5bdb",
+              fillOpacity: 0.1,
+              weight: 2,
+            }}
+          />
           <Marker
             position={[lat, lng]}
             icon={pinIcon}
@@ -160,8 +174,8 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
       if (!locationName) {
         setReverseLoading(true);
         try {
-          const name = await reverseGeocode(latitude, longitude);
-          if (name) location = name.split(",").slice(0, 3).join(",").trim();
+          const name = await reverseGeocodeRegion(latitude, longitude);
+          if (name) location = name;
         } catch {
           /* keep existing label */
         } finally {
@@ -179,10 +193,17 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
     [onChange, value, institutionDefault]
   );
 
+  const regionLabelFromResult = (displayName: string) => {
+    const parts = displayName.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length <= 3) return parts.join(", ");
+    return parts.slice(-3).join(", ");
+  };
+
   const selectResult = (r: GeocodeResult) => {
-    setQuery(r.display_name.split(",").slice(0, 2).join(","));
+    const label = regionLabelFromResult(r.display_name);
+    setQuery(label);
     setResults([]);
-    applyCoords(parseFloat(r.lat), parseFloat(r.lon), r.display_name.split(",").slice(0, 3).join(","));
+    applyCoords(parseFloat(r.lat), parseFloat(r.lon), label);
     setMode("map");
   };
 
@@ -228,7 +249,8 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
   }, [query, mode]);
 
   const mapCenter: [number, number] = hasPin ? [lat, lng] : DEFAULT_CENTER;
-  const mapZoom = hasPin ? PIN_ZOOM : DEFAULT_ZOOM;
+  const mapZoom = hasPin ? REGION_CENTER_ZOOM : DEFAULT_ZOOM;
+  const regionHint = formatRegionRadiusLabel(MAP_REGION_RADIUS_KM);
   const pickEnabled = mode === "map" || expanded;
 
   const mapProps: MapViewProps = {
@@ -250,9 +272,9 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
         <div className="mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
             <div>
-              <p className="font-semibold text-ink">Pick study location</p>
+              <p className="font-semibold text-ink">Pick study region</p>
               <p className="text-xs text-slate-500">
-                Click the map, drag the pin, or use +/− to zoom · Esc to close
+                Click the map or drag the pin — circle shows the study area ({regionHint}) · Esc to close
               </p>
             </div>
             <button
@@ -354,8 +376,8 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-slate-600">
             {mode === "map"
-              ? "Zoom in to a village or town, then click the map or drag the pin to set the study site."
-              : "Preview: open expanded map to adjust the pin."}
+              ? `Click the map or drag the pin to set the study region. The shaded circle (${regionHint}) is the area shown on the research map.`
+              : "Preview: open the expanded map to adjust the region."}
           </p>
           <button
             type="button"
@@ -380,12 +402,12 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-slate-700">Location label</label>
+          <label className="block text-sm font-medium text-slate-700">Region label</label>
           <input
             type="text"
             value={value.location}
             onChange={(e) => onChange({ ...value, location: e.target.value })}
-            placeholder="Name shown on the map and publication page"
+            placeholder="e.g. Dar es Salaam Region, Tanzania"
             className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
           />
         </div>
@@ -417,7 +439,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
         </p>
       ) : (
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-100">
-          Search for a place or click the map to set the publication location.
+          Search for a region or click the map to set where this study took place.
         </p>
       )}
     </div>

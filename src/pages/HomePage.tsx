@@ -14,7 +14,8 @@ import { ResearchMap } from "../components/map/ResearchMap";
 import { MapPublicationSheet } from "../components/map/MapPublicationSheet";
 import { assets } from "../lib/brand";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import { formatMapRegionLabel, reverseGeocode } from "../lib/geocode";
+import { formatMapRegionLabel, reverseGeocodeRegion } from "../lib/geocode";
+import { MAP_REGION_RADIUS_KM } from "../lib/mapRegion";
 import type {
   AuthorResearchResponse,
   Category,
@@ -23,9 +24,6 @@ import type {
   Publication,
   SubCategory,
 } from "../types";
-
-/** Local area search (~village / ward), not whole regions. */
-const MAP_REGION_RADIUS_KM = 8;
 
 type MapSearchFilters = {
   author: string;
@@ -223,7 +221,7 @@ export function HomePage() {
       void (async () => {
         let resolved: string | null = null;
         try {
-          resolved = await reverseGeocode(lat, lng);
+          resolved = await reverseGeocodeRegion(lat, lng);
         } catch {
           resolved = null;
         }

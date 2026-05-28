@@ -6,6 +6,7 @@ import { PublicationMarkerLayer } from "./PublicationMarkerLayer";
 import { MapExpandControl } from "./MapExpandControl";
 import { MapRegionPicker } from "./MapRegionPicker";
 import type { MapRegionSelection } from "../../types";
+import { formatRegionRadiusLabel } from "../../lib/mapRegion";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
@@ -83,7 +84,7 @@ export function ResearchMap({
     >
       {mapPickMode && (
         <div className="pointer-events-none absolute left-1/2 top-3 z-[1002] max-w-[min(92vw,22rem)] -translate-x-1/2 rounded-full bg-brand-600/95 px-4 py-2 text-center text-xs font-semibold text-white shadow-lg">
-          Click a village or town — search uses a small area (~8 km)
+          Click the map to set a search region ({formatRegionRadiusLabel()})
         </div>
       )}
       <MapContainer

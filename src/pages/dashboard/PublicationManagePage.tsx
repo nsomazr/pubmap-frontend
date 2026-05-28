@@ -49,6 +49,7 @@ import { PublicationSupplementaryUpload } from "../../components/publication/Pub
 import { renderManuscriptHtml } from "../../lib/renderManuscriptHtml";
 import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
+  limitReferences,
   truncateHtmlToWordLimit,
   truncateToWordLimit,
 } from "../../lib/manuscriptFieldLimits";
@@ -223,8 +224,10 @@ export function PublicationManagePage() {
       if (nextFindings) setFindings(nextFindings);
       const nextConclusion = applyExtractedSection(payload.conclusion, limits.conclusion);
       if (nextConclusion) setConclusion(nextConclusion);
-      const nextReferences = applyExtractedSection(payload.references, 350);
-      if (nextReferences) setReferences(nextReferences);
+      const refRaw = (payload.references || "").trim();
+      if (refRaw) {
+        setReferences(limitReferences(refRaw, nextTitle || title));
+      }
       const nextFunder = truncateToWordLimit((payload.funder || "").trim(), limits.funder);
       if (nextFunder) setFunder(nextFunder);
       const nextKeywords = truncateToWordLimit((payload.keywords || "").trim(), limits.keywords);
@@ -236,7 +239,7 @@ export function PublicationManagePage() {
         sectionNotes: payload.section_notes ?? {},
       });
     },
-    [applyExtractedSection]
+    [applyExtractedSection, title]
   );
 
   const { data: categories = [] } = useQuery({
@@ -270,7 +273,7 @@ export function PublicationManagePage() {
     setFindings(pub.findings ?? "");
     setConclusion(pub.conclusion ?? "");
     setFunder(pub.funder ?? "");
-    setReferences(pub.references ?? "");
+    setReferences(limitReferences(pub.references ?? "", pub.title ?? ""));
     setKeywords(formatKeywords(pub.keywords));
     setSubCategoryId(pub.sub_category_id ? String(pub.sub_category_id) : "");
     if (pub.sub_category_id && categories.length) {
@@ -436,7 +439,7 @@ export function PublicationManagePage() {
         findings,
         conclusion,
         funder,
-        references,
+        references: limitReferences(references, title),
         keywords: parseKeywords(keywords),
         sub_category_id: subCategoryId ? Number(subCategoryId) : null,
         coordinates,

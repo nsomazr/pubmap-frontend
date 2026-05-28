@@ -29,12 +29,17 @@ export async function searchPlaces(query: string): Promise<GeocodeResult[]> {
   return res.json();
 }
 
-export async function reverseGeocode(lat: number, lon: number): Promise<string | null> {
+export async function reverseGeocode(
+  lat: number,
+  lon: number,
+  options?: { zoom?: number; preferRegion?: boolean }
+): Promise<string | null> {
+  const preferRegion = options?.preferRegion ?? false;
   const params = new URLSearchParams({
     lat: String(lat),
     lon: String(lon),
     format: "json",
-    zoom: "14",
+    zoom: String(options?.zoom ?? (preferRegion ? 8 : 14)),
     addressdetails: "1",
   });
 
@@ -47,26 +52,51 @@ export async function reverseGeocode(lat: number, lon: number): Promise<string |
 
   const address = data.address;
   if (address) {
-    const village =
-      address.village ||
-      address.hamlet ||
-      address.town ||
-      address.suburb ||
-      address.neighbourhood ||
-      address.locality;
-    const district = address.city_district || address.county || address.state_district;
-    const region = address.state || address.region;
-    const country = address.country;
-    const parts = [village, district, region, country].filter(Boolean);
-    if (parts.length >= 2) {
-      return parts.join(", ");
+    if (preferRegion) {
+      const parts = [
+        address.state || address.region,
+        address.county || address.state_district,
+        address.city || address.town,
+        address.country,
+      ].filter(Boolean);
+      const unique = parts.filter((p, i) => i === 0 || p !== parts[i - 1]);
+      if (unique.length >= 1) {
+        return unique.slice(0, 3).join(", ");
+      }
+    } else {
+      const village =
+        address.village ||
+        address.hamlet ||
+        address.town ||
+        address.suburb ||
+        address.neighbourhood ||
+        address.locality;
+      const district = address.city_district || address.county || address.state_district;
+      const region = address.state || address.region;
+      const country = address.country;
+      const parts = [village, district, region, country].filter(Boolean);
+      if (parts.length >= 2) {
+        return parts.join(", ");
+      }
+    }
+  }
+
+  if (preferRegion && data.display_name) {
+    const tail = data.display_name.split(",").map((s) => s.trim()).filter(Boolean);
+    if (tail.length >= 2) {
+      return tail.slice(-Math.min(3, tail.length)).join(", ");
     }
   }
 
   return data.display_name ?? null;
 }
 
-/** Short label for a local map search pin (village / town scale). */
+/** Region-scale label (state / district / country), not village-level. */
+export async function reverseGeocodeRegion(lat: number, lon: number): Promise<string | null> {
+  return reverseGeocode(lat, lon, { preferRegion: true, zoom: 8 });
+}
+
+/** Short label for a map region pick. */
 export function formatMapRegionLabel(lat: number, lng: number, resolved?: string | null): string {
   if (resolved?.trim()) return resolved.trim();
   return `Near ${lat.toFixed(3)}, ${lng.toFixed(3)}`;

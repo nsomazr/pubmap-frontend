@@ -4,10 +4,10 @@ import { RichTextEditor } from "../editor/RichTextEditor";
 import { Input } from "../ui/Input";
 import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
-  REFERENCE_ITEM_LIMIT,
   formatWordLimitHint,
   truncateToWordLimit,
 } from "../../lib/manuscriptFieldLimits";
+import { ReferencesFromResearch } from "./ReferencesFromResearch";
 
 export type ManuscriptFields = {
   abstract: string;
@@ -163,15 +163,7 @@ export function ManuscriptSectionsEditor({
           hint={formatWordLimitHint("funder")}
         />
         <FieldExtractionNote note={sectionNotes.funder} />
-        <RichTextEditor
-          label="References"
-          value={fields.references}
-          onChange={(v) => onChange("references", v)}
-          minHeight={140}
-          placeholder="List references or paste a bibliography…"
-          hint={`Up to ${REFERENCE_ITEM_LIMIT} key references (including this paper)`}
-          maxWords={350}
-        />
+        <ReferencesFromResearch value={fields.references} paperTitle={title} />
         <FieldExtractionNote note={sectionNotes.references} />
       </ManuscriptGroup>
     </div>

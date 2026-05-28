@@ -52,3 +52,79 @@ export function truncateHtmlToWordLimit(html: string, maxWords: number): string 
 export function formatWordLimitHint(field: ManuscriptLimitedField): string {
   return `Max ${MANUSCRIPT_FIELD_WORD_LIMITS[field]} words`;
 }
+
+function splitReferenceItems(text: string): string[] {
+  const items: string[] = [];
+  for (const line of (text || "").split("\n")) {
+    const stripped = line.trim();
+    if (!stripped) continue;
+    const cleaned = stripped.replace(/^\s*(?:\d+[\.\)]|[-*+])\s+/, "").trim();
+    if (cleaned) items.push(cleaned);
+  }
+  if (items.length > 0) return items;
+  return (text || "")
+    .trim()
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+}
+
+/** Up to five key references, always including this paper when a title is set. */
+export function limitReferences(
+  text: string,
+  paperTitle = "",
+  maxItems: number = REFERENCE_ITEM_LIMIT
+): string {
+  const items = splitReferenceItems(stripHtmlToText(text));
+  const title = paperTitle.trim();
+  if (items.length === 0) {
+    return title ? `1. ${title} (this paper)` : "";
+  }
+
+  const thisPaper = title ? `${title} (this paper)` : "";
+  const normalizedTitle = title.replace(/\s+/g, " ").toLowerCase();
+
+  const external: string[] = [];
+  let hasSelf = false;
+  for (const item of items) {
+    const itemLower = item.replace(/\s+/g, " ").toLowerCase();
+    if (normalizedTitle && itemLower.includes(normalizedTitle)) {
+      hasSelf = true;
+      continue;
+    }
+    if (/\(this paper\)/i.test(item)) {
+      hasSelf = true;
+      continue;
+    }
+    external.push(item);
+  }
+
+  const selected: string[] = [];
+  const externalCap = Math.max(0, maxItems - (thisPaper || hasSelf ? 1 : 0));
+  for (const item of external) {
+    if (selected.length >= externalCap) break;
+    selected.push(item);
+  }
+
+  if (thisPaper && !hasSelf) {
+    selected.push(thisPaper);
+  } else if (hasSelf) {
+    for (const item of items) {
+      const itemLower = item.replace(/\s+/g, " ").toLowerCase();
+      if (normalizedTitle && itemLower.includes(normalizedTitle)) {
+        selected.push(item);
+        break;
+      }
+    }
+  }
+
+  const capped = selected.slice(0, maxItems);
+  if (capped.length === 0 && title) {
+    return `1. ${title} (this paper)`;
+  }
+  return capped.map((item, index) => `${index + 1}. ${item}`).join("\n");
+}
+
+export function parseReferenceItems(text: string): string[] {
+  return splitReferenceItems(stripHtmlToText(text));
+}

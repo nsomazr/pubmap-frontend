@@ -1,26 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowRight,
-  Clock,
-  FileText,
-  MapPin,
-  Plus,
-  Sparkles,
-} from "lucide-react";
+import { Clock, MapPin, Plus, Sparkles } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
+import { DashboardPublicationRow } from "../../components/dashboard/DashboardPublicationRow";
 import { EmptyState } from "../../components/dashboard/EmptyState";
-import { GreHeroBannerStrip } from "../../components/ui/GreHeroBanner";
 import { PageHeader } from "../../components/dashboard/PageHeader";
-import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 import { canAccessReviewQueue, isPlatformAdmin } from "../../lib/userAccess";
-import { abstractListingSnippet } from "../../lib/abstractText";
-import { formatGrePaperTitle } from "../../lib/grePaperTitle";
-import { authorDisplayName } from "../../lib/userDisplay";
-import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
-import { SubcategoryBadge } from "../../components/taxonomy/SubcategoryBadge";
-import { SubcategoryVisual } from "../../components/taxonomy/SubcategoryVisual";
 import type { Publication } from "../../types";
 
 const TABS = [
@@ -68,13 +54,25 @@ const EMPTY_COPY: Record<string, { title: string; description: string }> = {
 };
 
 const NEXT_STEP: Record<number, string> = {
-  0: "Add location on the map, then submit for review.",
+  0: "Add a map location, then submit for review.",
   1: "Waiting for admin approval.",
-  2: "Read the claims and admin notes, update your existing submission, and resubmit.",
+  2: "Address feedback and resubmit for review.",
   3: "Live on the research map.",
-  4: "Archived. Restore to continue editing or republish.",
-  6: "Deleted. Admin can restore to previous workflow state.",
+  4: "Archived — restore to edit or republish.",
+  6: "Deleted — admin can restore.",
 };
+
+function publicationHref(
+  pub: Publication,
+  options: { reviewPending: boolean; needsClaim: boolean }
+) {
+  const { reviewPending, needsClaim } = options;
+  if (reviewPending) return `/dashboard/review?pub=${pub.id}`;
+  if (pub.status === 3) return `/dashboard/publications/${pub.id}/reader`;
+  if (needsClaim) return `/dashboard/publications/${pub.id}?focus=claims`;
+  if (pub.status === 2) return `/dashboard/publications/${pub.id}?focus=feedback`;
+  return `/dashboard/publications/${pub.id}`;
+}
 
 export function PublicationsPage() {
   const { user } = useAuth();
@@ -113,27 +111,36 @@ export function PublicationsPage() {
     },
   });
 
-  const activeTab = tabs.find((t) => t.value === status) ?? TABS[0];
   const empty = EMPTY_COPY[status] ?? EMPTY_COPY["5"];
+  const totalCount = counts?.["5"] ?? publications.length;
+  const publishedCount = counts?.["3"] ?? 0;
+  const pendingCount = counts?.["1"] ?? 0;
+  const revisionCount = counts?.["2"] ?? 0;
 
   return (
-    <div className="animate-fade-up">
+    <div className="animate-fade-up space-y-6">
       <PageHeader
         title="Publications"
+        description="Manage drafts, track review status, and open papers on the GRE map."
         action={
           <div className="flex flex-wrap items-center gap-2">
-            {isAdmin && (
+            {canReview && (
               <Link
                 to="/dashboard/review"
-                className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-100"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/15 px-4 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition hover:bg-white/25"
               >
                 <Clock className="h-4 w-4" />
                 Review queue
+                {(counts?.["1"] ?? 0) > 0 && (
+                  <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold">
+                    {counts?.["1"]}
+                  </span>
+                )}
               </Link>
             )}
             <Link
               to="/dashboard/publications/new"
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-800 shadow-md transition hover:bg-brand-50"
             >
               <Plus className="h-4 w-4" />
               New publication
@@ -142,144 +149,154 @@ export function PublicationsPage() {
         }
       />
 
-      <div className="mb-2 flex flex-wrap gap-2 rounded-2xl bg-slate-100/90 p-1.5 ring-1 ring-slate-200/70">
-        {tabs.map((tab) => (
-          <button
-            key={tab.value}
-            type="button"
-            onClick={() => setParams(tab.value === "5" ? {} : { status: tab.value })}
-            className={`gre-interactive flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium ${
-              status === tab.value
-                ? "bg-white text-brand-600 shadow-md ring-1 ring-slate-200/90"
-                : "text-slate-600 hover:bg-white/60 hover:text-ink"
-            }`}
-          >
-            {tab.label}
-            {counts && (
-              <span
-                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                  status === tab.value
-                    ? "bg-brand-100 text-brand-700"
-                    : "bg-slate-200/80 text-slate-600"
-                }`}
-              >
-                {counts[tab.value] ?? 0}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {canReview && status === "1" && (
-        <p className="mb-8 text-sm">
-          <Link to="/dashboard/review" className="font-semibold text-brand-600 hover:underline">
-            Open review queue
-          </Link>
-        </p>
+      {counts && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total</p>
+            <p className="mt-1 text-2xl font-bold tabular-nums text-ink">{totalCount}</p>
+          </div>
+          <div className="rounded-2xl border border-teal-200/80 bg-teal-50/50 px-4 py-3.5 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-teal-800">Published</p>
+            <p className="mt-1 text-2xl font-bold tabular-nums text-teal-900">{publishedCount}</p>
+          </div>
+          <div className="rounded-2xl border border-violet-200/80 bg-violet-50/40 px-4 py-3.5 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-violet-800">Pending</p>
+            <p className="mt-1 text-2xl font-bold tabular-nums text-violet-900">{pendingCount}</p>
+          </div>
+          <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 px-4 py-3.5 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-900">Revision</p>
+            <p className="mt-1 text-2xl font-bold tabular-nums text-amber-950">{revisionCount}</p>
+          </div>
+        </div>
       )}
 
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="gre-skeleton h-28" />
-          ))}
-        </div>
-      ) : publications.length === 0 ? (
-        <EmptyState
-          icon={Sparkles}
-          title={empty.title}
-          description={empty.description}
-          action={
-            <Link
-              to="/dashboard/publications/new"
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
-            >
-              <Plus className="h-4 w-4" />
-              Create your first publication
-            </Link>
-          }
-        />
-      ) : (
-        <div className="gre-stagger grid gap-4">
-          {publications.map((pub) => {
-            const reviewPending = canReview && pub.status === 1;
-            const hasDoc = (pub.documents?.length ?? 0) > 0;
-            const subVisual = publicationSubcategoryVisual(pub);
-            const claimSummary = pub.plagiarism_summary;
-            const claimActionText = claimSummary?.needs_author_action
-              ? "Address plagiarism claims and resubmit."
-              : claimSummary?.open_count
-                ? `${claimSummary.open_count} plagiarism claim${claimSummary.open_count === 1 ? "" : "s"} under review.`
-                : NEXT_STEP[pub.status] ?? "";
-            const readerTarget = `/dashboard/publications/${pub.id}/reader`;
-            const editTarget = claimSummary?.needs_author_action
-              ? `/dashboard/publications/${pub.id}?focus=claims`
-              : pub.status === 2
-                ? `/dashboard/publications/${pub.id}?focus=feedback`
-                : `/dashboard/publications/${pub.id}`;
-            const target = reviewPending
-              ? `/dashboard/review?pub=${pub.id}`
-              : pub.status === 3
-                ? readerTarget
-                : editTarget;
-            return (
-            <Link
-              key={pub.id}
-              to={target}
-              className="gre-card gre-card-hover group block overflow-hidden p-0"
-            >
-              <GreHeroBannerStrip
-                icon={FileText}
-                accentColor={subVisual?.accent_color}
-              />
-              <div className="flex items-start justify-between gap-4 p-5 pt-8">
-                <div className="min-w-0 flex-1">
-                    {authorDisplayName(pub.author) && (
-                      <p className="text-sm font-medium text-slate-600">
-                        {authorDisplayName(pub.author)}
-                      </p>
-                    )}
-                    <h3 className="mt-0.5 text-base font-semibold text-ink group-hover:text-brand-700">
-                      {formatGrePaperTitle(pub.title, pub.short_number)}
-                    </h3>
-                    {abstractListingSnippet(pub.abstract) ? (
-                      <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-slate-500">
-                        {abstractListingSnippet(pub.abstract)}
-                      </p>
-                    ) : null}
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                      {subVisual && <SubcategoryBadge visual={subVisual} size="xs" />}
-                      {pub.coordinates?.location && (
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-teal-600" />
-                          {pub.coordinates.location}
-                        </span>
-                      )}
-                      {claimSummary && (
-                        <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-800 ring-1 ring-amber-200">
-                          Claim #{claimSummary.latest_claim_id ?? "?"}
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-2 text-xs font-medium text-slate-400">
-                      {claimActionText}
-                    </p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  <StatusBadge status={pub.status} />
-                  {reviewPending && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-brand-600">
-                      {hasDoc ? "Review PDF" : "No file"}
+      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+        <div className="border-b border-slate-100 bg-slate-50/80 px-3 py-3 sm:px-4">
+          <div className="-mx-1 flex gap-1 overflow-x-auto pb-0.5 scrollbar-thin">
+            {tabs.map((tab) => {
+              const active = status === tab.value;
+              const count = counts?.[tab.value];
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setParams(tab.value === "5" ? {} : { status: tab.value })}
+                  className={`shrink-0 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                    active
+                      ? "bg-white text-brand-700 shadow-sm ring-1 ring-slate-200/90"
+                      : "text-slate-600 hover:bg-white/70 hover:text-ink"
+                  }`}
+                >
+                  {tab.label}
+                  {count !== undefined && (
+                    <span
+                      className={`ml-1.5 tabular-nums text-xs font-bold ${
+                        active ? "text-brand-600" : "text-slate-400"
+                      }`}
+                    >
+                      {count}
                     </span>
                   )}
-                  <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:text-brand-600" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {canReview && status === "1" && (counts?.["1"] ?? 0) > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-violet-100 bg-violet-50/60 px-4 py-3 sm:px-5">
+            <p className="text-sm text-violet-900">
+              <span className="font-semibold">{counts?.["1"]}</span> paper
+              {counts?.["1"] === 1 ? "" : "s"} waiting in the review queue.
+            </p>
+            <Link
+              to="/dashboard/review"
+              className="text-sm font-semibold text-violet-800 underline-offset-2 hover:underline"
+            >
+              Open review queue
+            </Link>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="divide-y divide-slate-100">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex gap-4 px-4 py-5 sm:px-5">
+                <div className="gre-skeleton h-14 w-14 shrink-0 rounded-xl sm:h-16 sm:w-16" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="gre-skeleton h-4 w-32 rounded" />
+                  <div className="gre-skeleton h-5 w-full max-w-md rounded" />
+                  <div className="gre-skeleton h-4 w-2/3 rounded" />
                 </div>
               </div>
-            </Link>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        ) : publications.length === 0 ? (
+          <div className="p-8 sm:p-12">
+            <EmptyState
+              icon={status === "3" ? MapPin : Sparkles}
+              title={empty.title}
+              description={empty.description}
+              action={
+                status === "5" || status === "0" ? (
+                  <Link
+                    to="/dashboard/publications/new"
+                    className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create publication
+                  </Link>
+                ) : undefined
+              }
+            />
+          </div>
+        ) : (
+          <div className="gre-stagger divide-y divide-slate-100">
+            {publications.map((pub) => {
+              const reviewPending = canReview && pub.status === 1;
+              const hasDoc = (pub.documents?.length ?? 0) > 0;
+              const claimSummary = pub.plagiarism_summary;
+              const needsClaim = Boolean(claimSummary?.needs_author_action);
+              const workflowHint = needsClaim
+                ? "Address plagiarism claims and resubmit."
+                : claimSummary?.open_count
+                  ? `${claimSummary.open_count} plagiarism claim${claimSummary.open_count === 1 ? "" : "s"} under review.`
+                  : NEXT_STEP[pub.status] ?? "";
+
+              return (
+                <DashboardPublicationRow
+                  key={pub.id}
+                  pub={pub}
+                  href={publicationHref(pub, { reviewPending, needsClaim })}
+                  workflowHint={workflowHint}
+                  reviewPending={reviewPending}
+                  hasDoc={hasDoc}
+                  showClaim={Boolean(claimSummary?.open_count || needsClaim)}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {!isLoading && publications.length > 0 && (
+        <p className="text-center text-xs text-slate-500">
+          Showing {publications.length} {activeTabLabel(status)} · Click a row to open
+        </p>
       )}
     </div>
   );
+}
+
+function activeTabLabel(status: string): string {
+  const labels: Record<string, string> = {
+    "5": "publications",
+    "0": "drafts",
+    "1": "pending items",
+    "2": "revisions",
+    "3": "published papers",
+    "4": "archived papers",
+    "6": "deleted papers",
+  };
+  return labels[status] ?? "items";
 }
