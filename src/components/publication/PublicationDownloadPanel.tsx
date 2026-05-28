@@ -519,7 +519,8 @@ export function PublicationDownloadPanel({
             previewUrl={grePdfPreviewUrl}
             title={publicationTitle ? `${publicationTitle} · GRE PDF` : "GRE publication PDF"}
             emptyState="publication"
-            className="min-h-[min(70vh,820px)]"
+            layout="page"
+            className="w-full"
           />
         </div>
       )}

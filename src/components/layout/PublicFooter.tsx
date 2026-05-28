@@ -10,7 +10,6 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { partneringUniversity } from "../../lib/brand";
 import { BrandMark } from "../brand/BrandMark";
 
 const exploreLinks = [
@@ -232,10 +231,6 @@ export function PublicFooter({ variant = "full", publicationCount }: Props) {
           <div className="text-center sm:text-left">
             <p className="text-xs text-white/40">
               © {year} Global Research Exchange. All rights reserved.
-            </p>
-            <p className="mt-1.5 text-xs text-white/35">
-              Partnering university:{" "}
-              <span className="font-medium text-white/55">{partneringUniversity}</span>
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-white/40">

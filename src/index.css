@@ -947,11 +947,25 @@ body {
 }
 
 .dashboard-bg {
-  background-color: #eef1f8;
+  background-color: #f4f6f9;
   background-image:
     radial-gradient(ellipse 90% 55% at 15% -15%, rgba(40, 58, 148, 0.11), transparent 55%),
     radial-gradient(ellipse 70% 45% at 100% 0%, rgba(15, 23, 42, 0.06), transparent 50%),
     radial-gradient(ellipse 55% 40% at 85% 100%, rgba(13, 148, 136, 0.07), transparent);
+}
+
+.gre-dashboard-sidebar nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.gre-dashboard-sidebar nav::-webkit-scrollbar {
+  width: 5px;
+}
+
+.gre-dashboard-sidebar nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
 }
 
 .dashboard-topbar {
@@ -961,6 +975,73 @@ body {
     rgba(255, 255, 255, 0.98) 0%,
     rgba(248, 250, 252, 0.95) 100%
   );
+}
+
+/* Open dashboard canvas — content cards float on gray bg (Hostinger-style) */
+.gre-dashboard-shell {
+  position: relative;
+}
+
+.gre-dashboard-card {
+  border-radius: 1rem;
+  border: 1px solid rgb(226 232 240);
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.gre-metric-tile {
+  display: block;
+  border-radius: 1rem;
+  border: 1px solid rgb(226 232 240);
+  background: #fff;
+  padding: 1rem 1.125rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition:
+    border-color var(--gre-duration-fast) var(--gre-ease-in-out),
+    box-shadow var(--gre-duration) var(--gre-ease-out),
+    transform var(--gre-duration) var(--gre-ease-out);
+}
+
+.gre-metric-tile:hover {
+  border-color: color-mix(in srgb, var(--color-brand-200) 70%, white);
+  box-shadow: 0 8px 24px -12px rgba(59, 91, 219, 0.18);
+  transform: translateY(-1px);
+}
+
+.gre-quick-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(226 232 240);
+  background: #fff;
+  padding: 0.875rem 1rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition:
+    border-color var(--gre-duration-fast) var(--gre-ease-in-out),
+    box-shadow var(--gre-duration) var(--gre-ease-out);
+}
+
+.gre-quick-tile:hover {
+  border-color: color-mix(in srgb, var(--color-brand-200) 70%, white);
+  box-shadow: 0 6px 20px -10px rgba(59, 91, 219, 0.15);
+}
+
+.gre-quick-tile--highlight {
+  border-color: rgb(221 214 254);
+  background: linear-gradient(135deg, rgb(245 243 255) 0%, #fff 100%);
+}
+
+.gre-quick-tile--highlight:hover {
+  border-color: rgb(196 181 253);
+}
+
+.gre-info-banner {
+  border-radius: 0.75rem;
+  border: 1px solid rgb(226 232 240);
+  background: rgb(248 250 252);
+  padding: 0.75rem 1rem;
 }
 
 .dashboard-panel {
@@ -1274,6 +1355,20 @@ body {
 
 .gre-map--landing .leaflet-pane.leaflet-popup-pane {
   z-index: 1200;
+}
+
+.gre-map--landing .leaflet-control-scale {
+  margin-left: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.15rem 0.45rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+  line-height: 1.2;
+}
+
+.gre-map--dark-basemap .gre-marker-pin {
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.65));
 }
 
 .gre-card--study-map {

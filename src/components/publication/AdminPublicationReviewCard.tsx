@@ -263,7 +263,7 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
         </div>
 
         {!compact && (
-          <div className="flex min-h-0 flex-col bg-slate-50/40 p-4 sm:p-5 lg:min-h-[min(420px,50vh)]">
+          <div className="flex min-h-0 flex-col bg-slate-50/40 p-4 sm:p-5">
             <div className="mb-2 flex items-center gap-2">
               <FileText className="h-4 w-4 text-brand-600" />
               <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
@@ -279,7 +279,8 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
               previewUrl={manuscriptPreviewUrl}
               title={formatGrePaperTitle(reviewPub.title, reviewPub.short_number)}
               emptyState="publication"
-              className="min-h-[min(360px,45vh)] flex-1"
+              layout="page"
+              className="w-full"
             />
           </div>
         )}

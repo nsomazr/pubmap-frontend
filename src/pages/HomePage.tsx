@@ -377,6 +377,7 @@ export function HomePage() {
               focusPublicationId={focusPubId}
               height="100%"
               className="rounded-none border-0"
+              mappedTotal={data?.meta?.with_coordinates}
               mapExpanded={mapExpanded}
               onMapExpandedChange={setMapExpanded}
               mapPickMode={mapPickMode}

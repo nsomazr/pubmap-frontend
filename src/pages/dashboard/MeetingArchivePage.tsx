@@ -168,6 +168,7 @@ export function MeetingArchivePage() {
   return (
     <div className="animate-fade-up space-y-8">
       <PageHeader
+        variant="premium"
         title={`${meeting.title} archive`}
         description={`${archiveId} · ${meeting.category_name} / ${meeting.sub_category_name}`}
         action={

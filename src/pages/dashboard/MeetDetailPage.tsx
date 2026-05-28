@@ -153,7 +153,7 @@ export function MeetDetailPage() {
     meeting.host?.email ||
     "—";
   return (
-    <div className="animate-fade-up space-y-6">
+    <div className="animate-fade-up space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader
           variant="default"
@@ -244,24 +244,24 @@ export function MeetDetailPage() {
         footer={
           <>
             {meeting.description && (
-              <p className="mb-5 max-w-3xl text-sm leading-relaxed text-slate-600">{meeting.description}</p>
+              <p className="mb-4 max-w-3xl text-sm leading-relaxed text-slate-600">{meeting.description}</p>
             )}
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3.5">
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5">
                 <Hash className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
                 <div>
                   <p className="text-xs font-medium text-slate-500">Meeting ID</p>
                   <p className="mt-0.5 text-sm font-semibold text-ink">{archiveId}</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3.5">
+              <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5">
                 <User className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
                 <div>
                   <p className="text-xs font-medium text-slate-500">Host</p>
                   <p className="mt-0.5 text-sm font-semibold text-ink">{hostName}</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3.5">
+              <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5">
                 <FileText className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
                 <div>
                   <p className="text-xs font-medium text-slate-500">Archive</p>
@@ -275,7 +275,7 @@ export function MeetDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-5">
+            <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
               {!canManage && meeting.participant_invite_status === "accepted" && (
                 <a href={meetingCalendarDownloadUrl(meeting.id)}>
                   <Button variant="secondary">
@@ -320,9 +320,8 @@ export function MeetDetailPage() {
         }
       />
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-start gap-2.5">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
@@ -409,25 +408,17 @@ export function MeetDetailPage() {
             )}
           </div>
 
-          {(meeting.status === "ended" || meeting.summary_status === "ready") && (
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-brand-600" />
-                <h2 className="text-lg font-semibold text-ink">GRE Assistant</h2>
-              </div>
-              <p className="mb-4 text-sm text-slate-500">
-                Ask questions about the meeting minutes and summary from your dashboard.
-              </p>
-              <MeetingGreAssistantPanel meeting={meeting} compact />
-            </div>
-          )}
-        </div>
-
-        <aside className="space-y-5">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="font-semibold text-ink">Host tools</h2>
-            <p className="mt-1 text-xs text-slate-500">Room defaults for microphones, video, and screen share</p>
-            <div className="mt-4">
+        <div
+          className={`grid gap-4 items-start ${
+            meeting.publication || meeting.forum_topic
+              ? "md:grid-cols-2 xl:grid-cols-3"
+              : "md:grid-cols-2"
+          }`}
+        >
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+            <h2 className="text-sm font-semibold text-ink">Host tools</h2>
+            <p className="mt-0.5 text-xs text-slate-500">Room defaults for mic, video, and screen share</p>
+            <div className="mt-3">
               {isHost && meeting.status === "cancelled" ? (
                 <p className="text-sm text-slate-500">
                   This meeting is cancelled. Create a new session to reschedule.
@@ -438,27 +429,28 @@ export function MeetDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-brand-600" />
-              <h2 className="font-semibold text-ink">Participants</h2>
+              <Users className="h-4 w-4 text-brand-600" />
+              <h2 className="text-sm font-semibold text-ink">Participants</h2>
+              <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                {participantCount}
+              </span>
             </div>
-            <ul className="mt-4 space-y-2">
+            <ul className="mt-3 max-h-48 space-y-1.5 overflow-y-auto">
               {(meeting.participants ?? []).map((participant) => (
                 <li
                   key={participant.id}
-                  className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5"
+                  className="rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-ink">
-                      {participant.user?.full_name ||
-                        `${participant.user?.firstname ?? ""} ${participant.user?.lastname ?? ""}`.trim() ||
-                        participant.user?.email}
-                    </p>
-                    <p className="text-xs capitalize text-slate-500">
-                      {participant.role} · {participant.invite_status}
-                    </p>
-                  </div>
+                  <p className="truncate text-sm font-semibold text-ink">
+                    {participant.user?.full_name ||
+                      `${participant.user?.firstname ?? ""} ${participant.user?.lastname ?? ""}`.trim() ||
+                      participant.user?.email}
+                  </p>
+                  <p className="text-xs capitalize text-slate-500">
+                    {participant.role} · {participant.invite_status}
+                  </p>
                 </li>
               ))}
               {(meeting.participants?.length ?? 0) === 0 && (
@@ -468,15 +460,17 @@ export function MeetDetailPage() {
           </div>
 
           {(meeting.publication || meeting.forum_topic) && (
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="font-semibold text-ink">Related context</h2>
-              <div className="mt-4 space-y-3">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm md:col-span-2 xl:col-span-1">
+              <h2 className="text-sm font-semibold text-ink">Related context</h2>
+              <div className="mt-3 space-y-2">
                 {meeting.publication && (
-                  <div className="rounded-xl border border-slate-100 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Paper</p>
-                    <p className="mt-1 text-sm font-semibold leading-snug text-ink">{meeting.publication.title}</p>
+                  <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Paper</p>
+                    <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-ink">
+                      {meeting.publication.title}
+                    </p>
                     <Button
-                      className="mt-3 h-8 px-0 text-brand-700"
+                      className="mt-2 h-8 px-0 text-brand-700"
                       variant="ghost"
                       onClick={() =>
                         navigate(
@@ -489,11 +483,13 @@ export function MeetDetailPage() {
                   </div>
                 )}
                 {meeting.forum_topic && (
-                  <div className="rounded-xl border border-slate-100 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Discussion</p>
-                    <p className="mt-1 text-sm font-semibold leading-snug text-ink">{meeting.forum_topic.topic}</p>
+                  <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Discussion</p>
+                    <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-ink">
+                      {meeting.forum_topic.topic}
+                    </p>
                     <Button
-                      className="mt-3 h-8 px-0 text-brand-700"
+                      className="mt-2 h-8 px-0 text-brand-700"
                       variant="ghost"
                       onClick={() => navigate(`/forum/topic/${meeting.forum_topic?.id}`)}
                     >
@@ -504,8 +500,18 @@ export function MeetDetailPage() {
               </div>
             </div>
           )}
-        </aside>
-      </section>
+        </div>
+
+        {(meeting.status === "ended" || meeting.summary_status === "ready") && (
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
+            <div className="mb-3 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-brand-600" />
+              <h2 className="text-sm font-semibold text-ink">GRE Assistant</h2>
+            </div>
+            <MeetingGreAssistantPanel meeting={meeting} compact />
+          </div>
+        )}
+      </div>
 
       <ConfirmDialog
         open={confirmCancelOpen}

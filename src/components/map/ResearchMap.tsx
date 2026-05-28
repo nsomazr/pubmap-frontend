@@ -1,12 +1,23 @@
-import { MapContainer, TileLayer, useMap, ZoomControl } from "react-leaflet";
+import { MapContainer, useMap, ZoomControl } from "react-leaflet";
 import L from "leaflet";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Publication } from "../../types";
 import { PublicationMarkerLayer } from "./PublicationMarkerLayer";
 import { MapExpandControl } from "./MapExpandControl";
 import { MapRegionPicker } from "./MapRegionPicker";
 import type { MapRegionSelection } from "../../types";
 import { formatRegionRadiusLabel } from "../../lib/mapRegion";
+import { MapBasemapTileLayer } from "./MapBasemapTileLayer";
+import { MapHeatLayer } from "./MapHeatLayer";
+import { MapScaleControl } from "./MapScaleControl";
+import { MapViewportCounter } from "./MapViewportCounter";
+import {
+  MapAdvancedControls,
+  loadMapDisplayPrefs,
+  saveMapDisplayPrefs,
+  type MapDisplayPrefs,
+} from "./MapAdvancedControls";
+import type { MapBasemapId } from "../../lib/mapBasemaps";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
@@ -48,6 +59,8 @@ interface Props {
   zoomPosition?: "bottomright" | "bottomleft" | "topright" | "topleft";
   focusPublicationId?: number | null;
   variant?: "default" | "embedded";
+  advancedControls?: boolean;
+  mappedTotal?: number;
   mapExpanded?: boolean;
   onMapExpandedChange?: (expanded: boolean) => void;
   onPublicationSelect?: (publication: Publication | null) => void;
@@ -63,6 +76,8 @@ export function ResearchMap({
   zoomPosition = "bottomright",
   focusPublicationId = null,
   variant = "default",
+  advancedControls,
+  mappedTotal,
   mapExpanded = false,
   onMapExpandedChange,
   onPublicationSelect,
@@ -74,19 +89,53 @@ export function ResearchMap({
     (p) => p.coordinates?.latitude && p.coordinates?.longitude
   );
   const embedded = variant === "embedded";
+  const showAdvanced = advancedControls ?? !embedded;
   const useSheet = !embedded && Boolean(onPublicationSelect);
   const mapZoomPosition = embedded ? "topright" : zoomPosition;
+
+  const [displayPrefs, setDisplayPrefs] = useState<MapDisplayPrefs>(loadMapDisplayPrefs);
+  const [layersPanelOpen, setLayersPanelOpen] = useState(false);
+  const [viewportCount, setViewportCount] = useState(0);
+
+  const handlePrefsChange = useCallback((next: MapDisplayPrefs) => {
+    setDisplayPrefs(next);
+    saveMapDisplayPrefs(next);
+  }, []);
+
+  const handleViewportCount = useCallback((n: number) => {
+    setViewportCount(n);
+  }, []);
+
+  const basemapId: MapBasemapId = showAdvanced
+    ? displayPrefs.basemapId
+    : "voyager";
+  const darkBasemap =
+    basemapId === "dark" || basemapId === "satellite";
+
+  const totalMapped = mappedTotal ?? withCoords.length;
 
   return (
     <div
       style={{ height }}
-      className={`gre-map ts-map relative w-full ${embedded ? "gre-map--embedded" : "gre-map--landing"} ${mapPickMode ? "gre-map--pick-mode" : ""} ${className || "rounded-none border-0 shadow-none"}`}
+      className={`gre-map ts-map relative w-full ${embedded ? "gre-map--embedded" : "gre-map--landing"} ${darkBasemap ? "gre-map--dark-basemap" : ""} ${mapPickMode ? "gre-map--pick-mode" : ""} ${className || "rounded-none border-0 shadow-none"}`}
     >
       {mapPickMode && (
         <div className="pointer-events-none absolute left-1/2 top-3 z-[1002] max-w-[min(92vw,22rem)] -translate-x-1/2 rounded-full bg-brand-600/95 px-4 py-2 text-center text-xs font-semibold text-white shadow-lg">
           Click the map to set a search region ({formatRegionRadiusLabel()})
         </div>
       )}
+
+      {showAdvanced && (
+        <MapAdvancedControls
+          prefs={displayPrefs}
+          onChange={handlePrefsChange}
+          collapsed={!layersPanelOpen}
+          onCollapsedChange={(collapsed) => setLayersPanelOpen(!collapsed)}
+          viewportCount={viewportCount}
+          mappedTotal={totalMapped}
+        />
+      )}
+
       <MapContainer
         center={[-6.37, 34.89]}
         zoom={5}
@@ -95,16 +144,23 @@ export function ResearchMap({
         zoomControl={false}
       >
         <ZoomControl position={mapZoomPosition} />
+        {showAdvanced && <MapScaleControl />}
         {!embedded && onMapExpandedChange && (
           <MapExpandControl
             expanded={mapExpanded}
             onToggle={() => onMapExpandedChange(!mapExpanded)}
           />
         )}
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <MapBasemapTileLayer basemapId={basemapId} />
+        {showAdvanced && displayPrefs.showHeat && (
+          <MapHeatLayer publications={withCoords} enabled />
+        )}
+        {showAdvanced && (
+          <MapViewportCounter
+            publications={withCoords}
+            onCount={handleViewportCount}
+          />
+        )}
         {!focusPublicationId && !mapRegion && <FitBounds pubs={withCoords} />}
         {mapRegion && <FitMapRegion region={mapRegion} />}
         {onMapRegionPick && (
@@ -119,6 +175,7 @@ export function ResearchMap({
           focusPublicationId={focusPublicationId}
           embedded={embedded}
           useSheet={useSheet}
+          clustered={showAdvanced ? displayPrefs.showClusters : true}
           onPublicationSelect={onPublicationSelect}
         />
       </MapContainer>

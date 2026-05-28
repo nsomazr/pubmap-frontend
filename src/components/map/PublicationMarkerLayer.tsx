@@ -18,6 +18,7 @@ interface Props {
   focusPublicationId?: number | null;
   embedded?: boolean;
   useSheet?: boolean;
+  clustered?: boolean;
   onPublicationSelect?: (publication: Publication | null) => void;
 }
 
@@ -26,6 +27,7 @@ export function PublicationMarkerLayer({
   focusPublicationId,
   embedded = false,
   useSheet = false,
+  clustered = true,
   onPublicationSelect,
 }: Props) {
   const map = useMap();
@@ -43,13 +45,17 @@ export function PublicationMarkerLayer({
       (p) => p.coordinates?.latitude && p.coordinates?.longitude
     );
 
-    const cluster = L.markerClusterGroup({
-      maxClusterRadius: 60,
-      showCoverageOnHover: false,
-      zoomToBoundsOnClick: true,
-      spiderfyOnMaxZoom: true,
-      iconCreateFunction: createClusterIcon,
-    });
+    const cluster = clustered
+      ? L.markerClusterGroup({
+          maxClusterRadius: 60,
+          showCoverageOnHover: false,
+          zoomToBoundsOnClick: true,
+          spiderfyOnMaxZoom: true,
+          iconCreateFunction: createClusterIcon,
+        })
+      : null;
+
+    const layerGroup = clustered ? null : L.layerGroup();
 
     markersById.current.clear();
     for (const pub of withCoords) {
@@ -87,11 +93,19 @@ export function PublicationMarkerLayer({
       }
 
       markersById.current.set(pub.id, marker);
-      cluster.addLayer(marker);
+      if (cluster) {
+        cluster.addLayer(marker);
+      } else {
+        layerGroup!.addLayer(marker);
+      }
     }
 
     clusterRef.current = cluster;
-    map.addLayer(cluster);
+    if (cluster) {
+      map.addLayer(cluster);
+    } else if (layerGroup) {
+      map.addLayer(layerGroup);
+    }
 
     const onClusterClick = (e: L.LeafletEvent) => {
       const layer = (e as L.LeafletEvent & { layer: L.MarkerCluster }).layer;
@@ -109,8 +123,10 @@ export function PublicationMarkerLayer({
         window.setTimeout(() => icon.classList.remove("gre-cluster--spiderfy"), 600);
       }
     };
-    cluster.on("clusterclick", onClusterClick);
-    cluster.on("spiderfied", onSpiderfied);
+    if (cluster) {
+      cluster.on("clusterclick", onClusterClick);
+      cluster.on("spiderfied", onSpiderfied);
+    }
 
     const onMapClick = () => {
       if (useSheet) onPublicationSelectRef.current?.(null);
@@ -122,19 +138,24 @@ export function PublicationMarkerLayer({
     const detachSummary = useSheet ? () => {} : attachPublicationPopupSummary(map);
 
     return () => {
-      cluster.off("clusterclick", onClusterClick);
-      cluster.off("spiderfied", onSpiderfied);
+      if (cluster) {
+        cluster.off("clusterclick", onClusterClick);
+        cluster.off("spiderfied", onSpiderfied);
+        map.removeLayer(cluster);
+        cluster.clearLayers();
+      } else if (layerGroup) {
+        map.removeLayer(layerGroup);
+        layerGroup.clearLayers();
+      }
       if (useSheet) {
         map.off("click", onMapClick);
       }
       detachSummary();
-      map.removeLayer(cluster);
-      cluster.clearLayers();
       clusterRef.current = null;
       markersById.current.clear();
       lastFocusRef.current = null;
     };
-  }, [publications, map, embedded, useSheet]);
+  }, [publications, map, embedded, useSheet, clustered]);
 
   useEffect(() => {
     if (!focusPublicationId) {
@@ -159,14 +180,19 @@ export function PublicationMarkerLayer({
     map.flyTo([lat, lng], zoom, { duration: 0.85 });
 
     const timer = window.setTimeout(() => {
-      cluster.zoomToShowLayer(marker, () => {
+      const reveal = () => {
         if (embedded) return;
         if (useSheet) {
           onPublicationSelectRef.current?.(pub);
           return;
         }
         marker.openPopup();
-      });
+      };
+      if (cluster) {
+        cluster.zoomToShowLayer(marker, reveal);
+      } else {
+        reveal();
+      }
     }, 900);
 
     return () => window.clearTimeout(timer);

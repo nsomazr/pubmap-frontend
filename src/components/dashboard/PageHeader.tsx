@@ -6,12 +6,12 @@ interface Props {
   description?: string;
   action?: ReactNode;
   className?: string;
-  /** Plain title (no gradient band) — rare escape hatch. */
-  variant?: "default" | "premium";
+  /** clean = flat title (Hostinger-style); premium = gradient hero band; default = legacy plain */
+  variant?: "clean" | "premium" | "default";
 }
 
-export function PageHeader({ title, description, action, className = "", variant = "premium" }: Props) {
-  if (variant !== "default") {
+export function PageHeader({ title, description, action, className = "", variant = "clean" }: Props) {
+  if (variant === "premium") {
     return (
       <div
         className={`mb-6 overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm ${greGradientPremium} ${className}`}

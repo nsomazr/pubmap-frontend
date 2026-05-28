@@ -238,6 +238,7 @@ export function MeetingsPage() {
   return (
     <div className="animate-fade-up space-y-5">
       <PageHeader
+        variant="premium"
         title="GRE Meet"
         description="Host and join research sessions, live rooms, and archives."
         action={

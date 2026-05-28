@@ -14,6 +14,8 @@ interface Props {
   allowExpand?: boolean;
   /** Upload UI copy when nothing is selected; publication view uses "No PDF available". */
   emptyState?: "upload" | "publication";
+  /** Inline height: one page viewport (scroll inside PDF); default is taller manuscript view. */
+  layout?: "default" | "page";
 }
 
 function NoPdfAvailable({ className = "" }: { className?: string }) {
@@ -68,24 +70,34 @@ function isPdf(file?: File | null, path?: string | null): boolean {
   return p.endsWith(".pdf");
 }
 
-function pdfIframeSrc(url: string): string {
-  return `${url}#toolbar=1&navpanes=0`;
+function pdfIframeSrc(url: string, layout: "default" | "page" = "default"): string {
+  const params =
+    layout === "page"
+      ? "page=1&toolbar=1&navpanes=0&view=FitH"
+      : "toolbar=1&navpanes=0";
+  return `${url}#${params}`;
 }
 
 function PreviewFrame({
   src,
   title,
   className,
+  layout = "default",
 }: {
   src: string;
   title: string;
   className?: string;
+  layout?: "default" | "page";
 }) {
+  const defaultClass =
+    layout === "page"
+      ? "h-[min(75vh,52rem)] w-full max-w-[48rem] bg-slate-100"
+      : "min-h-[280px] w-full flex-1 bg-slate-100 md:min-h-[420px]";
   return (
     <iframe
       title={title}
-      src={pdfIframeSrc(src)}
-      className={className ?? "min-h-[280px] w-full flex-1 bg-slate-100"}
+      src={pdfIframeSrc(src, layout)}
+      className={className ?? defaultClass}
     />
   );
 }
@@ -98,6 +110,7 @@ export function PdfPreview({
   title = "Document preview",
   allowExpand = true,
   emptyState: emptyStateProp,
+  layout = "default",
 }: Props) {
   const emptyState = emptyStateProp ?? (file ? "upload" : "publication");
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
@@ -260,7 +273,9 @@ export function PdfPreview({
 
   const panel = (
     <div
-      className={`flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}
+      className={`flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${
+        layout === "page" ? "max-w-full" : ""
+      } ${className}`}
     >
       <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80 px-4 py-2.5">
         <div className="min-w-0">
@@ -291,7 +306,7 @@ export function PdfPreview({
           )}
         </div>
       </div>
-      <PreviewFrame src={src} title={title} className="min-h-[280px] w-full flex-1 md:min-h-[420px]" />
+      <PreviewFrame src={src} title={title} layout={layout} />
     </div>
   );
 

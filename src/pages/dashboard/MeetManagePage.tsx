@@ -322,6 +322,7 @@ export function MeetManagePage() {
   return (
     <div className="animate-fade-up space-y-8">
       <PageHeader
+        variant="premium"
         title={isNew ? "Create GRE Meet session" : "Edit GRE Meet session"}
         action={
           <Link to="/dashboard/meetings" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700">
