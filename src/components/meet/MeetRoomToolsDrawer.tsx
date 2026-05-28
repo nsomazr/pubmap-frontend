@@ -95,14 +95,14 @@ export function MeetRoomControlsFab({
 }) {
   return (
     <div
-      className="pointer-events-none fixed bottom-3 left-1/2 z-[2147483645] w-full max-w-none -translate-x-1/2 px-3 sm:bottom-2"
+      className="pointer-events-none fixed bottom-1 left-1/2 z-[2147483645] w-full max-w-none -translate-x-1/2 px-3 sm:bottom-1"
       style={{ zIndex: 2147483647 }}
     >
       <div className="flex justify-end sm:justify-center">
         <button
           type="button"
           onClick={onClick}
-          className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full border border-slate-700 bg-slate-900/95 px-4 text-sm font-semibold text-slate-100 shadow-[0_8px_24px_rgba(2,6,23,0.45)] transition hover:border-slate-600 hover:bg-slate-800 sm:translate-x-[220px] md:translate-x-[245px] lg:translate-x-[272px] xl:translate-x-[300px]"
+          className="pointer-events-auto inline-flex h-10 items-center gap-2 rounded-full border border-slate-700 bg-slate-900/95 px-4 text-sm font-semibold text-slate-100 shadow-[0_8px_24px_rgba(2,6,23,0.45)] transition hover:border-slate-600 hover:bg-slate-800 sm:translate-x-[300px] md:translate-x-[330px] lg:translate-x-[360px] xl:translate-x-[390px]"
         >
           <LayoutGrid className="h-4 w-4" />
           {label}

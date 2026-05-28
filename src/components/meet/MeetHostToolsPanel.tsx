@@ -77,8 +77,8 @@ function SettingToggle({
   return (
     <label
       htmlFor={id}
-      className={`flex cursor-pointer items-start gap-3 rounded-xl bg-slate-50/70 px-4 py-3 transition ${
-        disabled ? "cursor-not-allowed opacity-60" : "hover:bg-slate-100"
+      className={`flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-3 transition ${
+        disabled ? "cursor-not-allowed opacity-60" : "hover:bg-slate-800"
       }`}
     >
       <input
@@ -87,11 +87,11 @@ function SettingToggle({
         checked={checked}
         disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
-        className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+        className="mt-1 h-4 w-4 rounded border-slate-600 bg-slate-950 text-brand-500 focus:ring-brand-500"
       />
       <span className="min-w-0">
-        <span className="block text-sm font-semibold text-ink">{label}</span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{description}</span>
+        <span className="block text-sm font-semibold text-slate-100">{label}</span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-slate-400">{description}</span>
       </span>
     </label>
   );
@@ -171,7 +171,7 @@ export function MeetHostToolsPanel({
 
   if (!canManage) {
     return (
-      <p className="text-sm text-slate-500">Only the host or an admin can manage room controls.</p>
+      <p className="text-sm text-slate-400">Only the host or an admin can manage room controls.</p>
     );
   }
 
@@ -204,12 +204,12 @@ export function MeetHostToolsPanel({
 
       {showLiveControls && (
         <div className="space-y-2 pt-1">
-          <p className="text-xs font-semibold text-slate-500">Live controls</p>
+          <p className="text-xs font-semibold text-slate-400">Live controls</p>
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              variant="ghost"
-              className="h-9"
+              variant="secondary"
+              className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
               disabled={!roomReady}
               onClick={() => onMuteEveryone?.("audio")}
             >
@@ -218,8 +218,8 @@ export function MeetHostToolsPanel({
             </Button>
             <Button
               type="button"
-              variant="ghost"
-              className="h-9"
+              variant="secondary"
+              className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
               disabled={!roomReady}
               onClick={() => onMuteEveryone?.("video")}
             >
@@ -228,8 +228,8 @@ export function MeetHostToolsPanel({
             </Button>
             <Button
               type="button"
-              variant="ghost"
-              className="h-9"
+              variant="secondary"
+              className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
               disabled={!roomReady}
               onClick={() => onStopScreenshare?.()}
             >
@@ -238,20 +238,20 @@ export function MeetHostToolsPanel({
             </Button>
           </div>
           {!roomReady && (
-            <p className="text-xs text-slate-500">Enter the room to run live moderator commands.</p>
+            <p className="text-xs text-slate-400">Enter the room to run live moderator commands.</p>
           )}
         </div>
       )}
 
       {meeting.status === "scheduled" && (
-        <p className="text-xs leading-relaxed text-slate-500">
+        <p className="text-xs leading-relaxed text-slate-400">
           Defaults apply when the meeting goes live. You can also use{" "}
-          <span className="font-medium text-ink">Mute all now</span> after you start and join.
+          <span className="font-medium text-slate-200">Mute all now</span> after you start and join.
         </p>
       )}
 
       <p
-        className="min-h-[1.25rem] text-xs font-medium text-brand-700 transition-opacity"
+        className="min-h-[1.25rem] text-xs font-medium text-brand-300 transition-opacity"
         aria-live="polite"
         style={{ opacity: saveSettings.isPending ? 1 : 0 }}
       >

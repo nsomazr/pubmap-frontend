@@ -990,36 +990,36 @@ export function MeetRoomPage() {
               <div className="space-y-3">
                 <Link
                   to={meetingId ? `/dashboard/meetings/${meetingId}` : "/dashboard/meetings"}
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-brand-300"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Back to meeting
                 </Link>
-                <h3 className="text-lg font-bold text-ink">{headerTitle}</h3>
+                <h3 className="text-lg font-bold text-slate-100">{headerTitle}</h3>
                 <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="rounded-full bg-brand-50 px-2.5 py-1 font-semibold text-brand-700">
+                  <span className="rounded-full bg-brand-950/50 px-2.5 py-1 font-semibold text-brand-200">
                     {archiveId}
                   </span>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 capitalize text-slate-600">
+                  <span className="rounded-full bg-slate-800 px-2.5 py-1 capitalize text-slate-300">
                     {activeMeeting.status}
                   </span>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                  <span className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-300">
                     {roomParticipants.length} live participant
                     {roomParticipants.length === 1 ? "" : "s"}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <Button variant="secondary" className="h-10 w-full" onClick={copyLink}>
+                  <Button variant="secondary" className="h-10 w-full border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800" onClick={copyLink}>
                     <Copy className="h-4 w-4" />
                     Copy link
                   </Button>
-                  <Button variant="secondary" className="h-10 w-full" loading={pipOpening} onClick={() => void openMeetingPictureInPicture()}>
+                  <Button variant="secondary" className="h-10 w-full border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800" loading={pipOpening} onClick={() => void openMeetingPictureInPicture()}>
                     <PictureInPicture2 className="h-4 w-4" />
                     Picture in picture
                   </Button>
                   {shareLink && (
                     <a href={shareLink} target="_blank" rel="noreferrer" className="sm:col-span-2">
-                      <Button variant="ghost" className="h-10 w-full">
+                      <Button variant="secondary" className="h-10 w-full border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800">
                         <ExternalLink className="h-4 w-4" />
                         Open GRE link
                       </Button>
@@ -1028,7 +1028,7 @@ export function MeetRoomPage() {
                 </div>
                 {!isConnected && (
                   <div className="space-y-3 pt-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                       Join room
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -1045,7 +1045,7 @@ export function MeetRoomPage() {
                           </>
                         )}
                       </Button>
-                      <Button variant="secondary" className="h-10" onClick={() => void handleOpenExternalRoom()}>
+                      <Button variant="secondary" className="h-10 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800" onClick={() => void handleOpenExternalRoom()}>
                         <ExternalLink className="h-4 w-4" />
                         Join in browser
                       </Button>
@@ -1061,8 +1061,8 @@ export function MeetRoomPage() {
                     )}
                     {isModerator && isLive && activeMeeting.recording_status !== "recording" && (
                       <Button
-                        variant="ghost"
-                        className="h-9"
+                        variant="secondary"
+                        className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
                         loading={startRecording.isPending}
                         onClick={handleStartRecording}
                       >
@@ -1070,7 +1070,7 @@ export function MeetRoomPage() {
                       </Button>
                     )}
                     {isModerator && isLive && activeMeeting.recording_status === "recording" && (
-                      <Button variant="ghost" className="h-9" loading={stopRecording.isPending} onClick={handleStopRecording}>
+                      <Button variant="secondary" className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800" loading={stopRecording.isPending} onClick={handleStopRecording}>
                         Stop recording
                       </Button>
                     )}
@@ -1088,8 +1088,8 @@ export function MeetRoomPage() {
                       <div className="grid grid-cols-2 gap-2">
                         <Button
                           type="button"
-                          variant="ghost"
-                          className="h-9"
+                          variant="secondary"
+                          className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
                           loading={copilotLoading}
                           onClick={() => void runCopilot("notes")}
                         >
@@ -1098,8 +1098,8 @@ export function MeetRoomPage() {
                         </Button>
                         <Button
                           type="button"
-                          variant="ghost"
-                          className="h-9"
+                          variant="secondary"
+                          className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
                           loading={copilotLoading}
                           onClick={() => void runCopilot("actions")}
                         >
@@ -1107,9 +1107,9 @@ export function MeetRoomPage() {
                         </Button>
                       </div>
                       {(copilotOutput || copilotError || copilotLoading) && (
-                        <div className="rounded-xl bg-slate-50/70 p-3">
+                        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3">
                           {copilotError ? (
-                            <p className="text-sm text-red-600">{copilotError}</p>
+                            <p className="text-sm text-red-400">{copilotError}</p>
                           ) : (
                             <FormattedAssistantText content={copilotOutput} streaming={copilotLoading} />
                           )}
@@ -1202,8 +1202,8 @@ export function MeetRoomPage() {
               people: (
                 <div className="space-y-3">
                   {canManage && (
-                    <div className="rounded-xl bg-slate-50/70 p-3">
-                      <p className="text-xs font-semibold text-slate-500">Invite by email</p>
+                    <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3">
+                      <p className="text-xs font-semibold text-slate-400">Invite by email</p>
                       <form
                         className="mt-2 flex flex-col gap-2 sm:flex-row"
                         onSubmit={(event) => {
@@ -1216,21 +1216,21 @@ export function MeetRoomPage() {
                           value={inviteEmail}
                           onChange={(event) => setInviteEmail(event.target.value)}
                           placeholder="attendee@example.com"
-                          className="min-w-0 flex-1 rounded-xl bg-white/80 px-3 py-2 text-sm text-ink outline-none transition focus:ring-2 focus:ring-brand-100"
+                          className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition focus:ring-2 focus:ring-brand-900/40"
                         />
-                        <Button type="submit" variant="secondary" loading={inviteSending} className="h-10 sm:shrink-0">
+                        <Button type="submit" variant="secondary" loading={inviteSending} className="h-10 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800 sm:shrink-0">
                           Send invite
                         </Button>
                       </form>
                     </div>
                   )}
                   {canManage && (
-                    <div className="rounded-xl bg-slate-50/70 p-3">
+                    <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                           Waiting room
                         </p>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                        <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
                           {waitingGuests.length}
                         </span>
                       </div>
@@ -1238,26 +1238,26 @@ export function MeetRoomPage() {
                         <>
                           <div className="mt-3 space-y-2">
                             {waitingGuests.map((guest) => (
-                              <div key={guest.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-100/70 px-3 py-2">
+                              <div key={guest.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-800 px-3 py-2">
                                 <div className="min-w-0">
-                                  <p className="truncate text-sm font-semibold text-ink">{guest.displayName}</p>
+                                  <p className="truncate text-sm font-semibold text-slate-100">{guest.displayName}</p>
                                   {guest.email && (
-                                    <p className="truncate text-xs text-slate-500">{guest.email}</p>
+                                    <p className="truncate text-xs text-slate-400">{guest.email}</p>
                                   )}
                                 </div>
                                 <div className="flex shrink-0 gap-2">
                                   <Button
                                     type="button"
                                     variant="secondary"
-                                    className="h-9"
+                                    className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
                                     onClick={() => answerKnockingParticipant(guest.id, true)}
                                   >
                                     Admit
                                   </Button>
                                   <Button
                                     type="button"
-                                    variant="ghost"
-                                    className="h-9"
+                                    variant="secondary"
+                                    className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
                                     onClick={() => answerKnockingParticipant(guest.id, false)}
                                   >
                                     Deny
@@ -1266,27 +1266,27 @@ export function MeetRoomPage() {
                               </div>
                             ))}
                           </div>
-                          <Button type="button" className="mt-3 h-10" onClick={admitAllWaitingGuests}>
+                          <Button type="button" className="mt-3 h-10 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800" onClick={admitAllWaitingGuests}>
                             Admit all
                           </Button>
                         </>
                       ) : (
-                        <p className="mt-2 text-sm text-slate-500">No guests waiting for approval.</p>
+                        <p className="mt-2 text-sm text-slate-400">No guests waiting for approval.</p>
                       )}
                     </div>
                   )}
                   {roomParticipants.map((participant) => (
                     <div
                       key={participant.id}
-                      className="relative flex items-center justify-between gap-2 rounded-xl bg-slate-50/70 px-3 py-2"
+                      className="relative flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-2"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-ink">
+                        <p className="truncate text-sm font-semibold text-slate-100">
                           {participant.displayName}
                           {participant.isLocal ? " · You" : ""}
                         </p>
                         {participant.email && (
-                          <p className="truncate text-xs text-slate-500">{participant.email}</p>
+                          <p className="truncate text-xs text-slate-400">{participant.email}</p>
                         )}
                       </div>
                       {isModerator && !participant.isLocal && participant.id && (
@@ -1307,14 +1307,14 @@ export function MeetRoomPage() {
                           </Button>
                           {participantActionMenuId === participant.id && (
                             <div
-                              className="absolute right-0 top-11 z-20 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+                              className="absolute right-0 top-11 z-20 w-56 rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-lg"
                               data-participant-menu="true"
                             >
                               <div className="space-y-1">
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-slate-100 hover:bg-slate-800"
                                   onClick={() => {
                                     const shouldMute = !participant.audioMuted;
                                     const ok = runParticipantAction(
@@ -1348,7 +1348,7 @@ export function MeetRoomPage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-slate-100 hover:bg-slate-800"
                                   onClick={() => {
                                     const shouldTurnVideoOff = !participant.videoMuted;
                                     const ok = runParticipantAction(
@@ -1384,7 +1384,7 @@ export function MeetRoomPage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-slate-100 hover:bg-slate-800"
                                   onClick={() => {
                                     runParticipantAction(
                                       participant.id,
@@ -1402,7 +1402,7 @@ export function MeetRoomPage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-red-600 hover:text-red-700"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-red-400 hover:bg-slate-800 hover:text-red-300"
                                   onClick={() => {
                                     runParticipantAction(
                                       participant.id,
@@ -1425,7 +1425,7 @@ export function MeetRoomPage() {
                     </div>
                   ))}
                   {roomParticipants.length === 0 && (
-                    <p className="text-sm text-slate-500">No room participants detected yet.</p>
+                    <p className="text-sm text-slate-400">No room participants detected yet.</p>
                   )}
                 </div>
               ),
