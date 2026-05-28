@@ -169,6 +169,9 @@ export function MeetRoomPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<MeetRoomDrawerTab>("assistant");
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
+  const [waitingGuests, setWaitingGuests] = useState<
+    { id: string; displayName: string; email?: string }[]
+  >([]);
   const [inviteEmail, setInviteEmail] = useState("");
   const [embedTimedOut, setEmbedTimedOut] = useState(false);
   const [pipOpening, setPipOpening] = useState(false);
@@ -402,6 +405,28 @@ export function MeetRoomPage() {
           error: payload?.error || "",
         });
       };
+      const onKnockingParticipant = (payload: {
+        id?: string;
+        participant?: { id?: string; name?: string; email?: string };
+        name?: string;
+        displayName?: string;
+        email?: string;
+      }) => {
+        const participantId = payload?.id || payload?.participant?.id || "";
+        if (!participantId) return;
+        const displayName =
+          payload?.displayName || payload?.name || payload?.participant?.name || "Guest";
+        const email = payload?.email || payload?.participant?.email;
+        setWaitingGuests((current) => {
+          if (current.some((guest) => guest.id === participantId)) return current;
+          return [...current, { id: participantId, displayName, email }];
+        });
+      };
+      const removeWaitingGuest = (payload: { id?: string; participantId?: string }) => {
+        const participantId = payload?.id || payload?.participantId || "";
+        if (!participantId) return;
+        setWaitingGuests((current) => current.filter((guest) => guest.id !== participantId));
+      };
       const onReadyToClose = () => {
         queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
         queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
@@ -413,6 +438,9 @@ export function MeetRoomPage() {
       apiInstance.addListener("participantLeft", onParticipantLeft);
       apiInstance.addListener("participantRoleChanged", onRoleChanged);
       apiInstance.addListener("recordingStatusChanged", onRecordingChanged);
+      apiInstance.addListener("knockingParticipant", onKnockingParticipant);
+      apiInstance.addListener("knockingParticipantAccepted", removeWaitingGuest);
+      apiInstance.addListener("knockingParticipantRejected", removeWaitingGuest);
       apiInstance.addListener("readyToClose", onReadyToClose);
     };
 
@@ -423,6 +451,7 @@ export function MeetRoomPage() {
     return () => {
       cancelled = true;
       setJitsiReady(false);
+      setWaitingGuests([]);
       try {
         apiInstance?.dispose?.();
       } catch {
@@ -623,6 +652,30 @@ export function MeetRoomPage() {
         description: fallbackError,
       });
     }
+  };
+
+  const answerKnockingParticipant = (participantId: string, approve: boolean) => {
+    const ok = runModeratorCommand("answerKnockingParticipant", participantId, approve);
+    if (!ok) return;
+    setWaitingGuests((current) => current.filter((guest) => guest.id !== participantId));
+    toast.success({
+      title: approve ? "Guest admitted" : "Guest denied",
+      description: approve
+        ? "Guest can now enter the meeting."
+        : "Guest request was declined from the waiting room.",
+    });
+  };
+
+  const admitAllWaitingGuests = () => {
+    if (!waitingGuests.length) return;
+    waitingGuests.forEach((guest) => {
+      runModeratorCommand("answerKnockingParticipant", guest.id, true);
+    });
+    setWaitingGuests([]);
+    toast.success({
+      title: "All guests admitted",
+      description: "Every waiting guest has been approved to join.",
+    });
   };
 
   const handleStartRecording = async () => {
@@ -1211,6 +1264,58 @@ export function MeetRoomPage() {
                           Send invite
                         </Button>
                       </form>
+                    </div>
+                  )}
+                  {canManage && (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Waiting room
+                        </p>
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                          {waitingGuests.length}
+                        </span>
+                      </div>
+                      {waitingGuests.length > 0 ? (
+                        <>
+                          <div className="mt-3 space-y-2">
+                            {waitingGuests.map((guest) => (
+                              <div
+                                key={guest.id}
+                                className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-semibold text-ink">{guest.displayName}</p>
+                                  {guest.email && (
+                                    <p className="truncate text-xs text-slate-500">{guest.email}</p>
+                                  )}
+                                </div>
+                                <div className="flex shrink-0 gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => answerKnockingParticipant(guest.id, true)}
+                                  >
+                                    Admit
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => answerKnockingParticipant(guest.id, false)}
+                                  >
+                                    Deny
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <Button type="button" className="mt-3" onClick={admitAllWaitingGuests}>
+                            Admit all
+                          </Button>
+                        </>
+                      ) : (
+                        <p className="mt-2 text-sm text-slate-500">No guests waiting for approval.</p>
+                      )}
                     </div>
                   )}
                   {canManage && activeMeeting.screen_share_moderator_only && (
