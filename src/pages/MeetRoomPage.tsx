@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { Textarea } from "../components/ui/Textarea";
 import { useToast } from "../components/ui/ToastProvider";
 import { useAuth } from "../context/AuthContext";
 import { assistantHealth, assistantSummarizeTextStream } from "../lib/assistant";
