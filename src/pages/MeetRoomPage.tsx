@@ -999,17 +999,17 @@ export function MeetRoomPage() {
                   </span>
                 </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <Button variant="secondary" className="w-full" onClick={copyLink}>
+                  <Button variant="secondary" className="h-10 w-full" onClick={copyLink}>
                     <Copy className="h-4 w-4" />
                     Copy link
                   </Button>
-                  <Button variant="secondary" className="w-full" loading={pipOpening} onClick={() => void openMeetingPictureInPicture()}>
+                  <Button variant="secondary" className="h-10 w-full" loading={pipOpening} onClick={() => void openMeetingPictureInPicture()}>
                     <PictureInPicture2 className="h-4 w-4" />
                     Picture in picture
                   </Button>
                   {shareLink && (
                     <a href={shareLink} target="_blank" rel="noreferrer" className="sm:col-span-2">
-                      <Button variant="ghost" className="w-full">
+                      <Button variant="ghost" className="h-10 w-full">
                         <ExternalLink className="h-4 w-4" />
                         Open GRE link
                       </Button>
@@ -1022,7 +1022,7 @@ export function MeetRoomPage() {
                       Join room
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <Button loading={isPreparingRoom} onClick={() => void handleEnterRoom()}>
+                      <Button className="h-10" loading={isPreparingRoom} onClick={() => void handleEnterRoom()}>
                         {canManage && activeMeeting.status === "scheduled" ? (
                           <>
                             <Radio className="h-4 w-4" />
@@ -1035,7 +1035,7 @@ export function MeetRoomPage() {
                           </>
                         )}
                       </Button>
-                      <Button variant="secondary" onClick={() => void handleOpenExternalRoom()}>
+                      <Button variant="secondary" className="h-10" onClick={() => void handleOpenExternalRoom()}>
                         <ExternalLink className="h-4 w-4" />
                         Join in browser
                       </Button>
@@ -1045,17 +1045,18 @@ export function MeetRoomPage() {
                 <div className="space-y-3 pt-2">
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {activeMeeting.status === "scheduled" && (
-                      <Button loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
+                      <Button className="h-10" loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
                         Start on GRE
                       </Button>
                     )}
-                    <Button variant="secondary" onClick={() => void handleOpenExternalRoom()}>
+                    <Button variant="secondary" className="h-10" onClick={() => void handleOpenExternalRoom()}>
                       <ExternalLink className="h-4 w-4" />
                       Join in browser
                     </Button>
                     {isModerator && isLive && activeMeeting.recording_status !== "recording" && (
                       <Button
                         variant="secondary"
+                        className="h-10"
                         loading={startRecording.isPending}
                         onClick={handleStartRecording}
                       >
@@ -1063,13 +1064,13 @@ export function MeetRoomPage() {
                       </Button>
                     )}
                     {isModerator && isLive && activeMeeting.recording_status === "recording" && (
-                      <Button variant="ghost" loading={stopRecording.isPending} onClick={handleStopRecording}>
+                      <Button variant="ghost" className="h-10" loading={stopRecording.isPending} onClick={handleStopRecording}>
                         Stop recording
                       </Button>
                     )}
                     <Button
                       variant="danger"
-                      className="sm:col-span-2"
+                      className="h-10 sm:col-span-2"
                       loading={endMeeting.isPending}
                       onClick={() => setConfirmEndOpen(true)}
                     >
@@ -1082,6 +1083,7 @@ export function MeetRoomPage() {
                         <Button
                           type="button"
                           variant="secondary"
+                          className="h-10"
                           loading={copilotLoading}
                           onClick={() => void runCopilot("notes")}
                         >
@@ -1091,6 +1093,7 @@ export function MeetRoomPage() {
                         <Button
                           type="button"
                           variant="ghost"
+                          className="h-10"
                           loading={copilotLoading}
                           onClick={() => void runCopilot("actions")}
                         >
@@ -1229,7 +1232,7 @@ export function MeetRoomPage() {
                           placeholder="attendee@example.com"
                           className="min-w-0 flex-1 rounded-xl bg-white/80 px-3 py-2 text-sm text-ink outline-none transition focus:ring-2 focus:ring-brand-100"
                         />
-                        <Button type="submit" variant="secondary" loading={inviteSending} className="sm:shrink-0">
+                        <Button type="submit" variant="secondary" loading={inviteSending} className="h-10 sm:shrink-0">
                           Send invite
                         </Button>
                       </form>
@@ -1260,6 +1263,7 @@ export function MeetRoomPage() {
                                   <Button
                                     type="button"
                                     variant="secondary"
+                                    className="h-9"
                                     onClick={() => answerKnockingParticipant(guest.id, true)}
                                   >
                                     Admit
@@ -1267,6 +1271,7 @@ export function MeetRoomPage() {
                                   <Button
                                     type="button"
                                     variant="ghost"
+                                    className="h-9"
                                     onClick={() => answerKnockingParticipant(guest.id, false)}
                                   >
                                     Deny
@@ -1275,7 +1280,7 @@ export function MeetRoomPage() {
                               </div>
                             ))}
                           </div>
-                          <Button type="button" className="mt-3" onClick={admitAllWaitingGuests}>
+                          <Button type="button" className="mt-3 h-10" onClick={admitAllWaitingGuests}>
                             Admit all
                           </Button>
                         </>
@@ -1310,7 +1315,7 @@ export function MeetRoomPage() {
                       {isModerator && !participant.isLocal && participant.id && (
                         <Button
                           variant="ghost"
-                          className="shrink-0 text-red-600 hover:text-red-700"
+                          className="h-9 shrink-0 text-red-600 hover:text-red-700"
                           onClick={(event) => {
                             event.stopPropagation();
                             runParticipantAction(
@@ -1334,6 +1339,7 @@ export function MeetRoomPage() {
                         <Button
                           type="button"
                           variant="secondary"
+                          className="h-9"
                           onClick={() =>
                             runParticipantAction(
                               selectedParticipantId,
@@ -1350,6 +1356,7 @@ export function MeetRoomPage() {
                         <Button
                           type="button"
                           variant="secondary"
+                          className="h-9"
                           onClick={() =>
                             runParticipantAction(
                               selectedParticipantId,
@@ -1366,6 +1373,7 @@ export function MeetRoomPage() {
                         <Button
                           type="button"
                           variant="ghost"
+                          className="h-9"
                           onClick={() =>
                             runParticipantAction(
                               selectedParticipantId,
@@ -1382,6 +1390,7 @@ export function MeetRoomPage() {
                         <Button
                           type="button"
                           variant="danger"
+                          className="h-9"
                           onClick={() =>
                             runParticipantAction(
                               selectedParticipantId,

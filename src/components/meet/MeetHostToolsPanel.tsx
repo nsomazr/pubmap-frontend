@@ -209,6 +209,7 @@ export function MeetHostToolsPanel({
             <Button
               type="button"
               variant="secondary"
+              className="h-10"
               disabled={!roomReady}
               onClick={() => onMuteEveryone?.("audio")}
             >
@@ -218,6 +219,7 @@ export function MeetHostToolsPanel({
             <Button
               type="button"
               variant="secondary"
+              className="h-10"
               disabled={!roomReady}
               onClick={() => onMuteEveryone?.("video")}
             >
@@ -227,6 +229,7 @@ export function MeetHostToolsPanel({
             <Button
               type="button"
               variant="secondary"
+              className="h-10"
               disabled={!roomReady}
               onClick={() => onStopScreenshare?.()}
             >

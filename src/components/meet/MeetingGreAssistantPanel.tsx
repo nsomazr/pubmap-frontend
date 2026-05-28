@@ -136,7 +136,7 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
           <button
             key={item}
             type="button"
-            className="rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-brand-50/60 hover:text-brand-700"
+            className="h-9 rounded-lg bg-white/90 px-3.5 text-xs font-medium text-slate-700 transition hover:bg-brand-50/60 hover:text-brand-700"
             onClick={() => handleAsk(item)}
             disabled={askMutation.isPending}
           >
@@ -165,7 +165,7 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
             type="submit"
             disabled={!question.trim()}
             loading={askMutation.isPending}
-            className="rounded-lg px-4 py-2"
+            className="h-10 min-w-[92px]"
           >
             <Sparkles className="h-4 w-4" />
             Ask
