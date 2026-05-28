@@ -47,12 +47,9 @@ export function MeetRoomToolsDrawer({
         onClick={onClose}
       />
       <aside className="relative flex h-full w-full max-w-md flex-col bg-white shadow-2xl sm:max-w-lg">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
-              Meeting controls
-            </p>
-            <h2 className="truncate text-lg font-semibold text-ink">
+            <h2 className="truncate text-xl font-semibold text-ink">
               {meetingTitle || "GRE Meet"}
             </h2>
           </div>
@@ -70,7 +67,7 @@ export function MeetRoomToolsDrawer({
                 key={item.id}
                 type="button"
                 onClick={() => onTabChange(item.id)}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   active
                     ? "bg-brand-600 text-white"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -83,7 +80,7 @@ export function MeetRoomToolsDrawer({
           })}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5">{panels[tab]}</div>
+        <div className="flex-1 overflow-y-auto p-4">{panels[tab]}</div>
       </aside>
     </div>
   );
