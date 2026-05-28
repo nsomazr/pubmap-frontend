@@ -31,7 +31,6 @@ const emptyForm = {
   scheduled_at: "",
   publication_id: "",
   forum_topic_id: "",
-  host_notes: "",
 };
 
 function toLocalInputValue(value?: string | null) {
@@ -110,7 +109,6 @@ export function MeetManagePage() {
       scheduled_at: toLocalInputValue(meeting.scheduled_at),
       publication_id: meeting.publication_id ? String(meeting.publication_id) : "",
       forum_topic_id: meeting.forum_topic_id ? String(meeting.forum_topic_id) : "",
-      host_notes: meeting.host_notes || "",
     });
   }, [meeting]);
 
@@ -138,7 +136,6 @@ export function MeetManagePage() {
         scheduled_at: new Date(form.scheduled_at).toISOString(),
         publication_id: form.publication_id ? Number(form.publication_id) : null,
         forum_topic_id: form.forum_topic_id ? Number(form.forum_topic_id) : null,
-        host_notes: form.host_notes,
       };
       if (isNew) {
         const { data } = await api.post<MeetSession>("/meetings/", payload);
@@ -416,15 +413,6 @@ export function MeetManagePage() {
               value={form.description}
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
               rows={4}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <Textarea
-              label="Meeting summary notes (optional)"
-              value={form.host_notes}
-              onChange={(e) => setForm((prev) => ({ ...prev, host_notes: e.target.value }))}
-              rows={3}
-              placeholder="Optional wrap-up, decisions, or action points to preserve in the archive summary."
             />
           </div>
           {form.visibility === "invite_only" && (

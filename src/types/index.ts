@@ -515,7 +515,6 @@ export interface MeetSession {
   publication?: Publication | null;
   forum_topic_id?: number | null;
   forum_topic?: Pick<Topic, "id" | "topic" | "sub_category_id" | "sub_category_name"> | null;
-  host_notes?: string | null;
   mute_audio_on_join?: boolean;
   video_off_on_join?: boolean;
   screen_share_moderator_only?: boolean;

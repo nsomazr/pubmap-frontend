@@ -50,7 +50,7 @@ export function MeetDetailPage() {
   });
 
   const endMeeting = useMutation({
-    mutationFn: () => api.post(`/meetings/${id}/end/`, { host_notes: meeting?.host_notes || "" }),
+    mutationFn: () => api.post(`/meetings/${id}/end/`),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["meeting", id] });
       toast.success({

@@ -252,7 +252,7 @@ export function MeetRoomPage() {
   const saveNotes = useMutation({
     mutationFn: async (value: string) => {
       const { data } = await api.patch<MeetSession>(`/meetings/${meetingId}/`, {
-        host_notes: value,
+        assistant_notes: value,
       });
       return data;
     },
@@ -268,7 +268,7 @@ export function MeetRoomPage() {
     },
     onError: (error) => {
       setNotesState("error");
-      setNotesError(parseApiError(error, "Could not save meeting notes."));
+      setNotesError(parseApiError(error, "Could not save assistant report."));
     },
   });
   const saveNotesMutation = saveNotes.mutate;
@@ -292,7 +292,7 @@ export function MeetRoomPage() {
   });
 
   const endMeeting = useMutation({
-    mutationFn: () => api.post(`/meetings/${meetingId}/end/`, { host_notes: notes.trim() }),
+    mutationFn: () => api.post(`/meetings/${meetingId}/end/`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
       queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
@@ -352,15 +352,15 @@ export function MeetRoomPage() {
 
   useEffect(() => {
     if (!activeMeeting?.id || notesSeedMeetingId === activeMeeting.id) return;
-    setNotes(activeMeeting.host_notes || "");
+    setNotes(activeMeeting.assistant_notes || "");
     setNotesSeedMeetingId(activeMeeting.id);
-    setNotesState(activeMeeting.host_notes?.trim() ? "saved" : "idle");
+    setNotesState(activeMeeting.assistant_notes?.trim() ? "saved" : "idle");
     setNotesError("");
-  }, [activeMeeting?.host_notes, activeMeeting?.id, notesSeedMeetingId]);
+  }, [activeMeeting?.assistant_notes, activeMeeting?.id, notesSeedMeetingId]);
 
   useEffect(() => {
     if (!canManage || !meetingId || notesSeedMeetingId !== activeMeeting?.id) return;
-    const savedNotes = activeMeeting?.host_notes || "";
+    const savedNotes = activeMeeting?.assistant_notes || "";
     if (notes === savedNotes) {
       return;
     }
@@ -370,7 +370,7 @@ export function MeetRoomPage() {
     }, 900);
     return () => window.clearTimeout(timer);
   }, [
-    activeMeeting?.host_notes,
+    activeMeeting?.assistant_notes,
     activeMeeting?.id,
     canManage,
     meetingId,
@@ -644,14 +644,14 @@ export function MeetRoomPage() {
     "The embedded meeting is taking too long to start. This is usually a Jitsi network/auth issue.";
   const notesStatusLabel =
     notesState === "saving"
-      ? "Saving notes..."
+      ? "Saving assistant report..."
       : notesState === "saved"
-        ? "Notes saved to GRE"
+        ? "Assistant report saved to GRE"
         : notesState === "error"
-          ? "Notes could not be saved"
+          ? "Assistant report could not be saved"
           : notesState === "dirty"
             ? "Waiting to save..."
-            : "Notes will be saved to GRE";
+            : "Assistant report will be saved to GRE";
 
   const headerTitle = activeMeeting?.title || "GRE Meet";
   const subtitle = useMemo(() => {
@@ -1149,7 +1149,7 @@ export function MeetRoomPage() {
                               className="mt-3"
                               onClick={() => setNotes(copilotOutput)}
                             >
-                              Use as host notes
+                              Use as assistant report
                             </Button>
                           )}
                         </div>
@@ -1165,13 +1165,13 @@ export function MeetRoomPage() {
                   {canManage && (
                     <div className="space-y-2 rounded-xl bg-slate-50/70 p-3">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold text-slate-500">Host notes</p>
-                        <span className="text-[11px] text-slate-400">Auto-saved</span>
+                        <p className="text-xs font-semibold text-slate-500">Assistant report (host editable)</p>
+                        <span className="text-[11px] text-slate-400">Auto-saved · shared after meeting ends</span>
                       </div>
                       <Textarea
                         value={notes}
                         onChange={(event) => setNotes(event.target.value)}
-                        placeholder="Write quick host notes..."
+                        placeholder="Edit the assistant report before sharing to attendees..."
                         rows={2}
                         className="min-h-[3rem] rounded-2xl"
                       />
@@ -1385,7 +1385,7 @@ export function MeetRoomPage() {
                                   }}
                                 >
                                   <MicOff className="h-4 w-4" />
-                                  Force mute mic
+                                  Mute mic
                                 </Button>
                                 <Button
                                   type="button"
@@ -1403,7 +1403,7 @@ export function MeetRoomPage() {
                                   }}
                                 >
                                   <VideoOff className="h-4 w-4" />
-                                  Force video off
+                                  Video off
                                 </Button>
                                 <Button
                                   type="button"
