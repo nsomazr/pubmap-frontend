@@ -10,7 +10,12 @@ export function grePaperCode(shortNumber?: string | null): string | null {
 
 /** Strip an existing #GRE-XXX prefix from a stored title. */
 export function stripGrePaperPrefix(title: string): string {
-  return title.replace(/^#?GRE-[\w-]+\s*:\s*/i, "").trim();
+  const raw = (title || "").trim();
+  const withoutGrePrefix = raw.replace(/^#?GRE-[\w-]+\s*:\s*/i, "").trim();
+  const withoutMarkdownHeading = withoutGrePrefix.replace(/^#{1,6}\s+/, "").trim();
+  const latexTitleMatch = withoutMarkdownHeading.match(/^\\title\{([\s\S]+)\}$/i);
+  const withoutLatexTitle = latexTitleMatch ? latexTitleMatch[1].trim() : withoutMarkdownHeading;
+  return withoutLatexTitle.replace(/^\{+|\}+$/g, "").trim();
 }
 
 /** Reader-facing title: stored title without GRE number prefix. */
