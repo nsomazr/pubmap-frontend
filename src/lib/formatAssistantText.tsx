@@ -80,7 +80,7 @@ function inlineFormat(text: string): ReactNode[] {
   while ((m = re.exec(plain)) !== null) {
     if (m.index > last) parts.push(plain.slice(last, m.index));
     parts.push(
-        <strong key={`${m.index}-b`} className="font-semibold text-ink">
+      <strong key={`${m.index}-b`} className="font-semibold text-current">
         {normalizeGreTypography(m[1])}
       </strong>
     );
@@ -250,7 +250,7 @@ export function FormattedAssistantText({ content, streaming, className = "" }: P
 
   if (!blocks.length && normalized.trim()) {
     return (
-      <div className={`gre-assistant-formatted text-sm leading-relaxed text-slate-700 ${className}`}>
+      <div className={`gre-assistant-formatted text-sm leading-relaxed text-current ${className}`}>
         <p>{inlineFormat(normalized.trim())}</p>
         {streaming && <StreamCursor />}
       </div>
@@ -258,7 +258,7 @@ export function FormattedAssistantText({ content, streaming, className = "" }: P
   }
 
   return (
-    <div className={`gre-assistant-formatted space-y-3 text-sm leading-relaxed text-slate-700 ${className}`}>
+    <div className={`gre-assistant-formatted space-y-3 text-sm leading-relaxed text-current ${className}`}>
       {blocks.map((block, idx) => {
         if (block.type === "heading") {
           const Tag = block.level === 2 ? "h3" : block.level === 3 ? "h4" : "h5";
@@ -267,8 +267,8 @@ export function FormattedAssistantText({ content, streaming, className = "" }: P
               key={idx}
               className={
                 block.level === 2
-                  ? "text-sm font-bold text-ink"
-                  : "text-xs font-semibold uppercase tracking-wide text-brand-700"
+                  ? "text-sm font-bold text-current"
+                  : "text-xs font-semibold uppercase tracking-wide text-current/80"
               }
             >
               {block.text}
@@ -285,7 +285,7 @@ export function FormattedAssistantText({ content, streaming, className = "" }: P
           );
         }
         return (
-          <p key={idx} className="leading-relaxed text-slate-700">
+          <p key={idx} className="leading-relaxed text-current">
             {block.lines}
           </p>
         );

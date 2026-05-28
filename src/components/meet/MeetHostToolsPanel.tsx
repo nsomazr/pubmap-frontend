@@ -209,7 +209,7 @@ export function MeetHostToolsPanel({
             <Button
               type="button"
               variant="secondary"
-              className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+              className="h-9 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!border-slate-700 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
               disabled={!roomReady}
               onClick={() => onMuteEveryone?.("audio")}
             >
@@ -219,7 +219,7 @@ export function MeetHostToolsPanel({
             <Button
               type="button"
               variant="secondary"
-              className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+              className="h-9 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!border-slate-700 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
               disabled={!roomReady}
               onClick={() => onMuteEveryone?.("video")}
             >
@@ -229,7 +229,7 @@ export function MeetHostToolsPanel({
             <Button
               type="button"
               variant="secondary"
-              className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+              className="h-9 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!border-slate-700 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
               disabled={!roomReady}
               onClick={() => onStopScreenshare?.()}
             >

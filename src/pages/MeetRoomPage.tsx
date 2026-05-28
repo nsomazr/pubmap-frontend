@@ -1008,23 +1008,35 @@ export function MeetRoomPage() {
                     {roomParticipants.length === 1 ? "" : "s"}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <Button variant="secondary" className="h-10 w-full border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800" onClick={copyLink}>
-                    <Copy className="h-4 w-4" />
-                    Copy link
-                  </Button>
-                  <Button variant="secondary" className="h-10 w-full border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800" loading={pipOpening} onClick={() => void openMeetingPictureInPicture()}>
-                    <PictureInPicture2 className="h-4 w-4" />
-                    Picture in picture
-                  </Button>
-                  {shareLink && (
-                    <a href={shareLink} target="_blank" rel="noreferrer" className="sm:col-span-2">
-                      <Button variant="secondary" className="h-10 w-full border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800">
-                        <ExternalLink className="h-4 w-4" />
-                        Open GRE link
-                      </Button>
-                    </a>
-                  )}
+                <div className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-2.5">
+                  <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Quick actions</p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <Button
+                      variant="secondary"
+                      className="h-10 w-full !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800"
+                      onClick={copyLink}
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy link
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="h-10 w-full !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800"
+                      loading={pipOpening}
+                      onClick={() => void openMeetingPictureInPicture()}
+                    >
+                      <PictureInPicture2 className="h-4 w-4" />
+                      Picture in picture
+                    </Button>
+                    {shareLink && (
+                      <a href={shareLink} target="_blank" rel="noreferrer" className="sm:col-span-2">
+                        <Button variant="secondary" className="h-10 w-full !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800">
+                          <ExternalLink className="h-4 w-4" />
+                          Open GRE link
+                        </Button>
+                      </a>
+                    )}
+                  </div>
                 </div>
                 {!isConnected && (
                   <div className="space-y-3 pt-2">
@@ -1053,7 +1065,9 @@ export function MeetRoomPage() {
                   </div>
                 )}
                 <div className="space-y-2 pt-2">
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-2.5">
+                    <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Live actions</p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {activeMeeting.status === "scheduled" && (
                       <Button className="h-10" loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
                         Start on GRE
@@ -1083,13 +1097,15 @@ export function MeetRoomPage() {
                       End meeting
                     </Button>
                   </div>
+                  </div>
                   {canManage && (
-                    <div className="space-y-2 pt-1">
+                    <div className="space-y-2 pt-1 rounded-2xl border border-slate-800 bg-slate-900/50 p-2.5">
+                      <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Assistant tools</p>
                       <div className="grid grid-cols-2 gap-2">
                         <Button
                           type="button"
                           variant="secondary"
-                          className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                          className="h-9 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800"
                           loading={copilotLoading}
                           onClick={() => void runCopilot("notes")}
                         >
@@ -1099,7 +1115,7 @@ export function MeetRoomPage() {
                         <Button
                           type="button"
                           variant="secondary"
-                          className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                          className="h-9 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800"
                           loading={copilotLoading}
                           onClick={() => void runCopilot("actions")}
                         >
@@ -1218,7 +1234,12 @@ export function MeetRoomPage() {
                           placeholder="attendee@example.com"
                           className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition focus:ring-2 focus:ring-brand-900/40"
                         />
-                        <Button type="submit" variant="secondary" loading={inviteSending} className="h-10 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800 sm:shrink-0">
+                        <Button
+                          type="submit"
+                          loading={inviteSending}
+                          disabled={!inviteEmail.trim()}
+                          className="h-10 min-w-[132px] !bg-brand-600 !text-white hover:!bg-brand-500 disabled:!bg-slate-700 disabled:!text-slate-300 disabled:!opacity-100 sm:shrink-0"
+                        >
                           Send invite
                         </Button>
                       </form>
