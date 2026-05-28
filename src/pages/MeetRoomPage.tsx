@@ -1043,7 +1043,7 @@ export function MeetRoomPage() {
 
       {!drawerOpen && <MeetRoomControlsFab onClick={() => setDrawerOpen(true)} />}
       <div
-        className="pointer-events-none fixed right-6 top-4 z-[2147483645] sm:right-8 sm:top-5"
+        className="pointer-events-none fixed left-6 top-4 z-[2147483645] sm:left-8 sm:top-5"
         style={{ zIndex: 2147483647 }}
       >
         <BrandMark
@@ -1252,46 +1252,58 @@ export function MeetRoomPage() {
             ),
               chat: (
                 <div className="flex h-full min-h-0 flex-col gap-3">
-                  <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900/70 p-2">
+                  <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
                     {chat.map((message) => {
                       const senderName =
                         message.sender?.full_name ||
                         `${message.sender?.firstname ?? ""} ${message.sender?.lastname ?? ""}`.trim() ||
                         message.sender?.email ||
                         "Participant";
+                      const isOwn = message.sender_id === user?.id;
                       return (
-                        <div key={message.id} className="rounded-xl bg-slate-800 px-3 py-2.5">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        <div key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
+                          <div
+                            className={`w-full max-w-[92%] rounded-2xl border px-3 py-2.5 shadow-sm ${
+                              isOwn
+                                ? "border-brand-800/50 bg-brand-900/30"
+                                : "border-slate-700 bg-slate-800/90"
+                            }`}
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                               {senderName}
-                              {message.sender_id === user?.id ? " · You" : ""}
-                            </p>
-                            <span className="text-[11px] text-slate-500">
-                              {formatChatTimestamp(message.created_at)}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-sm whitespace-pre-wrap text-slate-100">{message.message}</p>
-                          <div className="mt-2 flex items-center gap-2">
-                            <button
-                              type="button"
-                              className="text-xs font-semibold text-brand-300 hover:text-brand-200"
-                              onClick={() => setReplyTarget(message)}
-                            >
-                              Reply
-                            </button>
-                            {message.sender_id !== user?.id && (
+                              {isOwn ? " · You" : ""}
+                              </p>
+                              <span className="text-[11px] text-slate-500">
+                                {formatChatTimestamp(message.created_at)}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-sm whitespace-pre-wrap leading-relaxed text-slate-100">{message.message}</p>
+                            <div className="mt-2 flex items-center gap-1.5">
                               <button
                                 type="button"
-                                className="text-xs font-semibold text-slate-300 hover:text-slate-100"
-                                onClick={() => {
-                                  setTagTarget(message);
-                                  const mentionToken = `@${senderName} `;
-                                  setText((prev) => (prev.includes(mentionToken) ? prev : `${mentionToken}${prev}`));
-                                }}
+                                className="rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold text-brand-300 transition hover:border-brand-700/40 hover:bg-brand-900/30 hover:text-brand-200"
+                                onClick={() => setReplyTarget(message)}
                               >
-                                Tag
+                                Reply
                               </button>
-                            )}
+                              {!isOwn && (
+                                <button
+                                  type="button"
+                                  className="rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold text-slate-300 transition hover:border-slate-600 hover:bg-slate-700/60 hover:text-slate-100"
+                                  onClick={() => {
+                                    setTagTarget(message);
+                                    const mentionToken = `@${senderName}`;
+                                    setText((prev) => {
+                                      if (prev.toLowerCase().includes(mentionToken.toLowerCase())) return prev;
+                                      return `${mentionToken} ${prev}`.trimStart();
+                                    });
+                                  }}
+                                >
+                                  Tag
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -1302,6 +1314,25 @@ export function MeetRoomPage() {
                       </p>
                     )}
                   </div>
+                  {isHostUser && (
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Host controls
+                      </p>
+                      <MeetHostToolsPanel
+                        meeting={activeMeeting}
+                        canManage={canManage}
+                        showLiveControls
+                        roomReady={isConnected && jitsiReady}
+                        onMuteEveryone={(mediaType) => runModeratorCommand("muteEveryone", mediaType)}
+                        onStopScreenshare={() => {
+                          if (!runModeratorCommand("muteEveryone", "desktop")) {
+                            runModeratorCommand("toggleShareScreen");
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
                   <form
                     className="mt-auto space-y-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-3"
                     onSubmit={(event) => {
@@ -1376,18 +1407,7 @@ export function MeetRoomPage() {
                 </div>
               ),
               host: (
-                <MeetHostToolsPanel
-                  meeting={activeMeeting}
-                  canManage={canManage}
-                  showLiveControls
-                  roomReady={isConnected && jitsiReady}
-                  onMuteEveryone={(mediaType) => runModeratorCommand("muteEveryone", mediaType)}
-                  onStopScreenshare={() => {
-                    if (!runModeratorCommand("muteEveryone", "desktop")) {
-                      runModeratorCommand("toggleShareScreen");
-                    }
-                  }}
-                />
+                <div className="text-sm text-slate-400">Host controls moved to Messages.</div>
               ),
               people: (
                 <div className="space-y-3">

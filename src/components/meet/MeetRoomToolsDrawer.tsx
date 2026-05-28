@@ -1,5 +1,5 @@
-import { Bot, FileText, Info, LayoutGrid, Settings2, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { Bot, FileText, Info, LayoutGrid, X } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../ui/Button";
 
 export type MeetRoomDrawerTab = "info" | "assistant" | "chat" | "host" | "people";
@@ -18,7 +18,6 @@ const TABS: { id: MeetRoomDrawerTab; label: string; icon: typeof Bot; hostOnly?:
   { id: "info", label: "Meeting", icon: Info },
   { id: "assistant", label: "Assistant", icon: Bot },
   { id: "chat", label: "Messages", icon: FileText },
-  { id: "host", label: "Host", icon: Settings2, hostOnly: true },
 ];
 
 export function MeetRoomToolsDrawer({
@@ -97,15 +96,119 @@ export function MeetRoomControlsFab({
   onClick: () => void;
   label?: string;
 }) {
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const dragStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    moved: boolean;
+  } | null>(null);
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+
+  const clampToViewport = (x: number, y: number) => {
+    const element = buttonRef.current;
+    const width = element?.offsetWidth ?? 180;
+    const height = element?.offsetHeight ?? 40;
+    const padding = 8;
+    const maxX = Math.max(padding, window.innerWidth - width - padding);
+    const maxY = Math.max(padding, window.innerHeight - height - padding);
+    return {
+      x: Math.min(maxX, Math.max(padding, x)),
+      y: Math.min(maxY, Math.max(padding, y)),
+    };
+  };
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("gre-meet-controls-fab-pos");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { x?: number; y?: number };
+      if (typeof parsed?.x !== "number" || typeof parsed?.y !== "number") return;
+      setPosition(clampToViewport(parsed.x, parsed.y));
+    } catch {
+      // Ignore malformed saved position.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!position) return;
+    try {
+      localStorage.setItem("gre-meet-controls-fab-pos", JSON.stringify(position));
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [position]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setPosition((current) => {
+        if (!current) return current;
+        return clampToViewport(current.x, current.y);
+      });
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div
-      className="pointer-events-none fixed bottom-7 right-3 z-[2147483645] w-auto sm:bottom-8 sm:right-4"
-      style={{ zIndex: 2147483647 }}
+      className={`fixed z-[2147483645] w-auto ${position ? "pointer-events-auto" : "pointer-events-none bottom-7 right-3 sm:bottom-8 sm:right-4"}`}
+      style={
+        position
+          ? { zIndex: 2147483647, left: `${position.x}px`, top: `${position.y}px` }
+          : { zIndex: 2147483647 }
+      }
     >
       <div className="flex justify-end">
         <button
+          ref={buttonRef}
           type="button"
-          onClick={onClick}
+          onPointerDown={(event) => {
+            if (!position) {
+              const rect = buttonRef.current?.getBoundingClientRect();
+              if (rect) {
+                const initial = clampToViewport(rect.left, rect.top);
+                setPosition(initial);
+              } else {
+                const fallback = clampToViewport(window.innerWidth - 220, window.innerHeight - 84);
+                setPosition(fallback);
+              }
+            }
+            const current = position ?? clampToViewport(window.innerWidth - 220, window.innerHeight - 84);
+            dragStateRef.current = {
+              pointerId: event.pointerId,
+              startX: event.clientX,
+              startY: event.clientY,
+              originX: current.x,
+              originY: current.y,
+              moved: false,
+            };
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            const dragState = dragStateRef.current;
+            if (!dragState || dragState.pointerId !== event.pointerId) return;
+            const dx = event.clientX - dragState.startX;
+            const dy = event.clientY - dragState.startY;
+            if (!dragState.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+              dragState.moved = true;
+            }
+            if (!dragState.moved) return;
+            setPosition(clampToViewport(dragState.originX + dx, dragState.originY + dy));
+          }}
+          onPointerUp={(event) => {
+            const dragState = dragStateRef.current;
+            if (!dragState || dragState.pointerId !== event.pointerId) return;
+            event.currentTarget.releasePointerCapture(event.pointerId);
+            const wasDrag = dragState.moved;
+            dragStateRef.current = null;
+            if (!wasDrag) onClick();
+          }}
+          onPointerCancel={() => {
+            dragStateRef.current = null;
+          }}
           className="pointer-events-auto inline-flex h-10 items-center gap-2 rounded-full border border-slate-700 bg-slate-900/95 px-4 text-sm font-semibold text-slate-100 shadow-[0_8px_24px_rgba(2,6,23,0.45)] transition hover:border-slate-600 hover:bg-slate-800"
         >
           <LayoutGrid className="h-4 w-4" />
