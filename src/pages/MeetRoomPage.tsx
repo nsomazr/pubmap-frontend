@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { UserAvatar } from "../components/ui/UserAvatar";
 import { useToast } from "../components/ui/ToastProvider";
 import { useAuth } from "../context/AuthContext";
 import { assistantHealth, assistantSummarizeTextStream } from "../lib/assistant";
@@ -1223,6 +1224,27 @@ export function MeetRoomPage() {
                   </div>
                   </div>
                 </div>
+                {isHostUser && (
+                  <div className="space-y-2 pt-1">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-2.5">
+                      <p className="px-1 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        Host controls
+                      </p>
+                      <MeetHostToolsPanel
+                        meeting={activeMeeting}
+                        canManage={canManage}
+                        showLiveControls
+                        roomReady={isConnected && jitsiReady}
+                        onMuteEveryone={(mediaType) => runModeratorCommand("muteEveryone", mediaType)}
+                        onStopScreenshare={() => {
+                          if (!runModeratorCommand("muteEveryone", "desktop")) {
+                            runModeratorCommand("toggleShareScreen");
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             ),
             assistant: (
@@ -1307,26 +1329,11 @@ export function MeetRoomPage() {
                         "Participant";
                       const isOwn = message.sender_id === user?.id;
                       const parsedMessage = parseReplyPayload(message.message || "");
-                      const initials =
-                        senderName
-                          .split(" ")
-                          .filter(Boolean)
-                          .slice(0, 2)
-                          .map((item) => item[0]?.toUpperCase() || "")
-                          .join("") || "U";
                       const isActionOpen = activeMessageActionId === message.id;
                       return (
                         <div key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
                           <div className={`flex w-full max-w-[96%] items-end gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
-                            <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-slate-700 bg-slate-800">
-                              {message.sender?.photo ? (
-                                <img src={message.sender.photo} alt={senderName} className="h-full w-full object-cover" />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-slate-200">
-                                  {initials}
-                                </div>
-                              )}
-                            </div>
+                            <UserAvatar user={message.sender} name={senderName} size="sm" className="shrink-0" />
                             <div
                               onPointerDown={() => {
                                 clearMessageHoldTimer();
@@ -1438,25 +1445,6 @@ export function MeetRoomPage() {
                       </p>
                     )}
                   </div>
-                  {isHostUser && (
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3">
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Host controls
-                      </p>
-                      <MeetHostToolsPanel
-                        meeting={activeMeeting}
-                        canManage={canManage}
-                        showLiveControls
-                        roomReady={isConnected && jitsiReady}
-                        onMuteEveryone={(mediaType) => runModeratorCommand("muteEveryone", mediaType)}
-                        onStopScreenshare={() => {
-                          if (!runModeratorCommand("muteEveryone", "desktop")) {
-                            runModeratorCommand("toggleShareScreen");
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
                   <form
                     className="mt-auto space-y-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-3"
                     onSubmit={(event) => {
@@ -1532,7 +1520,7 @@ export function MeetRoomPage() {
                 </div>
               ),
               host: (
-                <div className="text-sm text-slate-400">Host controls moved to Messages.</div>
+                <div className="text-sm text-slate-400">Host controls are available in Meeting.</div>
               ),
               people: (
                 <div className="space-y-3">
