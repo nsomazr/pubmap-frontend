@@ -1122,7 +1122,7 @@ export function MeetRoomPage() {
               </div>
             ),
             assistant: (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <MeetingGreAssistantPanel meeting={activeMeeting} compact />
                   {canManage && (
                     <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
