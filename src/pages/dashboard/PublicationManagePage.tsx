@@ -213,51 +213,17 @@ export function PublicationManagePage() {
   const applyExtractedDocument = useCallback(
     (payload: ExtractedDocumentPayload) => {
       const limits = MANUSCRIPT_FIELD_WORD_LIMITS;
-      setTitle((current) => {
-        const next = (payload.title || "").trim();
-        if (!next) return current;
-        return (
-          current.trim() ||
-          truncateToWordLimit(next, limits.title)
-        );
-      });
-      setAbstract((current) =>
-        hasTextContent(current) ? current : applyExtractedSection(payload.abstract, limits.abstract)
-      );
-      setIntroduction((current) =>
-        hasTextContent(current)
-          ? current
-          : applyExtractedSection(payload.introduction, limits.introduction)
-      );
-      setMethods((current) =>
-        hasTextContent(current) ? current : applyExtractedSection(payload.methods, limits.methods)
-      );
-      setResults((current) =>
-        hasTextContent(current) ? current : applyExtractedSection(payload.results, limits.results)
-      );
-      setFindings((current) =>
-        hasTextContent(current) ? current : applyExtractedSection(payload.findings, limits.findings)
-      );
-      setConclusion((current) =>
-        hasTextContent(current)
-          ? current
-          : applyExtractedSection(payload.conclusion, limits.conclusion)
-      );
-      setReferences((current) =>
-        hasTextContent(current)
-          ? current
-          : applyExtractedSection(payload.references, 350)
-      );
-      setFunder((current) => {
-        const next = (payload.funder || "").trim();
-        if (!next) return current;
-        return current.trim() || truncateToWordLimit(next, limits.funder);
-      });
-      setKeywords((current) => {
-        const next = (payload.keywords || "").trim();
-        if (!next) return current;
-        return current.trim() || truncateToWordLimit(next, limits.keywords);
-      });
+      const nextTitle = (payload.title || "").trim();
+      if (nextTitle) setTitle(truncateToWordLimit(nextTitle, limits.title));
+      setAbstract(applyExtractedSection(payload.abstract, limits.abstract));
+      setIntroduction(applyExtractedSection(payload.introduction, limits.introduction));
+      setMethods(applyExtractedSection(payload.methods, limits.methods));
+      setResults(applyExtractedSection(payload.results, limits.results));
+      setFindings(applyExtractedSection(payload.findings, limits.findings));
+      setConclusion(applyExtractedSection(payload.conclusion, limits.conclusion));
+      setReferences(applyExtractedSection(payload.references, 350));
+      setFunder(truncateToWordLimit((payload.funder || "").trim(), limits.funder));
+      setKeywords(truncateToWordLimit((payload.keywords || "").trim(), limits.keywords));
       setExtractionUi({
         status: "ready",
         warnings: [...new Set(payload.warnings ?? [])],

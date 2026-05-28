@@ -12,7 +12,6 @@ const tabs = [
   { id: "live", label: "Live", icon: Radio },
   { id: "mine", label: "Hosted", icon: Video },
   { id: "archived", label: "Archived", icon: Calendar },
-  { id: "cancelled", label: "Cancelled", icon: Calendar },
 ] as const;
 
 function MeetingCard({ meeting }: { meeting: MeetSession }) {
@@ -138,7 +137,7 @@ export function MeetingsPage() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -158,9 +157,7 @@ export function MeetingsPage() {
                   ? "Meetings you host that are still active"
                   : id === "archived"
                     ? "Ended meetings with archive records"
-                    : id === "cancelled"
-                      ? "Scheduled meetings cancelled before archive"
-                      : "Research sessions on GRE"}
+                    : "Research sessions on GRE"}
               </p>
             </div>
           </button>

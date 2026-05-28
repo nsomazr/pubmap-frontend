@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
-  Ban,
   CalendarPlus,
   Clock3,
   Copy,
@@ -42,7 +41,6 @@ export function MeetDetailPage() {
   const { user } = useAuth();
   const toast = useToast();
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
 
   const { data: meeting, isLoading } = useQuery({
@@ -87,40 +85,21 @@ export function MeetDetailPage() {
     },
   });
 
-  const cancelMeeting = useMutation({
-    mutationFn: () => api.delete(`/meetings/${id}/`),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["meeting", id] });
-      await queryClient.invalidateQueries({ queryKey: ["meetings"] });
-      toast.success({
-        title: "Meeting cancelled",
-        description: "Cancelled meetings stay out of the archive.",
-      });
-      navigate("/dashboard/meetings?scope=cancelled");
-    },
-    onError: (error) => {
-      toast.error({
-        title: "Could not cancel meeting",
-        description: parseApiError(error, "Could not cancel the meeting."),
-      });
-    },
-  });
-
-  const deleteCancelledMeeting = useMutation({
+  const deleteMeeting = useMutation({
     mutationFn: () => api.delete(`/meetings/${id}/`),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["meetings"] });
       queryClient.removeQueries({ queryKey: ["meeting", id] });
       toast.success({
-        title: "Cancelled meeting deleted",
-        description: "The cancelled meeting was permanently removed.",
+        title: "Meeting deleted",
+        description: "The hosted meeting was permanently removed.",
       });
-      navigate("/dashboard/meetings?scope=cancelled");
+      navigate("/dashboard/meetings?scope=mine");
     },
     onError: (error) => {
       toast.error({
         title: "Could not delete meeting",
-        description: parseApiError(error, "Could not delete this cancelled meeting."),
+        description: parseApiError(error, "Could not delete this meeting."),
       });
     },
   });
@@ -288,18 +267,18 @@ export function MeetDetailPage() {
             {canManage && meeting.status === "scheduled" && (
               <Button
                 variant="danger"
-                loading={cancelMeeting.isPending}
+                loading={deleteMeeting.isPending}
                 onClick={() => setConfirmCancelOpen(true)}
               >
-                <Ban className="h-4 w-4" />
-                Cancel meeting
+                <Trash2 className="h-4 w-4" />
+                Delete meeting
               </Button>
             )}
-            {canManage && meeting.status === "cancelled" && (
+            {canManage && meeting.status === "ended" && (
               <Button
                 variant="danger"
-                loading={deleteCancelledMeeting.isPending}
-                onClick={() => setConfirmDeleteOpen(true)}
+                loading={deleteMeeting.isPending}
+                onClick={() => setConfirmCancelOpen(true)}
               >
                 <Trash2 className="h-4 w-4" />
                 Delete meeting
@@ -518,31 +497,16 @@ export function MeetDetailPage() {
 
       <ConfirmDialog
         open={confirmCancelOpen}
-        title="Cancel this meeting?"
-        description="Cancelled meetings do not create an archive and cannot be joined."
-        confirmLabel="Cancel meeting"
-        cancelLabel="Keep meeting"
-        tone="danger"
-        loading={cancelMeeting.isPending}
-        onClose={() => setConfirmCancelOpen(false)}
-        onConfirm={() => {
-          cancelMeeting.mutate();
-          setConfirmCancelOpen(false);
-        }}
-      />
-
-      <ConfirmDialog
-        open={confirmDeleteOpen}
-        title="Delete this cancelled meeting?"
-        description="This will permanently remove the cancelled meeting and any saved participant or message data."
+        title="Delete this meeting?"
+        description="This will permanently remove the hosted meeting and cannot be undone."
         confirmLabel="Delete meeting"
         cancelLabel="Keep meeting"
         tone="danger"
-        loading={deleteCancelledMeeting.isPending}
-        onClose={() => setConfirmDeleteOpen(false)}
+        loading={deleteMeeting.isPending}
+        onClose={() => setConfirmCancelOpen(false)}
         onConfirm={() => {
-          deleteCancelledMeeting.mutate();
-          setConfirmDeleteOpen(false);
+          deleteMeeting.mutate();
+          setConfirmCancelOpen(false);
         }}
       />
 
