@@ -13,6 +13,8 @@ import { Textarea } from "../../components/ui/Textarea";
 import api, { parseApiError } from "../../lib/api";
 import { MeetHostToolsPanel } from "../../components/meet/MeetHostToolsPanel";
 import { TimezoneSelect } from "../../components/meet/TimezoneSelect";
+import { buildMeetingPath } from "../../lib/meetingPaths";
+import { meetingApiSegment } from "../../lib/meetingPaths";
 import {
   fetchMeeting,
   formatMeetingDateInTimezone,
@@ -195,7 +197,7 @@ export function MeetManagePage() {
         const { data } = await api.post<MeetSession>("/meetings/", payload);
         return data;
       }
-      const { data } = await api.patch<MeetSession>(`/meetings/${id}/`, payload);
+      const { data } = await api.patch<MeetSession>(`/meetings/${meetingApiSegment(id!)}/`, payload);
       return data;
     },
     onSuccess: (data) => {
@@ -216,7 +218,7 @@ export function MeetManagePage() {
               ? "The GRE meeting is ready to share."
               : "The GRE meeting details were updated.",
           });
-          navigate(`/dashboard/meetings/${data.id}`);
+          navigate(buildMeetingPath(data));
           return;
         }
         let result: { total: number; sent: number; failed: number } | null = null;
@@ -240,14 +242,14 @@ export function MeetManagePage() {
                 ? `${result?.sent ?? 0} email invites sent successfully.`
                 : "Matching field/subfield members were invited.",
         });
-        navigate(`/dashboard/meetings/${data.id}`);
+        navigate(buildMeetingPath(data));
       };
       void afterSave().catch((err) => {
         toast.error({
           title: "Meeting saved, invite issue",
           description: parseApiError(err, "The meeting was saved, but some invitations could not be sent."),
         });
-        navigate(`/dashboard/meetings/${data.id}`);
+        navigate(buildMeetingPath(data));
       });
     },
     onError: (err) => {
@@ -292,7 +294,7 @@ export function MeetManagePage() {
 
   const addParticipant = useMutation({
     mutationFn: ({ userId, role }: { userId: number; role: MeetParticipantRole }) =>
-      api.post<MeetParticipant[]>(`/meetings/${id}/participants/`, {
+      api.post<MeetParticipant[]>(`/meetings/${meetingApiSegment(id!)}/participants/`, {
         user_id: userId,
         role,
       }),
@@ -313,7 +315,9 @@ export function MeetManagePage() {
 
   const removeParticipant = useMutation({
     mutationFn: (participantId: number) =>
-      api.post<MeetParticipant[]>(`/meetings/${id}/participants/${participantId}/remove/`),
+      api.post<MeetParticipant[]>(
+        `/meetings/${meetingApiSegment(id!)}/participants/${participantId}/remove/`
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["meeting", id] });
       toast.success({
@@ -367,7 +371,7 @@ export function MeetManagePage() {
             required
             placeholder="e.g. GRE methods review — cohort A"
           />
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2">
             <Input
               label="Date and time"
               type="datetime-local"
@@ -603,7 +607,7 @@ export function MeetManagePage() {
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1fr)_auto_auto]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input

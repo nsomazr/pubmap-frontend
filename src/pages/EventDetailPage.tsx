@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Calendar, Mail, MapPin } from "lucide-react";
 import { useParams } from "react-router-dom";
 import api from "../lib/api";
+import { eventApiSegment } from "../lib/eventPaths";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { DefaultBanner } from "../components/ui/DefaultBanner";
 import { mediaUrl } from "../lib/mediaUrl";
@@ -14,7 +15,7 @@ export function EventDetailPage() {
     queryKey: ["event", id],
     enabled: Boolean(id),
     queryFn: async () => {
-      const { data } = await api.get<Event>(`/events/${id}/`);
+      const { data } = await api.get<Event>(`/events/${eventApiSegment(id!)}/`);
       return data;
     },
   });

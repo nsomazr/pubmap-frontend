@@ -125,11 +125,20 @@ export function GreAssistant() {
   const isStreaming = messages.some((m) => m.streaming);
   const canClear = messages.length > 1 || loading;
   const fabBottomClass = isMapLanding
-    ? "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] sm:bottom-[calc(env(safe-area-inset-bottom)+4.5rem)]"
-    : "bottom-6 sm:bottom-8";
-  const panelBottomClass = isMapLanding
-    ? "bottom-[calc(env(safe-area-inset-bottom)+5rem)] sm:bottom-[calc(env(safe-area-inset-bottom)+4.25rem)]"
-    : "bottom-4 sm:bottom-6";
+    ? "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-4 right-auto sm:bottom-[calc(env(safe-area-inset-bottom)+4.5rem)]"
+    : "bottom-6 right-4 sm:bottom-8 sm:right-8";
+  const panelPositionClass = isMapLanding
+    ? "bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] left-4 right-4 sm:right-auto sm:max-w-[380px]"
+    : "bottom-4 left-4 right-4 sm:bottom-6 sm:left-auto sm:right-6 sm:w-[min(100vw-2rem,380px)]";
+
+  useEffect(() => {
+    if (!isMapLanding) return;
+    const root = document.querySelector(".landing-page");
+    if (!root) return;
+    if (open) root.classList.add("landing-page--assistant-open");
+    else root.classList.remove("landing-page--assistant-open");
+    return () => root.classList.remove("landing-page--assistant-open");
+  }, [open, isMapLanding]);
 
   const clearChat = () => {
     abortRef.current?.abort();
@@ -150,7 +159,7 @@ export function GreAssistant() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className={`gre-assistant-fab fixed right-4 z-[1100] flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-brand-600 to-teal-600 text-white shadow-lg shadow-brand-600/30 transition hover:scale-[1.02] hover:shadow-xl ${fabBottomClass} sm:right-8 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:font-bold`}
+          className={`gre-assistant-fab fixed z-[1400] flex h-12 w-12 items-center justify-center rounded-full border border-brand-500/30 bg-brand-600 text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 hover:shadow-xl ${fabBottomClass} sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:font-bold`}
           aria-label="Open GRE Assistant"
         >
           <Sparkles className="h-5 w-5" />
@@ -160,25 +169,23 @@ export function GreAssistant() {
 
       {open && (
         <div
-          className={`gre-assistant-panel fixed left-4 right-4 z-[1100] mx-auto flex max-w-[380px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200/90 ${panelBottomClass} sm:left-auto sm:right-6 sm:mx-0 sm:w-[min(100vw-2rem,380px)]`}
+          className={`gre-assistant-panel gre-dashboard-card fixed z-[1400] mx-auto flex w-auto max-w-[380px] flex-col overflow-hidden shadow-[0_12px_40px_-12px_rgba(15,23,42,0.2)] ${panelPositionClass}`}
           role="dialog"
           aria-label="GRE Assistant"
         >
-          <header className="flex items-center justify-between gap-2 border-b border-slate-100 bg-gradient-to-r from-brand-600 to-teal-600 px-4 py-3 text-white">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 bg-white px-4 py-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 ring-1 ring-brand-100">
                 <Bot className="h-4 w-4" />
               </span>
-              <div>
-                <p className="text-sm font-bold">GRE Assistant</p>
-              </div>
+              <p className="truncate text-sm font-semibold text-ink">GRE Assistant</p>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-0.5">
               <button
                 type="button"
                 onClick={clearChat}
                 disabled={!canClear}
-                className="rounded-lg p-1.5 text-white/90 hover:bg-white/15 disabled:opacity-40"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-ink disabled:opacity-40"
                 aria-label="Clear chat"
                 title="Clear chat"
               >
@@ -187,7 +194,7 @@ export function GreAssistant() {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-1.5 hover:bg-white/15"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-ink"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -195,7 +202,7 @@ export function GreAssistant() {
             </div>
           </header>
 
-          <div ref={scrollRef} className="max-h-[min(50vh,320px)] flex-1 space-y-3 overflow-y-auto p-3">
+          <div ref={scrollRef} className="min-h-0 max-h-[min(50vh,320px)] flex-1 space-y-3 overflow-y-auto overscroll-contain p-3 sm:max-h-[min(55vh,360px)]">
             {messages.map((m, i) => (
               <div
                 key={i}
@@ -249,19 +256,7 @@ export function GreAssistant() {
             </p>
           )}
 
-          {canClear && (
-            <div className="border-t border-slate-100 px-3 py-1.5">
-              <button
-                type="button"
-                onClick={clearChat}
-                className="text-xs font-medium text-slate-500 hover:text-brand-700"
-              >
-                Clear chat
-              </button>
-            </div>
-          )}
-
-          <div className="border-t border-slate-100 p-3">
+          <div className="shrink-0 border-t border-slate-100 bg-white p-3">
             <InputWithSendAddon
               value={input}
               onChange={setInput}
@@ -270,6 +265,7 @@ export function GreAssistant() {
               loading={loading}
               disabled={loading}
               submitAriaLabel="Send message"
+              className="[&_input]:shadow-none [&_input]:focus:ring-1 [&_input]:focus:ring-brand-200"
             />
           </div>
         </div>

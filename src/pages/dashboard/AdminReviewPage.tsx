@@ -9,6 +9,7 @@ import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Pagination } from "../../components/ui/Pagination";
 import { usePageParam } from "../../hooks/usePageParam";
 import api from "../../lib/api";
+import { publicationRef } from "../../lib/publicationPaths";
 import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../../lib/pagination";
 import { canAccessReviewQueue } from "../../lib/userAccess";
 import type { Publication } from "../../types";
@@ -94,9 +95,11 @@ export function AdminReviewPage() {
           {publications.map((pub) => (
             <div
               key={pub.id}
-              id={`review-pub-${pub.id}`}
+              id={`review-pub-${publicationRef(pub.id, pub.encoded_id)}`}
               className={
-                focusPubId === String(pub.id)
+                focusPubId &&
+                (focusPubId === publicationRef(pub.id, pub.encoded_id) ||
+                  focusPubId === String(pub.id))
                   ? "scroll-mt-6 rounded-2xl ring-2 ring-brand-400 ring-offset-2"
                   : "scroll-mt-6"
               }

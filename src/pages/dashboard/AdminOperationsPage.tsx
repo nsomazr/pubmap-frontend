@@ -184,8 +184,8 @@ export function AdminOperationsPage() {
         </div>
       </DashboardSection>
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <section className="gre-dashboard-card lg:col-span-3">
+      <div className="grid gap-6 md:grid-cols-5">
+        <section className="gre-dashboard-card md:col-span-3">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
             <div>
               <h2 className="font-bold text-ink">Submissions awaiting review</h2>
@@ -220,8 +220,8 @@ export function AdminOperationsPage() {
               {pending.slice(0, 8).map((pub) => (
                 <li key={pub.id}>
                   <Link
-                    to={`/dashboard/review?pub=${pub.id}`}
-                    className="flex items-start justify-between gap-4 px-5 py-4 transition hover:bg-slate-50"
+                    to={`/dashboard/review?pub=${encodeURIComponent(pub.encoded_id?.trim() || String(pub.id))}`}
+                    className="flex flex-col gap-2 px-5 py-4 transition hover:bg-slate-50 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-slate-600">
@@ -249,7 +249,7 @@ export function AdminOperationsPage() {
           )}
         </section>
 
-        <section className="gre-dashboard-card lg:col-span-2">
+        <section className="gre-dashboard-card md:col-span-2">
           <div className="border-b border-slate-100 px-5 py-4">
             <h2 className="font-bold text-ink">Quick actions</h2>
             <p className="text-sm text-slate-500">Common admin tasks in one place.</p>

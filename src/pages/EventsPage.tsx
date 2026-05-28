@@ -3,6 +3,7 @@ import { Calendar, ChevronRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import api from "../lib/api";
+import { buildEventPath } from "../lib/eventPaths";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { DefaultBanner } from "../components/ui/DefaultBanner";
 import { mediaUrl } from "../lib/mediaUrl";
@@ -112,7 +113,7 @@ export function EventsPage() {
                     </p>
                   )}
                   <Link
-                    to={`/events/${event.id}`}
+                    to={buildEventPath(event)}
                     className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand-700 transition group-hover:gap-1.5"
                   >
                     View details

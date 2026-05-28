@@ -8,6 +8,7 @@ import { DefaultBanner } from "../components/ui/DefaultBanner";
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
+import { buildForumTopicPath, forumTopicApiSegment } from "../lib/forumPaths";
 import type { Topic, TopicReply } from "../types";
 
 export function ForumTopicPage() {
@@ -21,7 +22,7 @@ export function ForumTopicPage() {
     queryKey: ["forum-topic", id],
     enabled: Boolean(id),
     queryFn: async () => {
-      const { data } = await api.get<Topic>(`/forum/topics/${id}/`);
+      const { data } = await api.get<Topic>(`/forum/topics/${forumTopicApiSegment(id!)}/`);
       return data;
     },
   });
@@ -36,7 +37,7 @@ export function ForumTopicPage() {
     queryFn: async () => {
       const { data } = await api.get<
         TopicReply[] | { results: TopicReply[]; count?: number }
-      >("/forum/replies/", { params: { topic: id } });
+      >("/forum/replies/", { params: { topic: forumTopicApiSegment(id!) } });
       if (Array.isArray(data)) return data;
       return data.results ?? [];
     },
@@ -54,7 +55,7 @@ export function ForumTopicPage() {
     }) =>
       api.post("/forum/replies/", {
         content,
-        topic_id: Number(id),
+        topic_id: topic?.id ?? Number(id),
         ...(parentReplyId != null ? { parent_reply_id: parentReplyId } : {}),
       }),
     onSuccess: () => {

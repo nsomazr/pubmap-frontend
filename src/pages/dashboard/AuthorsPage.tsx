@@ -107,7 +107,78 @@ export function AuthorsPage() {
           No users in this list.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <>
+        <ul className="space-y-3 md:hidden">
+          {users.map((a) => (
+            <li
+              key={a.id}
+              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+            >
+              <p className="font-semibold text-ink">
+                {a.firstname} {a.lastname}
+              </p>
+              <p className="mt-1 break-all text-sm text-slate-600">{a.email}</p>
+              {a.affiliation ? (
+                <p className="mt-1 text-sm text-slate-500">{a.affiliation}</p>
+              ) : null}
+              <span className="mt-2 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                {a.role_id === 1 ? "Admin" : "Author"}
+              </span>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {a.status === 1 ? (
+                  <Button
+                    variant="ghost"
+                    className="!px-2 !py-1.5 text-xs"
+                    onClick={() => toggle.mutate({ id: a.id, action: "deactivate" })}
+                  >
+                    <UserX className="h-4 w-4" />
+                    Deactivate
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    className="!px-2 !py-1.5 text-xs"
+                    onClick={() => toggle.mutate({ id: a.id, action: "activate" })}
+                  >
+                    <UserCheck className="h-4 w-4" />
+                    Activate
+                  </Button>
+                )}
+                {a.role_id === 2 ? (
+                  <Button
+                    variant="ghost"
+                    className="!px-2 !py-1.5 text-xs"
+                    onClick={() => roleChange.mutate({ id: a.id, action: "make_admin" })}
+                  >
+                    <Shield className="h-4 w-4" />
+                    Promote
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    className="!px-2 !py-1.5 text-xs"
+                    onClick={() => roleChange.mutate({ id: a.id, action: "remove_admin" })}
+                    disabled={a.id === user?.id}
+                  >
+                    <ShieldOff className="h-4 w-4" />
+                    Remove admin
+                  </Button>
+                )}
+                {a.id !== user?.id && (
+                  <Button
+                    variant="ghost"
+                    className="!px-2 !py-1.5 text-xs text-red-600 hover:text-red-700"
+                    onClick={() => setDeleteTarget(a)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm md:block">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -185,6 +256,7 @@ export function AuthorsPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {!isLoading && totalCount > 0 && (

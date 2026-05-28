@@ -13,6 +13,7 @@ import { Button } from "../ui/Button";
 import { Textarea } from "../ui/Textarea";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import api from "../../lib/api";
+import { publicationApiSegment } from "../../lib/publicationPaths";
 import { abstractPlainText } from "../../lib/abstractText";
 import { authorBylineFromPublication } from "../../lib/publicationAuthors";
 import { reviewManuscriptPdfUrl } from "../../lib/publicationGre";
@@ -63,7 +64,9 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ["publication-review", pub.id],
     queryFn: async () => {
-      const { data } = await api.get<Publication>(`/publications/${pub.id}/`);
+      const { data } = await api.get<Publication>(
+        `/publications/${publicationApiSegment(pub.id, pub.encoded_id)}/`
+      );
       return data;
     },
   });
@@ -82,7 +85,8 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
   }, [reviewPub.keywords]);
 
   const acceptMutation = useMutation({
-    mutationFn: () => api.post(`/publications/${pub.id}/accept/`),
+    mutationFn: () =>
+      api.post(`/publications/${publicationApiSegment(pub.id, pub.encoded_id)}/accept/`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-review"] });
       queryClient.invalidateQueries({ queryKey: ["publications"] });
@@ -94,7 +98,9 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
 
   const commentMutation = useMutation({
     mutationFn: (comment: string) =>
-      api.post(`/publications/${pub.id}/admin_comment/`, { comment }),
+      api.post(`/publications/${publicationApiSegment(pub.id, pub.encoded_id)}/admin_comment/`, {
+        comment,
+      }),
     onSuccess: () => {
       setCommentOpen(false);
       setCommentText("");
@@ -141,7 +147,7 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
       )}
 
       <div
-        className={`grid gap-0 ${compact ? "" : "lg:grid-cols-[minmax(0,1fr)_minmax(18rem,42%)]"}`}
+        className={`grid gap-0 ${compact ? "" : "md:grid-cols-[minmax(0,1fr)_minmax(16rem,42%)]"}`}
       >
         <div className="min-w-0 space-y-0 lg:border-r lg:border-slate-100">
           <div className="space-y-4 border-b border-slate-100 p-4 sm:p-5">

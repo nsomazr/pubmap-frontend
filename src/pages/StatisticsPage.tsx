@@ -111,7 +111,7 @@ export function StatisticsPage() {
             />
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2">
             <Section title="Publications by field">
               <HorizontalBarChart
                 items={data.publications_by_category.map((row) => ({
@@ -134,7 +134,7 @@ export function StatisticsPage() {
             </Section>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2">
             <Section title="Publications by country">
               <CountryHeatGrid
                 countries={data.publications_by_country}
@@ -153,7 +153,7 @@ export function StatisticsPage() {
             </Section>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2">
             <Section title="Publication trend">
               <TrendLineChart points={data.publication_trend} />
             </Section>
@@ -199,7 +199,7 @@ export function StatisticsPage() {
             </Section>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2">
             <Section title="Most active institutions" subtitle="Top contributors by publication count">
               {data.top_institutions.length === 0 ? (
                 <p className="rounded-xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">

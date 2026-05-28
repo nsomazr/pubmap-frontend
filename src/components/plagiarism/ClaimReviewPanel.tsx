@@ -200,7 +200,7 @@ export function ClaimReviewPanel({ publicationId, evidence, publicationTitle }: 
         {tab === "evidence" && hasEvidence && activeEvidence && (
           <div className="space-y-3 animate-fade-up">
             {evidence.length > 1 && (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+              <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
                 {evidence.map((item, index) => (
                   <EvidenceThumb
                     key={item.id}

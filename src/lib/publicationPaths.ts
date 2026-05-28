@@ -22,7 +22,30 @@ export function buildPublicationChatPath(
 }
 
 export function publicationPublicApiPath(publicationIdOrCode: string): string {
-  return /^\d+$/.test(publicationIdOrCode)
-    ? `/publications/${publicationIdOrCode}/public/`
-    : `/publications/by-code/${publicationIdOrCode}/public/`;
+  const ref = (publicationIdOrCode || "").trim();
+  if (!ref) return "/publications/";
+  if (/^\d+$/.test(ref)) {
+    return `/publications/${ref}/public/`;
+  }
+  return `/publications/by-code/${ref}/public/`;
+}
+
+export function publicationApiSegment(
+  publicationId: number | string | undefined | null,
+  encodedId?: string | null
+): string {
+  return publicationRef(publicationId, encodedId);
+}
+
+export function buildDashboardPublicationPath(
+  publicationId: number | string | undefined | null,
+  encodedId?: string | null,
+  opts?: { suffix?: "reader"; query?: string }
+): string {
+  const ref = publicationRef(publicationId, encodedId);
+  if (!ref) return "/dashboard/publications";
+  let path = `/dashboard/publications/${ref}`;
+  if (opts?.suffix === "reader") path += "/reader";
+  if (opts?.query) path += opts.query.startsWith("?") ? opts.query : `?${opts.query}`;
+  return path;
 }

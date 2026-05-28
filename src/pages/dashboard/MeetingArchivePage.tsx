@@ -24,6 +24,8 @@ import { MeetingArchiveParticipants } from "../../components/meet/MeetingArchive
 import { MeetingArchiveTranscript } from "../../components/meet/MeetingArchiveTranscript";
 import { MeetingGreAssistantPanel } from "../../components/meet/MeetingGreAssistantPanel";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
+import { buildMeetingPath, meetingApiSegment } from "../../lib/meetingPaths";
+import { buildForumTopicPath } from "../../lib/forumPaths";
 import {
   fetchMeeting,
   formatMeetingDate,
@@ -121,7 +123,7 @@ export function MeetingArchivePage() {
 
   const deleteMeeting = useMutation({
     mutationFn: async () => {
-      await api.delete(`/meetings/${id}/`);
+      await api.delete(`/meetings/${meetingApiSegment(id!)}/`);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["meetings"] });
@@ -163,7 +165,7 @@ export function MeetingArchivePage() {
   const effectiveReport = reportDraft || meeting.meeting_minutes || meeting.summary || "";
   const hasDraft = effectiveReport.trim().length > 0;
 
-  const archiveId = formatMeetingId(meeting.id);
+  const archiveId = formatMeetingId(meeting);
   const messageCount = meeting.chat_messages?.length ?? 0;
   const participantCount = meeting.participants?.length ?? meeting.participant_count ?? 0;
 
@@ -206,7 +208,7 @@ export function MeetingArchivePage() {
         action={
           <div className="flex flex-wrap gap-2">
             <Link
-              to={`/dashboard/meetings/${meeting.id}`}
+              to={buildMeetingPath(meeting)}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -417,7 +419,9 @@ export function MeetingArchivePage() {
                   <Button
                     className="mt-3"
                     variant="ghost"
-                    onClick={() => navigate(`/forum/topic/${meeting.forum_topic?.id}`)}
+                    onClick={() =>
+                      meeting.forum_topic && navigate(buildForumTopicPath(meeting.forum_topic))
+                    }
                   >
                     Open discussion
                   </Button>

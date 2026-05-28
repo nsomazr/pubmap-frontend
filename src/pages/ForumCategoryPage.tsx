@@ -15,6 +15,7 @@ import { SubcategoryVisual } from "../components/taxonomy/SubcategoryVisual";
 import { Pagination } from "../components/ui/Pagination";
 import { usePageParam } from "../hooks/usePageParam";
 import api from "../lib/api";
+import { buildForumTopicPath } from "../lib/forumPaths";
 import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../lib/pagination";
 import type { SubCategory, Topic } from "../types";
 
@@ -161,7 +162,7 @@ export function ForumCategoryPage() {
           {topics.map((topic) => (
             <Link
               key={topic.id}
-              to={`/forum/topic/${topic.id}`}
+              to={buildForumTopicPath(topic)}
               className="flex items-start gap-3 rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:shadow-md sm:p-4"
             >
               <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl">

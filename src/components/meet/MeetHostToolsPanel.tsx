@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MonitorX, VideoOff, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import api, { parseApiError } from "../../lib/api";
+import { meetingApiSegment } from "../../lib/meetingPaths";
 import {
   DEFAULT_MEET_HOST_SETTINGS,
   meetHostSettingsFromSession,
@@ -147,7 +148,9 @@ export function MeetHostToolsPanel({
 
   const saveSettings = useMutation({
     mutationFn: ({ settings }: SaveHostSettingsInput) =>
-      api.patch<MeetSession>(`/meetings/${meeting.id}/`, settings).then((response) => response.data),
+      api.patch<MeetSession>(`/meetings/${meetingApiSegment(meeting)}/`, settings).then(
+        (response) => response.data
+      ),
     onSuccess: (updated, variables) => {
       const next = meetHostSettingsFromSession(updated);
       setSettings(next);

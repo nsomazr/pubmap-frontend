@@ -107,7 +107,7 @@ export function DashboardPublicationRow({
           {pub.coordinates?.location && (
             <span className="inline-flex min-w-0 items-center gap-1 text-slate-500">
               <MapPin className="h-3.5 w-3.5 shrink-0 text-teal-600" />
-              <span className="truncate max-w-[14rem] sm:max-w-xs">{pub.coordinates.location}</span>
+              <span className="truncate max-w-full sm:max-w-xs">{pub.coordinates.location}</span>
             </span>
           )}
         </div>

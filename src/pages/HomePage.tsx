@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../lib/api";
 import { parseMapDeepLink } from "../lib/mapDeepLink";
-import { buildPublicationChatPath } from "../lib/publicationChat";
+import { buildPublicationChatPath, publicationPublicApiPath } from "../lib/publicationPaths";
 import { DraggableMapPanel } from "../components/landing/DraggableMapPanel";
 import { MapResultsRail } from "../components/landing/MapResultsRail";
 import { MapSearchHub } from "../components/landing/MapSearchHub";
@@ -74,13 +74,14 @@ export function HomePage() {
   const debouncedTitle = useDebouncedValue(title, 400);
 
   useEffect(() => {
-    const id = mapDeepLink.publicationId;
-    if (!id) return;
-    setFocusPubId(id);
+    const ref = mapDeepLink.publicationRef;
+    if (!ref) return;
+    const numericId = /^\d+$/.test(ref) ? Number(ref) : null;
+    if (numericId != null) setFocusPubId(numericId);
     if (mapDeepLink.panel === "summary") {
-      navigate(buildPublicationChatPath(id), { replace: true });
+      navigate(buildPublicationChatPath(ref), { replace: true });
     }
-  }, [mapDeepLink.publicationId, mapDeepLink.panel, navigate]);
+  }, [mapDeepLink.publicationRef, mapDeepLink.panel, navigate]);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["map"],
@@ -339,18 +340,24 @@ export function HomePage() {
   const mapPublications = data?.publications ?? [];
 
   useEffect(() => {
-    const id = mapDeepLink.publicationId;
-    if (!id || isLoading) return;
-    const found = mapPublications.find((p) => p.id === id);
+    const ref = mapDeepLink.publicationRef;
+    if (!ref || isLoading) return;
+    const found = mapPublications.find(
+      (p) => p.encoded_id === ref || String(p.id) === ref
+    );
     if (found) {
       setDeepLinkPub(found);
+      setFocusPubId(found.id);
       return;
     }
     let cancelled = false;
     api
-      .get<Publication>(`/publications/${id}/public/`)
+      .get<Publication>(publicationPublicApiPath(ref))
       .then(({ data: pub }) => {
-        if (!cancelled) setDeepLinkPub(pub);
+        if (!cancelled) {
+          setDeepLinkPub(pub);
+          setFocusPubId(pub.id);
+        }
       })
       .catch(() => {
         if (!cancelled) setDeepLinkPub(null);
@@ -358,7 +365,7 @@ export function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [mapDeepLink.publicationId, mapPublications, isLoading]);
+  }, [mapDeepLink.publicationRef, mapPublications, isLoading]);
 
   const hasSearched = results !== null;
   const basePublications = hasSearched ? (results ?? []) : mapPublications;

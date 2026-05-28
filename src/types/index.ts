@@ -159,6 +159,7 @@ export interface PublicationPlagiarismEvidence {
 export interface PublicationPlagiarismClaim {
   id: number;
   publication_id: number;
+  publication_encoded_id?: string;
   publication_title: string;
   publication_status: number;
   reporter_id: number;
@@ -492,6 +493,7 @@ export interface MeetChatMessage {
 
 export interface MeetSession {
   id: number;
+  encoded_id?: string;
   title: string;
   description?: string;
   meeting_type: MeetSessionType;
@@ -535,7 +537,7 @@ export interface MeetSession {
   publication_id?: number | null;
   publication?: Publication | null;
   forum_topic_id?: number | null;
-  forum_topic?: Pick<Topic, "id" | "topic" | "sub_category_id" | "sub_category_name"> | null;
+  forum_topic?: Pick<Topic, "id" | "encoded_id" | "topic" | "sub_category_id" | "sub_category_name"> | null;
   mute_audio_on_join?: boolean;
   video_off_on_join?: boolean;
   screen_share_moderator_only?: boolean;
@@ -555,6 +557,7 @@ export interface MeetRoomJoinResponse {
 
 export interface Topic {
   id: number;
+  encoded_id?: string;
   topic: string;
   content: string;
   sub_category_id: number;

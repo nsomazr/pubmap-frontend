@@ -124,7 +124,7 @@ export function DashboardLayout() {
           </Link>
         </header>
 
-        <div className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8">
+        <div className="flex-1 overflow-x-hidden p-3 sm:p-6 lg:p-8">
           <div className="gre-dashboard-shell gre-page-shell mx-auto min-h-[calc(100vh-8rem)] w-full">
             <Outlet />
           </div>

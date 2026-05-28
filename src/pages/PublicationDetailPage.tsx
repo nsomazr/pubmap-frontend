@@ -106,8 +106,38 @@ export function PublicationDetailPage() {
         },
       ]}
     >
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="gre-section-stack min-w-0 space-y-5">
+      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_280px]">
+        <aside className="order-1 space-y-6 lg:order-2">
+          <div className="gre-public-card p-5">
+            <div className="flex items-center gap-3">
+              <UserAvatar user={pub.author} size="md" />
+              <div className="min-w-0">
+                <p className="font-semibold text-ink">{authorName}</p>
+                <p className="truncate text-xs text-slate-500">{pub.author?.affiliation}</p>
+              </div>
+            </div>
+            {pub.author?.ranking && (
+              <div className="mt-4 space-y-2 border-t border-slate-100 pt-4">
+                <ResearcherRankInline ranking={pub.author.ranking} />
+                <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <StarRating stars={pub.author.ranking.stars} size="sm" />
+                  <span>{pub.author.ranking.published_count} on GRE</span>
+                </div>
+              </div>
+            )}
+            {pub.author?.id && (
+              <Link
+                to={`/researcher/${pub.author.id}`}
+                className="mt-4 inline-flex text-sm font-semibold text-brand-600 hover:underline"
+              >
+                View researcher profile
+              </Link>
+            )}
+          </div>
+          <GreAdPlacement placement="sidebar" limit={4} rotate />
+        </aside>
+
+        <div className="gre-section-stack order-2 min-w-0 space-y-5 lg:order-1">
           <PublicationPaperHeader
             title={pub.title}
             greNumber={pub.short_number}
@@ -220,36 +250,6 @@ export function PublicationDetailPage() {
             </div>
           </section>
         </div>
-
-        <aside className="space-y-6">
-          <div className="gre-public-card p-5">
-            <div className="flex items-center gap-3">
-              <UserAvatar user={pub.author} size="md" />
-              <div className="min-w-0">
-                <p className="font-semibold text-ink">{authorName}</p>
-                <p className="truncate text-xs text-slate-500">{pub.author?.affiliation}</p>
-              </div>
-            </div>
-            {pub.author?.ranking && (
-              <div className="mt-4 space-y-2 border-t border-slate-100 pt-4">
-                <ResearcherRankInline ranking={pub.author.ranking} />
-                <div className="flex items-center gap-2 text-xs text-slate-600">
-                  <StarRating stars={pub.author.ranking.stars} size="sm" />
-                  <span>{pub.author.ranking.published_count} on GRE</span>
-                </div>
-              </div>
-            )}
-            {pub.author?.id && (
-              <Link
-                to={`/researcher/${pub.author.id}`}
-                className="mt-4 inline-flex text-sm font-semibold text-brand-600 hover:underline"
-              >
-                View researcher profile
-              </Link>
-            )}
-          </div>
-          <GreAdPlacement placement="sidebar" limit={4} rotate />
-        </aside>
       </div>
 
       {reportOpen && (

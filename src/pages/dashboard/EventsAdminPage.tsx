@@ -10,6 +10,7 @@ import { Textarea } from "../../components/ui/Textarea";
 import { Pagination } from "../../components/ui/Pagination";
 import { usePageParam } from "../../hooks/usePageParam";
 import api from "../../lib/api";
+import { buildEventPath } from "../../lib/eventPaths";
 import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../../lib/pagination";
 import { mediaUrl } from "../../lib/mediaUrl";
 import type { Event } from "../../types";
@@ -192,7 +193,7 @@ export function EventsAdminPage() {
                       {ev.location ? ` · ${ev.location}` : ""}
                     </p>
                     <Link
-                      to={`/events/${ev.id}`}
+                      to={buildEventPath(ev)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="mt-3 inline-flex text-xs font-semibold text-brand-600 hover:underline"

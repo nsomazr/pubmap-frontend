@@ -982,6 +982,11 @@ body {
   position: relative;
 }
 
+.meet-drawer-panel {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
 .gre-dashboard-card {
   border-radius: 1rem;
   border: 1px solid rgb(226 232 240);
@@ -1148,6 +1153,24 @@ body {
 
 .landing-page--marker-sheet-open .leaflet-bottom.leaflet-right {
   bottom: calc(11rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* GRE Assistant open — keep map zoom/attribution from overlapping the panel */
+.landing-page--assistant-open .leaflet-bottom.leaflet-right,
+.landing-page--assistant-open .leaflet-top.leaflet-right {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none !important;
+}
+
+.landing-page--assistant-open .leaflet-control-attribution {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none !important;
+}
+
+.landing-page--assistant-open .gre-assistant-panel {
+  z-index: 1400 !important;
 }
 
 .landing-page--map-expanded .leaflet-top.leaflet-right {
@@ -2507,10 +2530,14 @@ body {
 
   .landing-page .gre-assistant-panel {
     bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px));
-    right: max(0.75rem, env(safe-area-inset-right, 0px));
     left: max(0.75rem, env(safe-area-inset-left, 0px));
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
     width: auto;
     max-width: none;
+  }
+
+  .landing-page--assistant-open .gre-assistant-panel {
+    bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px));
   }
 
   .landing-page--results-open footer.safe-bottom {

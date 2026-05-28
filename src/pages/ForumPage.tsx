@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 import api from "../lib/api";
+import { buildForumTopicPath } from "../lib/forumPaths";
 import { ForumCategoryCard } from "../components/forum/ForumCategoryCard";
 import { SubcategoryVisual } from "../components/taxonomy/SubcategoryVisual";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
@@ -132,7 +133,7 @@ export function ForumPage() {
               return (
               <li key={t.id}>
                 <Link
-                  to={`/forum/topic/${t.id}`}
+                  to={buildForumTopicPath(t)}
                   className="gre-interactive flex items-center gap-3 px-4 py-4 hover:bg-brand-50/50 sm:gap-4 sm:px-5"
                 >
                   <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">

@@ -10,6 +10,7 @@ import {
   type PlagiarismClaim,
   type PlagiarismDecision,
 } from "../../lib/plagiarism";
+import { buildDashboardPublicationPath } from "../../lib/publicationPaths";
 import type { PlagiarismClaimStatus } from "../../types";
 import { ClaimReviewPanel } from "./ClaimReviewPanel";
 import { formatClaimDate } from "./claimPreviewUtils";
@@ -64,8 +65,15 @@ export function PlagiarismClaimCard({
   const longDescription = description.length > 280;
   const publicationHref =
     claim.publication_status === 3
-      ? `/dashboard/publications/${claim.publication_id}/reader`
-      : `/dashboard/publications/${claim.publication_id}`;
+      ? buildDashboardPublicationPath(
+          claim.publication_id,
+          claim.publication_encoded_id,
+          { suffix: "reader" }
+        )
+      : buildDashboardPublicationPath(
+          claim.publication_id,
+          claim.publication_encoded_id
+        );
 
   return (
     <article className="px-4 py-5 sm:px-6 sm:py-6">
@@ -206,7 +214,11 @@ export function PlagiarismClaimCard({
             </Button>
           </div>
           <Link
-            to={`/dashboard/publications/${claim.publication_id}?focus=claims`}
+            to={buildDashboardPublicationPath(
+              claim.publication_id,
+              claim.publication_encoded_id,
+              { query: "focus=claims" }
+            )}
             className="inline-block text-xs font-semibold text-brand-700 hover:underline"
           >
             Open publication in dashboard

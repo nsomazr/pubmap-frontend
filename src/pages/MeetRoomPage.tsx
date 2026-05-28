@@ -42,6 +42,7 @@ import {
 import { BrandMark } from "../components/brand/BrandMark";
 import { MeetingGreAssistantPanel } from "../components/meet/MeetingGreAssistantPanel";
 import { captureMeetingAssistantNotes } from "../lib/meetAssistant";
+import { buildMeetingPath, meetingApiSegment } from "../lib/meetingPaths";
 import {
   applyJitsiJoinMediaPolicy,
   buildJitsiConfigOverwrite,
@@ -208,7 +209,7 @@ function buildCopilotPrompt(
     instructions,
     "",
     `Meeting title: ${meeting.title}`,
-    `Meeting ID: ${formatMeetingId(meeting.id)}`,
+    `Meeting ID: ${formatMeetingId(meeting)}`,
     `Meeting type: ${meeting.meeting_type}`,
     `Scheduled at: ${meeting.scheduled_at}`,
     `Category: ${meeting.category_name || ""}`,
@@ -308,7 +309,7 @@ export function MeetRoomPage() {
 
   const syncRecordingState = useMutation({
     mutationFn: (payload: { state: string; recording_url?: string; error?: string }) =>
-      api.post(`/meetings/${meetingId}/recording/state/`, payload),
+      api.post(`/meetings/${meetingApiSegment(activeMeeting ?? meetingId!)}/recording/state/`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
       queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
@@ -318,7 +319,7 @@ export function MeetRoomPage() {
   const { data: chat = [] } = useQuery({
     queryKey: ["meeting-chat", meetingId],
     queryFn: async () => {
-      const { data } = await api.get<MeetChatMessage[]>(`/meetings/${meetingId}/chat/`);
+      const { data } = await api.get<MeetChatMessage[]>(`/meetings/${meetingApiSegment(activeMeeting ?? meetingId!)}/chat/`);
       return data;
     },
     enabled: !!meetingId,
@@ -347,7 +348,7 @@ export function MeetRoomPage() {
         );
       }
       const composedMessage = [...prefixParts, messageText].join("\n").trim();
-      const { data } = await api.post<MeetChatMessage[]>(`/meetings/${meetingId}/chat/`, {
+      const { data } = await api.post<MeetChatMessage[]>(`/meetings/${meetingApiSegment(activeMeeting ?? meetingId!)}/chat/`, {
         message: composedMessage,
         message_type: "text",
       });
@@ -364,7 +365,7 @@ export function MeetRoomPage() {
   });
 
   const startMeeting = useMutation({
-    mutationFn: () => api.post(`/meetings/${meetingId}/start/`),
+    mutationFn: () => api.post(`/meetings/${meetingApiSegment(activeMeeting ?? meetingId!)}/start/`),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
       await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
@@ -382,7 +383,7 @@ export function MeetRoomPage() {
   });
 
   const endMeeting = useMutation({
-    mutationFn: () => api.post(`/meetings/${meetingId}/end/`),
+    mutationFn: () => api.post(`/meetings/${meetingApiSegment(activeMeeting ?? meetingId!)}/end/`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
       queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
@@ -390,7 +391,7 @@ export function MeetRoomPage() {
         title: "Meeting ended",
         description: "The archive is being prepared now.",
       });
-      if (meetingId) navigate(`/dashboard/meetings/${meetingId}/archive`);
+      if (meetingId) navigate(buildMeetingPath(meetingId, "archive"));
     },
     onError: (error) => {
       toast.error({
@@ -402,7 +403,7 @@ export function MeetRoomPage() {
 
   const startRecording = useMutation({
     mutationFn: async () => {
-      const { data } = await api.post<MeetSession>(`/meetings/${meetingId}/recording/start/`);
+      const { data } = await api.post<MeetSession>(`/meetings/${meetingApiSegment(activeMeeting ?? meetingId!)}/recording/start/`);
       return data;
     },
     onSuccess: async () => {
@@ -423,7 +424,7 @@ export function MeetRoomPage() {
 
   const stopRecording = useMutation({
     mutationFn: async () => {
-      const { data } = await api.post<MeetSession>(`/meetings/${meetingId}/recording/stop/`);
+      const { data } = await api.post<MeetSession>(`/meetings/${meetingApiSegment(activeMeeting ?? meetingId!)}/recording/stop/`);
       return data;
     },
     onSuccess: async () => {
@@ -589,7 +590,7 @@ export function MeetRoomPage() {
       const onReadyToClose = () => {
         queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
         queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
-        if (meetingId) navigate(`/dashboard/meetings/${meetingId}/archive`);
+        if (meetingId) navigate(buildMeetingPath(meetingId, "archive"));
       };
 
       apiInstance.addListener("videoConferenceJoined", onJoined);
@@ -749,7 +750,7 @@ export function MeetRoomPage() {
   const shareLink =
     activeMeeting?.meeting_link ||
     (slug ? `${window.location.origin.replace(/\/$/, "")}/meet/${slug}` : "");
-  const archiveId = activeMeeting ? formatMeetingId(activeMeeting.id) : "";
+  const archiveId = activeMeeting ? formatMeetingId(activeMeeting) : "";
   const embedMounted = roomDebug.apiConstructed;
   const embedUnavailable = isConnected && !embedMounted && !!roomError;
   const embedStatusMessage =
@@ -1040,7 +1041,7 @@ export function MeetRoomPage() {
           <p className="text-sm text-slate-600">
             This room is closed. The recording, transcript, and summary are available in the GRE archive view.
           </p>
-          <Link to={`/dashboard/meetings/${activeMeeting.id}/archive`}>
+          <Link to={buildMeetingPath(activeMeeting, "archive")}>
             <Button>Open archive</Button>
           </Link>
         </div>
@@ -1059,7 +1060,7 @@ export function MeetRoomPage() {
           <p className="text-sm text-slate-600">
             This scheduled meeting was cancelled before it started, so no archive was created.
           </p>
-          <Link to={`/dashboard/meetings/${activeMeeting.id}`}>
+          <Link to={buildMeetingPath(activeMeeting)}>
             <Button>Open meeting details</Button>
           </Link>
         </div>
@@ -1131,7 +1132,7 @@ export function MeetRoomPage() {
                 setDrawerTab("info");
                 setDrawerOpen(true);
               }}
-              className="text-sm font-semibold text-brand-300 underline-offset-2 hover:underline"
+              className="text-sm font-semibold text-brand-200 underline-offset-2 hover:text-white hover:underline"
             >
               Open meeting details
             </button>
@@ -1170,20 +1171,20 @@ export function MeetRoomPage() {
 
       {!drawerOpen && <MeetRoomControlsFab onClick={() => setDrawerOpen(true)} />}
       <div
-        className="pointer-events-none fixed left-6 top-6 z-[2147483645] sm:left-8 sm:top-7"
+        className="pointer-events-none fixed left-3 top-3 z-[2147483645] max-w-[calc(100vw-1.5rem)] sm:left-8 sm:top-7"
         style={{ zIndex: 2147483647 }}
       >
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-700 bg-slate-900/95 px-4 py-2.5 shadow-[0_6px_18px_rgba(2,6,23,0.35)]">
+        <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/95 px-2.5 py-2 shadow-[0_6px_18px_rgba(2,6,23,0.35)] sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-2.5">
           <BrandMark
             symbol="full"
             variant="plain"
             size="lg"
-            className="shrink-0 !h-14 !max-w-[200px]"
+            className="shrink-0 !h-9 !max-w-[120px] sm:!h-14 sm:!max-w-[200px]"
             title="GRE"
           />
-          <div className="leading-none text-slate-100">
-            <p className="text-base font-extrabold tracking-wide">GRE</p>
-            <p className="mt-1 text-sm font-semibold text-slate-300">Meet</p>
+          <div className="hidden min-[380px]:block leading-none text-slate-100">
+            <p className="text-sm font-extrabold tracking-wide sm:text-base">GRE</p>
+            <p className="mt-0.5 text-xs font-semibold text-slate-300 sm:mt-1 sm:text-sm">Meet</p>
           </div>
         </div>
       </div>
@@ -1198,41 +1199,37 @@ export function MeetRoomPage() {
           meetingTitle={headerTitle}
           panels={{
             info: (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Link
-                  to={meetingId ? `/dashboard/meetings/${meetingId}` : "/dashboard/meetings"}
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-brand-300"
+                  to={meetingId ? buildMeetingPath(meetingId) : "/dashboard/meetings"}
+                  className="inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-brand-700 transition hover:text-brand-800"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Back to meeting
                 </Link>
-                <h3 className="text-lg font-bold text-slate-100">{headerTitle}</h3>
+                <h3 className="text-lg font-semibold text-ink">{headerTitle}</h3>
                 <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="rounded-full bg-brand-950/50 px-2.5 py-1 font-semibold text-brand-200">
+                  <span className="rounded-full bg-brand-50 px-2.5 py-1 font-semibold text-brand-800 ring-1 ring-brand-100">
                     {archiveId}
                   </span>
-                  <span className="rounded-full bg-slate-800 px-2.5 py-1 capitalize text-slate-300">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 capitalize font-medium text-slate-700 ring-1 ring-slate-200/80">
                     {activeMeeting.status}
                   </span>
-                  <span className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-300">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600 ring-1 ring-slate-200/80">
                     {roomParticipants.length} live participant
                     {roomParticipants.length === 1 ? "" : "s"}
                   </span>
                 </div>
-                <div className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-2.5">
-                  <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Quick actions</p>
+                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Quick actions</p>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <Button
-                      variant="secondary"
-                      className="h-9 w-full !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
-                      onClick={copyLink}
-                    >
+                    <Button variant="secondary" className="h-9 w-full" onClick={copyLink}>
                       <Copy className="h-4 w-4" />
                       Copy link
                     </Button>
                     <Button
                       variant="secondary"
-                      className="h-9 w-full !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
+                      className="h-9 w-full"
                       loading={pipOpening}
                       onClick={() => void openMeetingPictureInPicture()}
                     >
@@ -1241,7 +1238,7 @@ export function MeetRoomPage() {
                     </Button>
                     {shareLink && (
                       <a href={shareLink} target="_blank" rel="noreferrer" className="sm:col-span-2">
-                        <Button variant="secondary" className="h-9 w-full !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100">
+                        <Button variant="secondary" className="h-9 w-full">
                           <ExternalLink className="h-4 w-4" />
                           Open GRE link
                         </Button>
@@ -1250,8 +1247,8 @@ export function MeetRoomPage() {
                   </div>
                 </div>
                 {!isConnected && (
-                  <div className="space-y-3 pt-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                       Join room
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -1268,17 +1265,16 @@ export function MeetRoomPage() {
                           </>
                         )}
                       </Button>
-                      <Button variant="secondary" className="h-10 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800" onClick={() => void handleOpenExternalRoom()}>
+                      <Button variant="secondary" className="h-10" onClick={() => void handleOpenExternalRoom()}>
                         <ExternalLink className="h-4 w-4" />
                         Join in browser
                       </Button>
                     </div>
                   </div>
                 )}
-                <div className="space-y-2 pt-2">
-                  <div className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-2.5">
-                    <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Live actions</p>
-                    <div className="grid grid-cols-1 gap-2">
+                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Live actions</p>
+                  <div className="grid grid-cols-1 gap-2">
                     {activeMeeting.status === "scheduled" && (
                       <Button className="h-10" loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
                         Start on GRE
@@ -1287,7 +1283,7 @@ export function MeetRoomPage() {
                     {isHostUser && isModerator && isLive && activeMeeting.recording_status !== "recording" && (
                       <Button
                         variant="secondary"
-                        className="h-8 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!border-slate-700 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
+                        className="h-9"
                         loading={startRecording.isPending}
                         onClick={handleStartRecording}
                       >
@@ -1295,57 +1291,60 @@ export function MeetRoomPage() {
                       </Button>
                     )}
                     {isHostUser && isModerator && isLive && activeMeeting.recording_status === "recording" && (
-                      <Button variant="secondary" className="h-8 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!border-slate-700 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100" loading={stopRecording.isPending} onClick={handleStopRecording}>
+                      <Button
+                        variant="secondary"
+                        className="h-9"
+                        loading={stopRecording.isPending}
+                        onClick={handleStopRecording}
+                      >
                         Stop recording
                       </Button>
                     )}
                     <Button
                       variant="danger"
-                      className="h-8"
+                      className="h-9"
                       loading={endMeeting.isPending}
                       onClick={() => setConfirmEndOpen(true)}
                     >
                       End meeting
                     </Button>
                   </div>
-                  </div>
                 </div>
                 {isHostUser && (
-                  <div className="space-y-2 pt-1">
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-2.5">
-                      <p className="px-1 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                        Host controls
-                      </p>
-                      <MeetHostToolsPanel
-                        meeting={activeMeeting}
-                        canManage={canManage}
-                        showLiveControls
-                        roomReady={isConnected && jitsiReady}
-                        onMuteEveryone={(mediaType) => runModeratorCommand("muteEveryone", mediaType)}
-                        onStopScreenshare={() => {
-                          if (!runModeratorCommand("muteEveryone", "desktop")) {
-                            runModeratorCommand("toggleShareScreen");
-                          }
-                        }}
-                      />
-                    </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                    <p className="pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Host controls
+                    </p>
+                    <MeetHostToolsPanel
+                      meeting={activeMeeting}
+                      canManage={canManage}
+                      variant="light"
+                      showLiveControls
+                      roomReady={isConnected && jitsiReady}
+                      onMuteEveryone={(mediaType) => runModeratorCommand("muteEveryone", mediaType)}
+                      onStopScreenshare={() => {
+                        if (!runModeratorCommand("muteEveryone", "desktop")) {
+                          runModeratorCommand("toggleShareScreen");
+                        }
+                      }}
+                    />
                   </div>
                 )}
               </div>
             ),
             assistant: (
-              <div className="flex h-full min-h-0 flex-col gap-3">
+              <div className="flex h-full min-h-[min(24rem,60vh)] flex-col gap-4">
                 <div className="min-h-0 flex-1">
-                  <MeetingGreAssistantPanel meeting={activeMeeting} compact variant="dark" />
+                  <MeetingGreAssistantPanel meeting={activeMeeting} compact variant="light" />
                 </div>
                 {canManage && (
-                  <div className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-2.5">
-                    <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Assistant tools</p>
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Assistant tools</p>
+                    <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
                       <Button
                         type="button"
                         variant="secondary"
-                        className="h-8 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
+                        className="h-9 w-full"
                         loading={copilotLoading}
                         onClick={() => void runCopilot("notes")}
                       >
@@ -1355,7 +1354,7 @@ export function MeetRoomPage() {
                       <Button
                         type="button"
                         variant="secondary"
-                        className="h-8 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
+                        className="h-9 w-full"
                         loading={copilotLoading}
                         onClick={() => void runCopilot("actions")}
                       >
@@ -1363,9 +1362,9 @@ export function MeetRoomPage() {
                       </Button>
                     </div>
                     {(copilotOutput || copilotError || copilotLoading) && (
-                      <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3">
+                      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                         {copilotError ? (
-                          <p className="text-sm text-red-400">{copilotError}</p>
+                          <p className="text-sm text-red-600">{copilotError}</p>
                         ) : (
                           <FormattedAssistantText content={copilotOutput} streaming={copilotLoading} />
                         )}
@@ -1374,7 +1373,7 @@ export function MeetRoomPage() {
                             <Button
                               type="button"
                               variant="secondary"
-                              className="h-8 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800"
+                              className="h-8"
                               onClick={() => {
                                 if (!copilotOutput.trim()) return;
                                 const write = navigator.clipboard?.writeText?.(copilotOutput) ?? Promise.reject();
@@ -1405,8 +1404,8 @@ export function MeetRoomPage() {
               </div>
             ),
               chat: (
-                <div className="flex h-full min-h-0 flex-col gap-3">
-                  <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
+                <div className="flex h-full min-h-[min(24rem,60vh)] flex-col gap-3">
+                  <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
                     {chat.map((message) => {
                       const senderName =
                         message.sender?.full_name ||
@@ -1434,39 +1433,57 @@ export function MeetRoomPage() {
                                 event.preventDefault();
                                 setActiveMessageActionId(message.id);
                               }}
-                              className={`w-full max-w-[92%] rounded-2xl border px-3 py-2.5 shadow-sm transition ${
+                              className={`w-full max-w-[92%] rounded-2xl px-3 py-2.5 shadow-sm transition ${
                                 isOwn
-                                  ? "border-brand-800/50 bg-brand-900/30"
-                                  : "border-slate-700 bg-slate-800/90"
+                                  ? "bg-brand-600 text-white"
+                                  : "bg-white text-slate-800 ring-1 ring-slate-200/80"
                               }`}
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2">
-                              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                              <p
+                                className={`text-[11px] font-semibold uppercase tracking-wide ${
+                                  isOwn ? "text-white/80" : "text-slate-500"
+                                }`}
+                              >
                                 {senderName}
                                 {isOwn ? " · You" : ""}
                               </p>
-                              <span className="text-[11px] text-slate-500">
+                              <span className={`text-[11px] ${isOwn ? "text-white/70" : "text-slate-400"}`}>
                                 {formatChatTimestamp(message.created_at)}
                               </span>
                               </div>
                               {parsedMessage.replySnippet && (
-                                <div className="mt-1.5 rounded-xl border border-slate-600/70 bg-slate-900/55 px-2.5 py-2">
-                                  <p className="text-[11px] font-semibold text-brand-200">
+                                <div
+                                  className={`mt-1.5 rounded-xl px-2.5 py-2 ${
+                                    isOwn
+                                      ? "bg-white/15"
+                                      : "border border-slate-200/80 bg-slate-50"
+                                  }`}
+                                >
+                                  <p className={`text-[11px] font-semibold ${isOwn ? "text-white" : "text-brand-700"}`}>
                                     {parsedMessage.replyToName}
                                   </p>
-                                  <p className="mt-0.5 line-clamp-2 text-xs text-slate-300">
+                                  <p className={`mt-0.5 line-clamp-2 text-xs ${isOwn ? "text-white/85" : "text-slate-600"}`}>
                                     {parsedMessage.replySnippet}
                                   </p>
                                 </div>
                               )}
-                              <p className="mt-1 text-sm whitespace-pre-wrap leading-relaxed text-slate-100">
+                              <p
+                                className={`mt-1 text-sm whitespace-pre-wrap leading-relaxed ${
+                                  isOwn ? "text-white" : "text-slate-800"
+                                }`}
+                              >
                                 {parsedMessage.body}
                               </p>
                               {isActionOpen ? (
                                 <div className="mt-2 flex items-center gap-1.5">
                                   <button
                                     type="button"
-                                    className="rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold text-brand-300 transition hover:border-brand-700/40 hover:bg-brand-900/30 hover:text-brand-200"
+                                    className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
+                                      isOwn
+                                        ? "text-white/90 hover:bg-white/15"
+                                        : "text-brand-700 hover:bg-brand-50"
+                                    }`}
                                     onClick={() => {
                                       setReplyTarget(message);
                                       setActiveMessageActionId(null);
@@ -1477,7 +1494,7 @@ export function MeetRoomPage() {
                                   {!isOwn && (
                                     <button
                                       type="button"
-                                      className="rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold text-slate-300 transition hover:border-slate-600 hover:bg-slate-700/60 hover:text-slate-100"
+                                      className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100"
                                       onClick={() => {
                                         setTagTarget(message);
                                         const mentionToken = `@${senderName}`;
@@ -1493,7 +1510,7 @@ export function MeetRoomPage() {
                                   )}
                                   <button
                                     type="button"
-                                    className="rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold text-slate-300 transition hover:border-slate-600 hover:bg-slate-700/60 hover:text-slate-100"
+                                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100"
                                     onClick={() => {
                                       void (navigator.clipboard?.writeText?.(message.message) ?? Promise.reject()).catch(
                                         () => {}
@@ -1505,7 +1522,7 @@ export function MeetRoomPage() {
                                   </button>
                                   <button
                                     type="button"
-                                    className="rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold text-slate-400 transition hover:border-slate-600 hover:bg-slate-700/60 hover:text-slate-200"
+                                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-500 transition hover:bg-slate-100"
                                     onClick={() => setActiveMessageActionId(null)}
                                   >
                                     Close
@@ -1514,7 +1531,7 @@ export function MeetRoomPage() {
                               ) : (
                                 <button
                                   type="button"
-                                  className="mt-2 text-[11px] font-semibold text-slate-500"
+                                  className={`mt-2 text-[11px] font-semibold ${isOwn ? "text-white/70" : "text-slate-500"}`}
                                   onClick={() => setActiveMessageActionId(message.id)}
                                 >
                                   Hold for actions
@@ -1526,13 +1543,13 @@ export function MeetRoomPage() {
                       );
                     })}
                     {chat.length === 0 && (
-                      <p className="px-3 py-2 text-sm text-slate-400">
-                        No messages yet.
+                      <p className="px-3 py-6 text-center text-sm text-slate-500">
+                        No messages yet. Start the conversation below.
                       </p>
                     )}
                   </div>
                   <form
-                    className="mt-auto space-y-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-3"
+                    className="mt-auto space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
                     onSubmit={(event) => {
                       event.preventDefault();
                       if (!text.trim()) return;
@@ -1541,11 +1558,11 @@ export function MeetRoomPage() {
                     }}
                   >
                     {(replyTarget || tagTarget) && (
-                      <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                         {replyTarget && (
                           <p>
                             Replying to{" "}
-                            <span className="font-semibold text-slate-100">
+                            <span className="font-semibold text-ink">
                               {replyTarget.sender?.full_name ||
                                 `${replyTarget.sender?.firstname ?? ""} ${replyTarget.sender?.lastname ?? ""}`.trim() ||
                                 replyTarget.sender?.email ||
@@ -1556,7 +1573,7 @@ export function MeetRoomPage() {
                         {tagTarget && (
                           <p>
                             Tagging{" "}
-                            <span className="font-semibold text-slate-100">
+                            <span className="font-semibold text-ink">
                               {tagTarget.sender?.full_name ||
                                 `${tagTarget.sender?.firstname ?? ""} ${tagTarget.sender?.lastname ?? ""}`.trim() ||
                                 tagTarget.sender?.email ||
@@ -1566,7 +1583,7 @@ export function MeetRoomPage() {
                         )}
                         <button
                           type="button"
-                          className="mt-1 text-[11px] font-semibold text-slate-400 hover:text-slate-200"
+                          className="mt-1 text-[11px] font-semibold text-slate-500 hover:text-brand-700"
                           onClick={() => {
                             setReplyTarget(null);
                             setTagTarget(null);
@@ -1589,30 +1606,31 @@ export function MeetRoomPage() {
                         }}
                         placeholder="Message..."
                         rows={1}
-                        className="max-h-28 min-h-11 w-full resize-y rounded-3xl border border-slate-700 bg-slate-950 py-3 pl-4 pr-28 text-sm text-slate-100 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-900/40"
+                        className="max-h-28 min-h-11 w-full resize-y rounded-3xl border border-slate-200 bg-white py-3 pl-4 pr-14 text-sm text-ink outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 sm:pr-28"
                       />
                       <Button
                         type="submit"
                         loading={sendChat.isPending}
                         disabled={!text.trim() || !meetingId}
-                        className="absolute right-1.5 top-1/2 h-8 -translate-y-1/2 rounded-full px-3 text-sm"
+                        className="absolute right-1.5 top-1/2 h-8 -translate-y-1/2 rounded-full px-2.5 text-sm sm:px-3"
+                        aria-label="Send message"
                       >
                         <Send className="h-4 w-4" />
-                        Send
+                        <span className="hidden sm:inline">Send</span>
                       </Button>
                     </div>
-                    {chatError && <p className="text-sm text-red-400">{chatError}</p>}
+                    {chatError && <p className="text-sm text-red-600">{chatError}</p>}
                   </form>
                 </div>
               ),
               host: (
-                <div className="text-sm text-slate-400">Host controls are available in Meeting.</div>
+                <div className="text-sm text-slate-500">Host controls are available in the Meeting tab.</div>
               ),
               people: (
                 <div className="space-y-3">
                   {canManage && (
-                    <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3">
-                      <p className="text-xs font-semibold text-slate-400">Invite by email</p>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                      <p className="text-xs font-semibold text-slate-600">Invite by email</p>
                       <form
                         className="mt-2 flex flex-col gap-2 sm:flex-row"
                         onSubmit={(event) => {
@@ -1625,13 +1643,13 @@ export function MeetRoomPage() {
                           value={inviteEmail}
                           onChange={(event) => setInviteEmail(event.target.value)}
                           placeholder="attendee@example.com"
-                          className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition focus:ring-2 focus:ring-brand-900/40"
+                          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                         />
                         <Button
                           type="submit"
                           loading={inviteSending}
                           disabled={!inviteEmail.trim()}
-                          className="h-10 min-w-[132px] !bg-brand-600 !text-white hover:!bg-brand-500 disabled:!bg-slate-700 disabled:!text-slate-300 disabled:!opacity-100 sm:shrink-0"
+                          className="h-10 min-w-[132px] sm:shrink-0"
                         >
                           Send invite
                         </Button>
@@ -1639,29 +1657,32 @@ export function MeetRoomPage() {
                     </div>
                   )}
                   {canManage && waitingGuests.length > 0 && (
-                    <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3">
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
                           Waiting room
                         </p>
-                        <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-300">
+                        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
                           {waitingGuests.length}
                         </span>
                       </div>
                       <div className="mt-3 space-y-2">
                         {waitingGuests.map((guest) => (
-                          <div key={guest.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-800 px-3 py-2">
+                          <div
+                            key={guest.id}
+                            className="flex flex-col gap-2 rounded-lg border border-amber-100 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                          >
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-slate-100">{guest.displayName}</p>
+                              <p className="truncate text-sm font-semibold text-ink">{guest.displayName}</p>
                               {guest.email && (
-                                <p className="truncate text-xs text-slate-400">{guest.email}</p>
+                                <p className="truncate text-xs text-slate-500">{guest.email}</p>
                               )}
                             </div>
-                            <div className="flex shrink-0 gap-2">
+                            <div className="flex shrink-0 gap-2 sm:justify-end">
                               <Button
                                 type="button"
                                 variant="secondary"
-                                className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                                className="h-9 flex-1 sm:flex-none"
                                 onClick={() => answerKnockingParticipant(guest.id, true)}
                               >
                                 Admit
@@ -1669,7 +1690,7 @@ export function MeetRoomPage() {
                               <Button
                                 type="button"
                                 variant="secondary"
-                                className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                                className="h-9 flex-1 sm:flex-none"
                                 onClick={() => answerKnockingParticipant(guest.id, false)}
                               >
                                 Deny
@@ -1678,7 +1699,7 @@ export function MeetRoomPage() {
                           </div>
                         ))}
                       </div>
-                      <Button type="button" className="mt-3 h-10 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800" onClick={admitAllWaitingGuests}>
+                      <Button type="button" className="mt-3 h-10" onClick={admitAllWaitingGuests}>
                         Admit all
                       </Button>
                     </div>
@@ -1702,15 +1723,15 @@ export function MeetRoomPage() {
                       return (
                     <div
                       key={participant.id}
-                      className="relative flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-2"
+                      className="relative flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-100">
+                        <p className="truncate text-sm font-semibold text-ink">
                           {participant.displayName}
                           {participant.isLocal ? " · You" : ""}
                         </p>
                         {participant.email && (
-                          <p className="truncate text-xs text-slate-400">{participant.email}</p>
+                          <p className="truncate text-xs text-slate-500">{participant.email}</p>
                         )}
                       </div>
                       {isHostUser && isModerator && !participant.isLocal && participant.id && (
@@ -1718,7 +1739,7 @@ export function MeetRoomPage() {
                           <Button
                             type="button"
                             variant="ghost"
-                            className="h-9 shrink-0 !bg-slate-900 !text-slate-200 hover:!bg-slate-800"
+                            className="h-9 shrink-0 text-slate-600 hover:bg-slate-100"
                             data-participant-menu-trigger="true"
                             onClick={(event) => {
                               event.stopPropagation();
@@ -1731,14 +1752,14 @@ export function MeetRoomPage() {
                           </Button>
                           {participantActionMenuId === participant.id && (
                             <div
-                              className="absolute right-0 top-11 z-20 w-56 rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-lg"
+                              className="absolute right-0 top-11 z-20 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-lg ring-1 ring-slate-100"
                               data-participant-menu="true"
                             >
                               <div className="space-y-1">
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left !text-slate-100 hover:!bg-slate-800 hover:!text-slate-50"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-ink hover:bg-slate-50"
                                   onClick={() => {
                                     const shouldMute = !participant.audioMuted;
                                     const ok = runParticipantAction(
@@ -1772,7 +1793,7 @@ export function MeetRoomPage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left !text-slate-100 hover:!bg-slate-800 hover:!text-slate-50"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-ink hover:bg-slate-50"
                                   onClick={() => {
                                     const shouldTurnVideoOff = !participant.videoMuted;
                                     const ok = runParticipantAction(
@@ -1808,7 +1829,7 @@ export function MeetRoomPage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left !text-slate-100 hover:!bg-slate-800 hover:!text-slate-50"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-ink hover:bg-slate-50"
                                   onClick={() => {
                                     runParticipantAction(
                                       participant.id,
@@ -1827,7 +1848,7 @@ export function MeetRoomPage() {
                                   <Button
                                     type="button"
                                     variant="ghost"
-                                    className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left !text-red-300 hover:!bg-slate-800 hover:!text-red-200"
+                                    className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-red-600 hover:bg-red-50"
                                     onClick={() => {
                                       runParticipantAction(
                                         participant.id,

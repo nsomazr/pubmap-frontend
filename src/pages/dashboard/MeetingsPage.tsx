@@ -6,6 +6,7 @@ import { Button } from "../../components/ui/Button";
 import { Pagination } from "../../components/ui/Pagination";
 import { useAuth } from "../../context/AuthContext";
 import { usePageParam } from "../../hooks/usePageParam";
+import { buildMeetingPath } from "../../lib/meetingPaths";
 import {
   fetchMeetings,
   formatMeetingDate,
@@ -74,7 +75,7 @@ function MeetingRow({ meeting }: { meeting: MeetSession }) {
       : meeting.can_manage && meeting.status === "scheduled"
         ? "Start & join"
         : "Join room";
-  const archiveId = formatMeetingId(meeting.id);
+  const archiveId = formatMeetingId(meeting);
   const participants = meeting.participant_count ?? 0;
   const hasReport = Boolean(
     meeting.meeting_minutes?.trim() ||
@@ -174,19 +175,19 @@ function MeetingRow({ meeting }: { meeting: MeetSession }) {
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+      <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
         {!isArchived && !isCancelled && meeting.can_join && (
           <Link to={`/meet/${meeting.join_slug}`}>
             <Button className="!px-3 !py-2 text-xs">{roomLabel}</Button>
           </Link>
         )}
-        <Link to={`/dashboard/meetings/${meeting.id}`}>
+        <Link to={buildMeetingPath(meeting)}>
           <Button variant="secondary" className="!px-3 !py-2 text-xs">
             Details
           </Button>
         </Link>
         {isArchived && (
-          <Link to={`/dashboard/meetings/${meeting.id}/archive`}>
+          <Link to={buildMeetingPath(meeting, "archive")}>
             <Button
               variant={hasReport ? "primary" : "secondary"}
               className="!px-3 !py-2 text-xs"
@@ -204,7 +205,7 @@ function MeetingRow({ meeting }: { meeting: MeetSession }) {
         )}
         {meeting.can_manage && !isArchived && !isCancelled && (
           <Link
-            to={`/dashboard/meetings/${meeting.id}/edit`}
+            to={buildMeetingPath(meeting, "edit")}
             className="rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-brand-700"
           >
             Edit

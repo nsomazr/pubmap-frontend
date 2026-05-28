@@ -3,6 +3,10 @@ import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { AlertTriangle, ArrowLeft, PencilLine } from "lucide-react";
 import api from "../../lib/api";
+import {
+  buildDashboardPublicationPath,
+  publicationApiSegment,
+} from "../../lib/publicationPaths";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { ReportPlagiarismDialog } from "../../components/publication/ReportPlagiarismDialog";
 import { GreAdPlacement } from "../../components/ads/GreAdSlot";
@@ -41,7 +45,9 @@ export function PublicationReaderPage() {
   const { data: pub, isLoading, isError } = useQuery({
     queryKey: ["publication-reader", id],
     queryFn: async () => {
-      const { data } = await api.get<Publication>(`/publications/${id}/reader/`);
+      const { data } = await api.get<Publication>(
+        `/publications/${publicationApiSegment(id!)}/reader/`
+      );
       return data;
     },
     enabled: !!id,
@@ -84,7 +90,7 @@ export function PublicationReaderPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <Link
           to="/dashboard/publications"
           className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-200"
@@ -93,7 +99,7 @@ export function PublicationReaderPage() {
           Back to publications
         </Link>
         <Link
-          to={`/dashboard/publications/${pub.id}`}
+          to={buildDashboardPublicationPath(pub.id, pub.encoded_id)}
           className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
         >
           <PencilLine className="h-4 w-4" />
@@ -101,8 +107,38 @@ export function PublicationReaderPage() {
         </Link>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="gre-section-stack min-w-0 space-y-5">
+      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_280px]">
+        <aside className="order-1 space-y-6 lg:order-2">
+          <div className="gre-card p-5">
+            <div className="flex items-center gap-3">
+              <UserAvatar user={pub.author} size="md" />
+              <div className="min-w-0">
+                <p className="font-semibold text-ink">{authorName}</p>
+                <p className="truncate text-xs text-slate-500">{pub.author?.affiliation}</p>
+              </div>
+            </div>
+            {pub.author?.ranking && (
+              <div className="mt-4 space-y-2 border-t border-slate-100 pt-4">
+                <ResearcherRankInline ranking={pub.author.ranking} />
+                <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <StarRating stars={pub.author.ranking.stars} size="sm" />
+                  <span>{pub.author.ranking.published_count} on GRE</span>
+                </div>
+              </div>
+            )}
+            {pub.author?.id && (
+              <Link
+                to={`/researcher/${pub.author.id}`}
+                className="mt-4 inline-flex text-sm font-semibold text-brand-600 hover:underline"
+              >
+                View researcher profile
+              </Link>
+            )}
+          </div>
+          <GreAdPlacement placement="sidebar" limit={4} rotate />
+        </aside>
+
+        <div className="gre-section-stack order-2 min-w-0 space-y-5 lg:order-1">
           <PublicationPaperHeader
             title={pub.title}
             greNumber={pub.short_number}
@@ -217,36 +253,6 @@ export function PublicationReaderPage() {
             </div>
           </section>
         </div>
-
-        <aside className="space-y-6">
-          <div className="gre-card p-5">
-            <div className="flex items-center gap-3">
-              <UserAvatar user={pub.author} size="md" />
-              <div className="min-w-0">
-                <p className="font-semibold text-ink">{authorName}</p>
-                <p className="truncate text-xs text-slate-500">{pub.author?.affiliation}</p>
-              </div>
-            </div>
-            {pub.author?.ranking && (
-              <div className="mt-4 space-y-2 border-t border-slate-100 pt-4">
-                <ResearcherRankInline ranking={pub.author.ranking} />
-                <div className="flex items-center gap-2 text-xs text-slate-600">
-                  <StarRating stars={pub.author.ranking.stars} size="sm" />
-                  <span>{pub.author.ranking.published_count} on GRE</span>
-                </div>
-              </div>
-            )}
-            {pub.author?.id && (
-              <Link
-                to={`/researcher/${pub.author.id}`}
-                className="mt-4 inline-flex text-sm font-semibold text-brand-600 hover:underline"
-              >
-                View researcher profile
-              </Link>
-            )}
-          </div>
-          <GreAdPlacement placement="sidebar" limit={4} rotate />
-        </aside>
       </div>
 
       {reportOpen && (

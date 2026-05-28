@@ -1,7 +1,10 @@
+import { publicationRef } from "./publicationPaths";
+
 export type MapDeepLinkPanel = "summary";
 
 export interface MapDeepLinkState {
-  publicationId: number | null;
+  /** Opaque hashid or legacy numeric string from `?pub=` */
+  publicationRef: string | null;
   panel: MapDeepLinkPanel | null;
   author: string | null;
   affiliation: string | null;
@@ -11,23 +14,25 @@ export interface MapDeepLinkState {
 export function parseMapDeepLink(search: string): MapDeepLinkState {
   const params = new URLSearchParams(search.startsWith("?") ? search : `?${search}`);
   const raw = params.get("pub") || params.get("publication");
-  const publicationId = raw && /^\d+$/.test(raw) ? Number(raw) : null;
+  const publicationRef = raw?.trim() || null;
   const panelRaw = params.get("panel");
   const panel: MapDeepLinkPanel | null = panelRaw === "summary" ? "summary" : null;
   const author = params.get("author")?.trim() || null;
   const affiliation = params.get("affiliation")?.trim() || null;
   const location = params.get("location")?.trim() || null;
-  return { publicationId, panel, author, affiliation, location };
+  return { publicationRef, panel, author, affiliation, location };
 }
 
 export function buildMapFocusPath(
   publicationId: number,
+  encodedId?: string | null,
   opts?: { panel?: MapDeepLinkPanel }
 ): string {
+  const ref = publicationRef(publicationId, encodedId);
   if (opts?.panel === "summary") {
-    return `/publication/${publicationId}/chat`;
+    return `/publication/${ref}/chat`;
   }
-  const params = new URLSearchParams({ pub: String(publicationId) });
+  const params = new URLSearchParams({ pub: ref });
   return `/?${params.toString()}`;
 }
 

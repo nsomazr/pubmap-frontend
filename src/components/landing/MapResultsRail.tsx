@@ -419,7 +419,7 @@ function InstitutionIdentityCard({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
         <InsightStat icon={BookOpenText} label="Publications" value={institution.publication_count} tone="brand" />
         <InsightStat icon={Users} label="Researchers" value={institution.researcher_count} />
         <InsightStat icon={MessageSquare} label="Discussions" value={institution.discussions_count} tone="teal" />
@@ -547,7 +547,7 @@ function ResearcherIdentityCard({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
         <InsightStat icon={BookOpenText} label="Papers published" value={person.publication_count} tone="brand" />
         <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
           <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-brand-600">
@@ -1061,7 +1061,7 @@ export function MapResultsRail({
                     return (
                       <li key={pub.id}>
                         <article
-                          className="group overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:bg-white hover:shadow-md"
+                          className="gre-dashboard-card group overflow-hidden transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
                           style={{ animationDelay: `${i * 30}ms` }}
                         >
                           <Link
@@ -1102,17 +1102,17 @@ export function MapResultsRail({
                               ) : null}
                             </div>
                           </Link>
-                          <div className="flex flex-col gap-2 px-3.5 pb-3.5 sm:flex-row">
+                          <div className="flex flex-col gap-2 border-t border-slate-100 p-3 sm:flex-row">
                             <Link
                               to={buildPublicationChatPath(pub.id, pub.encoded_id)}
-                              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:border-brand-300 hover:bg-brand-100"
+                              className="gre-interactive flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-ink transition hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-800"
                             >
-                              <Sparkles className="h-3.5 w-3.5" />
+                              <Sparkles className="h-3.5 w-3.5 text-brand-600" />
                               Get summary
                             </Link>
                             <Link
                               to={buildPublicationPath(pub.id, pub.encoded_id)}
-                              className="flex flex-1 items-center justify-center rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-700"
+                              className="gre-interactive flex min-h-10 flex-1 items-center justify-center rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white shadow-sm shadow-brand-600/15 transition hover:bg-brand-700"
                             >
                               View paper
                             </Link>

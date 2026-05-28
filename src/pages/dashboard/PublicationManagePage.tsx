@@ -15,6 +15,10 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { LocationPicker } from "../../components/map/LocationPicker";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { buildAuthorByline } from "../../lib/publicationAuthors";
+import {
+  buildDashboardPublicationPath,
+  publicationApiSegment,
+} from "../../lib/publicationPaths";
 import { hasValidCoords } from "../../lib/geocode";
 import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { Button } from "../../components/ui/Button";
@@ -254,7 +258,7 @@ export function PublicationManagePage() {
     queryKey: ["publication-edit", id],
     enabled: !isNew && !!id,
     queryFn: async () => {
-      const { data } = await api.get<Publication>(`/publications/${id}/`);
+      const { data } = await api.get<Publication>(`/publications/${publicationApiSegment(id!)}/`);
       return data;
     },
   });
@@ -449,7 +453,10 @@ export function PublicationManagePage() {
         const { data } = await api.post<Publication>("/publications/", payload);
         return data;
       }
-      const { data } = await api.patch<Publication>(`/publications/${id}/`, payload);
+      const { data } = await api.patch<Publication>(
+        `/publications/${publicationApiSegment(id!)}/`,
+        payload
+      );
       return data;
     },
     onSuccess: async (data, options?: SaveOptions) => {
@@ -462,7 +469,7 @@ export function PublicationManagePage() {
           setError("Draft saved, but the manuscript file could not be uploaded. Try again from the submission form.");
           setSubmitReviewOpen(false);
           queryClient.invalidateQueries({ queryKey: ["publications"] });
-          navigate(`/dashboard/publications/${data.id}`);
+          navigate(buildDashboardPublicationPath(data.id, data.encoded_id));
           return;
         }
         setPendingDocument(null);
@@ -479,19 +486,22 @@ export function PublicationManagePage() {
 
       if (options?.thenSubmit) {
         try {
-          await api.post(`/publications/${data.id}/submit_review/`, {
-            author_declaration: true,
-          });
+          await api.post(
+            `/publications/${publicationApiSegment(data.id, data.encoded_id)}/submit_review/`,
+            {
+              author_declaration: true,
+            }
+          );
           setSubmitReviewOpen(false);
           navigate("/dashboard/publications?status=1");
         } catch (err: unknown) {
           const e = err as { response?: { data?: { detail?: string } } };
           setError(e.response?.data?.detail || "Saved, but could not submit for review.");
           setSubmitReviewOpen(false);
-          navigate(`/dashboard/publications/${data.id}`);
+          navigate(buildDashboardPublicationPath(data.id, data.encoded_id));
         }
       } else {
-        navigate(`/dashboard/publications/${data.id}`);
+        navigate(buildDashboardPublicationPath(data.id, data.encoded_id));
       }
     },
     onError: (err: { response?: { data?: Record<string, unknown> } }) => {
@@ -516,7 +526,8 @@ export function PublicationManagePage() {
   });
 
   const acceptMutation = useMutation({
-    mutationFn: () => api.post(`/publications/${id}/accept/`),
+    mutationFn: () =>
+      api.post(`/publications/${publicationApiSegment(id!, pub?.encoded_id)}/accept/`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["publication-edit", id] });
       queryClient.invalidateQueries({ queryKey: ["publications"] });
@@ -524,7 +535,10 @@ export function PublicationManagePage() {
   });
 
   const commentMutation = useMutation({
-    mutationFn: () => api.post(`/publications/${id}/admin_comment/`, { comment: adminNote.trim() }),
+    mutationFn: () =>
+      api.post(`/publications/${publicationApiSegment(id!, pub?.encoded_id)}/admin_comment/`, {
+        comment: adminNote.trim(),
+      }),
     onSuccess: () => {
       setAdminNote("");
       queryClient.invalidateQueries({ queryKey: ["publication-edit", id] });
@@ -532,7 +546,8 @@ export function PublicationManagePage() {
   });
 
   const hideMutation = useMutation({
-    mutationFn: () => api.post(`/publications/${id}/archive/`),
+    mutationFn: () =>
+      api.post(`/publications/${publicationApiSegment(id!, pub?.encoded_id)}/archive/`),
     onSuccess: () => navigate("/dashboard/publications?status=4"),
   });
 

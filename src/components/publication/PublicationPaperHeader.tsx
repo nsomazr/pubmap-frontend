@@ -59,7 +59,7 @@ function PlatformNameBadge() {
       <span className="text-[11px] font-bold uppercase leading-tight tracking-[0.12em] sm:text-[15px] sm:tracking-[0.14em]">
         Global Research Exchange
       </span>
-      <span className="mt-1.5 grid w-full grid-cols-[minmax(1.75rem,1fr)_auto_minmax(1.75rem,1fr)] items-center gap-2 text-[9px] font-medium leading-tight tracking-[0.02em] text-slate-50 sm:mt-2 sm:gap-3 sm:text-[11px] sm:tracking-[0.03em]">
+      <span className="mt-1.5 hidden min-[400px]:grid w-full grid-cols-[minmax(1.75rem,1fr)_auto_minmax(1.75rem,1fr)] items-center gap-2 text-[9px] font-medium leading-tight tracking-[0.02em] text-slate-50 sm:mt-2 sm:gap-3 sm:text-[11px] sm:tracking-[0.03em]">
         <span className="block h-px w-full bg-white/80" />
         <span className="text-center">sharing research, connecting experts, advancing discovery</span>
         <span className="block h-px w-full bg-white/80" />
@@ -205,14 +205,14 @@ export function PublicationPaperHeader({
 
   return (
     <header className="publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="grid grid-cols-[4.25rem_minmax(0,1fr)_4.25rem] items-center gap-3 border-b border-slate-100 bg-white px-3 py-4 sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] sm:px-7">
-        <div className="justify-self-start">
+      <div className="flex flex-col items-center gap-4 border-b border-slate-100 bg-white px-3 py-4 sm:grid sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] sm:items-center sm:gap-3 sm:px-7">
+        <div className="sm:justify-self-start">
           <GreBrandBlock draft={draft} accessType={accessType} />
         </div>
-        <div className="flex min-w-0 items-center justify-center">
+        <div className="flex w-full min-w-0 items-center justify-center sm:w-auto">
           <PlatformNameBadge />
         </div>
-        <div className="justify-self-end">
+        <div className="sm:justify-self-end">
           <CategoryTopBadge visual={subVisual} name={subCategoryName || subVisual?.name} />
         </div>
       </div>

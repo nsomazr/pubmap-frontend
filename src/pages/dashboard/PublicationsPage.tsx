@@ -8,6 +8,7 @@ import { Pagination } from "../../components/ui/Pagination";
 import { useAuth } from "../../context/AuthContext";
 import { usePageParam } from "../../hooks/usePageParam";
 import api from "../../lib/api";
+import { buildDashboardPublicationPath } from "../../lib/publicationPaths";
 import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../../lib/pagination";
 import { canAccessReviewQueue, isPlatformAdmin } from "../../lib/userAccess";
 import type { Publication } from "../../types";
@@ -70,11 +71,14 @@ function publicationHref(
   options: { reviewPending: boolean; needsClaim: boolean }
 ) {
   const { reviewPending, needsClaim } = options;
-  if (reviewPending) return `/dashboard/review?pub=${pub.id}`;
-  if (pub.status === 3) return `/dashboard/publications/${pub.id}/reader`;
-  if (needsClaim) return `/dashboard/publications/${pub.id}?focus=claims`;
-  if (pub.status === 2) return `/dashboard/publications/${pub.id}?focus=feedback`;
-  return `/dashboard/publications/${pub.id}`;
+  if (reviewPending) {
+    const ref = pub.encoded_id?.trim() || String(pub.id);
+    return `/dashboard/review?pub=${encodeURIComponent(ref)}`;
+  }
+  if (pub.status === 3) return buildDashboardPublicationPath(pub.id, pub.encoded_id, { suffix: "reader" });
+  if (needsClaim) return buildDashboardPublicationPath(pub.id, pub.encoded_id, { query: "focus=claims" });
+  if (pub.status === 2) return buildDashboardPublicationPath(pub.id, pub.encoded_id, { query: "focus=feedback" });
+  return buildDashboardPublicationPath(pub.id, pub.encoded_id);
 }
 
 export function PublicationsPage() {

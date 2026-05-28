@@ -31,7 +31,11 @@ export function PageHeader({ title, description, action, className = "", variant
               <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-white/75">{description}</p>
             )}
           </div>
-          {action && <div className="relative shrink-0">{action}</div>}
+          {action && (
+            <div className="relative flex w-full min-w-0 flex-wrap gap-2 sm:w-auto sm:shrink-0">
+              {action}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -45,7 +49,11 @@ export function PageHeader({ title, description, action, className = "", variant
           <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-500">{description}</p>
         )}
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      {action && (
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
+          {action}
+        </div>
+      )}
     </div>
   );
 }

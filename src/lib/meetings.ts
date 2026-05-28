@@ -1,4 +1,5 @@
 import api, { parseApiError } from "./api";
+import { meetingApiSegment } from "./meetingPaths";
 import { unwrapPaginated, type Paginated } from "./pagination";
 import type {
   MeetChatMessage,
@@ -80,9 +81,14 @@ export function formatMeetingScheduleLines(date?: string | null, timeZone?: stri
   }
 }
 
-export function formatMeetingId(id?: number | null) {
-  if (!id) return "";
-  return `GRE-MEET-${String(id).padStart(6, "0")}`;
+export function formatMeetingId(
+  meeting?: Pick<MeetSession, "id" | "encoded_id"> | number | null
+) {
+  if (meeting == null) return "";
+  if (typeof meeting === "object") {
+    return meeting.encoded_id?.trim() || (meeting.id ? String(meeting.id) : "");
+  }
+  return String(meeting);
 }
 
 export async function fetchMeetings(params?: Record<string, string | number | undefined>) {
@@ -91,7 +97,7 @@ export async function fetchMeetings(params?: Record<string, string | number | un
 }
 
 export async function fetchMeeting(id: string | number) {
-  const { data } = await api.get<MeetSession>(`/meetings/${id}/`);
+  const { data } = await api.get<MeetSession>(`/meetings/${meetingApiSegment(id)}/`);
   return data;
 }
 
@@ -100,29 +106,29 @@ export async function fetchMeetingBySlug(slug: string) {
   return data;
 }
 
-export async function joinMeetingRoom(id: number) {
-  const { data } = await api.post<MeetRoomJoinResponse>(`/meetings/${id}/join-token/`);
+export async function joinMeetingRoom(id: string | number) {
+  const { data } = await api.post<MeetRoomJoinResponse>(`/meetings/${meetingApiSegment(id)}/join-token/`);
   return data;
 }
 
-export async function fetchMeetingParticipants(id: number) {
-  const { data } = await api.get<MeetParticipant[]>(`/meetings/${id}/participants/`);
+export async function fetchMeetingParticipants(id: string | number) {
+  const { data } = await api.get<MeetParticipant[]>(`/meetings/${meetingApiSegment(id)}/participants/`);
   return data;
 }
 
 export async function inviteMeetingByEmail(
-  meetingId: number,
+  meetingId: string | number,
   payload: { email: string; message?: string; role?: "speaker" | "participant" }
 ) {
   const { data } = await api.post<{ detail: string; email: string; user_found: boolean }>(
-    `/meetings/${meetingId}/invite-email/`,
+    `/meetings/${meetingApiSegment(meetingId)}/invite-email/`,
     payload
   );
   return data;
 }
 
 export async function inviteMeetingByEmailBulk(
-  meetingId: number,
+  meetingId: string | number,
   payload: { emails: string[]; message?: string; role?: "speaker" | "participant" }
 ) {
   const uniqueEmails = Array.from(
@@ -147,7 +153,7 @@ export async function inviteMeetingByEmailBulk(
 }
 
 export async function inviteMeetingFieldMembers(
-  meetingId: number,
+  meetingId: string | number,
   payload?: { message?: string; role?: "speaker" | "participant"; limit?: number }
 ) {
   const { data } = await api.post<{
@@ -155,32 +161,32 @@ export async function inviteMeetingFieldMembers(
     invited_count: number;
     already_invited_count: number;
     subfield?: string | null;
-  }>(`/meetings/${meetingId}/invite-field-members/`, payload || {});
+  }>(`/meetings/${meetingApiSegment(meetingId)}/invite-field-members/`, payload || {});
   return data;
 }
 
 export async function respondMeetingInvite(
-  meetingId: number,
+  meetingId: string | number,
   response: "accept" | "decline"
 ) {
   const { data } = await api.post<{ detail: string; invite_status: MeetInviteStatus; calendar_url?: string }>(
-    `/meetings/${meetingId}/respond-invite/`,
+    `/meetings/${meetingApiSegment(meetingId)}/respond-invite/`,
     { response }
   );
   return data;
 }
 
-export function meetingCalendarDownloadUrl(meetingId: number) {
-  return `${api.defaults.baseURL}/meetings/${meetingId}/calendar/`;
+export function meetingCalendarDownloadUrl(meetingId: string | number) {
+  return `${api.defaults.baseURL}/meetings/${meetingApiSegment(meetingId)}/calendar/`;
 }
 
-export async function fetchMeetingChat(id: number) {
-  const { data } = await api.get<MeetChatMessage[]>(`/meetings/${id}/chat/`);
+export async function fetchMeetingChat(id: string | number) {
+  const { data } = await api.get<MeetChatMessage[]>(`/meetings/${meetingApiSegment(id)}/chat/`);
   return data;
 }
 
 export async function shareMeetingMinutes(
-  meetingId: number,
+  meetingId: string | number,
   payload: { report: string; include_attendees?: boolean; emails?: string[] }
 ) {
   const { data } = await api.post<{
@@ -188,7 +194,7 @@ export async function shareMeetingMinutes(
     sent: number;
     failed: number;
     extra_emails_added: number;
-  }>(`/meetings/${meetingId}/share-minutes/`, payload);
+  }>(`/meetings/${meetingApiSegment(meetingId)}/share-minutes/`, payload);
   return data;
 }
 

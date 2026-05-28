@@ -1,4 +1,4 @@
-import { Bot, FileText, Info, LayoutGrid, X } from "lucide-react";
+import { Bot, FileText, Info, LayoutGrid, Users, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../ui/Button";
 
@@ -18,7 +18,10 @@ const TABS: { id: MeetRoomDrawerTab; label: string; icon: typeof Bot; hostOnly?:
   { id: "info", label: "Meeting", icon: Info },
   { id: "assistant", label: "Assistant", icon: Bot },
   { id: "chat", label: "Messages", icon: FileText },
+  { id: "people", label: "People", icon: Users },
 ];
+
+const DRAWER_TRANSITION_MS = 320;
 
 export function MeetRoomToolsDrawer({
   open,
@@ -30,30 +33,73 @@ export function MeetRoomToolsDrawer({
   panels,
 }: Props) {
   const visibleTabs = TABS.filter((item) => !item.hostOnly || canManage);
+  const [mounted, setMounted] = useState(open);
+  const [animating, setAnimating] = useState(open);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const frame = requestAnimationFrame(() => setAnimating(true));
+      return () => cancelAnimationFrame(frame);
+    }
+    setAnimating(false);
+    const timer = window.setTimeout(() => setMounted(false), DRAWER_TRANSITION_MS);
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const previous = document.body.style.overflow;
+    if (open) document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open, mounted]);
+
+  useEffect(() => {
+    if (!open || !mounted) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, mounted, onClose]);
+
+  if (!mounted) return null;
 
   return (
     <div
       className="fixed inset-0 z-[2147483646] flex justify-end pointer-events-auto"
       style={{ zIndex: 2147483647 }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Meeting controls"
     >
       <button
         type="button"
-        className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+        className={`absolute inset-0 bg-slate-900/20 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${
+          animating ? "opacity-100" : "opacity-0"
+        }`}
         aria-label="Close meeting controls"
         onClick={onClose}
       />
-      <aside className="relative flex h-full w-full max-w-md flex-col border-l border-slate-800 bg-slate-950 text-slate-100 shadow-2xl sm:max-w-lg">
-        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
-          <div>
-            <h2 className="truncate text-xl font-semibold text-slate-100">
+      <aside
+        className={`relative flex h-full w-full max-w-md flex-col border-l border-slate-200/90 bg-white text-ink shadow-[-12px_0_40px_-12px_rgba(15,23,42,0.12)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:max-w-lg ${
+          animating ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3.5 sm:px-5">
+          <div className="min-w-0 border-l-[3px] border-brand-500 pl-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              Meeting controls
+            </p>
+            <h2 className="truncate text-lg font-semibold text-ink">
               {meetingTitle || "GRE Meet"}
             </h2>
           </div>
           <Button
             variant="ghost"
-            className="px-2 !bg-slate-900 !text-slate-300 hover:!bg-slate-800 hover:!text-white"
+            className="shrink-0 px-2 text-slate-500 hover:bg-slate-100 hover:text-ink"
             onClick={onClose}
             aria-label="Close panel"
           >
@@ -61,7 +107,7 @@ export function MeetRoomToolsDrawer({
           </Button>
         </div>
 
-        <div className="flex gap-1 overflow-x-auto border-b border-slate-800 px-3 py-2">
+        <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-slate-100 px-3 py-2.5 sm:px-4">
           {visibleTabs.map((item) => {
             const Icon = item.icon;
             const active = tab === item.id;
@@ -70,10 +116,10 @@ export function MeetRoomToolsDrawer({
                 key={item.id}
                 type="button"
                 onClick={() => onTabChange(item.id)}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 ease-out ${
                   active
-                    ? "bg-brand-600 text-white"
-                    : "bg-slate-900 text-slate-300 hover:bg-slate-800"
+                    ? "bg-brand-600 text-white shadow-sm shadow-brand-600/20"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-ink"
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -83,7 +129,9 @@ export function MeetRoomToolsDrawer({
           })}
         </div>
 
-        <div className="flex-1 min-h-0 p-4">{panels[tab]}</div>
+        <div className="meet-drawer-panel flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 sm:p-5">
+          {panels[tab]}
+        </div>
       </aside>
     </div>
   );
@@ -207,10 +255,15 @@ export function MeetRoomControlsFab({
             dragStateRef.current = null;
             setIsDragging(false);
           }}
-          className={`pointer-events-auto inline-flex h-10 items-center gap-2 rounded-full border border-slate-700 bg-slate-900/95 px-4 text-sm font-semibold text-slate-100 shadow-[0_8px_24px_rgba(2,6,23,0.45)] select-none touch-none ${isDragging ? "cursor-grabbing" : "cursor-grab transition hover:border-slate-600 hover:bg-slate-800"}`}
+          className={`pointer-events-auto inline-flex h-10 min-h-11 items-center gap-2 rounded-full border border-slate-200/90 bg-white/95 px-3 text-sm font-semibold text-slate-700 shadow-[0_8px_28px_-6px_rgba(15,23,42,0.14)] backdrop-blur-sm select-none touch-none sm:px-4 ${
+            isDragging
+              ? "cursor-grabbing scale-[0.98] ring-2 ring-brand-200/80"
+              : "cursor-grab transition-all duration-200 ease-out hover:border-brand-200 hover:bg-brand-50/40 hover:text-brand-800 hover:shadow-[0_10px_32px_-6px_rgba(59,91,219,0.2)]"
+          }`}
         >
-          <LayoutGrid className="h-4 w-4" />
-          {label}
+          <LayoutGrid className="h-4 w-4 shrink-0 text-brand-600" />
+          <span className="sm:hidden">Menu</span>
+          <span className="hidden sm:inline">{label}</span>
         </button>
       </div>
     </div>

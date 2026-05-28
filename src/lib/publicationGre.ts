@@ -1,6 +1,7 @@
 import api from "./api";
 
 import { resolveApiBaseUrl } from "./apiBaseUrl";
+import { publicationApiSegment } from "./publicationPaths";
 
 export type PublicationAccessType = "open" | "closed";
 
@@ -32,81 +33,112 @@ export interface GreDocument {
   external_url?: string;
 }
 
+type PublicationIdRef = number | string;
+
+function pubSeg(publicationId: PublicationIdRef, encodedId?: string | null) {
+  return publicationApiSegment(publicationId, encodedId);
+}
+
 export async function updatePublicationGre(
-  publicationId: number,
-  payload: Partial<PublicationGre>
+  publicationId: PublicationIdRef,
+  payload: Partial<PublicationGre>,
+  encodedId?: string | null
 ): Promise<PublicationGre> {
-  const { data } = await api.patch<PublicationGre>(`/publications/${publicationId}/gre/`, payload);
+  const { data } = await api.patch<PublicationGre>(
+    `/publications/${pubSeg(publicationId, encodedId)}/gre/`,
+    payload
+  );
   return data;
 }
 
 export async function uploadFigure(
-  publicationId: number,
+  publicationId: PublicationIdRef,
   file: File,
-  meta: { caption?: string; title?: string; figure_number?: string }
+  meta: { caption?: string; title?: string; figure_number?: string },
+  encodedId?: string | null
 ) {
   const form = new FormData();
   form.append("photo", file);
   if (meta.caption) form.append("caption", meta.caption);
   if (meta.title) form.append("title", meta.title);
   if (meta.figure_number) form.append("figure_number", meta.figure_number);
-  const { data } = await api.post(`/publications/${publicationId}/upload_figure/`, form);
+  const { data } = await api.post(
+    `/publications/${pubSeg(publicationId, encodedId)}/upload_figure/`,
+    form
+  );
   return data;
 }
 
-export async function deleteFigure(publicationId: number, figureId: number) {
-  await api.delete(`/publications/${publicationId}/figures/${figureId}/`);
+export async function deleteFigure(
+  publicationId: PublicationIdRef,
+  figureId: number,
+  encodedId?: string | null
+) {
+  await api.delete(`/publications/${pubSeg(publicationId, encodedId)}/figures/${figureId}/`);
 }
 
 export async function updateFigure(
-  publicationId: number,
+  publicationId: PublicationIdRef,
   figureId: number,
-  meta: { caption?: string; title?: string; figure_number?: string }
+  meta: { caption?: string; title?: string; figure_number?: string },
+  encodedId?: string | null
 ): Promise<PublicationFigure> {
   const { data } = await api.patch<PublicationFigure>(
-    `/publications/${publicationId}/figures/${figureId}/`,
+    `/publications/${pubSeg(publicationId, encodedId)}/figures/${figureId}/`,
     meta
   );
   return data;
 }
 
 export async function uploadSupplementaryDocument(
-  publicationId: number,
+  publicationId: PublicationIdRef,
   file: File,
-  label?: string
+  label?: string,
+  encodedId?: string | null
 ): Promise<GreDocument> {
   const form = new FormData();
   form.append("document", file);
   form.append("kind", "supplementary");
   if (label?.trim()) form.append("label", label.trim());
   const { data } = await api.post<GreDocument>(
-    `/publications/${publicationId}/upload_document/`,
+    `/publications/${pubSeg(publicationId, encodedId)}/upload_document/`,
     form,
     { headers: { "Content-Type": "multipart/form-data" } }
   );
   return data;
 }
 
-export async function deletePublicationDocument(publicationId: number, documentId: number) {
-  await api.delete(`/publications/${publicationId}/documents/${documentId}/`);
+export async function deletePublicationDocument(
+  publicationId: PublicationIdRef,
+  documentId: number,
+  encodedId?: string | null
+) {
+  await api.delete(
+    `/publications/${pubSeg(publicationId, encodedId)}/documents/${documentId}/`
+  );
 }
 
-export function reviewManuscriptPdfUrl(publicationId: number, inline = true) {
+export function reviewManuscriptPdfUrl(
+  publicationId: PublicationIdRef,
+  inline = true,
+  encodedId?: string | null
+) {
   const base = resolveApiBaseUrl().replace(/\/$/, "");
   const params = inline ? "?inline=1" : "";
-  return `${base}/publications/${publicationId}/review-manuscript/${params}`;
+  return `${base}/publications/${pubSeg(publicationId, encodedId)}/review-manuscript/${params}`;
 }
 
 export function summaryPdfUrl(
-  publicationId: number,
-  options: { discussions?: boolean; inline?: boolean } = {}
+  publicationId: PublicationIdRef,
+  options: { discussions?: boolean; inline?: boolean; encodedId?: string | null } = {}
 ) {
   const base = resolveApiBaseUrl().replace(/\/$/, "");
   const params = new URLSearchParams();
   if (options.discussions) params.set("discussions", "1");
   if (options.inline) params.set("inline", "1");
   const query = params.toString();
-  return `${base}/publications/${publicationId}/summary-pdf/${query ? `?${query}` : ""}`;
+  const seg = pubSeg(publicationId, options.encodedId);
+  return `${base}/publications/${seg}/summary-pdf/${query ? `?${query}` : ""}`;
 }
 
 export function greDoiDisplayPath(greDoi: string) {
