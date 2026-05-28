@@ -45,6 +45,7 @@ import {
   formatMeetingDate,
   formatMeetingId,
   inviteMeetingByEmail,
+  inviteMeetingFieldMembers,
   joinMeetingRoom,
 } from "../lib/meetings";
 import type { MeetChatMessage, MeetSession } from "../types";
@@ -182,6 +183,7 @@ export function MeetRoomPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [pipOpening, setPipOpening] = useState(false);
   const [inviteSending, setInviteSending] = useState(false);
+  const [fieldInviteSending, setFieldInviteSending] = useState(false);
   const assistantCaptureUnavailableRef = useRef(false);
 
   const { data: meeting, isLoading } = useQuery({
@@ -605,6 +607,29 @@ export function MeetRoomPage() {
     }
   };
 
+  const inviteFieldMembers = async () => {
+    if (!meetingId) return;
+    setFieldInviteSending(true);
+    try {
+      const result = await inviteMeetingFieldMembers(meetingId, {});
+      toast.success({
+        title: "Field members notified",
+        description: `${result.invited_count} members received an email invite${
+          result.already_invited_count > 0 ? ` (${result.already_invited_count} already invited).` : "."
+        }`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
+    } catch (error) {
+      toast.error({
+        title: "Could not notify field members",
+        description: parseApiError(error, "Could not send invitations to matching members."),
+      });
+    } finally {
+      setFieldInviteSending(false);
+    }
+  };
+
   const canJoinMeeting =
     meeting?.can_join !== false &&
     (meeting?.status === "scheduled" || meeting?.status === "live");
@@ -981,11 +1006,6 @@ export function MeetRoomPage() {
               {roomError}
             </div>
           )}
-          <div className="absolute inset-x-4 bottom-4 rounded-lg bg-slate-900/85 px-3 py-2 text-xs text-slate-200">
-            boot:{roomDebug.bootRuns} script:{roomDebug.scriptLoaded ? "ok" : "no"} api:
-            {roomDebug.apiConstructed ? "ok" : "no"} joined:{roomDebug.joinedEvent ? "yes" : "no"}
-            {roomDebug.lastError ? ` | error: ${roomDebug.lastError}` : ""}
-          </div>
         </div>
       )}
 
@@ -1260,6 +1280,15 @@ export function MeetRoomPage() {
                           Send invite
                         </Button>
                       </form>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="mt-2 h-9 w-full"
+                        loading={fieldInviteSending}
+                        onClick={() => void inviteFieldMembers()}
+                      >
+                        Invite matching field/subfield members
+                      </Button>
                     </div>
                   )}
                   {canManage && (

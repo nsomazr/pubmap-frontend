@@ -506,6 +506,7 @@ export interface MeetSession {
   gre_assistant_enabled?: boolean;
   participant_count?: number;
   participant_role?: MeetParticipantRole | null;
+  participant_invite_status?: MeetInviteStatus | null;
   can_manage?: boolean;
   can_join?: boolean;
   meeting_link?: string;

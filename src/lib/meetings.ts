@@ -1,6 +1,7 @@
 import api, { parseApiError } from "./api";
 import type {
   MeetChatMessage,
+  MeetInviteStatus,
   MeetParticipant,
   MeetRoomJoinResponse,
   MeetSession,
@@ -70,13 +71,41 @@ export async function fetchMeetingParticipants(id: number) {
 
 export async function inviteMeetingByEmail(
   meetingId: number,
-  payload: { email: string; message?: string }
+  payload: { email: string; message?: string; role?: "speaker" | "participant" }
 ) {
   const { data } = await api.post<{ detail: string; email: string; user_found: boolean }>(
     `/meetings/${meetingId}/invite-email/`,
     payload
   );
   return data;
+}
+
+export async function inviteMeetingFieldMembers(
+  meetingId: number,
+  payload?: { message?: string; role?: "speaker" | "participant"; limit?: number }
+) {
+  const { data } = await api.post<{
+    detail: string;
+    invited_count: number;
+    already_invited_count: number;
+    subfield?: string | null;
+  }>(`/meetings/${meetingId}/invite-field-members/`, payload || {});
+  return data;
+}
+
+export async function respondMeetingInvite(
+  meetingId: number,
+  response: "accept" | "decline"
+) {
+  const { data } = await api.post<{ detail: string; invite_status: MeetInviteStatus; calendar_url?: string }>(
+    `/meetings/${meetingId}/respond-invite/`,
+    { response }
+  );
+  return data;
+}
+
+export function meetingCalendarDownloadUrl(meetingId: number) {
+  return `${api.defaults.baseURL}/meetings/${meetingId}/calendar/`;
 }
 
 export async function fetchMeetingChat(id: number) {

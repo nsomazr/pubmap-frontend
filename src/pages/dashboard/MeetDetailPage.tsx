@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Ban,
+  CalendarPlus,
   Clock3,
   Copy,
   Trash2,
@@ -24,8 +25,10 @@ import {
   fetchMeeting,
   formatMeetingDate,
   formatMeetingId,
+  meetingCalendarDownloadUrl,
   MEETING_TYPE_LABELS,
   MEETING_VISIBILITY_LABELS,
+  respondMeetingInvite,
 } from "../../lib/meetings";
 import { MeetHostToolsPanel } from "../../components/meet/MeetHostToolsPanel";
 import { MeetingGreAssistantPanel } from "../../components/meet/MeetingGreAssistantPanel";
@@ -62,6 +65,24 @@ export function MeetDetailPage() {
       toast.error({
         title: "Could not end meeting",
         description: parseApiError(error, "Could not end the meeting."),
+      });
+    },
+  });
+
+  const respondInvite = useMutation({
+    mutationFn: (response: "accept" | "decline") => respondMeetingInvite(Number(id), response),
+    onSuccess: async (payload) => {
+      await queryClient.invalidateQueries({ queryKey: ["meeting", id] });
+      await queryClient.invalidateQueries({ queryKey: ["meetings"] });
+      toast.success({
+        title: "Invitation updated",
+        description: payload.detail,
+      });
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not update invitation",
+        description: parseApiError(error, "Could not update your invitation response."),
       });
     },
   });
@@ -199,6 +220,32 @@ export function MeetDetailPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {!canManage && meeting.participant_invite_status === "invited" && (
+              <>
+                <Button
+                  variant="secondary"
+                  loading={respondInvite.isPending}
+                  onClick={() => respondInvite.mutate("accept")}
+                >
+                  Accept invite
+                </Button>
+                <Button
+                  variant="ghost"
+                  loading={respondInvite.isPending}
+                  onClick={() => respondInvite.mutate("decline")}
+                >
+                  Decline invite
+                </Button>
+              </>
+            )}
+            {!canManage && meeting.participant_invite_status === "accepted" && (
+              <a href={meetingCalendarDownloadUrl(meeting.id)}>
+                <Button variant="secondary">
+                  <CalendarPlus className="h-4 w-4" />
+                  Add to calendar
+                </Button>
+              </a>
+            )}
             {meeting.can_join && meeting.status !== "ended" && meeting.status !== "cancelled" && (
               <Link to={`/meet/${meeting.join_slug}`}>
                 <Button>
