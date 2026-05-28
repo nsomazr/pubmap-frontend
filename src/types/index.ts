@@ -490,6 +490,7 @@ export interface MeetSession {
   host_id: number;
   host?: User;
   scheduled_at: string;
+  scheduled_timezone?: string;
   started_at?: string | null;
   ended_at?: string | null;
   join_slug: string;

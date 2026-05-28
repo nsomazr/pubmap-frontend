@@ -99,14 +99,36 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
             </div>
           ))}
           {askMutation.isPending && (
-            <div className="flex items-center gap-2 text-sm text-slate-400">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Thinking…
+            <div className="flex justify-start">
+              <div className="max-w-[88%] rounded-2xl rounded-bl-md bg-slate-800 px-3 py-2 text-sm text-slate-100">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  GRE Assistant
+                </p>
+                <div className="mt-1 flex items-center gap-2 text-slate-300">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Thinking...
+                </div>
+              </div>
             </div>
           )}
           </>
         ) : (
-          <p className="text-sm text-slate-400">Ask anything about this meeting. The assistant replies here.</p>
+          <>
+            <p className="text-sm text-slate-400">Ask anything about this meeting. The assistant replies here.</p>
+            {askMutation.isPending && (
+              <div className="flex justify-start">
+                <div className="max-w-[88%] rounded-2xl rounded-bl-md bg-slate-800 px-3 py-2 text-sm text-slate-100">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    GRE Assistant
+                  </p>
+                  <div className="mt-1 flex items-center gap-2 text-slate-300">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Thinking...
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

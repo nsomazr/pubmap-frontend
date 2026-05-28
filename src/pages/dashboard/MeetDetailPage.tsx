@@ -23,6 +23,7 @@ import api, { parseApiError } from "../../lib/api";
 import {
   fetchMeeting,
   formatMeetingDate,
+  formatMeetingDateInTimezone,
   formatMeetingId,
   meetingCalendarDownloadUrl,
   MEETING_TYPE_LABELS,
@@ -106,6 +107,7 @@ export function MeetDetailPage() {
 
   const canManage = !!meeting?.can_manage;
   const isHost = meeting?.host_id === user?.id;
+  const viewerTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
   const copyLink = async () => {
     if (!meeting?.meeting_link) return;
@@ -177,6 +179,13 @@ export function MeetDetailPage() {
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Scheduled</p>
               <p className="mt-2 text-sm font-semibold text-ink">{formatMeetingDate(meeting.scheduled_at)}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Your time ({viewerTimezone}): {formatMeetingDateInTimezone(meeting.scheduled_at, viewerTimezone)}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Organizer time ({meeting.scheduled_timezone || "UTC"}):{" "}
+                {formatMeetingDateInTimezone(meeting.scheduled_at, meeting.scheduled_timezone || "UTC")}
+              </p>
             </div>
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Host</p>

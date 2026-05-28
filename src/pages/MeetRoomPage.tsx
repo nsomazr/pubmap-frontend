@@ -1150,6 +1150,35 @@ export function MeetRoomPage() {
                         ) : (
                           <FormattedAssistantText content={copilotOutput} streaming={copilotLoading} />
                         )}
+                        {!!copilotOutput && !copilotLoading && (
+                          <div className="mt-3 flex justify-end">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className="h-8 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800"
+                              onClick={() => {
+                                if (!copilotOutput.trim()) return;
+                                const write = navigator.clipboard?.writeText?.(copilotOutput) ?? Promise.reject();
+                                void write
+                                  .then(() => {
+                                    toast.success({
+                                      title: "Copied",
+                                      description: "Generated content copied to clipboard.",
+                                    });
+                                  })
+                                  .catch(() => {
+                                    toast.error({
+                                      title: "Could not copy",
+                                      description: "Clipboard access is blocked. Copy manually from the panel.",
+                                    });
+                                  });
+                              }}
+                            >
+                              <Copy className="h-4 w-4" />
+                              Copy
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

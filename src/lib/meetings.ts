@@ -39,6 +39,26 @@ export function formatMeetingDate(date?: string | null) {
   }
 }
 
+export function formatMeetingDateInTimezone(date?: string | null, timeZone?: string | null) {
+  if (!date) return "";
+  try {
+    const tz = (timeZone || "").trim() || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const parts = new Intl.DateTimeFormat(undefined, {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: tz,
+      timeZoneName: "short",
+    }).format(new Date(date));
+    return `${parts}${timeZone ? ` (${timeZone})` : ""}`;
+  } catch {
+    return formatMeetingDate(date);
+  }
+}
+
 export function formatMeetingId(id?: number | null) {
   if (!id) return "";
   return `GRE-MEET-${String(id).padStart(6, "0")}`;

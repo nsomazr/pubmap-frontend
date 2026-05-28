@@ -29,6 +29,7 @@ const emptyForm = {
   category_id: "",
   sub_category_id: "",
   scheduled_at: "",
+  scheduled_timezone: "",
   publication_id: "",
   forum_topic_id: "",
 };
@@ -54,6 +55,18 @@ export function MeetManagePage() {
   const [guestInviteRole, setGuestInviteRole] = useState<"participant" | "speaker">("participant");
   const [guestInviteMessage, setGuestInviteMessage] = useState("");
   const [inviteMatchingMembers, setInviteMatchingMembers] = useState(false);
+  const browserTimezone = useMemo(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+    []
+  );
+  const timezoneOptions = useMemo(() => {
+    try {
+      const intlWithZones = Intl as typeof Intl & { supportedValuesOf?: (key: string) => string[] };
+      return intlWithZones.supportedValuesOf?.("timeZone") ?? [browserTimezone];
+    } catch {
+      return [browserTimezone];
+    }
+  }, [browserTimezone]);
 
   const { data: meeting } = useQuery({
     queryKey: ["meeting", id],
@@ -107,10 +120,16 @@ export function MeetManagePage() {
       category_id: meeting.category_id ? String(meeting.category_id) : "",
       sub_category_id: meeting.sub_category_id ? String(meeting.sub_category_id) : "",
       scheduled_at: toLocalInputValue(meeting.scheduled_at),
+      scheduled_timezone: meeting.scheduled_timezone || browserTimezone,
       publication_id: meeting.publication_id ? String(meeting.publication_id) : "",
       forum_topic_id: meeting.forum_topic_id ? String(meeting.forum_topic_id) : "",
     });
-  }, [meeting]);
+  }, [browserTimezone, meeting]);
+
+  useEffect(() => {
+    if (meeting) return;
+    setForm((prev) => (prev.scheduled_timezone ? prev : { ...prev, scheduled_timezone: browserTimezone }));
+  }, [browserTimezone, meeting]);
 
   const subcategories = useMemo(() => {
     const category = categories.find((item) => String(item.id) === form.category_id);
@@ -134,6 +153,7 @@ export function MeetManagePage() {
         visibility: form.visibility,
         sub_category_id: Number(form.sub_category_id),
         scheduled_at: new Date(form.scheduled_at).toISOString(),
+        scheduled_timezone: form.scheduled_timezone || browserTimezone,
         publication_id: form.publication_id ? Number(form.publication_id) : null,
         forum_topic_id: form.forum_topic_id ? Number(form.forum_topic_id) : null,
       };
@@ -315,6 +335,24 @@ export function MeetManagePage() {
             onChange={(e) => setForm((prev) => ({ ...prev, scheduled_at: e.target.value }))}
             required
           />
+          <div className="space-y-1.5">
+            <Input
+              label="Organizer timezone"
+              value={form.scheduled_timezone}
+              onChange={(e) => setForm((prev) => ({ ...prev, scheduled_timezone: e.target.value }))}
+              list="meet-timezone-options"
+              placeholder="Africa/Dar_es_Salaam"
+              required
+            />
+            <p className="text-xs text-slate-500">
+              Stored as UTC and shown to everyone in their local timezone. Your current timezone: {browserTimezone}
+            </p>
+            <datalist id="meet-timezone-options">
+              {timezoneOptions.map((tz: string) => (
+                <option key={tz} value={tz} />
+              ))}
+            </datalist>
+          </div>
           <Select
             label="Meeting type"
             value={form.meeting_type}
@@ -467,7 +505,7 @@ export function MeetManagePage() {
           </Button>
           {!isNew && meeting && (
             <p className="flex items-center text-sm text-slate-500">
-              Current schedule: {formatMeetingDate(meeting.scheduled_at)}
+              Current schedule: {formatMeetingDate(meeting.scheduled_at)} ({meeting.scheduled_timezone || browserTimezone})
             </p>
           )}
           {!isNew && meeting && form.visibility === "invite_only" && (

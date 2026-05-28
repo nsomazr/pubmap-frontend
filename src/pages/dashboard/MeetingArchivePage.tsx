@@ -10,7 +10,13 @@ import { useToast } from "../../components/ui/ToastProvider";
 import api, { parseApiError } from "../../lib/api";
 import { MeetingGreAssistantPanel } from "../../components/meet/MeetingGreAssistantPanel";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
-import { fetchMeeting, formatMeetingDate, formatMeetingId, shareMeetingMinutes } from "../../lib/meetings";
+import {
+  fetchMeeting,
+  formatMeetingDate,
+  formatMeetingDateInTimezone,
+  formatMeetingId,
+  shareMeetingMinutes,
+} from "../../lib/meetings";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 
 function formatMessageTime(value?: string | null) {
@@ -116,6 +122,7 @@ export function MeetingArchivePage() {
   const archiveId = formatMeetingId(meeting.id);
   const messageCount = meeting.chat_messages?.length ?? 0;
   const participantCount = meeting.participants?.length ?? meeting.participant_count ?? 0;
+  const viewerTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
   const downloadSummary = () => {
     const parts = [
@@ -213,6 +220,13 @@ export function MeetingArchivePage() {
                 </p>
                 <p className="mt-2 text-sm font-semibold text-ink">
                   {formatMeetingDate(meeting.scheduled_at)}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Your time ({viewerTimezone}): {formatMeetingDateInTimezone(meeting.scheduled_at, viewerTimezone)}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Organizer time ({meeting.scheduled_timezone || "UTC"}):{" "}
+                  {formatMeetingDateInTimezone(meeting.scheduled_at, meeting.scheduled_timezone || "UTC")}
                 </p>
               </div>
               <div className="rounded-2xl bg-slate-50 p-4">
