@@ -978,14 +978,14 @@ export function MeetRoomPage() {
 
       {!drawerOpen && <MeetRoomControlsFab onClick={() => setDrawerOpen(true)} />}
       <div
-        className="pointer-events-none fixed bottom-3 left-3 z-[2147483645] sm:bottom-4 sm:left-4"
+        className="pointer-events-none fixed bottom-3 left-5 z-[2147483645] sm:bottom-4 sm:left-6"
         style={{ zIndex: 2147483647 }}
       >
         <BrandMark
-          symbol="icon"
-          variant="float"
-          size="md"
-          className="border border-slate-700 bg-slate-900/95 p-2 ring-0"
+          symbol="full"
+          variant="plain"
+          size="sm"
+          className="rounded-2xl border border-slate-700 bg-slate-900/95 px-2.5 py-1.5"
           title="GRE"
         />
       </div>
