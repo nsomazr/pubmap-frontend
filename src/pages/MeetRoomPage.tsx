@@ -172,6 +172,13 @@ export function MeetRoomPage() {
   const [waitingGuests, setWaitingGuests] = useState<
     { id: string; displayName: string; email?: string }[]
   >([]);
+  const [roomDebug, setRoomDebug] = useState({
+    bootRuns: 0,
+    scriptLoaded: false,
+    apiConstructed: false,
+    joinedEvent: false,
+    lastError: "",
+  });
   const [inviteEmail, setInviteEmail] = useState("");
   const [embedTimedOut, setEmbedTimedOut] = useState(false);
   const [pipOpening, setPipOpening] = useState(false);
@@ -252,6 +259,7 @@ export function MeetRoomPage() {
       setNotesError(parseApiError(error, "Could not save meeting notes."));
     },
   });
+  const saveNotesMutation = saveNotes.mutate;
 
   const startMeeting = useMutation({
     mutationFn: () => api.post(`/meetings/${meetingId}/start/`),
@@ -325,6 +333,7 @@ export function MeetRoomPage() {
       });
     },
   });
+  const syncRecordingMutation = syncRecordingState.mutate;
 
   const canManage = !!activeMeeting?.can_manage;
   const isLive = activeMeeting?.status === "live";
@@ -345,10 +354,18 @@ export function MeetRoomPage() {
     }
     setNotesState("dirty");
     const timer = window.setTimeout(() => {
-      saveNotes.mutate(notes);
+      saveNotesMutation(notes);
     }, 900);
     return () => window.clearTimeout(timer);
-  }, [activeMeeting?.host_notes, activeMeeting?.id, canManage, meetingId, notes, notesSeedMeetingId, saveNotes]);
+  }, [
+    activeMeeting?.host_notes,
+    activeMeeting?.id,
+    canManage,
+    meetingId,
+    notes,
+    notesSeedMeetingId,
+    saveNotesMutation,
+  ]);
 
   useEffect(() => {
     const joinData = joinMutation.data;
@@ -365,7 +382,16 @@ export function MeetRoomPage() {
     const boot = async () => {
       setRoomError("");
       setJitsiReady(false);
+      setRoomDebug((prev) => ({
+        ...prev,
+        bootRuns: prev.bootRuns + 1,
+        scriptLoaded: false,
+        apiConstructed: false,
+        joinedEvent: false,
+        lastError: "",
+      }));
       await loadJitsiExternalApi(joinData.server_url);
+      setRoomDebug((prev) => ({ ...prev, scriptLoaded: true }));
       if (cancelled || !roomContainerRef.current || !window.JitsiMeetExternalAPI) return;
 
       const domain = new URL(joinData.server_url).host;
@@ -384,6 +410,7 @@ export function MeetRoomPage() {
         },
         configOverwrite: buildJitsiConfigOverwrite(meetHostSettingsFromSession(activeMeeting)),
       });
+      setRoomDebug((prev) => ({ ...prev, apiConstructed: true }));
       jitsiApiRef.current = apiInstance;
       setIsModerator(canManage);
       refreshParticipants();
@@ -391,6 +418,7 @@ export function MeetRoomPage() {
       const onJoined = () => {
         setJitsiReady(true);
         setEmbedTimedOut(false);
+        setRoomDebug((prev) => ({ ...prev, joinedEvent: true, lastError: "" }));
         refreshParticipants();
       };
       const onParticipantJoined = () => refreshParticipants();
@@ -400,7 +428,7 @@ export function MeetRoomPage() {
         refreshParticipants();
       };
       const onRecordingChanged = (payload: { on?: boolean; error?: string }) => {
-        syncRecordingState.mutate({
+        syncRecordingMutation({
           state: payload?.error ? "failed" : payload?.on ? "recording" : "ready",
           error: payload?.error || "",
         });
@@ -445,7 +473,9 @@ export function MeetRoomPage() {
     };
 
     boot().catch((error) => {
-      setRoomError(error instanceof Error ? error.message : "Could not load the Jitsi meeting room.");
+      const message = error instanceof Error ? error.message : "Could not load the Jitsi meeting room.";
+      setRoomError(message);
+      setRoomDebug((prev) => ({ ...prev, lastError: message }));
     });
 
     return () => {
@@ -469,7 +499,7 @@ export function MeetRoomPage() {
     queryClient,
     roomRetryKey,
     slug,
-    syncRecordingState,
+    syncRecordingMutation,
     user,
   ]);
 
@@ -962,6 +992,11 @@ export function MeetRoomPage() {
               {roomError}
             </div>
           )}
+          <div className="absolute inset-x-4 bottom-4 rounded-lg bg-slate-900/85 px-3 py-2 text-xs text-slate-200">
+            boot:{roomDebug.bootRuns} script:{roomDebug.scriptLoaded ? "ok" : "no"} api:
+            {roomDebug.apiConstructed ? "ok" : "no"} joined:{roomDebug.joinedEvent ? "yes" : "no"}
+            {roomDebug.lastError ? ` | error: ${roomDebug.lastError}` : ""}
+          </div>
         </div>
       )}
 
