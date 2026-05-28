@@ -23,6 +23,12 @@ import {
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
+import {
+  GrePremiumHero,
+  GrePremiumPill,
+  greBtnOnDarkPrimary,
+  greBtnOnDarkSecondary,
+} from "../../components/ui/GrePremiumHero";
 import { Button } from "../../components/ui/Button";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { useToast } from "../../components/ui/ToastProvider";
@@ -38,6 +44,7 @@ import {
   MEETING_VISIBILITY_LABELS,
   respondMeetingInvite,
 } from "../../lib/meetings";
+import { greGradientCta } from "../../lib/greTheme";
 import { MeetHostToolsPanel } from "../../components/meet/MeetHostToolsPanel";
 import { MeetingGreAssistantPanel } from "../../components/meet/MeetingGreAssistantPanel";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
@@ -147,19 +154,11 @@ export function MeetDetailPage() {
     `${meeting.host?.firstname ?? ""} ${meeting.host?.lastname ?? ""}`.trim() ||
     meeting.host?.email ||
     "—";
-  const statusTone =
-    meeting.status === "live"
-      ? "bg-emerald-500/20 text-emerald-100 ring-emerald-400/30"
-      : meeting.status === "ended"
-        ? "bg-slate-500/20 text-slate-100 ring-slate-400/30"
-        : meeting.status === "cancelled"
-          ? "bg-red-500/20 text-red-100 ring-red-400/30"
-          : "bg-brand-500/25 text-brand-50 ring-brand-300/40";
-
   return (
     <div className="animate-fade-up space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader
+          variant="default"
           title={meeting.title}
           description={`${archiveId} · ${MEETING_TYPE_LABELS[meeting.meeting_type]} · ${meeting.category_name} / ${meeting.sub_category_name}`}
         />
@@ -172,166 +171,155 @@ export function MeetDetailPage() {
         </Link>
       </div>
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-brand-900 px-6 py-6 text-white sm:px-8">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold capitalize ring-1 ${statusTone}`}>
+      <GrePremiumHero
+        icon={Calendar}
+        title={schedule.when}
+        meta={
+          <>
+            {schedule.zone}
+            <span className="mx-2 text-white/30">·</span>
+            <span className="font-mono text-xs text-white/55">{schedule.iana}</span>
+          </>
+        }
+        badges={
+          <>
+            <GrePremiumPill active>
               {meeting.status === "live" ? <CircleDot className="h-3 w-3 animate-pulse" /> : null}
               {meeting.status}
-            </span>
-            <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/90 ring-1 ring-white/15">
-              {MEETING_VISIBILITY_LABELS[meeting.visibility]}
-            </span>
-            <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/90 ring-1 ring-white/15">
+            </GrePremiumPill>
+            <GrePremiumPill>{MEETING_VISIBILITY_LABELS[meeting.visibility]}</GrePremiumPill>
+            <GrePremiumPill>
               {participantCount} participant{participantCount === 1 ? "" : "s"}
-            </span>
-          </div>
-
-          <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-            <div className="flex gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20">
-                <Calendar className="h-7 w-7 text-brand-200" />
+            </GrePremiumPill>
+          </>
+        }
+        actions={
+          <>
+            {!canManage && meeting.participant_invite_status === "invited" && (
+              <>
+                <Button
+                  className={greBtnOnDarkPrimary}
+                  loading={respondInvite.isPending}
+                  onClick={() => respondInvite.mutate("accept")}
+                >
+                  Accept invite
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="!text-white hover:!bg-white/10"
+                  loading={respondInvite.isPending}
+                  onClick={() => respondInvite.mutate("decline")}
+                >
+                  Decline
+                </Button>
+              </>
+            )}
+            {meeting.can_join && meeting.status !== "ended" && meeting.status !== "cancelled" && (
+              <Link to={`/meet/${meeting.join_slug}`}>
+                <Button className={greBtnOnDarkPrimary}>
+                  {canManage && meeting.status === "scheduled" ? (
+                    <>
+                      <Radio className="h-4 w-4" />
+                      Start and join
+                    </>
+                  ) : meeting.status === "live" ? (
+                    <>
+                      <Radio className="h-4 w-4" />
+                      Join live room
+                    </>
+                  ) : (
+                    <>
+                      <Video className="h-4 w-4" />
+                      Join room
+                    </>
+                  )}
+                </Button>
+              </Link>
+            )}
+            <Button variant="secondary" className={greBtnOnDarkSecondary} onClick={copyLink}>
+              <Copy className="h-4 w-4" />
+              Copy link
+            </Button>
+          </>
+        }
+        footer={
+          <>
+            {meeting.description && (
+              <p className="mb-5 max-w-3xl text-sm leading-relaxed text-slate-600">{meeting.description}</p>
+            )}
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3.5">
+                <Hash className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+                <div>
+                  <p className="text-xs font-medium text-slate-500">Meeting ID</p>
+                  <p className="mt-0.5 text-sm font-semibold text-ink">{archiveId}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-lg font-semibold tracking-tight sm:text-xl">{schedule.when}</p>
-                <p className="mt-1 text-sm text-white/75">
-                  {schedule.zone}
-                  <span className="mx-2 text-white/30">·</span>
-                  <span className="font-mono text-xs text-white/55">{schedule.iana}</span>
-                </p>
+              <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3.5">
+                <User className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+                <div>
+                  <p className="text-xs font-medium text-slate-500">Host</p>
+                  <p className="mt-0.5 text-sm font-semibold text-ink">{hostName}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3.5">
+                <FileText className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+                <div>
+                  <p className="text-xs font-medium text-slate-500">Archive</p>
+                  <p className="mt-0.5 text-sm font-semibold text-ink">
+                    {meeting.status === "ended"
+                      ? "Ready for review"
+                      : meeting.status === "cancelled"
+                        ? "Not created"
+                        : "After you end the meeting"}
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 lg:justify-end">
-              {!canManage && meeting.participant_invite_status === "invited" && (
-                <>
-                  <Button
-                    className="!bg-white !text-slate-900 hover:!bg-slate-100"
-                    loading={respondInvite.isPending}
-                    onClick={() => respondInvite.mutate("accept")}
-                  >
-                    Accept invite
+            <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-5">
+              {!canManage && meeting.participant_invite_status === "accepted" && (
+                <a href={meetingCalendarDownloadUrl(meeting.id)}>
+                  <Button variant="secondary">
+                    <CalendarPlus className="h-4 w-4" />
+                    Add to calendar
                   </Button>
-                  <Button
-                    variant="ghost"
-                    className="!text-white hover:!bg-white/10"
-                    loading={respondInvite.isPending}
-                    onClick={() => respondInvite.mutate("decline")}
-                  >
-                    Decline
-                  </Button>
-                </>
+                </a>
               )}
-              {meeting.can_join && meeting.status !== "ended" && meeting.status !== "cancelled" && (
-                <Link to={`/meet/${meeting.join_slug}`}>
-                  <Button className="!bg-white !text-brand-800 shadow-md hover:!bg-brand-50">
-                    {canManage && meeting.status === "scheduled" ? (
-                      <>
-                        <Radio className="h-4 w-4" />
-                        Start and join
-                      </>
-                    ) : meeting.status === "live" ? (
-                      <>
-                        <Radio className="h-4 w-4" />
-                        Join live room
-                      </>
-                    ) : (
-                      <>
-                        <Video className="h-4 w-4" />
-                        Join room
-                      </>
-                    )}
+              {canOpenArchive && (
+                <Link to={`/dashboard/meetings/${meeting.id}/archive`}>
+                  <Button variant="secondary">
+                    <FileText className="h-4 w-4" />
+                    Open archive
                   </Button>
                 </Link>
               )}
-              <Button
-                variant="secondary"
-                className="!border-white/25 !bg-white/10 !text-white hover:!bg-white/20"
-                onClick={copyLink}
-              >
-                <Copy className="h-4 w-4" />
-                Copy link
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-slate-100 px-6 py-5 sm:px-8">
-          {meeting.description && (
-            <p className="mb-5 max-w-3xl text-sm leading-relaxed text-slate-600">{meeting.description}</p>
-          )}
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3.5">
-              <Hash className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-              <div>
-                <p className="text-xs font-medium text-slate-500">Meeting ID</p>
-                <p className="mt-0.5 text-sm font-semibold text-ink">{archiveId}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3.5">
-              <User className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-              <div>
-                <p className="text-xs font-medium text-slate-500">Host</p>
-                <p className="mt-0.5 text-sm font-semibold text-ink">{hostName}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3.5">
-              <FileText className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-              <div>
-                <p className="text-xs font-medium text-slate-500">Archive</p>
-                <p className="mt-0.5 text-sm font-semibold text-ink">
-                  {meeting.status === "ended"
-                    ? "Ready for review"
-                    : meeting.status === "cancelled"
-                      ? "Not created"
-                      : "After you end the meeting"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-5">
-            {!canManage && meeting.participant_invite_status === "accepted" && (
-              <a href={meetingCalendarDownloadUrl(meeting.id)}>
-                <Button variant="secondary">
-                  <CalendarPlus className="h-4 w-4" />
-                  Add to calendar
+              {canManage && meeting.status !== "ended" && (
+                <Link to={`/dashboard/meetings/${meeting.id}/edit`}>
+                  <Button variant="secondary">
+                    <Pencil className="h-4 w-4" />
+                    Edit meeting
+                  </Button>
+                </Link>
+              )}
+              {(canManage && meeting.status === "scheduled") || (canManage && meeting.status === "ended") ? (
+                <Button
+                  variant="danger"
+                  loading={deleteMeeting.isPending}
+                  onClick={() => setConfirmCancelOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
                 </Button>
-              </a>
-            )}
-            {canOpenArchive && (
-              <Link to={`/dashboard/meetings/${meeting.id}/archive`}>
-                <Button variant="secondary">
-                  <FileText className="h-4 w-4" />
-                  Open archive
+              ) : null}
+              {canManage && meeting.status === "live" && (
+                <Button variant="danger" loading={endMeeting.isPending} onClick={() => setConfirmEndOpen(true)}>
+                  End meeting
                 </Button>
-              </Link>
-            )}
-            {canManage && meeting.status !== "ended" && (
-              <Link to={`/dashboard/meetings/${meeting.id}/edit`}>
-                <Button variant="secondary">
-                  <Pencil className="h-4 w-4" />
-                  Edit meeting
-                </Button>
-              </Link>
-            )}
-            {(canManage && meeting.status === "scheduled") || (canManage && meeting.status === "ended") ? (
-              <Button
-                variant="danger"
-                loading={deleteMeeting.isPending}
-                onClick={() => setConfirmCancelOpen(true)}
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
-            ) : null}
-            {canManage && meeting.status === "live" && (
-              <Button variant="danger" loading={endMeeting.isPending} onClick={() => setConfirmEndOpen(true)}>
-                End meeting
-              </Button>
-            )}
-          </div>
-        </div>
-      </section>
+              )}
+            </div>
+          </>
+        }
+      />
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
@@ -399,7 +387,9 @@ export function MeetDetailPage() {
               </div>
             )}
 
-            <div className="mt-5 flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-700 p-5 text-white sm:flex-row sm:items-center sm:justify-between">
+            <div
+              className={`mt-5 flex flex-col gap-4 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between ${greGradientCta}`}
+            >
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-brand-100">Full archive</p>
                 <p className="mt-1 text-lg font-semibold">{archiveId}</p>

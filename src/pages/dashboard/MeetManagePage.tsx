@@ -53,9 +53,9 @@ function FormSection({
   children: ReactNode;
 }) {
   return (
-    <section className="overflow-visible rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="flex items-start gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+    <section className="gre-card-accent overflow-visible rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="gre-section-head px-5 pt-5">
+        <span className="gre-section-head__icon">
           <Icon className="h-5 w-5" />
         </span>
         <div>
@@ -63,7 +63,7 @@ function FormSection({
           {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
         </div>
       </div>
-      <div className="space-y-4 p-5">{children}</div>
+      <div className="space-y-4 px-5 pb-5">{children}</div>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 import { User, type LucideIcon } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
-import { greAvatarInitials, greGradientHero } from "../../lib/greTheme";
+import { greAvatarInitials, greGradientHeroBr } from "../../lib/greTheme";
 import { resolveProfilePhotoSrc } from "../../lib/profilePhoto";
 
 type Variant = "card" | "strip";
@@ -98,7 +98,7 @@ export function GreHeroBanner({
   bannerClassName = "",
 }: Props) {
   const size = avatarSize ?? (variant === "strip" ? "sm" : compact ? "md" : "lg");
-  const gradient = greGradientHero;
+  const gradient = greGradientHeroBr;
 
   if (variant === "strip") {
     return (
@@ -204,7 +204,7 @@ export function GreHeroBannerStrip({
       className={`relative h-14 overflow-hidden rounded-t-2xl sm:h-16 ${
         accentColor
           ? ""
-          : greGradientHero
+          : greGradientHeroBr
       } ${className}`}
       style={
         accentColor

@@ -26,7 +26,7 @@ function MeetingCard({ meeting }: { meeting: MeetSession }) {
   const archiveId = formatMeetingId(meeting.id);
 
   return (
-    <article className="gre-card flex flex-col gap-4 p-5">
+    <article className="gre-card gre-card-accent flex flex-col gap-4 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">

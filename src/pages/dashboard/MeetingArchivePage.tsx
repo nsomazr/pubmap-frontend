@@ -187,19 +187,19 @@ export function MeetingArchivePage() {
       />
 
       <section className="grid gap-4 lg:grid-cols-4">
-        <div className="gre-card rounded-2xl p-5">
+        <div className="gre-card gre-card-accent rounded-2xl p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Meeting ID</p>
           <p className="mt-2 text-base font-semibold text-ink">{archiveId}</p>
         </div>
-        <div className="gre-card rounded-2xl p-5">
+        <div className="gre-card gre-card-accent rounded-2xl p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</p>
           <p className="mt-2 text-base font-semibold capitalize text-ink">{meeting.status}</p>
         </div>
-        <div className="gre-card rounded-2xl p-5">
+        <div className="gre-card gre-card-accent rounded-2xl p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Messages</p>
           <p className="mt-2 text-base font-semibold text-ink">{messageCount}</p>
         </div>
-        <div className="gre-card rounded-2xl p-5">
+        <div className="gre-card gre-card-accent rounded-2xl p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Participants</p>
           <p className="mt-2 text-base font-semibold text-ink">{participantCount}</p>
         </div>

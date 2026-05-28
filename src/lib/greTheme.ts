@@ -1,15 +1,39 @@
-/** Canonical GRE palette  -  blue + teal only (plus slate neutrals). */
+/**
+ * GRE visual identity — premium slate→brand gradients, accents, and component tokens.
+ * Prefer these exports over hard-coded Tailwind gradient strings in pages.
+ */
 
-export const greGradientHero =
-  "bg-gradient-to-r from-brand-600 via-[#3b5bdb] to-teal-600";
+/* Premium hero (GRE Meet detail, page intros) */
+export const greGradientPremium = "gre-gradient-premium";
+export const greGradientPremiumBr = "gre-gradient-premium-br";
+export const greGradientPremiumTeal = "gre-gradient-premium-teal";
 
-export const greGradientHeroBr = "bg-gradient-to-br from-brand-600 to-teal-600";
+/* Bright hero (profiles, publication cards, legacy banners) */
+export const greGradientHero = "gre-gradient-hero-bright";
+export const greGradientHeroBr = "gre-gradient-hero-bright-br";
+
+/* CTA bands, primary actions */
+export const greGradientCta = "gre-gradient-cta";
+
+/* On-dark hero controls */
+export const grePillOnDark =
+  "bg-brand-500/25 text-brand-50 ring-1 ring-brand-300/40";
+export const grePillOnDarkMuted =
+  "bg-white/10 text-white/90 ring-1 ring-white/15";
+export const greHeroIconBox =
+  "flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20";
+export const greBtnOnDarkPrimary =
+  "!bg-white !text-brand-800 shadow-md hover:!bg-brand-50";
+export const greBtnOnDarkSecondary =
+  "!border-white/25 !bg-white/10 !text-white hover:!bg-white/20";
 
 export const greAvatarInitials = "gre-avatar-initials";
-
 export const greAccentBadge = "gre-accent-badge";
 
-/*  Stat / dashboard cards  */
+/* Cards */
+export const greCardAccent = "gre-card-accent";
+
+/* Stat / dashboard cards */
 export const greStatBgBrand = "from-brand-50 to-white";
 export const greStatBgTeal = "from-teal-50 to-white";
 
@@ -26,7 +50,6 @@ export const greStatIconPublished = "bg-teal-50 text-teal-700";
 export const greStatLinkPending = "bg-brand-100 text-brand-900 hover:bg-brand-200";
 export const greStatLinkUrgent = "bg-teal-100 text-teal-900 hover:bg-teal-200";
 
-/*  Publication status badges  */
 export const greStatusStyles: Record<string, string> = {
   "0": "bg-slate-100 text-slate-700 ring-slate-200",
   "1": "bg-brand-50 text-brand-800 ring-brand-200",
@@ -36,28 +59,23 @@ export const greStatusStyles: Record<string, string> = {
   "6": "bg-slate-300 text-slate-700 ring-slate-400",
 };
 
-/*  Chips & tags  */
 export const greChipBrand = "bg-brand-50 text-brand-800 ring-brand-200/80";
 export const greChipTeal = "bg-teal-50 text-teal-800 ring-teal-200/80";
 export const greChipTopic =
   "bg-gradient-to-r from-brand-50 to-teal-50 text-ink ring-brand-100";
 
-/*  Alerts (non-destructive)  */
 export const greAlertInfo = "bg-brand-50 text-brand-900 ring-brand-200";
 export const greAlertWarning = "bg-teal-50 text-teal-900 ring-teal-200";
 export const greAlertError = "bg-brand-100 text-brand-900 ring-brand-300";
 
-/*  Icons  */
 export const greIconBrand = "text-brand-600";
 export const greIconTeal = "text-teal-600";
 
-/*  Stars & charts  */
 export const greStarFill = "fill-brand-500 text-brand-500";
 export const greStarCount = "text-brand-700";
 export const greBarPrimary = "from-brand-600 to-teal-600";
 export const greBarSecondary = "from-brand-500 to-brand-600";
 
-/*  Admin quick-link icon tiles (alternate brand / teal)  */
 export const greAdminTileBrand = "bg-brand-100 text-brand-800";
 export const greAdminTileTeal = "bg-teal-100 text-teal-800";
 
@@ -71,7 +89,6 @@ export const GRE_ADMIN_QUICK_LINK_COLORS = [
   greAdminTileBrand,
 ] as const;
 
-/*  Account / profile stat row colors  */
 export const greAccountStatPublished = {
   color: "text-teal-700",
   bg: "hover:bg-teal-50/80",
@@ -89,9 +106,6 @@ export const greAccountStatDraft = {
   bg: "hover:bg-slate-100/80",
 };
 
-/*  Unread / notification accent  */
 export const greUnreadBadge = "bg-brand-600";
-
-/*  Urgent highlight (still blue-teal family)  */
 export const greUrgentRing = "border-brand-300 ring-2 ring-brand-200/60";
 export const greUrgentIcon = "bg-brand-100 text-brand-700";

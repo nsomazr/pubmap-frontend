@@ -3,6 +3,10 @@ import { Link } from "react-router-dom";
 import { PageBackLink } from "../ui/PageBackLink";
 import { PublicNav } from "./PublicNav";
 import { PublicFooter } from "./PublicFooter";
+import {
+  greGradientPremium,
+  greGradientPremiumTeal,
+} from "../../lib/greTheme";
 
 export type PageAccent = "blue" | "teal";
 
@@ -37,14 +41,14 @@ const accentStyles: Record<
   { hero: string; orb1: string; orb2: string; badge: string }
 > = {
   blue: {
-    hero: "from-[#1e3a8a] via-[#3b5bdb] to-[#0d9488]",
-    orb1: "bg-blue-400/30",
-    orb2: "bg-teal-400/25",
-    badge: "bg-blue-500/20 text-blue-100 ring-blue-400/30",
+    hero: greGradientPremium,
+    orb1: "bg-brand-400/25",
+    orb2: "bg-teal-400/20",
+    badge: "bg-brand-500/20 text-brand-100 ring-brand-400/30",
   },
   teal: {
-    hero: "from-[#0f766e] via-[#0d9488] to-[#3b5bdb]",
-    orb1: "bg-teal-300/35",
+    hero: greGradientPremiumTeal,
+    orb1: "bg-teal-300/30",
     orb2: "bg-brand-400/20",
     badge: "bg-teal-500/20 text-teal-50 ring-teal-400/30",
   },
@@ -66,11 +70,19 @@ export function PublicPageLayout({
   const contentShell = wide ? "max-w-[1600px]" : "max-w-5xl";
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] flex-col overflow-x-hidden bg-[#f8fafc]">
+    <div className="public-site-bg flex min-h-screen min-h-[100dvh] flex-col overflow-x-hidden">
       <PublicNav />
-      <section className={`relative overflow-hidden bg-gradient-to-br ${a.hero}`}>
+      <section className={`relative overflow-hidden ${a.hero}`}>
         <div
-          className="absolute inset-0 opacity-[0.15]"
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
+            backgroundSize: "24px 24px",
+          }}
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0 opacity-[0.12]"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           }}

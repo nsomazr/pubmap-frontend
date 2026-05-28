@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { PageHeader } from "../../components/dashboard/PageHeader";
 import { GreAvatarSlot } from "../../components/ui/GreHeroBanner";
 import { Button } from "../../components/ui/Button";
 import { useAuth } from "../../context/AuthContext";
@@ -445,7 +446,12 @@ export function MessagesPage() {
 
   return (
     <div className="animate-fade-up flex h-[calc(100dvh-5.5rem)] flex-col">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden gre-card p-0 md:flex-row">
+      <PageHeader
+        title="Messages"
+        description="Chat with researchers connected to your work on GRE."
+        className="mb-4"
+      />
+      <div className="gre-card-plain flex min-h-0 flex-1 flex-col overflow-hidden p-0 md:flex-row">
         {/* Sidebar */}
         <aside
           className={`flex shrink-0 flex-col bg-slate-50/50 md:w-[min(100%,340px)] md:border-r md:border-slate-100 ${

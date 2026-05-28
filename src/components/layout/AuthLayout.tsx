@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AuthFormDecor } from "../auth/AuthFormDecor";
 import { AuthHeroScene } from "../auth/AuthHeroScene";
 import { AuthMobileBrand } from "../auth/AuthMobileBrand";
+import { greGradientPremium } from "../../lib/greTheme";
 import { BrandMark } from "../brand/BrandMark";
 
 export type AuthHeroVariant = "login" | "register" | "onboarding";
@@ -46,7 +47,7 @@ export function AuthLayout({
     <div className="auth-page flex min-h-[100dvh] w-full bg-[#f4f6fb]">
       {/* Left  -  brand & animation (desktop) */}
       <aside className="auth-hero relative hidden overflow-hidden lg:flex lg:w-[44%] lg:flex-col xl:w-[46%]">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#2f4fc7] via-[#3b5bdb] to-[#0d9488]" />
+        <div className={`absolute inset-0 ${greGradientPremium}`} />
         <div
           className="absolute inset-0 opacity-[0.07]"
           style={{
