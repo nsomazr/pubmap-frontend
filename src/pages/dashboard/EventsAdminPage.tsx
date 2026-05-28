@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Calendar, ExternalLink, Plus } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { isPlatformAdmin } from "../../lib/userAccess";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { DefaultBanner } from "../../components/ui/DefaultBanner";
 import { Button } from "../../components/ui/Button";
@@ -27,6 +29,9 @@ const emptyForm = {
 };
 
 export function EventsAdminPage() {
+  const { user } = useAuth();
+  if (!isPlatformAdmin(user)) return <Navigate to="/dashboard" replace />;
+
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
   const queryClient = useQueryClient();

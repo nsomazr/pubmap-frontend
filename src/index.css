@@ -1256,6 +1256,18 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Keep picker tiles inside the card — avoids map layers covering the dashboard */
+.location-picker-frame {
+  contain: layout paint;
+  position: relative;
+  z-index: 0;
+}
+
+.location-picker-frame .leaflet-container {
+  position: relative;
+  z-index: 0;
+}
+
 .location-picker-frame .leaflet-bottom.leaflet-right,
 .location-picker-expand .leaflet-bottom.leaflet-right {
   bottom: 0.5rem;

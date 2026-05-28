@@ -53,6 +53,7 @@ import { PublicationSupplementaryUpload } from "../../components/publication/Pub
 import { renderManuscriptHtml } from "../../lib/renderManuscriptHtml";
 import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
+  cleanFunderNames,
   limitReferences,
   truncateHtmlToWordLimit,
   truncateToWordLimit,
@@ -232,7 +233,10 @@ export function PublicationManagePage() {
       if (refRaw) {
         setReferences(limitReferences(refRaw, nextTitle || title));
       }
-      const nextFunder = truncateToWordLimit((payload.funder || "").trim(), limits.funder);
+      const nextFunder = truncateToWordLimit(
+        cleanFunderNames((payload.funder || "").trim()),
+        limits.funder
+      );
       if (nextFunder) setFunder(nextFunder);
       const nextKeywords = truncateToWordLimit((payload.keywords || "").trim(), limits.keywords);
       if (nextKeywords) setKeywords(nextKeywords);
@@ -276,7 +280,7 @@ export function PublicationManagePage() {
     setResults(pub.results ?? "");
     setFindings(pub.findings ?? "");
     setConclusion(pub.conclusion ?? "");
-    setFunder(pub.funder ?? "");
+    setFunder(cleanFunderNames(pub.funder ?? ""));
     setReferences(limitReferences(pub.references ?? "", pub.title ?? ""));
     setKeywords(formatKeywords(pub.keywords));
     setSubCategoryId(pub.sub_category_id ? String(pub.sub_category_id) : "");
@@ -685,26 +689,14 @@ export function PublicationManagePage() {
     setAccessTypeChosen(true);
     setComposerTab("editor");
   };
-  const closedSectionsReady =
-    hasTextContent(abstract) &&
-    hasTextContent(introduction) &&
-    hasTextContent(methods) &&
-    hasTextContent(findings);
   const openHasSource = hasDocument || Boolean(gre.external_url?.trim());
-  const readyToSubmit =
-    Boolean(title.trim() && abstract.trim() && subCategoryId) &&
-    hasValidCoords(coordinates.latitude, coordinates.longitude) &&
-    Boolean(coordinates.location.trim()) &&
-    (isClosedAccess
-      ? closedSectionsReady && Boolean(gre.external_url?.trim())
-      : openHasSource);
 
   const getSaveValidationError = (): string | null => {
     if (extractionUi.status === "extracting") {
       return "Please wait while GRE extracts manuscript sections from the uploaded paper.";
     }
     if (!title.trim()) return "Title is required.";
-    if (!abstract.trim()) return "Abstract is required.";
+    if (!hasTextContent(abstract)) return "Abstract is required.";
     if (submitterRole === "coauthor" && !leadAuthorName.trim()) {
       return "Lead author name is required when submitting as a co-author.";
     }
@@ -715,9 +707,10 @@ export function PublicationManagePage() {
     const saveErr = getSaveValidationError();
     if (saveErr) return saveErr;
     if (!subCategoryId) return "Research subfield is required.";
-    if (!coordinates.location.trim()) return "Map location label is required.";
+    if (!coordinates.location.trim()) return "Location of study is required.";
+    if (!coordinates.institution?.trim()) return "Institution / affiliation is required.";
     if (!hasValidCoords(coordinates.latitude, coordinates.longitude)) {
-      return "A valid map location is required.";
+      return "Pick a study location on the map (valid coordinates).";
     }
     if (isClosedAccess) {
       if (!hasTextContent(introduction)) return "Introduction is required for restricted access.";
@@ -731,6 +724,8 @@ export function PublicationManagePage() {
     }
     return null;
   };
+
+  const readyToSubmit = getSubmitValidationError() === null;
 
   const reportValidationError = (message: string) => {
     setError(message);
@@ -1034,7 +1029,9 @@ export function PublicationManagePage() {
 
             <ComposerStage number="3" title="Manuscript">
               <div className="space-y-6">
-                {extractionUi.status === "extracting" && <ExtractionLoadingPanel />}
+                {extractionUi.status === "extracting" && (
+                  <ExtractionLoadingPanel fileName={pendingDocument?.name ?? existingDocPath} />
+                )}
                 {extractionUi.status === "ready" && extractionUi.warnings.length > 0 && (
                   <ul className="mb-5 space-y-2 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
                     {extractionUi.warnings.map((warning) => (
@@ -1242,8 +1239,8 @@ export function PublicationManagePage() {
           {(isNew || canSubmit) && !readyToSubmit && (
             <p className="text-xs text-slate-500">
               {isClosedAccess
-                ? "Complete title, abstract, subfield, required sections, publisher access link, and map location to submit."
-                : "Complete title, abstract, subfield, uploaded paper or external link, and map location to submit."}
+                ? "Complete all required fields: title, abstract, subfield, study location, institution, manuscript sections, and publisher access link."
+                : "Complete all required fields: title, abstract, subfield, study location, institution, and uploaded paper or external link."}
             </p>
           )}
           {!isNew && isAdmin && !isOwner && (pub?.status === 0 || pub?.status === 2) && (

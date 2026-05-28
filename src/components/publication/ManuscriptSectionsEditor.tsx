@@ -4,6 +4,7 @@ import { RichTextEditor } from "../editor/RichTextEditor";
 import { Input } from "../ui/Input";
 import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
+  cleanFunderNames,
   formatWordLimitHint,
   truncateToWordLimit,
 } from "../../lib/manuscriptFieldLimits";
@@ -151,16 +152,28 @@ export function ManuscriptSectionsEditor({
 
       <ManuscriptGroup title="Funding & references">
         <Input
-          label="Funder — acknowledgements"
+          label="Funders"
           value={fields.funder}
           onChange={(e) =>
             onChange(
               "funder",
-              truncateToWordLimit(e.target.value, MANUSCRIPT_FIELD_WORD_LIMITS.funder)
+              truncateToWordLimit(
+                cleanFunderNames(e.target.value),
+                MANUSCRIPT_FIELD_WORD_LIMITS.funder
+              )
             )
           }
-          placeholder="Grant numbers, institutions, or partners"
-          hint={formatWordLimitHint("funder")}
+          onBlur={(e) =>
+            onChange(
+              "funder",
+              truncateToWordLimit(
+                cleanFunderNames(e.target.value),
+                MANUSCRIPT_FIELD_WORD_LIMITS.funder
+              )
+            )
+          }
+          placeholder="NSF, University of Dar es Salaam"
+          hint="Organization names only, comma-separated"
         />
         <FieldExtractionNote note={sectionNotes.funder} />
         <ReferencesFromResearch value={fields.references} paperTitle={title} />

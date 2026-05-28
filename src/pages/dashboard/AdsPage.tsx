@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { isPlatformAdmin } from "../../lib/userAccess";
 import { GreAdAnalyticsPanel } from "../../components/ads/GreAdAnalyticsPanel";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Pagination } from "../../components/ui/Pagination";
@@ -41,6 +44,9 @@ const EMPTY_FORM = {
 };
 
 export function AdsPage() {
+  const { user } = useAuth();
+  if (!isPlatformAdmin(user)) return <Navigate to="/dashboard" replace />;
+
   const [form, setForm] = useState(EMPTY_FORM);
   const queryClient = useQueryClient();
 

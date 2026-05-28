@@ -21,6 +21,7 @@ import {
 } from "../../lib/geocode";
 import { formatRegionRadiusLabel, MAP_REGION_RADIUS_KM } from "../../lib/mapRegion";
 import { InstitutionPicker } from "../institutions/InstitutionPicker";
+import { RequiredMark } from "../ui/RequiredField";
 import type { Coordinate } from "../../types";
 import "leaflet/dist/leaflet.css";
 
@@ -88,9 +89,11 @@ function LocationMapView({
   pickEnabled,
   onPick,
   onDragEnd,
-}: MapViewProps) {
+  mapKey,
+}: MapViewProps & { mapKey: string }) {
   return (
     <MapContainer
+      key={mapKey}
       center={center}
       zoom={zoom}
       className="location-picker-map h-full w-full cursor-crosshair"
@@ -160,13 +163,15 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
 
   useEffect(() => {
     const defaultInst = institutionDefault?.trim();
-    if (!defaultInst || appliedInstitutionDefaultRef.current || value.institution?.trim()) {
-      if (value.institution?.trim()) appliedInstitutionDefaultRef.current = true;
+    if (!defaultInst || appliedInstitutionDefaultRef.current) return;
+    if (value.institution?.trim()) {
+      appliedInstitutionDefaultRef.current = true;
       return;
     }
     appliedInstitutionDefaultRef.current = true;
     onChange({ ...value, institution: defaultInst });
-  }, [institutionDefault, onChange, value]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only seed institution once from profile
+  }, [institutionDefault, value.institution]);
 
   const applyCoords = useCallback(
     async (latitude: number, longitude: number, locationName?: string) => {
@@ -251,18 +256,23 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
   const mapCenter: [number, number] = hasPin ? [lat, lng] : DEFAULT_CENTER;
   const mapZoom = hasPin ? REGION_CENTER_ZOOM : DEFAULT_ZOOM;
   const regionHint = formatRegionRadiusLabel(MAP_REGION_RADIUS_KM);
-  const pickEnabled = mode === "map" || expanded;
 
-  const mapProps: MapViewProps = {
+  const mapProps: MapViewProps & { mapKey: string } = {
     center: mapCenter,
     zoom: mapZoom,
     height: "100%",
     hasPin,
     lat,
     lng,
-    pickEnabled,
+    pickEnabled: true,
     onPick: applyCoords,
     onDragEnd: applyCoords,
+    mapKey: expanded ? "location-picker-expanded" : "location-picker-inline",
+  };
+
+  const openExpandedMap = () => {
+    setMode("map");
+    setExpanded(true);
   };
 
   const expandOverlay =
@@ -287,7 +297,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
             </button>
           </div>
           <div className="relative min-h-0 flex-1">
-            <LocationMapView {...mapProps} />
+            <LocationMapView {...mapProps} mapKey="location-picker-expanded" />
           </div>
           {hasPin && (
             <div className="border-t border-slate-100 px-4 py-2 text-xs text-slate-600 sm:px-5">
@@ -372,39 +382,63 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
         </div>
       )}
 
-      <div className={mode === "map" ? "block" : "hidden sm:block"}>
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-slate-600">
-            {mode === "map"
-              ? `Click the map or drag the pin to set the study region. The shaded circle (${regionHint}) is the area shown on the research map.`
-              : "Preview: open the expanded map to adjust the region."}
+      {mode === "search" && (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-8 text-center">
+          <MapPin className="mx-auto h-8 w-8 text-brand-600/80" aria-hidden />
+          <p className="mt-3 text-sm font-medium text-ink">Need to click the map?</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Switch to <span className="font-semibold">Pick on map</span> or open the expanded map to place
+            your study region.
           </p>
           <button
             type="button"
-            onClick={() => setExpanded(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-brand-300 hover:text-brand-700"
+            onClick={openExpandedMap}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-300 hover:text-brand-700"
           >
-            <Maximize2 className="h-3.5 w-3.5" />
-            Expand map
+            <Maximize2 className="h-4 w-4" />
+            Open map
           </button>
         </div>
-        <div className="location-picker-frame relative overflow-hidden rounded-xl border border-slate-200 shadow-inner">
-          <div className="h-[320px] w-full">
-            <LocationMapView {...mapProps} height="320px" />
+      )}
+
+      {mode === "map" && !expanded && (
+        <div>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-slate-600">
+              Click the map or drag the pin to set the study region. The shaded circle ({regionHint}) is
+              the area shown on the research map.
+            </p>
+            <button
+              type="button"
+              onClick={openExpandedMap}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-brand-300 hover:text-brand-700"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+              Expand map
+            </button>
           </div>
+          <div className="location-picker-frame relative isolate overflow-hidden rounded-xl border border-slate-200 shadow-inner">
+            <div className="h-[min(320px,50vh)] min-h-[240px] w-full sm:h-[320px]">
+              <LocationMapView {...mapProps} height="100%" mapKey="location-picker-inline" />
+            </div>
+          </div>
+          {reverseLoading && (
+            <p className="mt-2 text-xs text-slate-500">Looking up place name…</p>
+          )}
         </div>
-        {reverseLoading && (
-          <p className="mt-2 text-xs text-slate-500">Looking up place name…</p>
-        )}
-      </div>
+      )}
 
       {expandOverlay}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-slate-700">Region label</label>
+          <label className="block text-sm font-medium text-slate-700">
+            Location of study
+            <RequiredMark />
+          </label>
           <input
             type="text"
+            required
             value={value.location}
             onChange={(e) => onChange({ ...value, location: e.target.value })}
             placeholder="e.g. Dar es Salaam Region, Tanzania"
@@ -417,6 +451,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
             onChange={(institution) => onChange({ ...value, institution })}
             label="Institution / affiliation"
             placeholder="University, lab, organization, or affiliation…"
+            required
           />
         </div>
         <div>
@@ -439,7 +474,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
         </p>
       ) : (
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-100">
-          Search for a region or click the map to set where this study took place.
+          Search for a place or pick on the map, then enter the location of study and your institution.
         </p>
       )}
     </div>

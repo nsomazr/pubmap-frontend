@@ -7,6 +7,7 @@ import {
   Copy,
   Disc3,
   FileText,
+  Hash,
   MessagesSquare,
   Pencil,
   Radio,
@@ -19,7 +20,6 @@ import {
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
-import { StatDisplayTile } from "../../components/dashboard/StatDisplayTile";
 import { Button } from "../../components/ui/Button";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { useToast } from "../../components/ui/ToastProvider";
@@ -28,7 +28,6 @@ import api, { parseApiError } from "../../lib/api";
 import {
   fetchMeeting,
   formatMeetingId,
-  formatMeetingDateInTimezone,
   formatMeetingScheduleLines,
   meetingCalendarDownloadUrl,
   MEETING_TYPE_LABELS,
@@ -43,12 +42,36 @@ import { userFullName } from "../../lib/userDisplay";
 import { buildMeetingPath, meetingApiSegment } from "../../lib/meetingPaths";
 import { buildForumTopicPath } from "../../lib/forumPaths";
 import { buildPublicationPath } from "../../lib/publicationPaths";
+import type { MeetSession } from "../../types";
 
-function statusValueClass(status: string) {
-  if (status === "live") return "text-teal-700";
-  if (status === "ended") return "text-slate-700";
-  if (status === "cancelled") return "text-red-700";
-  return "text-ink";
+function MeetStatusBadge({ meeting }: { meeting: MeetSession }) {
+  const isArchived = meeting.status === "ended";
+  const isCancelled = meeting.status === "cancelled";
+
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${
+        meeting.status === "live"
+          ? "bg-red-50 text-red-700 ring-red-100"
+          : isCancelled
+            ? "bg-amber-50 text-amber-800 ring-amber-100"
+            : isArchived
+              ? "bg-slate-100 text-slate-600 ring-slate-200/80"
+              : "bg-brand-50 text-brand-800 ring-brand-100"
+      }`}
+    >
+      {meeting.status === "live" && (
+        <CircleDot className="h-3 w-3 animate-pulse" aria-hidden />
+      )}
+      {meeting.status === "live"
+        ? "Live"
+        : isCancelled
+          ? "Cancelled"
+          : isArchived
+            ? "Archived"
+            : "Scheduled"}
+    </span>
+  );
 }
 
 function DetailSectionTitle({
@@ -193,113 +216,132 @@ export function MeetDetailPage() {
     descriptionText && !/^nothing\.?$/i.test(descriptionText);
 
   const headerActions: ReactNode = (
-    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
-      <Link
-        to="/dashboard/meetings"
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to meetings
-      </Link>
-      {!canManage && meeting.participant_invite_status === "invited" && (
-        <>
-          <Button loading={respondInvite.isPending} onClick={() => respondInvite.mutate("accept")}>
-            Accept invite
-          </Button>
-          <Button
-            variant="secondary"
-            loading={respondInvite.isPending}
-            onClick={() => respondInvite.mutate("decline")}
-          >
-            Decline
-          </Button>
-        </>
-      )}
-      {meeting.can_join && meeting.status !== "ended" && meeting.status !== "cancelled" && (
-        <Link to={`/meet/${meeting.join_slug}`}>
-          <Button>
-            {canManage && meeting.status === "scheduled" ? (
-              <>
-                <Radio className="h-4 w-4" />
-                Start and join
-              </>
-            ) : meeting.status === "live" ? (
-              <>
-                <Radio className="h-4 w-4" />
-                Join live room
-              </>
-            ) : (
-              <>
-                <Video className="h-4 w-4" />
-                Join room
-              </>
-            )}
-          </Button>
-        </Link>
-      )}
-      <Button variant="secondary" onClick={copyLink}>
-        <Copy className="h-4 w-4" />
-        Copy link
-      </Button>
-    </div>
+    <Link
+      to="/dashboard/meetings"
+      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+    >
+      <ArrowLeft className="h-4 w-4" />
+      Back to meetings
+    </Link>
   );
+
+  const archiveStatusLabel =
+    meeting.status === "ended"
+      ? "Ready for review"
+      : meeting.status === "cancelled"
+        ? "Not created"
+        : "After you end the meeting";
 
   return (
     <div className="animate-fade-up space-y-6">
       <PageHeader
         variant="clean"
         title={meeting.title}
-        description={`${archiveId} · ${MEETING_TYPE_LABELS[meeting.meeting_type]} · ${meeting.category_name} / ${meeting.sub_category_name}`}
+        description={`${MEETING_TYPE_LABELS[meeting.meeting_type]} · ${meeting.category_name} / ${meeting.sub_category_name}`}
         action={headerActions}
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatDisplayTile label="Meeting ID" value={archiveId} />
-        <StatDisplayTile
-          label="Status"
-          value={
-            <span className="inline-flex items-center gap-1.5 capitalize">
-              {meeting.status === "live" && (
-                <CircleDot className="h-4 w-4 animate-pulse text-teal-600" />
-              )}
-              {meeting.status}
+      <div className="gre-dashboard-card space-y-5 p-5 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <MeetStatusBadge meeting={meeting} />
+          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold capitalize text-slate-700 ring-1 ring-slate-200/80">
+            {MEETING_VISIBILITY_LABELS[meeting.visibility]}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/80">
+            <Users className="h-3 w-3 text-slate-500" />
+            {participantCount} participant{participantCount === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 ring-1 ring-brand-100">
+              <Calendar className="h-5 w-5" />
             </span>
-          }
-          valueClassName={statusValueClass(meeting.status)}
-        />
-        <StatDisplayTile label="Participants" value={participantCount} />
-        <StatDisplayTile label="Messages" value={messageCount} />
-      </section>
-
-      <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
-        <DetailSectionTitle
-          icon={Calendar}
-          title="Session overview"
-          description="Schedule, host, and room actions for this meeting."
-        />
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 sm:col-span-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">When</p>
-            <p className="mt-2 text-sm font-semibold text-ink">{schedule.when}</p>
-            <p className="mt-1 text-sm text-slate-600">{schedule.zone}</p>
-            <p className="mt-0.5 font-mono text-xs text-slate-500">{schedule.iana}</p>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-ink">{schedule.when}</p>
+              <p className="mt-1 text-sm text-slate-600">{schedule.zone}</p>
+              <p className="mt-0.5 font-mono text-xs text-slate-500">{schedule.iana}</p>
+            </div>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Host</p>
-            <p className="mt-2 text-sm font-semibold text-ink">{hostName}</p>
-            <p className="mt-2 text-xs text-slate-500">
-              {MEETING_VISIBILITY_LABELS[meeting.visibility]}
-            </p>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+            {!canManage && meeting.participant_invite_status === "invited" && (
+              <>
+                <Button loading={respondInvite.isPending} onClick={() => respondInvite.mutate("accept")}>
+                  Accept invite
+                </Button>
+                <Button
+                  variant="secondary"
+                  loading={respondInvite.isPending}
+                  onClick={() => respondInvite.mutate("decline")}
+                >
+                  Decline
+                </Button>
+              </>
+            )}
+            {meeting.can_join && meeting.status !== "ended" && meeting.status !== "cancelled" && (
+              <Link to={`/meet/${meeting.join_slug}`} className="w-full sm:w-auto">
+                <Button className="w-full sm:w-auto">
+                  {canManage && meeting.status === "scheduled" ? (
+                    <>
+                      <Radio className="h-4 w-4" />
+                      Start and join
+                    </>
+                  ) : meeting.status === "live" ? (
+                    <>
+                      <Radio className="h-4 w-4" />
+                      Join live room
+                    </>
+                  ) : (
+                    <>
+                      <Video className="h-4 w-4" />
+                      Join room
+                    </>
+                  )}
+                </Button>
+              </Link>
+            )}
+            <Button variant="secondary" className="w-full sm:w-auto" onClick={copyLink}>
+              <Copy className="h-4 w-4" />
+              Copy link
+            </Button>
           </div>
         </div>
 
         {showDescription && (
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Description</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">{descriptionText}</p>
-          </div>
+          <p className="text-sm leading-relaxed text-slate-600">{descriptionText}</p>
         )}
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+            <Hash className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Meeting ID</p>
+              <p className="mt-1 break-all font-mono text-sm font-semibold text-ink">{archiveId}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+            <Users className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Host</p>
+              <p className="mt-1 text-sm font-semibold text-ink">{hostName}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+            <MessagesSquare className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Messages</p>
+              <p className="mt-1 text-sm font-semibold tabular-nums text-ink">{messageCount}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Archive</p>
+              <p className="mt-1 text-sm font-semibold text-ink">{archiveStatusLabel}</p>
+            </div>
+          </div>
+        </div>
 
         <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
           {!canManage && meeting.participant_invite_status === "accepted" && (

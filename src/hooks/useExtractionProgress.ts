@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-/** Never reaches 100 until extraction completes — avoids a “stuck at 100%” feel. */
+/** Never reaches 100 until extraction completes — drives step timing only. */
 const PROGRESS_CAP = 96;
 
 /** Smooth asymptotic curve tuned for ~30s–3min extractions. */
@@ -10,20 +10,47 @@ export function computeExtractionProgress(elapsedMs: number): number {
   return Math.min(Math.round(value * 10) / 10, PROGRESS_CAP);
 }
 
-const STATUS_THRESHOLDS: { until: number; label: string }[] = [
-  { until: 12, label: "Opening your document…" },
-  { until: 28, label: "Reading text from the manuscript…" },
-  { until: 52, label: "Finding the title and section headings…" },
-  { until: 74, label: "Matching sections to GRE fields…" },
-  { until: 90, label: "Polishing extracted content…" },
-  { until: 101, label: "Finishing up…" },
+export type ExtractionStep = {
+  id: string;
+  title: string;
+  detail: string;
+};
+
+export const EXTRACTION_STEPS: ExtractionStep[] = [
+  {
+    id: "open",
+    title: "Open your file",
+    detail: "Load PDF or Word and prepare the document",
+  },
+  {
+    id: "text",
+    title: "Read the manuscript",
+    detail: "Extract text from pages (OCR if the file is scanned)",
+  },
+  {
+    id: "structure",
+    title: "Detect structure",
+    detail: "Title, abstract, keywords, and section headings",
+  },
+  {
+    id: "sections",
+    title: "Fill GRE sections",
+    detail: "Summaries for introduction, methods, results, and more",
+  },
+  {
+    id: "extras",
+    title: "Funders & references",
+    detail: "Funder names and five key bibliography entries",
+  },
 ];
 
-export function extractionProgressLabel(percent: number): string {
-  for (const { until, label } of STATUS_THRESHOLDS) {
-    if (percent < until) return label;
-  }
-  return STATUS_THRESHOLDS[STATUS_THRESHOLDS.length - 1].label;
+/** Map simulated progress to the active checklist step (0–4). */
+export function extractionActiveStepIndex(percent: number): number {
+  if (percent < 10) return 0;
+  if (percent < 26) return 1;
+  if (percent < 48) return 2;
+  if (percent < 72) return 3;
+  return 4;
 }
 
 export function useExtractionProgress(isActive: boolean): number {
@@ -48,4 +75,23 @@ export function useExtractionProgress(isActive: boolean): number {
   }, [isActive]);
 
   return progress;
+}
+
+/** Elapsed seconds while extraction is active (for “taking longer” hint). */
+export function useExtractionElapsedSeconds(isActive: boolean): number {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!isActive) {
+      setSeconds(0);
+      return;
+    }
+    const startedAt = performance.now();
+    const id = window.setInterval(() => {
+      setSeconds(Math.floor((performance.now() - startedAt) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [isActive]);
+
+  return seconds;
 }

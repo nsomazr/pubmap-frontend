@@ -108,7 +108,7 @@ export function sanitizeManuscriptHtml(html: string): string {
         "td",
         "hr",
       ],
-      ADD_ATTR: ["target", "rel", "class", "style", "aria-hidden"],
+      ADD_ATTR: ["target", "rel", "class", "aria-hidden"],
       ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
       FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "input"],
     });
