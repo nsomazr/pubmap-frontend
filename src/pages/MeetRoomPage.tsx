@@ -1377,15 +1377,15 @@ export function MeetRoomPage() {
                                     runParticipantAction(
                                       participant.id,
                                       "muteParticipant",
-                                      "Microphone muted",
-                                      "Attendee microphone was muted.",
+                                      "Mute requested",
+                                      "Moderator mute command sent for attendee microphone.",
                                       "Could not mute this attendee's microphone."
                                     );
                                     setParticipantActionMenuId(null);
                                   }}
                                 >
                                   <MicOff className="h-4 w-4" />
-                                  Mute mic
+                                  Force mute mic
                                 </Button>
                                 <Button
                                   type="button"
@@ -1395,15 +1395,15 @@ export function MeetRoomPage() {
                                     runParticipantAction(
                                       participant.id,
                                       "muteParticipantVideo",
-                                      "Camera turned off",
-                                      "Attendee camera was turned off.",
+                                      "Video-off requested",
+                                      "Moderator camera-off command sent for attendee video.",
                                       "Could not turn off this attendee's camera."
                                     );
                                     setParticipantActionMenuId(null);
                                   }}
                                 >
                                   <VideoOff className="h-4 w-4" />
-                                  Turn off video
+                                  Force video off
                                 </Button>
                                 <Button
                                   type="button"
