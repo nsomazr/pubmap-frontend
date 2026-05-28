@@ -978,7 +978,7 @@ export function MeetRoomPage() {
 
       {!drawerOpen && <MeetRoomControlsFab onClick={() => setDrawerOpen(true)} />}
       <div
-        className="pointer-events-none fixed bottom-3 left-5 z-[2147483645] sm:bottom-4 sm:left-6"
+        className="pointer-events-none fixed bottom-5 left-7 z-[2147483645] sm:bottom-6 sm:left-8"
         style={{ zIndex: 2147483647 }}
       >
         <BrandMark
