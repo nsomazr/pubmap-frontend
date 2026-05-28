@@ -380,6 +380,30 @@ export function MeetRoomPage() {
   ]);
 
   useEffect(() => {
+    if (!participantActionMenuId) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        target.closest("[data-participant-menu='true']") ||
+        target.closest("[data-participant-menu-trigger='true']")
+      ) {
+        return;
+      }
+      setParticipantActionMenuId(null);
+    };
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setParticipantActionMenuId(null);
+    };
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleEsc);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [participantActionMenuId]);
+
+  useEffect(() => {
     const joinData = joinMutation.data;
     if (!joinData?.token || !joinData.server_url || !roomContainerRef.current) return;
 
@@ -1357,6 +1381,7 @@ export function MeetRoomPage() {
                             type="button"
                             variant="ghost"
                             className="h-9 shrink-0"
+                            data-participant-menu-trigger="true"
                             onClick={(event) => {
                               event.stopPropagation();
                               setParticipantActionMenuId((prev) =>
@@ -1367,12 +1392,15 @@ export function MeetRoomPage() {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                           {participantActionMenuId === participant.id && (
-                            <div className="absolute right-0 top-11 z-20 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                            <div
+                              className="absolute right-0 top-11 z-20 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+                              data-participant-menu="true"
+                            >
                               <div className="space-y-1">
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-9 w-full justify-start"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left"
                                   onClick={() => {
                                     runParticipantAction(
                                       participant.id,
@@ -1390,7 +1418,7 @@ export function MeetRoomPage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-9 w-full justify-start"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left"
                                   onClick={() => {
                                     runParticipantAction(
                                       participant.id,
@@ -1408,7 +1436,7 @@ export function MeetRoomPage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-9 w-full justify-start"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left"
                                   onClick={() => {
                                     runParticipantAction(
                                       participant.id,
@@ -1426,7 +1454,7 @@ export function MeetRoomPage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-9 w-full justify-start text-red-600 hover:text-red-700"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-red-600 hover:text-red-700"
                                   onClick={() => {
                                     runParticipantAction(
                                       participant.id,
