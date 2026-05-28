@@ -14,6 +14,7 @@ import { MeetHostToolsPanel } from "../../components/meet/MeetHostToolsPanel";
 import {
   fetchMeeting,
   formatMeetingDate,
+  inviteMeetingByEmailBulk,
   MEETING_TYPE_LABELS,
   MEETING_VISIBILITY_LABELS,
 } from "../../lib/meetings";
@@ -49,6 +50,9 @@ export function MeetManagePage() {
   const [error, setError] = useState("");
   const [peopleSearch, setPeopleSearch] = useState("");
   const [participantRole, setParticipantRole] = useState<MeetParticipantRole>("participant");
+  const [guestEmails, setGuestEmails] = useState("");
+  const [guestInviteRole, setGuestInviteRole] = useState<"participant" | "speaker">("participant");
+  const [guestInviteMessage, setGuestInviteMessage] = useState("");
 
   const { data: meeting } = useQuery({
     queryKey: ["meeting", id],
@@ -145,18 +149,82 @@ export function MeetManagePage() {
       setError("");
       queryClient.invalidateQueries({ queryKey: ["meetings"] });
       queryClient.invalidateQueries({ queryKey: ["meeting", id] });
-      toast.success({
-        title: isNew ? "Meeting created" : "Meeting updated",
-        description: isNew
-          ? "The GRE meeting is ready to share."
-          : "The GRE meeting details were updated.",
+      const emails = guestEmails
+        .split(/[\n,;]+/)
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean);
+      const shouldSendGuestInvites = data.visibility === "invite_only" && emails.length > 0;
+      const afterSave = async () => {
+        if (!shouldSendGuestInvites) {
+          toast.success({
+            title: isNew ? "Meeting created" : "Meeting updated",
+            description: isNew
+              ? "The GRE meeting is ready to share."
+              : "The GRE meeting details were updated.",
+          });
+          navigate(`/dashboard/meetings/${data.id}`);
+          return;
+        }
+        const result = await inviteMeetingByEmailBulk(data.id, {
+          emails,
+          role: guestInviteRole,
+          message: guestInviteMessage.trim() || undefined,
+        });
+        setGuestEmails("");
+        toast.success({
+          title: isNew ? "Meeting created and guests invited" : "Guests invited",
+          description:
+            result.failed > 0
+              ? `${result.sent}/${result.total} invitations sent. ${result.failed} failed.`
+              : `${result.sent} invitations sent successfully.`,
+        });
+        navigate(`/dashboard/meetings/${data.id}`);
+      };
+      void afterSave().catch((err) => {
+        toast.error({
+          title: "Meeting saved, invite issue",
+          description: parseApiError(err, "The meeting was saved, but some invitations could not be sent."),
+        });
+        navigate(`/dashboard/meetings/${data.id}`);
       });
-      navigate(`/dashboard/meetings/${data.id}`);
     },
     onError: (err) => {
       const detail = parseApiError(err, "Could not save the meeting.");
       setError(detail);
       toast.error({ title: "Could not save meeting", description: detail });
+    },
+  });
+
+  const inviteGuestsNow = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error("Meeting id is required.");
+      const emails = guestEmails
+        .split(/[\n,;]+/)
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean);
+      if (!emails.length) throw new Error("Add at least one guest email.");
+      return inviteMeetingByEmailBulk(Number(id), {
+        emails,
+        role: guestInviteRole,
+        message: guestInviteMessage.trim() || undefined,
+      });
+    },
+    onSuccess: (result) => {
+      setGuestEmails("");
+      toast.success({
+        title: "Invitations sent",
+        description:
+          result.failed > 0
+            ? `${result.sent}/${result.total} invitations sent. ${result.failed} failed.`
+            : `${result.sent} invitations sent successfully.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["meeting", id] });
+    },
+    onError: (err) => {
+      toast.error({
+        title: "Could not send invitations",
+        description: parseApiError(err, "Could not send guest invitations."),
+      });
     },
   });
 
@@ -341,13 +409,43 @@ export function MeetManagePage() {
           </div>
           <div className="sm:col-span-2">
             <Textarea
-              label="Host notes for summary generation"
+              label="Meeting summary notes (optional)"
               value={form.host_notes}
               onChange={(e) => setForm((prev) => ({ ...prev, host_notes: e.target.value }))}
               rows={3}
               placeholder="Optional wrap-up, decisions, or action points to preserve in the archive summary."
             />
           </div>
+          {form.visibility === "invite_only" && (
+            <>
+              <div className="sm:col-span-2">
+                <Textarea
+                  label="Add guests (bulk emails)"
+                  value={guestEmails}
+                  onChange={(e) => setGuestEmails(e.target.value)}
+                  rows={4}
+                  placeholder={"Paste emails separated by commas or new lines\nexample1@email.com\nexample2@email.com"}
+                />
+              </div>
+              <Select
+                label="Guest role"
+                value={guestInviteRole}
+                onChange={(e) => setGuestInviteRole(e.target.value as "participant" | "speaker")}
+              >
+                <option value="participant">Participant</option>
+                <option value="speaker">Speaker</option>
+              </Select>
+              <div className="sm:col-span-2">
+                <Textarea
+                  label="Guest invite message (optional)"
+                  value={guestInviteMessage}
+                  onChange={(e) => setGuestInviteMessage(e.target.value)}
+                  rows={2}
+                  placeholder="Optional personal message included in the invite email."
+                />
+              </div>
+            </>
+          )}
         </div>
 
         {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
@@ -364,6 +462,16 @@ export function MeetManagePage() {
             <p className="flex items-center text-sm text-slate-500">
               Current schedule: {formatMeetingDate(meeting.scheduled_at)}
             </p>
+          )}
+          {!isNew && meeting && form.visibility === "invite_only" && (
+            <Button
+              type="button"
+              variant="secondary"
+              loading={inviteGuestsNow.isPending}
+              onClick={() => inviteGuestsNow.mutate()}
+            >
+              Send guest invites now
+            </Button>
           )}
         </div>
       </form>

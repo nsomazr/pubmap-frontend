@@ -80,6 +80,31 @@ export async function inviteMeetingByEmail(
   return data;
 }
 
+export async function inviteMeetingByEmailBulk(
+  meetingId: number,
+  payload: { emails: string[]; message?: string; role?: "speaker" | "participant" }
+) {
+  const uniqueEmails = Array.from(
+    new Set(
+      (payload.emails || [])
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean)
+    )
+  );
+  const results = await Promise.allSettled(
+    uniqueEmails.map((email) =>
+      inviteMeetingByEmail(meetingId, {
+        email,
+        message: payload.message,
+        role: payload.role,
+      })
+    )
+  );
+  const sent = results.filter((row) => row.status === "fulfilled").length;
+  const failed = results.length - sent;
+  return { total: results.length, sent, failed };
+}
+
 export async function inviteMeetingFieldMembers(
   meetingId: number,
   payload?: { message?: string; role?: "speaker" | "participant"; limit?: number }

@@ -20,7 +20,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
-import { Textarea } from "../components/ui/Textarea";
 import { useToast } from "../components/ui/ToastProvider";
 import { useAuth } from "../context/AuthContext";
 import { assistantHealth, assistantSummarizeTextStream } from "../lib/assistant";
@@ -169,7 +168,7 @@ export function MeetRoomPage() {
   const copilotAbortRef = useRef<AbortController | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<MeetRoomDrawerTab>("assistant");
-  const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
+  const [participantActionMenuId, setParticipantActionMenuId] = useState<string | null>(null);
   const [waitingGuests, setWaitingGuests] = useState<
     { id: string; displayName: string; email?: string }[]
   >([]);
@@ -1220,26 +1219,39 @@ export function MeetRoomPage() {
                     )}
                   </div>
                   <form
-                    className="space-y-3"
+                    className="space-y-2"
                     onSubmit={(event) => {
                       event.preventDefault();
                       if (!text.trim()) return;
                       sendChat.mutate();
                     }}
                   >
-                    <Textarea
-                      value={text}
-                      onChange={(event) => setText(event.target.value)}
-                      placeholder="Message..."
-                      rows={3}
-                    />
-                    {chatError && <p className="text-sm text-red-600">{chatError}</p>}
-                    <div className="flex justify-end">
-                      <Button type="submit" loading={sendChat.isPending} disabled={!text.trim() || !meetingId}>
+                    <div className="relative">
+                      <textarea
+                        value={text}
+                        onChange={(event) => setText(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter") return;
+                          if (event.shiftKey) return;
+                          event.preventDefault();
+                          if (!text.trim() || !meetingId || sendChat.isPending) return;
+                          sendChat.mutate();
+                        }}
+                        placeholder="Message..."
+                        rows={1}
+                        className="max-h-28 min-h-11 w-full resize-y rounded-3xl border border-slate-200 bg-white py-3 pl-4 pr-28 text-sm text-ink outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                      />
+                      <Button
+                        type="submit"
+                        loading={sendChat.isPending}
+                        disabled={!text.trim() || !meetingId}
+                        className="absolute right-1.5 top-1/2 h-8 -translate-y-1/2 rounded-full px-3 text-sm"
+                      >
                         <Send className="h-4 w-4" />
                         Send
                       </Button>
                     </div>
+                    {chatError && <p className="text-sm text-red-600">{chatError}</p>}
                   </form>
                 </div>
               ),
@@ -1342,19 +1354,10 @@ export function MeetRoomPage() {
                       )}
                     </div>
                   )}
-                  {canManage && activeMeeting.screen_share_moderator_only && (
-                    <p className="text-xs text-slate-500">Select a participant for actions.</p>
-                  )}
-
                   {roomParticipants.map((participant) => (
                     <div
                       key={participant.id}
-                      className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2 transition ${
-                        participant.id === selectedParticipantId
-                          ? "bg-brand-50"
-                          : "bg-slate-50/70"
-                      }`}
-                      onClick={() => setSelectedParticipantId(participant.id)}
+                      className="relative flex items-center justify-between gap-2 rounded-xl bg-slate-50/70 px-3 py-2"
                     >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-ink">
@@ -1366,100 +1369,102 @@ export function MeetRoomPage() {
                         )}
                       </div>
                       {isModerator && !participant.isLocal && participant.id && (
-                        <Button
-                          variant="ghost"
-                          className="h-9 shrink-0 text-red-600 hover:text-red-700"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            runParticipantAction(
-                              participant.id,
-                              "kickParticipant",
-                              "Attendee removed",
-                              "The attendee was removed from the meeting.",
-                              "Could not remove this attendee."
-                            );
-                          }}
-                        >
-                          <UserX className="h-4 w-4" />
-                        </Button>
+                        <div className="relative">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-9 shrink-0"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setParticipantActionMenuId((prev) =>
+                                prev === participant.id ? null : participant.id
+                              );
+                            }}
+                          >
+                            Actions
+                          </Button>
+                          {participantActionMenuId === participant.id && (
+                            <div className="absolute right-0 top-11 z-20 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                              <div className="space-y-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-9 w-full justify-start"
+                                  onClick={() => {
+                                    runParticipantAction(
+                                      participant.id,
+                                      "muteParticipant",
+                                      "Microphone muted",
+                                      "Attendee microphone was muted.",
+                                      "Could not mute this attendee's microphone."
+                                    );
+                                    setParticipantActionMenuId(null);
+                                  }}
+                                >
+                                  <MicOff className="h-4 w-4" />
+                                  Mute mic
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-9 w-full justify-start"
+                                  onClick={() => {
+                                    runParticipantAction(
+                                      participant.id,
+                                      "muteParticipantVideo",
+                                      "Camera turned off",
+                                      "Attendee camera was turned off.",
+                                      "Could not turn off this attendee's camera."
+                                    );
+                                    setParticipantActionMenuId(null);
+                                  }}
+                                >
+                                  <VideoOff className="h-4 w-4" />
+                                  Turn off video
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-9 w-full justify-start"
+                                  onClick={() => {
+                                    runParticipantAction(
+                                      participant.id,
+                                      "grantModerator",
+                                      "Screen sharing allowed",
+                                      "Attendee can now share screen as a moderator.",
+                                      "Could not allow screen sharing for this attendee."
+                                    );
+                                    setParticipantActionMenuId(null);
+                                  }}
+                                >
+                                  <ShieldCheck className="h-4 w-4" />
+                                  Allow share
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-9 w-full justify-start text-red-600 hover:text-red-700"
+                                  onClick={() => {
+                                    runParticipantAction(
+                                      participant.id,
+                                      "kickParticipant",
+                                      "Attendee removed",
+                                      "The attendee was removed from the meeting.",
+                                      "Could not remove this attendee."
+                                    );
+                                    setParticipantActionMenuId(null);
+                                  }}
+                                >
+                                  <UserX className="h-4 w-4" />
+                                  Remove attendee
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}
-                  {canManage && selectedParticipantId && (
-                    <div className="rounded-xl bg-slate-50/70 p-3">
-                      <p className="text-xs font-semibold text-slate-500">Actions</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="h-9"
-                          onClick={() =>
-                            runParticipantAction(
-                              selectedParticipantId,
-                              "muteParticipant",
-                              "Microphone muted",
-                              "Attendee microphone was muted.",
-                              "Could not mute this attendee's microphone."
-                            )
-                          }
-                        >
-                          <MicOff className="h-4 w-4" />
-                          Mute mic
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="h-9"
-                          onClick={() =>
-                            runParticipantAction(
-                              selectedParticipantId,
-                              "muteParticipantVideo",
-                              "Camera turned off",
-                              "Attendee camera was turned off.",
-                              "Could not turn off this attendee's camera."
-                            )
-                          }
-                        >
-                          <VideoOff className="h-4 w-4" />
-                          Turn off video
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="h-9"
-                          onClick={() =>
-                            runParticipantAction(
-                              selectedParticipantId,
-                              "grantModerator",
-                              "Screen sharing allowed",
-                              "Attendee can now share screen as a moderator.",
-                              "Could not allow screen sharing for this attendee."
-                            )
-                          }
-                        >
-                          <ShieldCheck className="h-4 w-4" />
-                          Allow share
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="danger"
-                          className="h-9"
-                          onClick={() =>
-                            runParticipantAction(
-                              selectedParticipantId,
-                              "kickParticipant",
-                              "Attendee removed",
-                              "The attendee was removed from the meeting.",
-                              "Could not remove this attendee."
-                            )
-                          }
-                        >
-                          <UserX className="h-4 w-4" />
-                          Remove attendee
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                   {roomParticipants.length === 0 && (
                     <p className="text-sm text-slate-500">No room participants detected yet.</p>
                   )}
