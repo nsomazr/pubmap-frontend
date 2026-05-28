@@ -139,19 +139,21 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        {suggestedQuestions.map((item) => (
-          <button
-            key={item}
-            type="button"
-            className="h-9 rounded-lg bg-white/90 px-3.5 text-xs font-medium text-slate-700 transition hover:bg-brand-50/60 hover:text-brand-700"
-            onClick={() => handleAsk(item)}
-            disabled={askMutation.isPending}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
+      {history.length === 0 && (
+        <div className="flex flex-wrap gap-2">
+          {suggestedQuestions.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className="h-9 rounded-lg bg-white/90 px-3.5 text-xs font-medium text-slate-700 transition hover:bg-brand-50/60 hover:text-brand-700"
+              onClick={() => handleAsk(item)}
+              disabled={askMutation.isPending}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      )}
 
       <form
         className="space-y-3 rounded-xl bg-slate-50/70 p-3"
@@ -165,7 +167,8 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
           placeholder="Ask a question..."
-          rows={compact ? 2 : 3}
+          rows={2}
+          className="min-h-[4rem]"
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex justify-end">
