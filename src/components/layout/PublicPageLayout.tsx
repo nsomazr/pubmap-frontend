@@ -67,7 +67,7 @@ export function PublicPageLayout({
   heroVisual,
 }: Props) {
   const a = accentStyles[accent];
-  const contentShell = wide ? "max-w-[1600px]" : "max-w-5xl";
+  const contentShell = wide ? "gre-content-wide" : "gre-page-shell";
 
   return (
     <div className="public-site-bg flex min-h-screen min-h-[100dvh] flex-col overflow-x-hidden">

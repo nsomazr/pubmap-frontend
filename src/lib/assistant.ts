@@ -129,6 +129,33 @@ export function assistantChatStream(
   );
 }
 
+export type SummaryFeedbackRating = "up" | "down";
+
+export async function submitSummaryFeedback(
+  publicationId: number,
+  rating: SummaryFeedbackRating,
+  summaryExcerpt?: string
+): Promise<void> {
+  await fetch(`${API_URL}/assistant/summary-feedback/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...ngrokHeaders(),
+      ...authHeaders(),
+    },
+    body: JSON.stringify({
+      publication_id: publicationId,
+      rating,
+      summary_excerpt: summaryExcerpt?.trim().slice(0, 2000) || "",
+    }),
+  }).then(async (res) => {
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(parseApiError(res, text));
+    }
+  });
+}
+
 export function assistantSummarizePublicationStream(
   publicationId: number,
   handlers: StreamHandlers,

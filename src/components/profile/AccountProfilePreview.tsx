@@ -1,6 +1,5 @@
 import { Building2, Eye, Mail, MapPin, Phone, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import { assets } from "../../lib/brand";
 import { userFormalName } from "../../lib/userDisplay";
 import { UserAvatar } from "../ui/UserAvatar";
 import type { User } from "../../types";
@@ -22,7 +21,6 @@ interface Props {
   user: User | null;
   draft: AccountProfilePreviewData;
   publishedCount?: number;
-  /** When true, sidebar reflects unsaved edits */
   live?: boolean;
 }
 
@@ -37,110 +35,95 @@ export function AccountProfilePreview({ user, draft, publishedCount = 0, live = 
   const displayName = userFormalName(previewUser) || "Your name";
 
   return (
-    <div className="account-profile-preview overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="border-b border-slate-100 bg-gradient-to-br from-brand-50/70 via-white to-teal-50/40 px-5 py-4">
-        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-brand-600">
+    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80 px-4 py-2.5">
+        <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-brand-700">
           <Eye className="h-3.5 w-3.5" />
           {live ? "Live preview" : "Public profile"}
-        </div>
-        <p className="mt-1 text-xs text-slate-500">
-          {live
-            ? "Preview your changes before saving."
-            : "How you appear on publications, the map, and researcher pages."}
         </p>
+        {user?.id && (
+          <Link
+            to={`/researcher/${user.id}`}
+            className="text-[11px] font-semibold text-brand-700 hover:underline"
+          >
+            View live
+          </Link>
+        )}
       </div>
 
-      <div className="p-5">
-        <div className="flex gap-4">
-          <img
-            src={assets.logo}
-            alt=""
-            className="hidden h-8 w-8 shrink-0 object-contain opacity-40 sm:block"
-            aria-hidden
+      <div className="p-4">
+        <div className="flex gap-3">
+          <UserAvatar
+            user={user}
+            name={displayName}
+            photoVersion={user?.updated_at}
+            size="md"
+            className="!h-12 !w-12 !rounded-xl !text-sm"
           />
-          <div className="flex min-w-0 flex-1 gap-3">
-            <UserAvatar
-              user={user}
-              name={displayName}
-              photoVersion={user?.updated_at}
-              size="lg"
-              className="!h-16 !w-16 !rounded-2xl !text-lg"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-bold leading-tight text-ink">{displayName}</p>
-              {draft.roleName && (
-                <span className="mt-1 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700 ring-1 ring-brand-100">
-                  {draft.roleName}
-                </span>
-              )}
-              {draft.affiliation && (
-                <p className="mt-2 flex items-start gap-1.5 text-sm text-slate-600">
-                  <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
-                  <span className="line-clamp-2">{draft.affiliation}</span>
-                </p>
-              )}
-              {draft.countryLabel && (
-                <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
-                  <MapPin className="h-3 w-3 shrink-0" />
-                  {draft.countryLabel}
-                </p>
-              )}
-            </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold leading-tight text-ink">{displayName}</p>
+            {draft.roleName && (
+              <span className="mt-0.5 inline-block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                {draft.roleName}
+              </span>
+            )}
+            {draft.affiliation && (
+              <p className="mt-1 flex items-start gap-1 text-xs text-slate-600">
+                <Building2 className="mt-0.5 h-3 w-3 shrink-0 text-slate-400" />
+                <span className="line-clamp-2">{draft.affiliation}</span>
+              </p>
+            )}
           </div>
         </div>
 
-        <ul className="mt-4 space-y-2 border-t border-slate-100 pt-4 text-sm text-slate-600">
+        <ul className="mt-3 space-y-1.5 text-xs text-slate-600">
           {draft.email && (
-            <li className="flex items-center gap-2">
-              <Mail className="h-4 w-4 shrink-0 text-slate-400" />
-              <span className="truncate">{draft.email}</span>
+            <li className="flex items-center gap-2 truncate">
+              <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              {draft.email}
             </li>
           )}
-          {draft.phone?.trim() && (
+          {draft.phone?.trim() ? (
             <li className="flex items-center gap-2">
-              <Phone className="h-4 w-4 shrink-0 text-slate-400" />
+              <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               {draft.phone.trim()}
+            </li>
+          ) : null}
+          {draft.countryLabel && (
+            <li className="flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              {draft.countryLabel}
             </li>
           )}
         </ul>
 
         {draft.interests.length > 0 && (
-          <div className="mt-4 border-t border-slate-100 pt-4">
-            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-              <Sparkles className="h-3.5 w-3.5 text-brand-500" />
-              Research interests
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <p className="mb-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+              <Sparkles className="h-3 w-3 text-brand-500" />
+              Interests
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              {draft.interests.slice(0, 8).map((interest) => (
+            <div className="flex flex-wrap gap-1">
+              {draft.interests.slice(0, 6).map((interest) => (
                 <span
                   key={interest}
-                  className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-700"
+                  className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700"
                 >
                   {interest}
                 </span>
               ))}
-              {draft.interests.length > 8 && (
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] text-slate-500">
-                  +{draft.interests.length - 8} more
+              {draft.interests.length > 6 && (
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
+                  +{draft.interests.length - 6}
                 </span>
               )}
             </div>
           </div>
         )}
 
-        <p className="mt-4 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
-          {publishedCount} publication{publishedCount !== 1 ? "s" : ""} on GRE
+        <p className="mt-3 text-[11px] text-slate-500">
+          {publishedCount} published on GRE
         </p>
-
-        {user?.id && (
-          <Link
-            to={`/researcher/${user.id}`}
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-700"
-          >
-            <Eye className="h-4 w-4 text-brand-600" />
-            View live profile
-          </Link>
-        )}
       </div>
     </div>
   );

@@ -2,7 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { GreAdAnalyticsPanel } from "../../components/ads/GreAdAnalyticsPanel";
 import { PageHeader } from "../../components/dashboard/PageHeader";
+import { Pagination } from "../../components/ui/Pagination";
 import { Button } from "../../components/ui/Button";
+import { usePageParam } from "../../hooks/usePageParam";
+import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../../lib/pagination";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
@@ -41,13 +44,20 @@ export function AdsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const queryClient = useQueryClient();
 
-  const { data: ads = [] } = useQuery({
-    queryKey: ["ads"],
+  const { page, setPage } = usePageParam();
+
+  const { data: adsData, isLoading: adsLoading } = useQuery({
+    queryKey: ["ads", page],
     queryFn: async () => {
-      const { data } = await api.get<Ad[] | { results: Ad[] }>("/ads/");
-      return Array.isArray(data) ? data : (data.results ?? []);
+      const { data } = await api.get("/ads/", {
+        params: { page, page_size: DEFAULT_PAGE_SIZE },
+      });
+      return unwrapPaginated<Ad>(data as Ad[] | Paginated<Ad>);
     },
   });
+
+  const ads = adsData?.results ?? [];
+  const adsTotal = adsData?.count ?? 0;
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -199,6 +209,15 @@ export function AdsPage() {
             </div>
           ))}
         </div>
+        {!adsLoading && adsTotal > 0 && (
+          <Pagination
+            page={page}
+            totalCount={adsTotal}
+            onPageChange={setPage}
+            itemLabel="ads"
+            className="mt-6"
+          />
+        )}
       </section>
     </div>
   );

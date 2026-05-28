@@ -1,4 +1,5 @@
 import api, { parseApiError } from "./api";
+import { unwrapPaginated, type Paginated } from "./pagination";
 import type {
   MeetChatMessage,
   MeetInviteStatus,
@@ -85,8 +86,8 @@ export function formatMeetingId(id?: number | null) {
 }
 
 export async function fetchMeetings(params?: Record<string, string | number | undefined>) {
-  const { data } = await api.get<MeetSession[] | { results: MeetSession[] }>("/meetings/", { params });
-  return Array.isArray(data) ? data : (data.results ?? []);
+  const { data } = await api.get("/meetings/", { params });
+  return unwrapPaginated<MeetSession>(data as MeetSession[] | Paginated<MeetSession>);
 }
 
 export async function fetchMeeting(id: string | number) {

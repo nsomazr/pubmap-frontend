@@ -93,7 +93,7 @@ export function PublicNav({ variant = "default" }: Props) {
   return (
     <>
       <header className="sticky top-0 z-[1100] shrink-0 border-b border-slate-200/60 bg-white/90 shadow-sm backdrop-blur-2xl safe-top">
-        <div className="mx-auto flex h-[3.75rem] max-w-[1600px] items-center justify-between gap-3 px-4 sm:h-[4.25rem] sm:gap-4 sm:px-6 lg:h-[4.5rem]">
+        <div className="gre-content-wide mx-auto flex h-[3.75rem] items-center justify-between gap-3 px-4 sm:h-[4.25rem] sm:gap-4 sm:px-6 lg:h-[4.5rem]">
           <Link to="/" className="group flex min-w-0 shrink-0 items-center gap-3">
             <BrandMark
               symbol="full"

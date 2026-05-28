@@ -111,7 +111,6 @@ export function MessagesPage() {
   const [drafting, setDrafting] = useState(false);
   const [showDraftMenu, setShowDraftMenu] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
-  const [messageMenuId, setMessageMenuId] = useState<number | null>(null);
   const draftAbortRef = useRef<AbortController | null>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -253,7 +252,6 @@ export function MessagesPage() {
   const deleteMessageMutation = useMutation({
     mutationFn: (messageId: number) => api.delete(`/messages/${messageId}/`),
     onSuccess: () => {
-      setMessageMenuId(null);
       queryClient.invalidateQueries({ queryKey: ["messages", partnerId] });
       queryClient.invalidateQueries({ queryKey: ["messages-inbox"] });
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
@@ -262,27 +260,32 @@ export function MessagesPage() {
   });
 
   const deleteThreadMutation = useMutation({
-    mutationFn: () =>
-      api.post("/messages/delete-thread/", { partner_id: Number(partnerId) }),
-    onSuccess: () => {
+    mutationFn: (targetPartnerId: number) =>
+      api.post("/messages/delete-thread/", { partner_id: targetPartnerId }),
+    onSuccess: (_data, targetPartnerId) => {
       setHeaderMenuOpen(false);
-      selectPartner("");
+      if (String(targetPartnerId) === partnerId) {
+        selectPartner("");
+      }
       queryClient.invalidateQueries({ queryKey: ["messages-inbox"] });
+      queryClient.invalidateQueries({ queryKey: ["messages", String(targetPartnerId)] });
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
       queryClient.invalidateQueries({ queryKey: ["unread-counts"] });
     },
   });
 
-  const handleDeleteThread = () => {
+  const handleDeleteThread = (target?: User) => {
+    const person = target ?? partner;
+    const pid = target?.id ?? (partnerId ? Number(partnerId) : 0);
+    if (!person || !pid) return;
     if (
-      !partnerId ||
       !window.confirm(
-        `Remove all message text with ${displayName(partner!)}? Deleted notices will remain in the chat.`
+        `Delete your conversation with ${displayName(person)}? Message text will be cleared; deleted notices may remain in the thread.`
       )
     ) {
       return;
     }
-    deleteThreadMutation.mutate();
+    deleteThreadMutation.mutate(pid);
   };
 
   const handleDeleteMessage = (messageId: number) => {
@@ -299,7 +302,6 @@ export function MessagesPage() {
   const handleCopyMessage = async (body: string) => {
     try {
       await navigator.clipboard.writeText(body);
-      setMessageMenuId(null);
     } catch {
       /* ignore */
     }
@@ -365,12 +367,14 @@ export function MessagesPage() {
     const subtitle = contactSubtitle(c, last, myId);
     const showMatch = section === "suggested" && c.match_reason && !last;
 
+    const canDeleteConversation = section === "conversation" && previews.has(c.id);
+
     return (
-      <li key={`${section}-${c.id}`}>
+      <li key={`${section}-${c.id}`} className="group/contact relative mx-2">
         <button
           type="button"
           onClick={() => selectPartner(String(c.id))}
-          className={`gre-interactive group relative mx-2 flex w-[calc(100%-1rem)] items-center gap-3 rounded-xl px-3 py-3 text-left ${
+          className={`gre-interactive relative flex w-full items-center gap-3 rounded-xl px-3 py-3 pr-10 text-left ${
             active
               ? "bg-white shadow-sm ring-1 ring-slate-200/90"
               : hasUnread
@@ -437,6 +441,21 @@ export function MessagesPage() {
             )}
           </div>
         </button>
+        {canDeleteConversation && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteThread(c);
+            }}
+            disabled={deleteThreadMutation.isPending}
+            className="gre-interactive absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 group-hover/contact:opacity-100 focus:opacity-100 disabled:opacity-40"
+            aria-label={`Delete conversation with ${displayName(c)}`}
+            title="Delete conversation"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
       </li>
     );
   };
@@ -573,16 +592,15 @@ export function MessagesPage() {
                         aria-label="Close menu"
                         onClick={() => setHeaderMenuOpen(false)}
                       />
-                      <div className="absolute right-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+                      <div className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
                         <button
                           type="button"
                           disabled={deleteThreadMutation.isPending || thread.length === 0}
-                          onClick={handleDeleteThread}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-40"
-                          aria-label="Delete all messages"
-                          title="Delete all messages"
+                          onClick={() => handleDeleteThread()}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-40"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 shrink-0" />
+                          Delete conversation
                         </button>
                       </div>
                     </>
@@ -618,16 +636,19 @@ export function MessagesPage() {
                       const mine = m.from_user?.id === myId;
                       const deleted = !!m.is_deleted;
                       const body = m.message || "";
-                      const menuOpen = messageMenuId === m.id;
                       return (
                         <div
                           key={m.id}
-                          className={`group flex flex-col gap-1 ${mine ? "items-end" : "items-start"}`}
+                          className={`group/message flex flex-col gap-1 ${mine ? "items-end" : "items-start"}`}
                         >
-                          <div className="relative flex max-w-[min(88%,26rem)] items-start gap-1">
+                          <div
+                            className={`flex max-w-[min(88%,26rem)] items-end gap-1.5 ${
+                              mine ? "flex-row-reverse" : "flex-row"
+                            }`}
+                          >
                             {deleted ? (
                               <div
-                                className={`flex-1 rounded-2xl border border-dashed px-4 py-2.5 text-sm italic ${
+                                className={`rounded-2xl border border-dashed px-4 py-2.5 text-sm italic ${
                                   mine
                                     ? "border-brand-200/80 bg-brand-50/90 text-brand-800/70"
                                     : "border-slate-200 bg-slate-100/90 text-slate-500"
@@ -636,66 +657,41 @@ export function MessagesPage() {
                                 This message was deleted
                               </div>
                             ) : (
-                              <div
-                                className={`flex-1 px-4 py-2.5 text-[15px] leading-relaxed ${
-                                  mine
-                                    ? "rounded-2xl rounded-br-md bg-brand-600 text-white shadow-sm shadow-brand-600/15"
-                                    : "rounded-2xl rounded-bl-md border border-slate-200/70 bg-white text-slate-800 shadow-sm"
-                                }`}
-                              >
-                                {body}
-                              </div>
-                            )}
-                            {!deleted && (
                               <>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setMessageMenuId(menuOpen ? null : m.id)
-                                  }
-                                  className={`shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 ${
-                                    menuOpen ? "bg-slate-100 text-slate-600" : ""
+                                <div
+                                  className={`px-4 py-2.5 text-[15px] leading-relaxed ${
+                                    mine
+                                      ? "rounded-2xl rounded-br-md bg-brand-600 text-white shadow-sm shadow-brand-600/15"
+                                      : "rounded-2xl rounded-bl-md border border-slate-200/70 bg-white text-slate-800 shadow-sm"
                                   }`}
-                                  aria-label="Message actions"
-                                  aria-expanded={menuOpen}
                                 >
-                                  <MoreVertical className="h-4 w-4" />
-                                </button>
-                                {menuOpen && (
-                                  <>
-                                    <button
-                                      type="button"
-                                      className="fixed inset-0 z-10 cursor-default"
-                                      aria-label="Close menu"
-                                      onClick={() => setMessageMenuId(null)}
-                                    />
-                                    <div
-                                      className={`absolute top-full z-20 mt-1 flex gap-0.5 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg ${
-                                        mine ? "right-0" : "left-0"
-                                      }`}
-                                    >
-                                      <button
-                                        type="button"
-                                        onClick={() => handleCopyMessage(body)}
-                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
-                                        aria-label="Copy message"
-                                        title="Copy message"
-                                      >
-                                        <Copy className="h-4 w-4" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        disabled={deleteMessageMutation.isPending}
-                                        onClick={() => handleDeleteMessage(m.id)}
-                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-40"
-                                        aria-label="Delete message"
-                                        title="Delete message"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </button>
-                                    </div>
-                                  </>
-                                )}
+                                  {body}
+                                </div>
+                                <div
+                                  className={`mb-1 flex shrink-0 items-center gap-0.5 rounded-lg border border-slate-200/90 bg-white p-0.5 shadow-sm opacity-0 transition group-hover/message:opacity-100 focus-within:opacity-100 ${
+                                    mine ? "order-first" : ""
+                                  }`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopyMessage(body)}
+                                    className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                    aria-label="Copy message"
+                                    title="Copy"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={deleteMessageMutation.isPending}
+                                    onClick={() => handleDeleteMessage(m.id)}
+                                    className="flex h-7 w-7 items-center justify-center rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
+                                    aria-label="Delete message"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
                               </>
                             )}
                           </div>

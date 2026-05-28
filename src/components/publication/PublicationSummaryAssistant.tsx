@@ -214,6 +214,7 @@ export function PublicationSummaryAssistant({
   const summaryActions =
     summary.trim() && !summaryLoading ? (
       <PublicationSummaryActions
+        publicationId={publicationId}
         summary={summary}
         publicationTitle={publicationTitle}
         publicationHref={publicationHref}

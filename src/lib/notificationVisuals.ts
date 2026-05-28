@@ -1,9 +1,12 @@
 import {
   AlertTriangle,
   BookOpen,
+  Calendar,
   MessageCircle,
   MessageSquare,
   Newspaper,
+  Radio,
+  Video,
   type LucideIcon,
 } from "lucide-react";
 
@@ -57,6 +60,42 @@ const BY_TYPE: Record<string, NotificationVisual> = {
     icon: AlertTriangle,
     chipClass: "bg-red-50 text-red-800 ring-red-100",
     dotClass: "bg-red-500",
+  },
+  review: {
+    label: "Review",
+    icon: BookOpen,
+    chipClass: "bg-violet-50 text-violet-800 ring-violet-100",
+    dotClass: "bg-violet-500",
+  },
+  interest_match: {
+    label: "Match",
+    icon: Newspaper,
+    chipClass: "bg-brand-50 text-brand-800 ring-brand-100",
+    dotClass: "bg-brand-500",
+  },
+  meeting_invite: {
+    label: "Meet",
+    icon: Calendar,
+    chipClass: "bg-sky-50 text-sky-800 ring-sky-100",
+    dotClass: "bg-sky-500",
+  },
+  meeting_live: {
+    label: "Live",
+    icon: Radio,
+    chipClass: "bg-red-50 text-red-800 ring-red-100",
+    dotClass: "bg-red-500",
+  },
+  meeting_summary: {
+    label: "Meet",
+    icon: Video,
+    chipClass: "bg-sky-50 text-sky-800 ring-sky-100",
+    dotClass: "bg-sky-500",
+  },
+  meeting_reminder: {
+    label: "Meet",
+    icon: Calendar,
+    chipClass: "bg-amber-50 text-amber-900 ring-amber-100",
+    dotClass: "bg-amber-500",
   },
 };
 

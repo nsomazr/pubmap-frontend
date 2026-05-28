@@ -12,7 +12,10 @@ import { DefaultBanner } from "../components/ui/DefaultBanner";
 import { greFormPanelClass } from "../lib/formStyles";
 import { resolveSubcategoryFromModel } from "../lib/taxonomyVisuals";
 import { SubcategoryVisual } from "../components/taxonomy/SubcategoryVisual";
+import { Pagination } from "../components/ui/Pagination";
+import { usePageParam } from "../hooks/usePageParam";
 import api from "../lib/api";
+import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../lib/pagination";
 import type { SubCategory, Topic } from "../types";
 
 export function ForumCategoryPage() {
@@ -33,16 +36,21 @@ export function ForumCategoryPage() {
     },
   });
 
-  const { data: topics = [], isLoading } = useQuery({
-    queryKey: ["forum-topics", id],
+  const { page, setPage } = usePageParam([id]);
+
+  const { data: topicsData, isLoading } = useQuery({
+    queryKey: ["forum-topics", id, page],
     enabled: Boolean(id),
     queryFn: async () => {
-      const { data } = await api.get<Topic[] | { results: Topic[] }>("/forum/topics/", {
-        params: { sub_category: id },
+      const { data } = await api.get("/forum/topics/", {
+        params: { sub_category: id, page, page_size: DEFAULT_PAGE_SIZE },
       });
-      return Array.isArray(data) ? data : (data.results ?? []);
+      return unwrapPaginated<Topic>(data as Topic[] | Paginated<Topic>);
     },
   });
+
+  const topics = topicsData?.results ?? [];
+  const topicsTotal = topicsData?.count ?? 0;
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -169,6 +177,16 @@ export function ForumCategoryPage() {
             </Link>
           ))}
         </div>
+      )}
+
+      {!isLoading && topicsTotal > 0 && (
+        <Pagination
+          page={page}
+          totalCount={topicsTotal}
+          onPageChange={setPage}
+          itemLabel="topics"
+          className="mt-8"
+        />
       )}
     </PublicPageLayout>
   );

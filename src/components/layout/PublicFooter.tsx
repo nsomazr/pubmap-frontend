@@ -21,7 +21,7 @@ export function PublicFooter({ variant = "full", publicationCount }: Props) {
   if (variant === "compact") {
     return (
       <footer className="safe-bottom relative z-[1002] shrink-0 bg-slate-900/90 px-3 py-3 text-white backdrop-blur-md sm:px-5 sm:py-2.5">
-        <div className="mx-auto max-w-[1600px]">
+        <div className="gre-content-wide mx-auto">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 text-xs sm:hidden">
             <Link to="/" className="flex min-w-0 items-center gap-2.5 font-semibold text-white/90">
               <BrandMark symbol="full" variant="dark" size="sm" />
@@ -79,7 +79,7 @@ export function PublicFooter({ variant = "full", publicationCount }: Props) {
         aria-hidden
       />
 
-      <div className="relative mx-auto max-w-[1600px] px-4 py-14 sm:px-6 sm:py-16">
+      <div className="gre-content-wide relative mx-auto px-4 py-14 sm:px-6 sm:py-16">
         <div className="grid gap-12 lg:grid-cols-[1.2fr_1fr]">
           <div>
             <Link to="/" className="inline-flex items-center gap-4">

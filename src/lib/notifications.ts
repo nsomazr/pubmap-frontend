@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import api from "./api";
+import { unwrapPaginated, type Paginated } from "./pagination";
 
 export interface GreNotification {
   id: number;
@@ -62,11 +63,16 @@ export async function fetchUnreadCounts(): Promise<UnreadCounts> {
   };
 }
 
-export async function fetchNotifications(): Promise<GreNotification[]> {
-  const { data } = await api.get<GreNotification[] | { results: GreNotification[] }>(
-    "/notifications/"
-  );
-  return Array.isArray(data) ? data : (data.results ?? []);
+const NOTIFICATIONS_PAGE_SIZE = 12;
+
+export async function fetchNotifications(page = 1) {
+  const { data } = await api.get("/notifications/", {
+    params: { page, page_size: NOTIFICATIONS_PAGE_SIZE },
+  });
+  return {
+    ...unwrapPaginated<GreNotification>(data as GreNotification[] | Paginated<GreNotification>),
+    pageSize: NOTIFICATIONS_PAGE_SIZE,
+  };
 }
 
 export async function markNotificationRead(id: number): Promise<void> {

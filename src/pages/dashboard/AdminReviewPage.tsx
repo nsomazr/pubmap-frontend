@@ -6,7 +6,10 @@ import { useAuth } from "../../context/AuthContext";
 import { AdminPublicationReviewCard } from "../../components/publication/AdminPublicationReviewCard";
 import { EmptyState } from "../../components/dashboard/EmptyState";
 import { PageHeader } from "../../components/dashboard/PageHeader";
+import { Pagination } from "../../components/ui/Pagination";
+import { usePageParam } from "../../hooks/usePageParam";
 import api from "../../lib/api";
+import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../../lib/pagination";
 import { canAccessReviewQueue } from "../../lib/userAccess";
 import type { Publication } from "../../types";
 
@@ -22,17 +25,20 @@ export function AdminReviewPage() {
   const [params, setParams] = useSearchParams({ status: "1" });
   const status = params.get("status") ?? "1";
   const focusPubId = params.get("pub");
+  const { page, setPage } = usePageParam([status]);
 
-  const { data: publications = [], isLoading } = useQuery({
-    queryKey: ["admin-review", status],
+  const { data: listData, isLoading } = useQuery({
+    queryKey: ["admin-review", status, page],
     queryFn: async () => {
-      const { data } = await api.get<Publication[] | { results: Publication[] }>(
-        "/publications/",
-        { params: { status } }
-      );
-      return Array.isArray(data) ? data : (data.results ?? []);
+      const { data } = await api.get("/publications/", {
+        params: { status, page, page_size: DEFAULT_PAGE_SIZE },
+      });
+      return unwrapPaginated<Publication>(data as Publication[] | Paginated<Publication>);
     },
   });
+
+  const publications = listData?.results ?? [];
+  const totalCount = listData?.count ?? 0;
 
   const activeTab = TABS.find((t) => t.value === status) ?? TABS[0];
 
@@ -91,6 +97,16 @@ export function AdminReviewPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {!isLoading && totalCount > 0 && (
+        <Pagination
+          page={page}
+          totalCount={totalCount}
+          onPageChange={setPage}
+          itemLabel="submissions"
+          className="mt-8"
+        />
       )}
     </div>
   );

@@ -7,7 +7,10 @@ import { DefaultBanner } from "../../components/ui/DefaultBanner";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
+import { Pagination } from "../../components/ui/Pagination";
+import { usePageParam } from "../../hooks/usePageParam";
 import api from "../../lib/api";
+import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../../lib/pagination";
 import { mediaUrl } from "../../lib/mediaUrl";
 import type { Event } from "../../types";
 
@@ -27,13 +30,20 @@ export function EventsAdminPage() {
   const [error, setError] = useState("");
   const queryClient = useQueryClient();
 
-  const { data: events = [], isLoading } = useQuery({
-    queryKey: ["events-admin"],
+  const { page, setPage } = usePageParam();
+
+  const { data: eventsData, isLoading } = useQuery({
+    queryKey: ["events-admin", page],
     queryFn: async () => {
-      const { data } = await api.get<Event[] | { results: Event[] }>("/events/");
-      return Array.isArray(data) ? data : (data.results ?? []);
+      const { data } = await api.get("/events/", {
+        params: { page, page_size: DEFAULT_PAGE_SIZE },
+      });
+      return unwrapPaginated<Event>(data as Event[] | Paginated<Event>);
     },
   });
+
+  const events = eventsData?.results ?? [];
+  const eventsTotal = eventsData?.count ?? 0;
 
   const createMutation = useMutation({
     mutationFn: () => api.post("/events/", form),
@@ -194,6 +204,15 @@ export function EventsAdminPage() {
               );
             })}
           </div>
+        )}
+        {!isLoading && eventsTotal > 0 && (
+          <Pagination
+            page={page}
+            totalCount={eventsTotal}
+            onPageChange={setPage}
+            itemLabel="events"
+            className="mt-6"
+          />
         )}
       </section>
     </div>

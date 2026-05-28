@@ -5,7 +5,10 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
+import { Pagination } from "../../components/ui/Pagination";
+import { usePageParam } from "../../hooks/usePageParam";
 import api from "../../lib/api";
+import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../../lib/pagination";
 import { isPlatformAdmin } from "../../lib/userAccess";
 import type { User } from "../../types";
 
@@ -18,17 +21,21 @@ export function AuthorsPage() {
   const [params, setParams] = useSearchParams({ status: "1", role: "2" });
   const status = params.get("status") ?? "1";
   const role = params.get("role") ?? "2";
+  const { page, setPage } = usePageParam([status, role]);
   const queryClient = useQueryClient();
 
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ["users-admin", status, role],
+  const { data: listData, isLoading } = useQuery({
+    queryKey: ["users-admin", status, role, page],
     queryFn: async () => {
-      const { data } = await api.get<User[] | { results: User[] }>("/users/", {
-        params: { role, status },
+      const { data } = await api.get("/users/", {
+        params: { role, status, page, page_size: DEFAULT_PAGE_SIZE },
       });
-      return Array.isArray(data) ? data : (data.results ?? []);
+      return unwrapPaginated<User>(data as User[] | Paginated<User>);
     },
   });
+
+  const users = listData?.results ?? [];
+  const totalCount = listData?.count ?? 0;
 
   const toggle = useMutation({
     mutationFn: ({ id, action }: { id: number; action: "deactivate" | "activate" }) =>
@@ -178,6 +185,16 @@ export function AuthorsPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {!isLoading && totalCount > 0 && (
+        <Pagination
+          page={page}
+          totalCount={totalCount}
+          onPageChange={setPage}
+          itemLabel="users"
+          className="mt-6"
+        />
       )}
 
       {deleteTarget && (

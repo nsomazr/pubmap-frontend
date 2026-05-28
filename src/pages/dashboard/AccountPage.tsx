@@ -61,48 +61,12 @@ function Alert({
   );
 }
 
-function SectionCard({
-  icon: Icon,
-  title,
-  description,
-  action,
-  children,
-}: {
-  icon: typeof User;
-  title: string;
-  description?: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
+function ProfileDetail({ label, value }: { label: string; value?: string | null }) {
+  const text = value?.trim();
   return (
-    <section className="gre-card overflow-hidden p-0">
-      <div className="flex flex-wrap items-start gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-4 sm:px-6">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h2 className="font-semibold text-ink">{title}</h2>
-          {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
-        </div>
-        {action && <div className="w-full sm:ml-auto sm:w-auto">{action}</div>}
-      </div>
-      <div className="p-5 sm:p-6">{children}</div>
-    </section>
-  );
-}
-
-function ProfileDetail({
-  label,
-  value,
-}: {
-  label: string;
-  value?: string | null;
-}) {
-  if (!value?.trim()) return null;
-  return (
-    <div>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className="mt-1 text-sm text-ink">{value.trim()}</dd>
+    <div className="min-w-0">
+      <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
+      <dd className={`mt-0.5 text-sm ${text ? "text-ink" : "text-slate-400"}`}>{text || "—"}</dd>
     </div>
   );
 }
@@ -321,62 +285,120 @@ export function AccountPage() {
   };
 
   return (
-    <div className="animate-fade-up">
-      <PageHeader title="Account" />
+    <div className={`animate-fade-up space-y-5${profileEditing ? " pb-24 xl:pb-0" : ""}`}>
+      <PageHeader
+        title="Account"
+        description="Manage your GRE profile, security, and publication workflow."
+      />
 
-      <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {statsError && (
-          <p className="col-span-full rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-100">
-            Could not load publication stats. If this persists, sign out and sign in again.
-          </p>
-        )}
-        {statItems.map(({ label, value, color, bg, status }) => (
-          <Link
-            key={label}
-            to={`/dashboard/publications?status=${status}`}
-            className={`flex items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 shadow-sm transition ${bg}`}
-          >
-            <span className="text-xs font-medium text-slate-600">{label}</span>
-            <span className={`text-base font-bold tabular-nums ${color}`}>{value}</span>
-          </Link>
-        ))}
-      </div>
+      {statsError && (
+        <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-100">
+          Could not load publication stats. If this persists, sign out and sign in again.
+        </p>
+      )}
 
-      <div className={`grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start${profileEditing ? " pb-24 xl:pb-0" : ""}`}>
-        <div className="order-2 space-y-6 xl:order-none">
-          <SectionCard
-            icon={User}
-            title="Profile"
-            description={
-              profileEditing
-                ? "Update your details, then save to publish changes to your public profile."
-                : "Your saved profile as it appears on publications and researcher pages."
-            }
-            action={
-              !profileEditing ? (
-                <Button type="button" variant="secondary" onClick={startProfileEdit}>
-                  <PenLine className="h-4 w-4" />
-                  Edit profile
-                </Button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={cancelProfileEdit}
-                  className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-ink"
-                >
-                  <X className="h-4 w-4" />
-                  Cancel
-                </button>
-              )
-            }
-          >
+      {/* Identity + publication stats in one compact band */}
+      <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+        <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            {user && (
+              <UserAvatar
+                user={user}
+                name={displayName}
+                size="lg"
+                className="!h-14 !w-14 shrink-0 !rounded-xl !text-base sm:!h-16 sm:!w-16"
+              />
+            )}
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-bold text-ink sm:text-xl">{displayName}</h2>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+                {savedProfile.roleName && (
+                  <span className="font-medium text-slate-500">{savedProfile.roleName}</span>
+                )}
+                {savedProfile.email && (
+                  <span className="flex min-w-0 items-center gap-1 truncate">
+                    <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                    {savedProfile.email}
+                  </span>
+                )}
+                {savedProfile.phone?.trim() && (
+                  <span className="flex items-center gap-1">
+                    <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                    {savedProfile.phone.trim()}
+                  </span>
+                )}
+              </div>
+              {(savedProfile.affiliation || savedProfile.countryLabel) && (
+                <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                  {[savedProfile.affiliation, savedProfile.countryLabel].filter(Boolean).join(" · ")}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex shrink-0 divide-x divide-slate-200 overflow-hidden rounded-xl border border-slate-200/90 bg-slate-50/50">
+            {statItems.map(({ label, value, color, status }) => (
+              <Link
+                key={label}
+                to={`/dashboard/publications?status=${status}`}
+                className="gre-interactive flex min-w-[4.5rem] flex-col items-center px-3 py-2 transition hover:bg-white sm:min-w-[5rem] sm:px-4"
+              >
+                <span className={`text-lg font-bold tabular-nums leading-none ${color}`}>{value}</span>
+                <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  {label}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start">
+        <section className="rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 sm:px-5">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                <User className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-sm font-semibold text-ink">
+                  {profileEditing ? "Edit profile" : "Profile details"}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {profileEditing
+                    ? "Changes appear in the public preview before you save."
+                    : "Shown on publications and researcher pages."}
+                </p>
+              </div>
+            </div>
+            {!profileEditing ? (
+              <Button
+                type="button"
+                variant="secondary"
+                className="!px-3 !py-2 text-xs"
+                onClick={startProfileEdit}
+              >
+                <PenLine className="h-3.5 w-3.5" />
+                Edit
+              </Button>
+            ) : (
+              <button
+                type="button"
+                onClick={cancelProfileEdit}
+                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                <X className="h-3.5 w-3.5" />
+                Cancel
+              </button>
+            )}
+          </div>
+
+          <div className="p-4 sm:p-5">
             {profileEditing ? (
-              <form id="account-profile-form" className="space-y-5" onSubmit={handleProfileSubmit}>
+              <form id="account-profile-form" className="space-y-4" onSubmit={handleProfileSubmit}>
                 {profileMsg && <Alert type={profileMsg.type} message={profileMsg.text} />}
 
-                {user && (
-                  <ProfilePhotoEditor user={user} onUpdated={refreshUser} />
-                )}
+                {user && <ProfilePhotoEditor user={user} onUpdated={refreshUser} />}
 
                 <Select
                   label="Honorific (optional)"
@@ -391,7 +413,7 @@ export function AccountPage() {
                   ))}
                 </Select>
 
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-3">
                   <Input
                     label="First name"
                     required
@@ -437,65 +459,45 @@ export function AccountPage() {
                 </p>
               </form>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {profileMsg && <Alert type={profileMsg.type} message={profileMsg.text} />}
 
-                <div className="flex items-start gap-4">
-                  {user && (
-                    <UserAvatar user={user} name={displayName} size="lg" className="!h-20 !w-20 !rounded-2xl !text-xl" />
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-xl font-bold text-ink">{displayName}</p>
-                    {savedProfile.roleName && (
-                      <p className="mt-1 text-sm text-slate-500">{savedProfile.roleName}</p>
-                    )}
-                    {savedProfile.email && (
-                      <p className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-                        <Mail className="h-4 w-4 shrink-0 text-slate-400" />
-                        {savedProfile.email}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <dl className="grid gap-4 sm:grid-cols-2">
-                  <ProfileDetail label="Honorific" value={savedProfile.title || undefined} />
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+                  <ProfileDetail label="Honorific" value={savedProfile.title} />
                   <ProfileDetail label="First name" value={savedProfile.firstname} />
                   <ProfileDetail label="Middle name" value={savedProfile.middlename} />
                   <ProfileDetail label="Last name" value={savedProfile.lastname} />
                   <ProfileDetail label="Affiliation" value={savedProfile.affiliation} />
                   <ProfileDetail label="Country" value={savedProfile.countryLabel} />
                   <ProfileDetail label="Phone" value={savedProfile.phone} />
+                  <ProfileDetail label="Email" value={savedProfile.email} />
                 </dl>
 
-                {savedProfile.interests.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Research interests
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                <div className="border-t border-slate-100 pt-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Research interests
+                  </p>
+                  {savedProfile.interests.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
                       {savedProfile.interests.map((interest) => (
                         <span
                           key={interest}
-                          className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700"
+                          className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-700"
                         >
                           {interest}
                         </span>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                <p className="text-xs text-slate-400">
-                  Email cannot be changed here. Use Edit profile to update your name, affiliation, and
-                  interests.
-                </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-400">—</p>
+                  )}
+                </div>
               </div>
             )}
-          </SectionCard>
-        </div>
+          </div>
+        </section>
 
-        <aside className="order-1 space-y-4 xl:order-none xl:sticky xl:top-6">
+        <aside className="space-y-3 xl:sticky xl:top-6">
           <AccountProfilePreview
             user={user}
             draft={previewProfile}
@@ -503,58 +505,46 @@ export function AccountPage() {
             live={profileEditing}
           />
 
-          <div className="space-y-2 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-            {profileEditing ? (
-              <>
-                <Button
-                  type="submit"
-                  form="account-profile-form"
-                  className="w-full"
-                  loading={profileMutation.isPending}
-                  disabled={!isDirty && !profileMutation.isPending}
-                >
-                  Update profile
-                </Button>
-                {isDirty ? (
-                  <p className="text-center text-xs text-amber-700">You have unsaved profile changes.</p>
-                ) : (
-                  <p className="text-center text-xs text-slate-500">
-                    Name, affiliation, and interests save here. Profile photo saves separately above.
-                  </p>
-                )}
-                <Button type="button" variant="secondary" className="w-full" onClick={cancelProfileEdit}>
-                  Cancel editing
-                </Button>
-              </>
-            ) : (
-              <Button type="button" className="w-full" onClick={startProfileEdit}>
-                <PenLine className="h-4 w-4" />
-                Edit profile
+          {profileEditing && (
+            <div className="space-y-2 rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm">
+              <Button
+                type="submit"
+                form="account-profile-form"
+                className="w-full"
+                loading={profileMutation.isPending}
+                disabled={!isDirty && !profileMutation.isPending}
+              >
+                Save profile
               </Button>
-            )}
+              {isDirty && (
+                <p className="text-center text-[11px] text-amber-700">Unsaved changes</p>
+              )}
+            </div>
+          )}
 
+          <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm">
             <button
               type="button"
               onClick={() => {
                 setPasswordOpen((open) => !open);
                 setPasswordMsg(null);
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:bg-white hover:text-brand-700"
+              className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              <KeyRound className="h-4 w-4 text-brand-600" />
-              Change password
+              <span className="flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-brand-600" />
+                Change password
+              </span>
               {passwordOpen ? (
                 <ChevronUp className="h-4 w-4 text-slate-400" />
               ) : (
                 <ChevronDown className="h-4 w-4 text-slate-400" />
               )}
             </button>
-          </div>
 
-          {passwordOpen && (
-            <SectionCard icon={KeyRound} title="New password" description="Minimum 6 characters.">
+            {passwordOpen && (
               <form
-                className="space-y-4"
+                className="mt-3 space-y-3 border-t border-slate-100 pt-3"
                 onSubmit={(e) => {
                   e.preventDefault();
                   setPasswordMsg(null);
@@ -562,7 +552,6 @@ export function AccountPage() {
                 }}
               >
                 {passwordMsg && <Alert type={passwordMsg.type} message={passwordMsg.text} />}
-
                 <Input
                   label="Current password"
                   type="password"
@@ -591,63 +580,65 @@ export function AccountPage() {
                 <Button
                   type="submit"
                   variant="secondary"
-                  className="w-full"
+                  className="w-full !py-2 text-xs"
                   loading={passwordMutation.isPending}
                 >
-                  Save new password
+                  Save password
                 </Button>
               </form>
-            </SectionCard>
-          )}
+            )}
+          </div>
 
-          <section className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-5">
-            <h3 className="text-sm font-semibold text-ink">Quick links</h3>
-            <ul className="mt-3 space-y-2">
+          <nav className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm">
+            <p className="px-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Quick links
+            </p>
+            <ul className="mt-1 divide-y divide-slate-100">
               <li>
                 <Link
                   to="/dashboard/publications"
-                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-600 transition hover:bg-white hover:text-brand-700"
+                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-brand-700"
                 >
-                  <FileText className="h-4 w-4" />
+                  <FileText className="h-4 w-4 shrink-0" />
                   My publications
                 </Link>
               </li>
               <li>
                 <Link
                   to="/dashboard/messages"
-                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-600 transition hover:bg-white hover:text-brand-700"
+                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-brand-700"
                 >
-                  <Mail className="h-4 w-4" />
+                  <Mail className="h-4 w-4 shrink-0" />
                   Messages
                 </Link>
               </li>
               <li>
                 <Link
                   to="/"
-                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-600 transition hover:bg-white hover:text-brand-700"
+                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-brand-700"
                 >
-                  <Map className="h-4 w-4" />
+                  <Map className="h-4 w-4 shrink-0" />
                   Research map
                 </Link>
               </li>
             </ul>
-          </section>
-
-          {profileEditing && (
-            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 p-4 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm xl:hidden pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <Button
-                type="submit"
-                form="account-profile-form"
-                className="w-full"
-                loading={profileMutation.isPending}
-                disabled={!isDirty && !profileMutation.isPending}
-              >
-                Update profile
-              </Button>
-            </div>
-          )}
+          </nav>
         </aside>
       </div>
+
+      {profileEditing && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 p-4 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm xl:hidden pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Button
+            type="submit"
+            form="account-profile-form"
+            className="w-full"
+            loading={profileMutation.isPending}
+            disabled={!isDirty && !profileMutation.isPending}
+          >
+            Save profile
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

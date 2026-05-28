@@ -24,7 +24,8 @@
   --gre-duration-fast: 150ms;
   --gre-duration: 240ms;
   --gre-duration-slow: 420ms;
-  --gre-content-max: 1600px;
+  --gre-content-max: 72rem;
+  --gre-content-wide: 80rem;
   --gre-read-max: 68ch;
   --gre-section-gap: 1.5rem;
 }
@@ -90,6 +91,21 @@ body {
   line-height: 1.6;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Consistent page width — dashboard + public content */
+.gre-page-shell {
+  width: 100%;
+  max-width: var(--gre-content-max);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gre-content-wide {
+  width: 100%;
+  max-width: var(--gre-content-wide);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /*  GRE design system utilities  */

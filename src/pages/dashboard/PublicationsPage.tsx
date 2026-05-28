@@ -4,8 +4,11 @@ import { Link, useSearchParams } from "react-router-dom";
 import { DashboardPublicationRow } from "../../components/dashboard/DashboardPublicationRow";
 import { EmptyState } from "../../components/dashboard/EmptyState";
 import { PageHeader } from "../../components/dashboard/PageHeader";
+import { Pagination } from "../../components/ui/Pagination";
 import { useAuth } from "../../context/AuthContext";
+import { usePageParam } from "../../hooks/usePageParam";
 import api from "../../lib/api";
+import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../../lib/pagination";
 import { canAccessReviewQueue, isPlatformAdmin } from "../../lib/userAccess";
 import type { Publication } from "../../types";
 
@@ -80,31 +83,35 @@ export function PublicationsPage() {
   const canReview = canAccessReviewQueue(user);
   const [params, setParams] = useSearchParams();
   const status = params.get("status") ?? "5";
+  const { page, setPage } = usePageParam([status, isAdmin]);
 
   const tabs = isAdmin ? [...TABS, ...ADMIN_TABS] : [...TABS];
 
-  const { data: publications = [], isLoading } = useQuery({
-    queryKey: ["publications", status, isAdmin],
-    queryFn: async (): Promise<Publication[]> => {
-      const { data } = await api.get<Publication[] | { results: Publication[] }>(
-        "/publications/",
-        { params: { status } }
-      );
-      return Array.isArray(data) ? data : (data.results ?? []);
+  const { data: listData, isLoading } = useQuery({
+    queryKey: ["publications", status, isAdmin, page],
+    queryFn: async () => {
+      const { data } = await api.get("/publications/", {
+        params: { status, page, page_size: DEFAULT_PAGE_SIZE },
+      });
+      return unwrapPaginated<Publication>(data as Publication[] | Paginated<Publication>);
     },
   });
+
+  const publications = listData?.results ?? [];
+  const listTotal = listData?.count ?? 0;
 
   const { data: counts } = useQuery({
     queryKey: ["publication-tab-counts", isAdmin],
     queryFn: async () => {
       const entries = await Promise.all(
         tabs.map(async (tab) => {
-          const { data } = await api.get<Publication[] | { results: Publication[] }>(
-            "/publications/",
-            { params: { status: tab.value } }
+          const { data } = await api.get("/publications/", {
+            params: { status: tab.value, page: 1, page_size: 1 },
+          });
+          const paginated = unwrapPaginated<Publication>(
+            data as Publication[] | Paginated<Publication>
           );
-          const list = Array.isArray(data) ? data : (data.results ?? []);
-          return [tab.value, list.length] as const;
+          return [tab.value, paginated.count] as const;
         })
       );
       return Object.fromEntries(entries) as Record<string, number>;
@@ -279,10 +286,14 @@ export function PublicationsPage() {
         )}
       </div>
 
-      {!isLoading && publications.length > 0 && (
-        <p className="text-center text-xs text-slate-500">
-          Showing {publications.length} {activeTabLabel(status)} · Click a row to open
-        </p>
+      {!isLoading && listTotal > 0 && (
+        <Pagination
+          page={page}
+          totalCount={listTotal}
+          onPageChange={setPage}
+          itemLabel={activeTabLabel(status)}
+          className="pt-2"
+        />
       )}
     </div>
   );

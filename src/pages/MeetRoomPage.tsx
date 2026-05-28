@@ -1174,10 +1174,16 @@ export function MeetRoomPage() {
         style={{ zIndex: 2147483647 }}
       >
         <div className="flex items-center gap-3 rounded-2xl border border-slate-700 bg-slate-900/95 px-4 py-2.5 shadow-[0_6px_18px_rgba(2,6,23,0.35)]">
-          <BrandMark symbol="full" variant="plain" size="md" className="shrink-0" title="GRE" />
+          <BrandMark
+            symbol="full"
+            variant="plain"
+            size="lg"
+            className="shrink-0 !h-14 !max-w-[200px]"
+            title="GRE"
+          />
           <div className="leading-none text-slate-100">
-            <p className="text-sm font-extrabold tracking-wide">GRE</p>
-            <p className="mt-1 text-xs font-semibold text-slate-300">Meet</p>
+            <p className="text-base font-extrabold tracking-wide">GRE</p>
+            <p className="mt-1 text-sm font-semibold text-slate-300">Meet</p>
           </div>
         </div>
       </div>
