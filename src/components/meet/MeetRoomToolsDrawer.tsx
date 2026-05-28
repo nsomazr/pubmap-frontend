@@ -53,7 +53,12 @@ export function MeetRoomToolsDrawer({
               {meetingTitle || "GRE Meet"}
             </h2>
           </div>
-          <Button variant="ghost" className="px-2 text-slate-300 hover:text-white" onClick={onClose} aria-label="Close panel">
+          <Button
+            variant="ghost"
+            className="px-2 !bg-slate-900 !text-slate-300 hover:!bg-slate-800 hover:!text-white"
+            onClick={onClose}
+            aria-label="Close panel"
+          >
             <X className="h-5 w-5" />
           </Button>
         </div>
@@ -95,14 +100,14 @@ export function MeetRoomControlsFab({
 }) {
   return (
     <div
-      className="pointer-events-none fixed bottom-1 left-1/2 z-[2147483645] w-full max-w-none -translate-x-1/2 px-3 sm:bottom-1"
+      className="pointer-events-none fixed bottom-16 left-1/2 z-[2147483645] w-full max-w-none -translate-x-1/2 px-3 sm:bottom-14"
       style={{ zIndex: 2147483647 }}
     >
-      <div className="flex justify-end sm:justify-center">
+      <div className="flex justify-center">
         <button
           type="button"
           onClick={onClick}
-          className="pointer-events-auto inline-flex h-10 items-center gap-2 rounded-full border border-slate-700 bg-slate-900/95 px-4 text-sm font-semibold text-slate-100 shadow-[0_8px_24px_rgba(2,6,23,0.45)] transition hover:border-slate-600 hover:bg-slate-800 sm:translate-x-[300px] md:translate-x-[330px] lg:translate-x-[360px] xl:translate-x-[390px]"
+          className="pointer-events-auto inline-flex h-10 items-center gap-2 rounded-full border border-slate-700 bg-slate-900/95 px-4 text-sm font-semibold text-slate-100 shadow-[0_8px_24px_rgba(2,6,23,0.45)] transition hover:border-slate-600 hover:bg-slate-800"
         >
           <LayoutGrid className="h-4 w-4" />
           {label}

@@ -1013,7 +1013,7 @@ export function MeetRoomPage() {
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <Button
                       variant="secondary"
-                      className="h-10 w-full !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800"
+                      className="h-9 w-full !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
                       onClick={copyLink}
                     >
                       <Copy className="h-4 w-4" />
@@ -1021,7 +1021,7 @@ export function MeetRoomPage() {
                     </Button>
                     <Button
                       variant="secondary"
-                      className="h-10 w-full !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800"
+                      className="h-9 w-full !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
                       loading={pipOpening}
                       onClick={() => void openMeetingPictureInPicture()}
                     >
@@ -1030,7 +1030,7 @@ export function MeetRoomPage() {
                     </Button>
                     {shareLink && (
                       <a href={shareLink} target="_blank" rel="noreferrer" className="sm:col-span-2">
-                        <Button variant="secondary" className="h-10 w-full !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800">
+                        <Button variant="secondary" className="h-9 w-full !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100">
                           <ExternalLink className="h-4 w-4" />
                           Open GRE link
                         </Button>
@@ -1076,7 +1076,7 @@ export function MeetRoomPage() {
                     {isModerator && isLive && activeMeeting.recording_status !== "recording" && (
                       <Button
                         variant="secondary"
-                        className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                        className="h-8 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!border-slate-700 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
                         loading={startRecording.isPending}
                         onClick={handleStartRecording}
                       >
@@ -1084,13 +1084,13 @@ export function MeetRoomPage() {
                       </Button>
                     )}
                     {isModerator && isLive && activeMeeting.recording_status === "recording" && (
-                      <Button variant="secondary" className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800" loading={stopRecording.isPending} onClick={handleStopRecording}>
+                      <Button variant="secondary" className="h-8 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!border-slate-700 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100" loading={stopRecording.isPending} onClick={handleStopRecording}>
                         Stop recording
                       </Button>
                     )}
                     <Button
                       variant="danger"
-                      className="h-9 sm:col-span-2"
+                      className="h-8 sm:col-span-2"
                       loading={endMeeting.isPending}
                       onClick={() => setConfirmEndOpen(true)}
                     >
@@ -1098,46 +1098,50 @@ export function MeetRoomPage() {
                     </Button>
                   </div>
                   </div>
-                  {canManage && (
-                    <div className="space-y-2 pt-1 rounded-2xl border border-slate-800 bg-slate-900/50 p-2.5">
-                      <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Assistant tools</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="h-9 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800"
-                          loading={copilotLoading}
-                          onClick={() => void runCopilot("notes")}
-                        >
-                          <Sparkles className="h-4 w-4" />
-                          Draft notes
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="h-9 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800"
-                          loading={copilotLoading}
-                          onClick={() => void runCopilot("actions")}
-                        >
-                          Action items
-                        </Button>
-                      </div>
-                      {(copilotOutput || copilotError || copilotLoading) && (
-                        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3">
-                          {copilotError ? (
-                            <p className="text-sm text-red-400">{copilotError}</p>
-                          ) : (
-                            <FormattedAssistantText content={copilotOutput} streaming={copilotLoading} />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             ),
             assistant: (
-              <MeetingGreAssistantPanel meeting={activeMeeting} compact />
+              <div className="flex h-full min-h-0 flex-col gap-3">
+                <div className="min-h-0 flex-1">
+                  <MeetingGreAssistantPanel meeting={activeMeeting} compact />
+                </div>
+                {canManage && (
+                  <div className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-2.5">
+                    <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Assistant tools</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="h-8 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
+                        loading={copilotLoading}
+                        onClick={() => void runCopilot("notes")}
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        Draft notes
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="h-8 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
+                        loading={copilotLoading}
+                        onClick={() => void runCopilot("actions")}
+                      >
+                        Action items
+                      </Button>
+                    </div>
+                    {(copilotOutput || copilotError || copilotLoading) && (
+                      <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3">
+                        {copilotError ? (
+                          <p className="text-sm text-red-400">{copilotError}</p>
+                        ) : (
+                          <FormattedAssistantText content={copilotOutput} streaming={copilotLoading} />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             ),
               chat: (
                 <div className="flex h-full min-h-0 flex-col gap-3">
@@ -1315,7 +1319,7 @@ export function MeetRoomPage() {
                           <Button
                             type="button"
                             variant="ghost"
-                            className="h-9 shrink-0"
+                            className="h-9 shrink-0 !bg-slate-900 !text-slate-200 hover:!bg-slate-800"
                             data-participant-menu-trigger="true"
                             onClick={(event) => {
                               event.stopPropagation();
