@@ -54,6 +54,15 @@ CSS variables in `index.css`:
 - Accent / map: `--color-accent` (`#0d9488`)
 - Ink: `--color-ink` (`#0f172a`)
 
+## Public page headers
+
+`PublicPageLayout` uses **`heroVariant="clean"`** by default:
+
+- White / soft gray background, brand accent top line, dark title text
+- Used on Statistics, Events, Forum, Rankings, About, Research assistant (`/publication/:id/chat`), publications, etc.
+
+Pass **`heroVariant="premium"`** only when a dark gradient hero is intentional (rare).
+
 ## Layout
 
 - Max content width: `--gre-content-max` (72rem) via `.gre-page-shell`
