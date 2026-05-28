@@ -1,15 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { StatDisplayTile } from "../components/dashboard/StatDisplayTile";
 import {
   greAccentBadge,
   greBarPrimary,
   greBarSecondary,
   greChipTopic,
   greIconBrand,
-  greIconTeal,
-  greStatBgBrand,
-  greStatBgTeal,
 } from "../lib/greTheme";
+import { trendToSparkline } from "../lib/sparkline";
 import {
   BarChart3,
   Building2,
@@ -32,34 +31,6 @@ import { TrendLineChart } from "../components/stats/TrendLineChart";
 import { StarRating } from "../components/rankings/StarRating";
 import type { PublicResearchStats } from "../types";
 
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  accent,
-}: {
-  label: string;
-  value: number;
-  icon: typeof BarChart3;
-  accent: string;
-}) {
-  return (
-    <article className={`gre-card gre-card-hover bg-gradient-to-br ${accent} p-5 ring-white/60`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-600">{label}</p>
-          <p className="mt-2 text-3xl font-bold tabular-nums text-ink sm:text-4xl">
-            <AnimatedCounter value={value} />
-          </p>
-        </div>
-        <div className="rounded-xl bg-white/70 p-3 shadow-sm">
-          <Icon className="h-6 w-6 text-brand-600" />
-        </div>
-      </div>
-    </article>
-  );
-}
-
 function Section({
   title,
   subtitle,
@@ -70,7 +41,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="gre-card p-5 sm:p-6">
+    <section className="gre-dashboard-card p-5 sm:p-6">
       <div className="mb-5">
         <h2 className="text-lg font-semibold text-ink sm:text-xl">{title}</h2>
         {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
@@ -115,24 +86,28 @@ export function StatisticsPage() {
         </div>
       ) : (
         <div className="gre-section-stack">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 gre-stagger">
-            <StatCard
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 gre-stagger">
+            <StatDisplayTile
               label="Total publications"
-              value={data.totals.publications}
+              value={<AnimatedCounter value={data.totals.publications} />}
               icon={BarChart3}
-              accent={greStatBgBrand}
+              sparkline={trendToSparkline(data.publication_trend)}
+              sparklineColor="#3b5bdb"
+              hint="Published on GRE · last 12 months trend"
             />
-            <StatCard
+            <StatDisplayTile
               label="Total researchers"
-              value={data.totals.researchers}
+              value={<AnimatedCounter value={data.totals.researchers} />}
               icon={Users}
-              accent={greStatBgTeal}
+              sparklineColor="#0d9488"
+              hint="Authors with published work"
             />
-            <StatCard
+            <StatDisplayTile
               label="Geolocated studies"
-              value={data.totals.with_coordinates}
+              value={<AnimatedCounter value={data.totals.with_coordinates} />}
               icon={Globe2}
-              accent="from-brand-50 to-teal-50/30"
+              sparklineColor="#14b8a6"
+              hint="Visible on the research map"
             />
           </div>
 

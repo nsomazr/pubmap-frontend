@@ -590,6 +590,11 @@ export interface PublicationReply {
   created_at: string;
 }
 
+export interface DashboardActivityTrendPoint {
+  month: string;
+  count: number;
+}
+
 export interface DashboardStats {
   pending?: number;
   commented?: number;
@@ -597,6 +602,13 @@ export interface DashboardStats {
   authors?: number;
   drafts?: number;
   is_reviewer?: boolean;
+  activity_trend?: {
+    published?: DashboardActivityTrendPoint[];
+    submitted?: DashboardActivityTrendPoint[];
+    pending_review?: DashboardActivityTrendPoint[];
+    revision?: DashboardActivityTrendPoint[];
+    drafts?: DashboardActivityTrendPoint[];
+  };
   managed_categories?: { id: number; name: string }[];
   managed_subcategories?: { id: number; name: string; category_id: number; category_name?: string }[];
   managed_fields?: { id: number; name: string }[];

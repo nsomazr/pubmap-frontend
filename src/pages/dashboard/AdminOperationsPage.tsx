@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowRight,
   BookOpen,
   Calendar,
   CheckCircle2,
@@ -13,12 +12,15 @@ import {
   Users,
 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
+import { DashboardSection } from "../../components/dashboard/DashboardSection";
 import { EmptyState } from "../../components/dashboard/EmptyState";
+import { MetricTile } from "../../components/dashboard/MetricTile";
 import { PageHeader } from "../../components/dashboard/PageHeader";
+import { QuickLinkTile } from "../../components/dashboard/QuickLinkTile";
 import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
-import { GRE_ADMIN_QUICK_LINK_COLORS, greUrgentIcon, greUrgentRing } from "../../lib/greTheme";
+import { pickActivityTrend } from "../../lib/sparkline";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { authorDisplayName } from "../../lib/userDisplay";
 import type { DashboardStats, Publication } from "../../types";
@@ -33,7 +35,7 @@ const QUICK_LINKS = [
   {
     to: "/dashboard/plagiarism",
     label: "Plagiarism moderation",
-    description: "Review claims, hide papers, address claims, or remove studies",
+    description: "Review claims and evidence",
     icon: MessageSquareWarning,
   },
   {
@@ -65,6 +67,54 @@ const QUICK_LINKS = [
     label: "Public map",
     description: "See published research live",
     icon: MapPin,
+  },
+] as const;
+
+const ADMIN_METRICS = [
+  {
+    label: "Pending review",
+    statKey: "pending" as const,
+    trendKey: "pending_review",
+    icon: Clock,
+    to: "/dashboard/review",
+    sparkColor: "#7c3aed",
+    valueClass: "text-violet-700",
+  },
+  {
+    label: "Needs revision",
+    statKey: "commented" as const,
+    trendKey: "revision",
+    icon: MessageSquareWarning,
+    to: "/dashboard/review?status=2",
+    sparkColor: "#d97706",
+    valueClass: "text-amber-800",
+  },
+  {
+    label: "Published on map",
+    statKey: "published" as const,
+    trendKey: "published",
+    icon: CheckCircle2,
+    to: "/dashboard/publications?status=3",
+    sparkColor: "#0d9488",
+    valueClass: "text-teal-700",
+  },
+  {
+    label: "Active authors",
+    statKey: "authors" as const,
+    trendKey: null,
+    icon: Users,
+    to: "/dashboard/authors",
+    sparkColor: "#3b5bdb",
+    valueClass: "text-ink",
+  },
+  {
+    label: "Drafts (all users)",
+    statKey: "drafts" as const,
+    trendKey: "drafts",
+    icon: FileText,
+    to: "/dashboard/publications?status=0",
+    sparkColor: "#64748b",
+    valueClass: "text-slate-700",
   },
 ] as const;
 
@@ -102,77 +152,40 @@ export function AdminOperationsPage() {
     },
   });
 
-  const statCards = [
-    {
-      label: "Pending review",
-      value: stats?.pending ?? 0,
-      icon: Clock,
-      to: "/dashboard/review",
-      urgent: (stats?.pending ?? 0) > 0,
-    },
-    {
-      label: "Needs revision",
-      value: stats?.commented ?? 0,
-      icon: MessageSquareWarning,
-      to: "/dashboard/review?status=2",
-      urgent: false,
-    },
-    {
-      label: "Published on map",
-      value: stats?.published ?? 0,
-      icon: CheckCircle2,
-      to: "/dashboard/publications?status=3",
-      urgent: false,
-    },
-    {
-      label: "Active authors",
-      value: stats?.authors ?? 0,
-      icon: Users,
-      to: "/dashboard/authors",
-      urgent: false,
-    },
-    {
-      label: "Drafts (all users)",
-      value: stats?.drafts ?? 0,
-      icon: FileText,
-      to: "/dashboard/publications?status=0",
-      urgent: false,
-    },
-  ];
+  const pendingCount = stats?.pending ?? 0;
 
   return (
-    <div className="animate-fade-up space-y-8">
+    <div className="animate-fade-up space-y-6">
       <PageHeader
         title="Admin operations"
+        description="Platform moderation, review queue, and quick admin tools."
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        {statCards.map(({ label, value, icon: Icon, to, urgent }) => (
-          <Link
-            key={label}
-            to={to}
-            className={`rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md ${
-              urgent ? greUrgentRing : "border-slate-100 hover:border-brand-200"
-            }`}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span
-                className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                  urgent ? greUrgentIcon : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-              </span>
-              <ArrowRight className="h-4 w-4 text-slate-300" />
-            </div>
-            <p className="mt-3 text-2xl font-bold tabular-nums text-ink">{value}</p>
-            <p className="mt-0.5 text-xs font-medium text-slate-600">{label}</p>
-          </Link>
-        ))}
-      </div>
+      <DashboardSection title="At a glance" subtitle="Monthly activity (last 8 months)">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {ADMIN_METRICS.map(
+            ({ label, statKey, trendKey, icon, to, sparkColor, valueClass }) => (
+              <MetricTile
+                key={label}
+                label={label}
+                icon={icon}
+                value={stats?.[statKey] ?? 0}
+                valueClassName={valueClass}
+                to={to}
+                sparkline={
+                  trendKey
+                    ? pickActivityTrend(stats?.activity_trend, trendKey)
+                    : undefined
+                }
+                sparklineColor={sparkColor}
+              />
+            )
+          )}
+        </div>
+      </DashboardSection>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <section className="gre-card lg:col-span-3">
+        <section className="gre-dashboard-card lg:col-span-3">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
             <div>
               <h2 className="font-bold text-ink">Submissions awaiting review</h2>
@@ -208,7 +221,7 @@ export function AdminOperationsPage() {
                 <li key={pub.id}>
                   <Link
                     to={`/dashboard/review?pub=${pub.id}`}
-                    className="flex items-start justify-between gap-4 px-5 py-4 transition hover:bg-brand-50/40"
+                    className="flex items-start justify-between gap-4 px-5 py-4 transition hover:bg-slate-50"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-slate-600">
@@ -236,51 +249,42 @@ export function AdminOperationsPage() {
           )}
         </section>
 
-        <section className="gre-card lg:col-span-2">
+        <section className="gre-dashboard-card lg:col-span-2">
           <div className="border-b border-slate-100 px-5 py-4">
             <h2 className="font-bold text-ink">Quick actions</h2>
             <p className="text-sm text-slate-500">Common admin tasks in one place.</p>
           </div>
-          <ul className="divide-y divide-slate-100 p-2">
-            {QUICK_LINKS.map(({ to, label, description, icon: Icon }, index) => (
-              <li key={to}>
-                <Link
-                  to={to}
-                  className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-50"
-                >
-                  <span
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${GRE_ADMIN_QUICK_LINK_COLORS[index % GRE_ADMIN_QUICK_LINK_COLORS.length]}`}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-ink">{label}</p>
-                    <p className="text-xs text-slate-500">{description}</p>
-                  </div>
-                  <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-slate-300" />
-                </Link>
-              </li>
+          <div className="grid gap-2 p-3">
+            {QUICK_LINKS.map(({ to, label, description, icon }) => (
+              <QuickLinkTile
+                key={to}
+                to={to}
+                label={label}
+                description={description}
+                icon={icon}
+                value={to === "/dashboard/review" && pendingCount > 0 ? pendingCount : undefined}
+                highlight={to === "/dashboard/review" && pendingCount > 0}
+              />
             ))}
-          </ul>
+          </div>
         </section>
       </div>
 
       {revisions.length > 0 && (
-        <section className="gre-card p-5">
+        <section className="gre-dashboard-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-bold text-ink">Awaiting author resubmission</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {revisions.length} publication{revisions.length !== 1 ? "s" : ""} sent back for
-                revision. Authors must update and resubmit.
+                revision.
               </p>
             </div>
             <Link
               to="/dashboard/review?status=2"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-100 px-4 py-2 text-sm font-semibold text-brand-900 hover:bg-brand-200"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
             >
               View revision queue
-              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </section>

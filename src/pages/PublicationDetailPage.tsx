@@ -141,7 +141,7 @@ export function PublicationDetailPage() {
             initialShareCount={pub.share_count ?? 0}
           />
 
-          <section className="gre-card min-w-0 overflow-hidden p-6 sm:p-8">
+          <section className="gre-public-card min-w-0 overflow-hidden p-6 sm:p-8">
             <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">Abstract</h2>
             {pub.abstract?.trim() ? (
               <ManuscriptContent value={pub.abstract} className="mt-4 min-w-0" />
@@ -159,7 +159,7 @@ export function PublicationDetailPage() {
           {showManuscriptContent && (
             <>
               {showPdfPreview && docPath && (
-              <section className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+              <section className="gre-public-card overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-7">
                   <div>
                     <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
@@ -199,7 +199,7 @@ export function PublicationDetailPage() {
           <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
           <CoAuthorsPanel publication={pub} />
 
-          <section className="gre-card border-amber-100 bg-amber-50/30 p-5">
+          <section className="gre-public-card border-amber-200 bg-amber-50/40 p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 className="flex items-center gap-2 text-sm font-semibold text-amber-950">
@@ -222,7 +222,7 @@ export function PublicationDetailPage() {
         </div>
 
         <aside className="space-y-6">
-          <div className="gre-card p-5">
+          <div className="gre-public-card p-5">
             <div className="flex items-center gap-3">
               <UserAvatar user={pub.author} size="md" />
               <div className="min-w-0">

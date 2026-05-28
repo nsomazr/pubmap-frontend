@@ -256,7 +256,7 @@ export function PublicationDownloadPanel({
   const closeMenu = () => setMenuOpen(false);
 
   return (
-    <section className="gre-card min-w-0 overflow-hidden p-5 sm:p-6">
+    <section className="gre-public-card min-w-0 overflow-hidden p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">

@@ -27,8 +27,10 @@ import {
   greAccountStatPublished,
   greAccountStatRevision,
 } from "../../lib/greTheme";
+import { pickActivityTrend } from "../../lib/sparkline";
 import { canAccessReviewQueue, isPlatformAdmin } from "../../lib/userAccess";
 import type { DashboardStats } from "../../types";
+import { DashboardSection } from "../../components/dashboard/DashboardSection";
 
 const WORKFLOW_METRICS = [
   {
@@ -38,6 +40,7 @@ const WORKFLOW_METRICS = [
     icon: FileText,
     status: "0",
     statKey: "drafts" as const,
+    trendKey: "drafts",
     colors: greAccountStatDraft,
     sparkColor: "#64748b",
   },
@@ -48,6 +51,7 @@ const WORKFLOW_METRICS = [
     icon: Clock,
     status: "1",
     statKey: "pending" as const,
+    trendKey: "pending_review",
     colors: greAccountStatPending,
     sparkColor: "#7c3aed",
   },
@@ -58,6 +62,7 @@ const WORKFLOW_METRICS = [
     icon: MessageSquare,
     status: "2",
     statKey: "commented" as const,
+    trendKey: "revision",
     colors: greAccountStatRevision,
     sparkColor: "#d97706",
   },
@@ -68,6 +73,7 @@ const WORKFLOW_METRICS = [
     icon: CheckCircle,
     status: "3",
     statKey: "published" as const,
+    trendKey: "published",
     colors: greAccountStatPublished,
     sparkColor: "#0d9488",
   },
@@ -99,20 +105,6 @@ const QUICK_LINKS = [
     icon: User,
   },
 ] as const;
-
-/** Smooth ramp to current count for metric sparklines (visual only). */
-function sparkFromCount(count: number): number[] {
-  const steps = 8;
-  if (count <= 0) return Array(steps).fill(0);
-  const out: number[] = [];
-  for (let i = 0; i < steps; i++) {
-    const t = (i + 1) / steps;
-    const wave = 0.92 + 0.08 * Math.sin(i * 1.1);
-    out.push(Math.max(0, Math.round(count * t * wave)));
-  }
-  out[steps - 1] = count;
-  return out;
-}
 
 export function DashboardHome() {
   const { user } = useAuth();
@@ -257,14 +249,12 @@ export function DashboardHome() {
         </div>
       </section>
 
-      <section>
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">
-          Workflow
-        </h3>
+      <DashboardSection title="Workflow" subtitle="Last 8 months of activity">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {WORKFLOW_METRICS.map(
-            ({ id, label, hint, icon, status, statKey, colors, sparkColor }) => {
+            ({ id, label, hint, icon, status, statKey, trendKey, colors, sparkColor }) => {
               const value = stats?.[statKey] ?? 0;
+              const sparkline = pickActivityTrend(stats?.activity_trend, trendKey);
               return (
                 <MetricTile
                   key={id}
@@ -275,19 +265,16 @@ export function DashboardHome() {
                   loading={isLoading}
                   valueClassName={colors.color}
                   to={`/dashboard/publications?status=${status}`}
-                  sparkline={sparkFromCount(value)}
+                  sparkline={sparkline}
                   sparklineColor={sparkColor}
                 />
               );
             }
           )}
         </div>
-      </section>
+      </DashboardSection>
 
-      <section>
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">
-          Quick access
-        </h3>
+      <DashboardSection title="Quick access">
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {QUICK_LINKS.map(({ to, label, description, icon }) => (
             <QuickLinkTile
@@ -309,7 +296,7 @@ export function DashboardHome() {
             />
           )}
         </div>
-      </section>
+      </DashboardSection>
     </div>
   );
 }
