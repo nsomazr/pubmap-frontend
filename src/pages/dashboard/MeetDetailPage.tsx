@@ -23,8 +23,7 @@ import api, { parseApiError } from "../../lib/api";
 import {
   fetchMeeting,
   formatMeetingDate,
-  GRE_MEETING_TIMEZONE,
-  GRE_MEETING_TIMEZONE_LABEL,
+  formatMeetingDateInTimezone,
   formatMeetingId,
   meetingCalendarDownloadUrl,
   MEETING_TYPE_LABELS,
@@ -178,9 +177,8 @@ export function MeetDetailPage() {
             </div>
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Scheduled</p>
-              <p className="mt-2 text-sm font-semibold text-ink">{formatMeetingDate(meeting.scheduled_at)}</p>
-              <p className="mt-1 text-xs text-slate-500">
-                Timezone: {GRE_MEETING_TIMEZONE_LABEL} ({GRE_MEETING_TIMEZONE})
+              <p className="mt-2 text-sm font-semibold text-ink">
+                {formatMeetingDateInTimezone(meeting.scheduled_at, meeting.scheduled_timezone)}
               </p>
             </div>
             <div className="rounded-2xl bg-slate-50 p-4">

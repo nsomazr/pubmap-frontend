@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Search, UserPlus, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, CalendarClock, FileText, Link2, Search, Shield, UserPlus, Users } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
@@ -11,16 +11,21 @@ import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import api, { parseApiError } from "../../lib/api";
 import { MeetHostToolsPanel } from "../../components/meet/MeetHostToolsPanel";
+import { TimezoneSelect } from "../../components/meet/TimezoneSelect";
 import {
   fetchMeeting,
-  formatMeetingDate,
-  GRE_MEETING_TIMEZONE,
-  GRE_MEETING_TIMEZONE_LABEL,
+  formatMeetingDateInTimezone,
   inviteMeetingByEmailBulk,
   inviteMeetingFieldMembers,
   MEETING_TYPE_LABELS,
   MEETING_VISIBILITY_LABELS,
 } from "../../lib/meetings";
+import {
+  GRE_MEETING_TIMEZONE,
+  previewScheduledAt,
+  utcToWallInputValue,
+  wallTimeToUtcIso,
+} from "../../lib/meetTimezones";
 import type { Category, MeetParticipant, MeetParticipantRole, MeetSession, Publication, Topic, User } from "../../types";
 
 const emptyForm = {
@@ -31,16 +36,36 @@ const emptyForm = {
   category_id: "",
   sub_category_id: "",
   scheduled_at: "",
-  scheduled_timezone: "",
+  scheduled_timezone: GRE_MEETING_TIMEZONE,
   publication_id: "",
   forum_topic_id: "",
 };
 
-function toLocalInputValue(value?: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+function FormSection({
+  icon: Icon,
+  title,
+  description,
+  children,
+}: {
+  icon: typeof CalendarClock;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="flex items-start gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+          <Icon className="h-5 w-5" />
+        </span>
+        <div>
+          <h2 className="text-base font-semibold text-ink">{title}</h2>
+          {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
+        </div>
+      </div>
+      <div className="space-y-4 p-5">{children}</div>
+    </section>
+  );
 }
 
 export function MeetManagePage() {
@@ -57,8 +82,6 @@ export function MeetManagePage() {
   const [guestInviteRole, setGuestInviteRole] = useState<"participant" | "speaker">("participant");
   const [guestInviteMessage, setGuestInviteMessage] = useState("");
   const [inviteMatchingMembers, setInviteMatchingMembers] = useState(false);
-  const fixedTimezone = GRE_MEETING_TIMEZONE;
-
   const { data: meeting } = useQuery({
     queryKey: ["meeting", id],
     queryFn: () => fetchMeeting(id!),
@@ -110,22 +133,33 @@ export function MeetManagePage() {
       visibility: meeting.visibility,
       category_id: meeting.category_id ? String(meeting.category_id) : "",
       sub_category_id: meeting.sub_category_id ? String(meeting.sub_category_id) : "",
-      scheduled_at: toLocalInputValue(meeting.scheduled_at),
-      scheduled_timezone: meeting.scheduled_timezone || fixedTimezone,
+      scheduled_at: utcToWallInputValue(
+        meeting.scheduled_at,
+        meeting.scheduled_timezone || GRE_MEETING_TIMEZONE
+      ),
+      scheduled_timezone: meeting.scheduled_timezone || GRE_MEETING_TIMEZONE,
       publication_id: meeting.publication_id ? String(meeting.publication_id) : "",
       forum_topic_id: meeting.forum_topic_id ? String(meeting.forum_topic_id) : "",
     });
-  }, [fixedTimezone, meeting]);
+  }, [meeting]);
 
   useEffect(() => {
     if (meeting) return;
-    setForm((prev) => ({ ...prev, scheduled_timezone: fixedTimezone }));
-  }, [fixedTimezone, meeting]);
+    setForm((prev) => ({
+      ...prev,
+      scheduled_timezone: prev.scheduled_timezone || GRE_MEETING_TIMEZONE,
+    }));
+  }, [meeting]);
 
   const subcategories = useMemo(() => {
     const category = categories.find((item) => String(item.id) === form.category_id);
     return category?.sub_categories ?? [];
   }, [categories, form.category_id]);
+
+  const schedulePreview = useMemo(
+    () => previewScheduledAt(form.scheduled_at, form.scheduled_timezone),
+    [form.scheduled_at, form.scheduled_timezone]
+  );
 
   const filteredPublications = useMemo(
     () =>
@@ -143,8 +177,8 @@ export function MeetManagePage() {
         meeting_type: form.meeting_type,
         visibility: form.visibility,
         sub_category_id: Number(form.sub_category_id),
-        scheduled_at: new Date(form.scheduled_at).toISOString(),
-        scheduled_timezone: fixedTimezone,
+        scheduled_at: wallTimeToUtcIso(form.scheduled_at, form.scheduled_timezone),
+        scheduled_timezone: form.scheduled_timezone || GRE_MEETING_TIMEZONE,
         publication_id: form.publication_id ? Number(form.publication_id) : null,
         forum_topic_id: form.forum_topic_id ? Number(form.forum_topic_id) : null,
       };
@@ -305,118 +339,137 @@ export function MeetManagePage() {
       <RequiredFieldsLegend className="-mt-4" />
 
       <form
-        className="gre-card space-y-6 p-6"
+        className="space-y-5"
         onSubmit={(e) => {
           e.preventDefault();
           setError("");
           saveMutation.mutate();
         }}
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <FormSection
+          icon={CalendarClock}
+          title="Schedule"
+          description="Set when the meeting happens. Date and time use the organizer timezone you choose below."
+        >
           <Input
             label="Meeting title"
             value={form.title}
             onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
             required
+            placeholder="e.g. GRE methods review — cohort A"
           />
-          <Input
-            label="Scheduled at"
-            type="datetime-local"
-            value={form.scheduled_at}
-            onChange={(e) => setForm((prev) => ({ ...prev, scheduled_at: e.target.value }))}
-            required
-          />
-          <div className="space-y-1.5">
+          <div className="grid gap-4 lg:grid-cols-2">
             <Input
+              label="Date and time"
+              type="datetime-local"
+              value={form.scheduled_at}
+              onChange={(e) => setForm((prev) => ({ ...prev, scheduled_at: e.target.value }))}
+              required
+              hint="In your selected timezone"
+            />
+            <TimezoneSelect
               label="Organizer timezone"
               value={form.scheduled_timezone}
-              onChange={(e) => setForm((prev) => ({ ...prev, scheduled_timezone: e.target.value }))}
-              placeholder={GRE_MEETING_TIMEZONE}
-              disabled
+              onChange={(scheduled_timezone) => setForm((prev) => ({ ...prev, scheduled_timezone }))}
               required
+              hint="Used for invites and the meeting archive"
             />
-            <p className="text-xs text-slate-500">
-              GRE Meet is fixed to {GRE_MEETING_TIMEZONE_LABEL} ({GRE_MEETING_TIMEZONE}).
-            </p>
           </div>
-          <Select
-            label="Meeting type"
-            value={form.meeting_type}
-            onChange={(e) => setForm((prev) => ({ ...prev, meeting_type: e.target.value }))}
-          >
-            {Object.entries(MEETING_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-          <Select
-            label="Visibility"
-            value={form.visibility}
-            onChange={(e) => setForm((prev) => ({ ...prev, visibility: e.target.value }))}
-          >
-            {Object.entries(MEETING_VISIBILITY_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-          <Select
-            label="Category"
-            value={form.category_id}
-            required
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                category_id: e.target.value,
-                sub_category_id: "",
-                publication_id: "",
-                forum_topic_id: "",
-              }))
-            }
-          >
-            <option value="">Select category…</option>
-            {categories.map((category) => (
-              <option key={category.id} value={String(category.id)}>
-                {category.name}
-              </option>
-            ))}
-          </Select>
-          <Select
-            label="Subcategory"
-            value={form.sub_category_id}
-            required
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                sub_category_id: e.target.value,
-                publication_id: "",
-                forum_topic_id: "",
-              }))
-            }
-            disabled={!form.category_id}
-          >
-            <option value="">Select subcategory…</option>
-            {subcategories.map((subcategory) => (
-              <option key={subcategory.id} value={String(subcategory.id)}>
-                {subcategory.name}
-              </option>
-            ))}
-          </Select>
-          <Select
-            label="Related paper (optional)"
-            value={form.publication_id}
-            onChange={(e) => setForm((prev) => ({ ...prev, publication_id: e.target.value }))}
-            disabled={!form.sub_category_id}
-          >
-            <option value="">No linked paper</option>
-            {filteredPublications.map((publication) => (
-              <option key={publication.id} value={String(publication.id)}>
-                {publication.title}
-              </option>
-            ))}
-          </Select>
-          <div className="sm:col-span-2">
+          {schedulePreview && (
+            <p className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-sm text-brand-900">
+              <span className="font-semibold">Preview:</span> {schedulePreview}
+            </p>
+          )}
+        </FormSection>
+
+        <FormSection icon={Shield} title="Access and format" description="Who can join and how the session is categorized.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select
+              label="Meeting type"
+              value={form.meeting_type}
+              onChange={(e) => setForm((prev) => ({ ...prev, meeting_type: e.target.value }))}
+            >
+              {Object.entries(MEETING_TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+            <Select
+              label="Visibility"
+              value={form.visibility}
+              onChange={(e) => setForm((prev) => ({ ...prev, visibility: e.target.value }))}
+            >
+              {Object.entries(MEETING_VISIBILITY_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </FormSection>
+
+        <FormSection
+          icon={Link2}
+          title="GRE research context"
+          description="Link the meeting to a subcategory and optional paper or forum thread."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select
+              label="Category"
+              value={form.category_id}
+              required
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  category_id: e.target.value,
+                  sub_category_id: "",
+                  publication_id: "",
+                  forum_topic_id: "",
+                }))
+              }
+            >
+              <option value="">Select category…</option>
+              {categories.map((category) => (
+                <option key={category.id} value={String(category.id)}>
+                  {category.name}
+                </option>
+              ))}
+            </Select>
+            <Select
+              label="Subcategory"
+              value={form.sub_category_id}
+              required
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  sub_category_id: e.target.value,
+                  publication_id: "",
+                  forum_topic_id: "",
+                }))
+              }
+              disabled={!form.category_id}
+            >
+              <option value="">Select subcategory…</option>
+              {subcategories.map((subcategory) => (
+                <option key={subcategory.id} value={String(subcategory.id)}>
+                  {subcategory.name}
+                </option>
+              ))}
+            </Select>
+            <Select
+              label="Related paper (optional)"
+              value={form.publication_id}
+              onChange={(e) => setForm((prev) => ({ ...prev, publication_id: e.target.value }))}
+              disabled={!form.sub_category_id}
+            >
+              <option value="">No linked paper</option>
+              {filteredPublications.map((publication) => (
+                <option key={publication.id} value={String(publication.id)}>
+                  {publication.title}
+                </option>
+              ))}
+            </Select>
             <Select
               label="Related discussion (optional)"
               value={form.forum_topic_id}
@@ -431,25 +484,28 @@ export function MeetManagePage() {
               ))}
             </Select>
           </div>
-          <div className="sm:col-span-2">
+        </FormSection>
+
+        <FormSection icon={FileText} title="Description" description="Optional context for attendees and the GRE archive.">
+          <Textarea
+            label="Meeting description"
+            value={form.description}
+            onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+            rows={5}
+            placeholder="Agenda, goals, pre-reading, or notes for participants…"
+          />
+        </FormSection>
+
+        {form.visibility === "invite_only" && (
+          <FormSection icon={Users} title="Guest invitations" description="Send invites when you save, or add guests later from the meeting page.">
             <Textarea
-              label="Description"
-              value={form.description}
-              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+              label="Guest emails"
+              value={guestEmails}
+              onChange={(e) => setGuestEmails(e.target.value)}
               rows={4}
+              placeholder={"Paste emails separated by commas or new lines\nexample1@email.com\nexample2@email.com"}
             />
-          </div>
-          {form.visibility === "invite_only" && (
-            <>
-              <div className="sm:col-span-2">
-                <Textarea
-                  label="Add guests (bulk emails)"
-                  value={guestEmails}
-                  onChange={(e) => setGuestEmails(e.target.value)}
-                  rows={4}
-                  placeholder={"Paste emails separated by commas or new lines\nexample1@email.com\nexample2@email.com"}
-                />
-              </div>
+            <div className="grid gap-4 sm:grid-cols-2">
               <Select
                 label="Guest role"
                 value={guestInviteRole}
@@ -458,45 +514,42 @@ export function MeetManagePage() {
                 <option value="participant">Participant</option>
                 <option value="speaker">Speaker</option>
               </Select>
-              <div className="sm:col-span-2">
-                <Textarea
-                  label="Guest invite message (optional)"
-                  value={guestInviteMessage}
-                  onChange={(e) => setGuestInviteMessage(e.target.value)}
-                  rows={2}
-                  placeholder="Optional personal message included in the invite email."
-                />
-              </div>
-              <label className="sm:col-span-2 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={inviteMatchingMembers}
-                  onChange={(e) => setInviteMatchingMembers(e.target.checked)}
-                />
-                Invite matching field/subfield members when saving
-              </label>
-            </>
-          )}
-        </div>
+            </div>
+            <Textarea
+              label="Personal message (optional)"
+              value={guestInviteMessage}
+              onChange={(e) => setGuestInviteMessage(e.target.value)}
+              rows={2}
+              placeholder="Included in the invite email."
+            />
+            <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                checked={inviteMatchingMembers}
+                onChange={(e) => setInviteMatchingMembers(e.target.checked)}
+              />
+              Also invite matching field/subfield members when saving
+            </label>
+          </FormSection>
+        )}
 
-        {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
           <Button
             type="submit"
             loading={saveMutation.isPending}
-            disabled={!form.title || !form.sub_category_id || !form.scheduled_at}
+            disabled={!form.title || !form.sub_category_id || !form.scheduled_at || !form.scheduled_timezone}
           >
             {isNew ? "Create meeting" : "Save changes"}
           </Button>
           {!isNew && meeting && (
-            <p className="flex items-center text-sm text-slate-500">
-              Current schedule: {formatMeetingDate(meeting.scheduled_at)} ({meeting.scheduled_timezone || fixedTimezone})
-            </p>
-          )}
-          {!isNew && meeting && (
-            <p className="flex items-center text-sm text-slate-500">
-              Timezone: {GRE_MEETING_TIMEZONE_LABEL} ({GRE_MEETING_TIMEZONE})
+            <p className="text-sm text-slate-500">
+              Saved schedule:{" "}
+              <span className="font-medium text-ink">
+                {formatMeetingDateInTimezone(meeting.scheduled_at, meeting.scheduled_timezone)}
+              </span>
             </p>
           )}
           {!isNew && meeting && form.visibility === "invite_only" && (

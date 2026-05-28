@@ -14,8 +14,7 @@ import {
   fetchMeeting,
   formatMeetingDate,
   formatMeetingId,
-  GRE_MEETING_TIMEZONE,
-  GRE_MEETING_TIMEZONE_LABEL,
+  formatMeetingDateInTimezone,
   shareMeetingMinutes,
 } from "../../lib/meetings";
 import { buildPublicationPath } from "../../lib/publicationPaths";
@@ -219,10 +218,7 @@ export function MeetingArchivePage() {
                   Scheduled
                 </p>
                 <p className="mt-2 text-sm font-semibold text-ink">
-                  {formatMeetingDate(meeting.scheduled_at)}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Timezone: {GRE_MEETING_TIMEZONE_LABEL} ({GRE_MEETING_TIMEZONE})
+                  {formatMeetingDateInTimezone(meeting.scheduled_at, meeting.scheduled_timezone)}
                 </p>
               </div>
               <div className="rounded-2xl bg-slate-50 p-4">
