@@ -4,6 +4,12 @@ export interface JitsiParticipantInfo {
   displayName?: string;
   email?: string;
   avatarURL?: string;
+  audioMuted?: boolean;
+  videoMuted?: boolean;
+  isAudioMuted?: boolean;
+  isVideoMuted?: boolean;
+  muted?: boolean;
+  isMuted?: boolean;
 }
 
 export interface JitsiRecordingStatusEvent {

@@ -5,6 +5,7 @@ import {
   Copy,
   ExternalLink,
   Loader2,
+  Mic,
   MicOff,
   MoreVertical,
   PictureInPicture2,
@@ -21,7 +22,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
-import { Textarea } from "../components/ui/Textarea";
 import { useToast } from "../components/ui/ToastProvider";
 import { useAuth } from "../context/AuthContext";
 import { assistantHealth, assistantSummarizeTextStream } from "../lib/assistant";
@@ -53,7 +53,14 @@ import type { MeetChatMessage, MeetSession } from "../types";
 function normalizeParticipants(rows: JitsiParticipantInfo[] | undefined, localEmail?: string) {
   const seen = new Set<string>();
   const local = (localEmail || "").toLowerCase();
-  const normalized: { id: string; displayName: string; email?: string; isLocal?: boolean }[] = [];
+  const normalized: {
+    id: string;
+    displayName: string;
+    email?: string;
+    isLocal?: boolean;
+    audioMuted?: boolean;
+    videoMuted?: boolean;
+  }[] = [];
   for (const row of rows ?? []) {
     const id = row.participantId || row.id || "";
     const email = row.email?.toLowerCase() || "";
@@ -66,6 +73,8 @@ function normalizeParticipants(rows: JitsiParticipantInfo[] | undefined, localEm
       displayName,
       email: row.email,
       isLocal: !!local && email === local,
+      audioMuted: !!(row.audioMuted ?? row.isAudioMuted ?? row.muted ?? row.isMuted),
+      videoMuted: !!(row.videoMuted ?? row.isVideoMuted),
     });
   }
   return normalized;
@@ -159,15 +168,16 @@ export function MeetRoomPage() {
   const [roomError, setRoomError] = useState("");
   const [roomRetryKey, setRoomRetryKey] = useState(0);
   const [roomParticipants, setRoomParticipants] = useState<
-    { id: string; displayName: string; email?: string; isLocal?: boolean }[]
+    {
+      id: string;
+      displayName: string;
+      email?: string;
+      isLocal?: boolean;
+      audioMuted?: boolean;
+      videoMuted?: boolean;
+    }[]
   >([]);
   const [isModerator, setIsModerator] = useState(false);
-  const [notes, setNotes] = useState("");
-  const [notesSeedMeetingId, setNotesSeedMeetingId] = useState<number | null>(null);
-  const [notesState, setNotesState] = useState<"idle" | "dirty" | "saving" | "saved" | "error">(
-    "idle"
-  );
-  const [notesError, setNotesError] = useState("");
   const [copilotOutput, setCopilotOutput] = useState("");
   const [copilotError, setCopilotError] = useState("");
   const [copilotLoading, setCopilotLoading] = useState(false);
@@ -249,30 +259,6 @@ export function MeetRoomPage() {
     onError: (error) => setChatError(parseApiError(error, "Could not send that message.")),
   });
 
-  const saveNotes = useMutation({
-    mutationFn: async (value: string) => {
-      const { data } = await api.patch<MeetSession>(`/meetings/${meetingId}/`, {
-        assistant_notes: value,
-      });
-      return data;
-    },
-    onMutate: () => {
-      setNotesState("saving");
-      setNotesError("");
-    },
-    onSuccess: (data) => {
-      setNotesState("saved");
-      setNotesError("");
-      queryClient.setQueryData(["meeting-by-slug", slug], data);
-      queryClient.setQueryData(["meeting", data.id], data);
-    },
-    onError: (error) => {
-      setNotesState("error");
-      setNotesError(parseApiError(error, "Could not save assistant report."));
-    },
-  });
-  const saveNotesMutation = saveNotes.mutate;
-
   const startMeeting = useMutation({
     mutationFn: () => api.post(`/meetings/${meetingId}/start/`),
     onSuccess: async () => {
@@ -349,35 +335,6 @@ export function MeetRoomPage() {
 
   const canManage = !!activeMeeting?.can_manage;
   const isLive = activeMeeting?.status === "live";
-
-  useEffect(() => {
-    if (!activeMeeting?.id || notesSeedMeetingId === activeMeeting.id) return;
-    setNotes(activeMeeting.assistant_notes || "");
-    setNotesSeedMeetingId(activeMeeting.id);
-    setNotesState(activeMeeting.assistant_notes?.trim() ? "saved" : "idle");
-    setNotesError("");
-  }, [activeMeeting?.assistant_notes, activeMeeting?.id, notesSeedMeetingId]);
-
-  useEffect(() => {
-    if (!canManage || !meetingId || notesSeedMeetingId !== activeMeeting?.id) return;
-    const savedNotes = activeMeeting?.assistant_notes || "";
-    if (notes === savedNotes) {
-      return;
-    }
-    setNotesState("dirty");
-    const timer = window.setTimeout(() => {
-      saveNotesMutation(notes);
-    }, 900);
-    return () => window.clearTimeout(timer);
-  }, [
-    activeMeeting?.assistant_notes,
-    activeMeeting?.id,
-    canManage,
-    meetingId,
-    notes,
-    notesSeedMeetingId,
-    saveNotesMutation,
-  ]);
 
   useEffect(() => {
     if (!participantActionMenuId) return;
@@ -666,17 +623,6 @@ export function MeetRoomPage() {
   const embedStatusMessage =
     roomError ||
     "The embedded meeting is taking too long to start. This is usually a Jitsi network/auth issue.";
-  const notesStatusLabel =
-    notesState === "saving"
-      ? "Saving assistant report..."
-      : notesState === "saved"
-        ? "Assistant report saved to GRE"
-        : notesState === "error"
-          ? "Assistant report could not be saved"
-          : notesState === "dirty"
-            ? "Waiting to save..."
-            : "Assistant report will be saved to GRE";
-
   const headerTitle = activeMeeting?.title || "GRE Meet";
   const subtitle = useMemo(() => {
     if (!activeMeeting) return "";
@@ -705,7 +651,7 @@ export function MeetRoomPage() {
     successDescription: string,
     fallbackError: string
   ) => {
-    if (!participantId) return;
+    if (!participantId) return false;
     const ok = runModeratorCommand(command, participantId);
     if (ok) {
       toast.success({ title: successTitle, description: successDescription });
@@ -715,6 +661,7 @@ export function MeetRoomPage() {
         description: fallbackError,
       });
     }
+    return ok;
   };
 
   const answerKnockingParticipant = (participantId: string, approve: boolean) => {
@@ -873,7 +820,7 @@ export function MeetRoomPage() {
     copilotAbortRef.current = controller;
 
     assistantSummarizeTextStream(
-      buildCopilotPrompt(activeMeeting, chat, notes, task, question),
+      buildCopilotPrompt(activeMeeting, chat, activeMeeting.assistant_notes || "", task, question),
       {
         onToken: (token) => setCopilotOutput((current) => current + token),
         onError: (message) => setCopilotError(message),
@@ -1166,16 +1113,6 @@ export function MeetRoomPage() {
                           ) : (
                             <FormattedAssistantText content={copilotOutput} streaming={copilotLoading} />
                           )}
-                          {copilotOutput && (
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              className="mt-3"
-                              onClick={() => setNotes(copilotOutput)}
-                            >
-                              Use as assistant report
-                            </Button>
-                          )}
                         </div>
                       )}
                     </div>
@@ -1184,31 +1121,8 @@ export function MeetRoomPage() {
               </div>
             ),
             assistant: (
-                <div className="space-y-2">
-                  <MeetingGreAssistantPanel meeting={activeMeeting} compact />
-                  {canManage && (
-                    <div className="space-y-2 rounded-xl bg-slate-50/70 p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold text-slate-500">Assistant report (host editable)</p>
-                        <span className="text-[11px] text-slate-400">Auto-saved · shared after meeting ends</span>
-                      </div>
-                      <Textarea
-                        value={notes}
-                        onChange={(event) => setNotes(event.target.value)}
-                        placeholder="Edit the assistant report before sharing to attendees..."
-                        rows={2}
-                        className="min-h-[3rem] rounded-2xl"
-                      />
-                      <p
-                        className={`text-xs font-medium ${notesState === "error" ? "text-red-600" : "text-slate-500"}`}
-                      >
-                        {notesStatusLabel}
-                      </p>
-                      {notesError && <p className="text-xs text-red-600">{notesError}</p>}
-                    </div>
-                  )}
-                </div>
-              ),
+              <MeetingGreAssistantPanel meeting={activeMeeting} compact />
+            ),
               chat: (
                 <div className="space-y-3">
                   <div className="max-h-[50vh] space-y-2 overflow-y-auto rounded-xl bg-slate-50/80 p-1">
@@ -1402,36 +1316,70 @@ export function MeetRoomPage() {
                                   variant="ghost"
                                   className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left"
                                   onClick={() => {
-                                    runParticipantAction(
+                                    const shouldMute = !participant.audioMuted;
+                                    const ok = runParticipantAction(
                                       participant.id,
-                                      "muteParticipant",
-                                      "Mute requested",
-                                      "Moderator mute command sent for attendee microphone.",
-                                      "Could not mute this attendee's microphone."
+                                      shouldMute ? "muteParticipant" : "unmuteParticipant",
+                                      shouldMute ? "Mute requested" : "Unmute requested",
+                                      shouldMute
+                                        ? "Moderator mute command sent for attendee microphone."
+                                        : "Moderator unmute command sent for attendee microphone.",
+                                      shouldMute
+                                        ? "Could not mute this attendee's microphone."
+                                        : "Could not unmute this attendee's microphone."
                                     );
+                                    if (ok) {
+                                      setRoomParticipants((current) =>
+                                        current.map((item) =>
+                                          item.id === participant.id ? { ...item, audioMuted: shouldMute } : item
+                                        )
+                                      );
+                                    }
                                     setParticipantActionMenuId(null);
                                   }}
                                 >
-                                  <MicOff className="h-4 w-4" />
-                                  Mute mic
+                                  {participant.audioMuted ? (
+                                    <Mic className="h-4 w-4" />
+                                  ) : (
+                                    <MicOff className="h-4 w-4" />
+                                  )}
+                                  {participant.audioMuted ? "Unmute mic" : "Mute mic"}
                                 </Button>
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left"
                                   onClick={() => {
-                                    runParticipantAction(
+                                    const shouldTurnVideoOff = !participant.videoMuted;
+                                    const ok = runParticipantAction(
                                       participant.id,
-                                      "muteParticipantVideo",
-                                      "Video-off requested",
-                                      "Moderator camera-off command sent for attendee video.",
-                                      "Could not turn off this attendee's camera."
+                                      shouldTurnVideoOff ? "muteParticipantVideo" : "unmuteParticipantVideo",
+                                      shouldTurnVideoOff ? "Video-off requested" : "Video-on requested",
+                                      shouldTurnVideoOff
+                                        ? "Moderator camera-off command sent for attendee video."
+                                        : "Moderator camera-on command sent for attendee video.",
+                                      shouldTurnVideoOff
+                                        ? "Could not turn off this attendee's camera."
+                                        : "Could not turn on this attendee's camera."
                                     );
+                                    if (ok) {
+                                      setRoomParticipants((current) =>
+                                        current.map((item) =>
+                                          item.id === participant.id
+                                            ? { ...item, videoMuted: shouldTurnVideoOff }
+                                            : item
+                                        )
+                                      );
+                                    }
                                     setParticipantActionMenuId(null);
                                   }}
                                 >
-                                  <VideoOff className="h-4 w-4" />
-                                  Video off
+                                  {participant.videoMuted ? (
+                                    <Video className="h-4 w-4" />
+                                  ) : (
+                                    <VideoOff className="h-4 w-4" />
+                                  )}
+                                  {participant.videoMuted ? "Video on" : "Video off"}
                                 </Button>
                                 <Button
                                   type="button"

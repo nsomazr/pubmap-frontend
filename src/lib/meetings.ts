@@ -138,6 +138,19 @@ export async function fetchMeetingChat(id: number) {
   return data;
 }
 
+export async function shareMeetingMinutes(
+  meetingId: number,
+  payload: { report: string; include_attendees?: boolean; emails?: string[] }
+) {
+  const { data } = await api.post<{
+    detail: string;
+    sent: number;
+    failed: number;
+    extra_emails_added: number;
+  }>(`/meetings/${meetingId}/share-minutes/`, payload);
+  return data;
+}
+
 export function meetingError(error: unknown, fallback: string) {
   return parseApiError(error, fallback);
 }

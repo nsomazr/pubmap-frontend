@@ -1,15 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { ArrowLeft, Download, ExternalLink, FileText, Trash2, Users, Video } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Download, ExternalLink, FileText, Send, Trash2, Users, Video } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
+import { Textarea } from "../../components/ui/Textarea";
 import { useToast } from "../../components/ui/ToastProvider";
 import api, { parseApiError } from "../../lib/api";
 import { MeetingGreAssistantPanel } from "../../components/meet/MeetingGreAssistantPanel";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
-import { fetchMeeting, formatMeetingDate, formatMeetingId } from "../../lib/meetings";
+import { fetchMeeting, formatMeetingDate, formatMeetingId, shareMeetingMinutes } from "../../lib/meetings";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 
 function formatMessageTime(value?: string | null) {
@@ -32,11 +33,50 @@ export function MeetingArchivePage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [reportDraft, setReportDraft] = useState("");
+  const [shareToAttendees, setShareToAttendees] = useState(true);
+  const [extraEmails, setExtraEmails] = useState("");
 
   const { data: meeting, isLoading } = useQuery({
     queryKey: ["meeting-archive", id],
     queryFn: () => fetchMeeting(id!),
     enabled: !!id,
+  });
+
+  const shareReport = useMutation({
+    mutationFn: async () => {
+      if (!meeting?.id) throw new Error("Meeting is unavailable.");
+      const emails = Array.from(
+        new Set(
+          extraEmails
+            .split(/[\n,;]+/)
+            .map((value) => value.trim().toLowerCase())
+            .filter(Boolean)
+        )
+      );
+      return shareMeetingMinutes(meeting.id, {
+        report: reportDraft.trim(),
+        include_attendees: shareToAttendees,
+        emails,
+      });
+    },
+    onSuccess: async (data) => {
+      await queryClient.invalidateQueries({ queryKey: ["meeting", id] });
+      await queryClient.invalidateQueries({ queryKey: ["meeting-archive", id] });
+      toast.success({
+        title: "Report shared",
+        description:
+          data.failed > 0
+            ? `${data.sent} sent, ${data.failed} failed.`
+            : `${data.sent} report emails sent.`,
+      });
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not share report",
+        description: parseApiError(error, "Could not share the meeting report."),
+      });
+    },
   });
 
   const deleteMeeting = useMutation({
@@ -61,9 +101,17 @@ export function MeetingArchivePage() {
     },
   });
 
+  useEffect(() => {
+    if (!meeting) return;
+    setReportDraft(meeting.meeting_minutes || meeting.summary || "");
+  }, [meeting?.id, meeting?.meeting_minutes, meeting?.summary]);
+
   if (isLoading || !meeting) {
     return <div className="gre-skeleton h-72 rounded-2xl" />;
   }
+
+  const effectiveReport = reportDraft || meeting.meeting_minutes || meeting.summary || "";
+  const hasDraft = effectiveReport.trim().length > 0;
 
   const archiveId = formatMeetingId(meeting.id);
   const messageCount = meeting.chat_messages?.length ?? 0;
@@ -177,7 +225,52 @@ export function MeetingArchivePage() {
               </div>
             </div>
 
-            {meeting.meeting_minutes ? (
+            {meeting.can_manage ? (
+              <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Assistant report (host edit before sharing)
+                </p>
+                <Textarea
+                  value={reportDraft}
+                  onChange={(event) => setReportDraft(event.target.value)}
+                  rows={10}
+                  placeholder={meeting.meeting_minutes || meeting.summary || "Report will appear here after meeting ends."}
+                />
+                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={shareToAttendees}
+                    onChange={(event) => setShareToAttendees(event.target.checked)}
+                  />
+                  Share to attendees who joined
+                </label>
+                <Textarea
+                  label="Add extra emails (optional)"
+                  value={extraEmails}
+                  onChange={(event) => setExtraEmails(event.target.value)}
+                  rows={3}
+                  placeholder={"name1@email.com\nname2@email.com"}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    loading={shareReport.isPending}
+                    disabled={!hasDraft || (!shareToAttendees && !extraEmails.trim())}
+                    onClick={() => shareReport.mutate()}
+                  >
+                    <Send className="h-4 w-4" />
+                    Share report now
+                  </Button>
+                  <p className="self-center text-xs text-slate-500">
+                    Report is never sent automatically.
+                  </p>
+                </div>
+                {hasDraft && (
+                  <div className="rounded-xl bg-white p-4 text-sm leading-relaxed text-slate-700">
+                    <FormattedAssistantText content={effectiveReport} />
+                  </div>
+                )}
+              </div>
+            ) : meeting.meeting_minutes ? (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Full meeting minutes
