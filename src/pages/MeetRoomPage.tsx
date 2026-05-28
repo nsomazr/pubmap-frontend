@@ -1124,32 +1124,32 @@ export function MeetRoomPage() {
               <MeetingGreAssistantPanel meeting={activeMeeting} compact />
             ),
               chat: (
-                <div className="space-y-3">
-                  <div className="max-h-[50vh] space-y-2 overflow-y-auto rounded-xl bg-slate-50/80 p-1">
+                <div className="flex h-full min-h-0 flex-col gap-3">
+                  <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900/70 p-2">
                     {chat.map((message) => (
-                      <div key={message.id} className="rounded-xl bg-white/80 px-3 py-2.5">
+                      <div key={message.id} className="rounded-xl bg-slate-800 px-3 py-2.5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                             {message.sender?.full_name ||
                               `${message.sender?.firstname ?? ""} ${message.sender?.lastname ?? ""}`.trim() ||
                               message.sender?.email}
                             {message.sender_id === user?.id ? " · You" : ""}
                           </p>
-                          <span className="text-[11px] text-slate-400">
+                          <span className="text-[11px] text-slate-500">
                             {formatChatTimestamp(message.created_at)}
                           </span>
                         </div>
-                        <p className="mt-1 text-sm text-slate-700">{message.message}</p>
+                        <p className="mt-1 text-sm text-slate-100">{message.message}</p>
                       </div>
                     ))}
                     {chat.length === 0 && (
-                      <p className="px-3 py-2 text-sm text-slate-500">
-                        No chat messages yet.
+                      <p className="px-3 py-2 text-sm text-slate-400">
+                        No messages yet.
                       </p>
                     )}
                   </div>
                   <form
-                    className="space-y-2"
+                    className="mt-auto space-y-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-3"
                     onSubmit={(event) => {
                       event.preventDefault();
                       if (!text.trim()) return;
@@ -1169,7 +1169,7 @@ export function MeetRoomPage() {
                         }}
                         placeholder="Message..."
                         rows={1}
-                        className="max-h-28 min-h-11 w-full resize-y rounded-3xl border border-slate-200 bg-white py-3 pl-4 pr-28 text-sm text-ink outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                        className="max-h-28 min-h-11 w-full resize-y rounded-3xl border border-slate-700 bg-slate-950 py-3 pl-4 pr-28 text-sm text-slate-100 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-900/40"
                       />
                       <Button
                         type="submit"
@@ -1181,7 +1181,7 @@ export function MeetRoomPage() {
                         Send
                       </Button>
                     </div>
-                    {chatError && <p className="text-sm text-red-600">{chatError}</p>}
+                    {chatError && <p className="text-sm text-red-400">{chatError}</p>}
                   </form>
                 </div>
               ),

@@ -43,22 +43,8 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
     },
   });
 
-  const minutesText = (meeting.meeting_minutes || meeting.summary || "").trim();
-  const liveNotes = (meeting.assistant_notes || "").trim();
   const isLive = meeting.status === "live";
   const enabled = meeting.gre_assistant_enabled !== false;
-
-  const suggestedQuestions = isLive
-    ? [
-        "What has been discussed so far?",
-        "What decisions or action items have we mentioned?",
-        "Summarize the last few points for someone who joined late.",
-      ]
-    : [
-        "What were the main outcomes of this meeting?",
-        "List action items and who owns them if stated.",
-        "What should I follow up on after this session?",
-      ];
 
   const handleAsk = (prompt?: string) => {
     const value = (prompt ?? question).trim();
@@ -73,37 +59,20 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
   }
 
   return (
-    <div className={compact ? "space-y-3" : "space-y-4"}>
+    <div className={`flex h-full min-h-0 flex-col ${compact ? "gap-3" : "gap-4"}`}>
       <div className="flex items-center gap-2">
-        <Bot className="h-4 w-4 text-brand-700" />
-        <p className="text-sm font-semibold text-ink">GRE Assistant</p>
+        <Bot className="h-4 w-4 text-brand-400" />
+        <p className="text-sm font-semibold text-slate-100">GRE Assistant</p>
         {isLive && (
-          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">
+          <span className="rounded-full bg-emerald-900/40 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
             Live
           </span>
         )}
       </div>
 
-      {isLive && liveNotes && (
-        <div className="rounded-xl bg-slate-50/70 p-3">
-          <p className="text-xs font-semibold text-slate-500">Live notes</p>
-          <div className="mt-2 max-h-40 overflow-y-auto rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
-            <FormattedAssistantText content={liveNotes} />
-          </div>
-        </div>
-      )}
-
-      {!isLive && minutesText && (
-        <div className="rounded-xl bg-slate-50/70 p-3">
-          <p className="text-xs font-semibold text-slate-500">Minutes</p>
-          <div className="mt-2 max-h-44 overflow-y-auto rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
-            <FormattedAssistantText content={minutesText} />
-          </div>
-        </div>
-      )}
-
-      {history.length > 0 && (
-        <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl bg-slate-50/70 p-3">
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900/70 p-3">
+        {history.length > 0 ? (
+          <>
           {history.map((turn, index) => (
             <div
               key={`${turn.role}-${index}`}
@@ -112,13 +81,13 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
               <div
                 className={`max-w-[88%] rounded-2xl px-3 py-2 text-sm ${
                   turn.role === "user"
-                    ? "rounded-br-md bg-emerald-100 text-emerald-950"
-                    : "rounded-bl-md bg-white text-slate-800"
+                    ? "rounded-br-md bg-brand-900/40 text-slate-100"
+                    : "rounded-bl-md bg-slate-800 text-slate-100"
                 }`}
               >
                 <p
                   className={`text-[11px] font-semibold uppercase tracking-wide ${
-                    turn.role === "user" ? "text-emerald-800/80" : "text-slate-400"
+                    turn.role === "user" ? "text-brand-200/80" : "text-slate-400"
                   }`}
                 >
                   {turn.role === "user" ? "You" : "GRE Assistant"}
@@ -130,32 +99,19 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
             </div>
           ))}
           {askMutation.isPending && (
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <div className="flex items-center gap-2 text-sm text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" />
               Thinking…
             </div>
           )}
-        </div>
-      )}
-
-      {history.length === 0 && (
-        <div className="flex flex-wrap gap-2">
-          {suggestedQuestions.map((item) => (
-            <button
-              key={item}
-              type="button"
-              className="h-9 rounded-lg bg-white/90 px-3.5 text-xs font-medium text-slate-700 transition hover:bg-brand-50/60 hover:text-brand-700"
-              onClick={() => handleAsk(item)}
-              disabled={askMutation.isPending}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-      )}
+          </>
+        ) : (
+          <p className="text-sm text-slate-400">Ask anything about this meeting. The assistant replies here.</p>
+        )}
+      </div>
 
       <form
-        className="space-y-2 rounded-xl bg-slate-50/70 p-3"
+        className="mt-auto space-y-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-3"
         onSubmit={(event) => {
           event.preventDefault();
           handleAsk();
@@ -173,7 +129,7 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
             }}
             placeholder="Ask a question..."
             rows={1}
-            className="max-h-28 min-h-11 w-full resize-y rounded-3xl border border-slate-200 bg-white py-3 pl-4 pr-24 text-sm text-ink outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+            className="max-h-28 min-h-11 w-full resize-y rounded-3xl border border-slate-700 bg-slate-950 py-3 pl-4 pr-24 text-sm text-slate-100 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-900/40"
           />
           <Button
             type="submit"
@@ -185,7 +141,7 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
             Ask
           </Button>
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
       </form>
     </div>
   );
