@@ -1,4 +1,5 @@
 import {
+  ChevronDown,
   Copy,
   Download,
   ExternalLink,
@@ -7,14 +8,13 @@ import {
   FileText,
   Link2,
   MessageSquare,
+  MoreHorizontal,
   Share2,
   ThumbsUp,
-  X,
 } from "lucide-react";
 import { greDoiDisplayPath } from "../../lib/publicationGre";
 import { grePaperCode } from "../../lib/grePaperTitle";
-import { createPortal } from "react-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import api from "../../lib/api";
 import { summaryPdfUrl } from "../../lib/publicationGre";
 import { mediaUrl } from "../../lib/mediaUrl";
@@ -39,6 +39,63 @@ interface Props {
   initialShareCount?: number;
 }
 
+function MenuSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="py-1">
+      <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        {title}
+      </p>
+      <div className="space-y-0.5">{children}</div>
+    </div>
+  );
+}
+
+function MenuItem({
+  children,
+  onClick,
+  href,
+  external,
+  icon: Icon,
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  href?: string;
+  external?: boolean;
+  icon: React.ComponentType<{ className?: string }>;
+}) {
+  const className =
+    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-brand-50 hover:text-brand-800";
+
+  const inner = (
+    <>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 flex-1">{children}</span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target={external ? "_blank" : undefined}
+        rel={external ? "noopener noreferrer" : undefined}
+        onClick={onClick}
+        className={className}
+      >
+        {inner}
+      </a>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {inner}
+    </button>
+  );
+}
+
 export function PublicationDownloadPanel({
   publicationId,
   gre,
@@ -55,9 +112,10 @@ export function PublicationDownloadPanel({
 }: Props) {
   const { user } = useAuth();
   const toast = useToast();
+  const menuRef = useRef<HTMLDivElement>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewDiscussions, setPreviewDiscussions] = useState(false);
-  const [actionsOpen, setActionsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [likesCount, setLikesCount] = useState(initialLikesCount);
   const [likedByMe, setLikedByMe] = useState(initialLikedByMe);
   const [shareCount, setShareCount] = useState(initialShareCount);
@@ -80,6 +138,17 @@ export function PublicationDownloadPanel({
     inline: true,
   });
 
+  const menuExtraCount = useMemo(() => {
+    let n = 0;
+    if (!closedAccess && fullUrl) n += 1;
+    if (closedAccess) n += 1;
+    if (gre?.external_url) n += 1;
+    n += supplementary.length;
+    n += 3; // copy, linkedin, whatsapp baseline share options
+    if ("share" in navigator) n += 1;
+    return n;
+  }, [closedAccess, fullUrl, gre?.external_url, supplementary.length]);
+
   useEffect(() => {
     setLikesCount(initialLikesCount);
   }, [initialLikesCount]);
@@ -93,18 +162,22 @@ export function PublicationDownloadPanel({
   }, [initialShareCount]);
 
   useEffect(() => {
-    if (!actionsOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setActionsOpen(false);
+    if (!menuOpen) return;
+    const onPointer = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
     };
-    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("mousedown", onPointer);
     window.addEventListener("keydown", onKey);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("mousedown", onPointer);
       window.removeEventListener("keydown", onKey);
     };
-  }, [actionsOpen]);
+  }, [menuOpen]);
 
   const recordDownload = () => {
     api.post("/stats/record/", { publication_id: publicationId, type: "download" }).catch(() => {});
@@ -139,7 +212,7 @@ export function PublicationDownloadPanel({
       title: "Paper link copied",
       description: "The publication link is ready to paste.",
     });
-    setActionsOpen(false);
+    setMenuOpen(false);
     void recordShare("copy_link");
   };
 
@@ -173,203 +246,24 @@ export function PublicationDownloadPanel({
         title: publicationTitle || "GRE publication",
         url: publicationHref,
       });
-      setActionsOpen(false);
+      setMenuOpen(false);
       void recordShare("native_share");
     } catch {
       /* user cancelled */
     }
   };
 
-  const actionButtonClass =
-    "inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50";
-
-  const inlineActionClass =
-    "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800";
-
-  const inlinePrimaryClass =
-    "inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700";
-
-  const inlinePillClass =
-    "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800";
-
-  const actionsDialog =
-    actionsOpen && typeof document !== "undefined"
-      ? createPortal(
-          <div
-            className="fixed inset-0 z-[2600] flex items-end justify-center bg-slate-900/50 p-4 sm:items-center"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="publication-actions-title"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setActionsOpen(false);
-            }}
-          >
-            <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
-              <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
-                <div>
-                  <h3 id="publication-actions-title" className="text-lg font-semibold text-ink">
-                    Share and download
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Preview the GRE PDF, download files, and share this publication.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActionsOpen(false)}
-                  className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-ink"
-                  aria-label="Close actions"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="max-h-[75vh] space-y-3 overflow-y-auto px-5 py-5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPreviewOpen((open) => !open);
-                    setActionsOpen(false);
-                  }}
-                  className={`${actionButtonClass} ${
-                    previewOpen ? "border-brand-300 bg-brand-50 text-brand-800" : ""
-                  }`}
-                >
-                  {previewOpen ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  {previewOpen ? "Hide preview" : "Preview PDF"}
-                </button>
-
-                <a
-                  href={summaryPdfUrl(publicationId)}
-                  onClick={() => {
-                    recordDownload();
-                    setActionsOpen(false);
-                  }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
-                >
-                  <FileText className="h-4 w-4" />
-                  GRE publication PDF
-                </a>
-
-                {!closedAccess && fullUrl && (
-                  <a
-                    href={fullUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => {
-                      recordDownload();
-                      setActionsOpen(false);
-                    }}
-                    className={`${actionButtonClass} border-brand-200 bg-brand-50 text-brand-800 hover:bg-brand-100`}
-                  >
-                    <Download className="h-4 w-4" />
-                    Full paper (uploaded PDF)
-                  </a>
-                )}
-
-                {closedAccess && (
-                  <a
-                    href={summaryPdfUrl(publicationId, { discussions: true })}
-                    onClick={() => {
-                      recordDownload();
-                      setActionsOpen(false);
-                    }}
-                    className={actionButtonClass}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    GRE PDF + discussions
-                  </a>
-                )}
-
-                {gre?.external_url && (
-                  <a
-                    href={gre.external_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setActionsOpen(false)}
-                    className={actionButtonClass}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    {closedAccess ? "Publisher access" : "External publication"}
-                  </a>
-                )}
-
-                <button type="button" onClick={handleCopyLink} className={actionButtonClass}>
-                  <Copy className="h-4 w-4" />
-                  Copy paper link
-                </button>
-
-                <a
-                  href={linkedInShareUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => {
-                    void recordShare("linkedin");
-                    setActionsOpen(false);
-                  }}
-                  className={actionButtonClass}
-                >
-                  <Share2 className="h-4 w-4" />
-                  LinkedIn
-                </a>
-
-                <a
-                  href={whatsappShareUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => {
-                    void recordShare("whatsapp");
-                    setActionsOpen(false);
-                  }}
-                  className={actionButtonClass}
-                >
-                  <Share2 className="h-4 w-4" />
-                  WhatsApp
-                </a>
-
-                {"share" in navigator && (
-                  <button type="button" onClick={handleNativeShare} className={actionButtonClass}>
-                    <Share2 className="h-4 w-4" />
-                    Share
-                  </button>
-                )}
-
-                {supplementary.map((doc) => {
-                  const href = doc.document.startsWith("http") ? doc.document : mediaUrl(doc.document);
-                  if (!href) return null;
-                  return (
-                    <a
-                      key={doc.id}
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => {
-                        recordDownload();
-                        setActionsOpen(false);
-                      }}
-                      className={actionButtonClass}
-                    >
-                      <Download className="h-4 w-4" />
-                      {doc.label || "Supplementary file"}
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-          </div>,
-          document.body
-        )
-      : null;
+  const closeMenu = () => setMenuOpen(false);
 
   return (
     <section className="gre-card min-w-0 overflow-hidden p-5 sm:p-6">
-      <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
             Publication access
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            GRE identifier, downloads, preview, and sharing for this paper.
+          <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-500">
+            Download, preview, and share this paper on GRE.
           </p>
         </div>
         {doi && doiHref && (
@@ -392,113 +286,217 @@ export function PublicationDownloadPanel({
         )}
       </div>
 
-      <div className="mt-4 space-y-3">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-            <a
-              href={summaryPdfUrl(publicationId)}
-              onClick={() => recordDownload()}
-              className={`${inlinePrimaryClass} w-full sm:w-auto`}
-            >
-              <Download className="h-4 w-4 shrink-0" />
-              Download GRE PDF
-            </a>
+      <div className="mt-5 rounded-2xl bg-gradient-to-br from-slate-50 via-white to-brand-50/40 p-4 ring-1 ring-slate-200/80 sm:p-5">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] sm:items-stretch">
+          <a
+            href={summaryPdfUrl(publicationId)}
+            onClick={() => recordDownload()}
+            className="inline-flex min-h-[3rem] items-center justify-center gap-2.5 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-brand-600/20 transition hover:bg-brand-700"
+          >
+            <Download className="h-4 w-4 shrink-0" />
+            Download GRE PDF
+          </a>
+
+          <button
+            type="button"
+            onClick={() => setPreviewOpen((open) => !open)}
+            className={`inline-flex min-h-[3rem] items-center justify-center gap-2.5 rounded-xl border px-5 py-3 text-sm font-semibold transition ${
+              previewOpen
+                ? "border-brand-300 bg-brand-50 text-brand-800"
+                : "border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:bg-white"
+            }`}
+          >
+            {previewOpen ? (
+              <EyeOff className="h-4 w-4 shrink-0" />
+            ) : (
+              <Eye className="h-4 w-4 shrink-0" />
+            )}
+            {previewOpen ? "Hide preview" : "Preview GRE PDF"}
+          </button>
+
+          <div ref={menuRef} className="relative sm:self-stretch">
             <button
               type="button"
-              onClick={() => setPreviewOpen((open) => !open)}
-              className={`${inlineActionClass} w-full sm:w-auto ${
-                previewOpen ? "border-brand-300 bg-brand-50 text-brand-800" : ""
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              className={`inline-flex h-full min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition sm:min-w-[8.5rem] ${
+                menuOpen
+                  ? "border-brand-300 bg-brand-50 text-brand-800 ring-2 ring-brand-100"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:bg-white"
               }`}
             >
-              {previewOpen ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
-              {previewOpen ? "Hide preview" : "Preview GRE PDF"}
+              <MoreHorizontal className="h-4 w-4 shrink-0" />
+              <span className="sm:hidden">More</span>
+              <span className="hidden sm:inline">More options</span>
+              {menuExtraCount > 0 && (
+                <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">
+                  {menuExtraCount}
+                </span>
+              )}
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 text-slate-400 transition ${menuOpen ? "rotate-180" : ""}`}
+              />
             </button>
-            <button
-              type="button"
-              onClick={() => setActionsOpen(true)}
-              className={`${inlineActionClass} w-full sm:ml-auto sm:w-auto`}
-            >
-              <Share2 className="h-4 w-4 shrink-0" />
-              More options
-            </button>
-          </div>
 
-          {(!closedAccess && fullUrl) || closedAccess || gre?.external_url ? (
-            <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-200 pt-2.5">
-              {!closedAccess && fullUrl && (
-                <a
-                  href={fullUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => recordDownload()}
-                  className={inlinePillClass}
-                >
-                  <FileText className="h-4 w-4 shrink-0" />
-                  Full paper PDF
-                </a>
-              )}
-              {closedAccess && (
-                <a
-                  href={summaryPdfUrl(publicationId, { discussions: true })}
-                  onClick={() => recordDownload()}
-                  className={inlinePillClass}
-                >
-                  <MessageSquare className="h-4 w-4 shrink-0" />
-                  PDF + discussions
-                </a>
-              )}
-              {gre?.external_url && (
-                <a
-                  href={gre.external_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={inlinePillClass}
-                >
-                  <ExternalLink className="h-4 w-4 shrink-0" />
-                  {closedAccess ? "Publisher access" : "External link"}
-                </a>
-              )}
-            </div>
-          ) : null}
+            {menuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,20rem)] overflow-hidden rounded-2xl border border-slate-200/90 bg-white py-2 shadow-xl shadow-slate-900/10 ring-1 ring-slate-100 sm:w-72"
+              >
+                <MenuSection title="Documents">
+                  <MenuItem
+                    icon={FileText}
+                    href={summaryPdfUrl(publicationId)}
+                    onClick={() => {
+                      recordDownload();
+                      closeMenu();
+                    }}
+                  >
+                    GRE publication PDF
+                  </MenuItem>
+                  {!closedAccess && fullUrl && (
+                    <MenuItem
+                      icon={Download}
+                      href={fullUrl}
+                      external
+                      onClick={() => {
+                        recordDownload();
+                        closeMenu();
+                      }}
+                    >
+                      Full paper (uploaded PDF)
+                    </MenuItem>
+                  )}
+                  {closedAccess && (
+                    <MenuItem
+                      icon={MessageSquare}
+                      href={summaryPdfUrl(publicationId, { discussions: true })}
+                      onClick={() => {
+                        recordDownload();
+                        closeMenu();
+                      }}
+                    >
+                      GRE PDF + discussions
+                    </MenuItem>
+                  )}
+                  {supplementary.map((doc) => {
+                    const href = doc.document.startsWith("http")
+                      ? doc.document
+                      : mediaUrl(doc.document);
+                    if (!href) return null;
+                    return (
+                      <MenuItem
+                        key={doc.id}
+                        icon={Download}
+                        href={href}
+                        external
+                        onClick={() => {
+                          recordDownload();
+                          closeMenu();
+                        }}
+                      >
+                        {doc.label || "Supplementary file"}
+                      </MenuItem>
+                    );
+                  })}
+                </MenuSection>
+
+                {gre?.external_url && (
+                  <MenuSection title="Publisher">
+                    <MenuItem
+                      icon={ExternalLink}
+                      href={gre.external_url}
+                      external
+                      onClick={closeMenu}
+                    >
+                      {closedAccess ? "Publisher access" : "External publication"}
+                    </MenuItem>
+                  </MenuSection>
+                )}
+
+                <MenuSection title="Share">
+                  <MenuItem icon={Copy} onClick={() => void handleCopyLink()}>
+                    Copy paper link
+                  </MenuItem>
+                  <MenuItem
+                    icon={Share2}
+                    href={linkedInShareUrl}
+                    external
+                    onClick={() => {
+                      void recordShare("linkedin");
+                      closeMenu();
+                    }}
+                  >
+                    Share on LinkedIn
+                  </MenuItem>
+                  <MenuItem
+                    icon={Share2}
+                    href={whatsappShareUrl}
+                    external
+                    onClick={() => {
+                      void recordShare("whatsapp");
+                      closeMenu();
+                    }}
+                  >
+                    Share on WhatsApp
+                  </MenuItem>
+                  {"share" in navigator && (
+                    <MenuItem
+                      icon={Share2}
+                      onClick={() => void handleNativeShare()}
+                    >
+                      System share…
+                    </MenuItem>
+                  )}
+                </MenuSection>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-1">
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-200/80 pt-4">
           <button
             type="button"
             onClick={handleToggleLike}
             disabled={!user || engagementBusy === "like"}
-            className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold ring-1 transition ${
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
               likedByMe
-                ? "bg-brand-50 text-brand-800 ring-brand-200"
-                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+                ? "bg-brand-100 text-brand-800 ring-1 ring-brand-200"
+                : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
             } ${!user ? "cursor-not-allowed opacity-60" : ""}`}
             title={user ? "Like this paper" : "Sign in to like papers"}
           >
-            <ThumbsUp className="h-4 w-4" />
-            {likesCount} like{likesCount === 1 ? "" : "s"}
+            <ThumbsUp className={`h-4 w-4 ${likedByMe ? "fill-current" : ""}`} />
+            {likesCount}
           </button>
+
+          <span className="hidden h-5 w-px bg-slate-200 sm:block" aria-hidden />
+
           <button
             type="button"
             onClick={() => void handleCopyLink()}
             disabled={engagementBusy === "share"}
-            className={inlinePillClass}
+            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
           >
-            <Copy className="h-4 w-4 shrink-0" />
+            <Copy className="h-4 w-4" />
             Copy link
           </button>
+
           {"share" in navigator && (
             <button
               type="button"
               onClick={() => void handleNativeShare()}
               disabled={engagementBusy === "share"}
-              className={inlinePillClass}
+              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
             >
-              <Share2 className="h-4 w-4 shrink-0" />
+              <Share2 className="h-4 w-4" />
               Share
             </button>
           )}
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-2.5 text-xs font-medium text-slate-500 ring-1 ring-slate-100">
-            <Share2 className="h-3.5 w-3.5" />
+
+          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-slate-100/90 px-3 py-2 text-xs font-medium text-slate-600">
+            <Share2 className="h-3.5 w-3.5 text-slate-400" />
             {shareCount} share{shareCount === 1 ? "" : "s"}
           </span>
         </div>
@@ -525,7 +523,6 @@ export function PublicationDownloadPanel({
           />
         </div>
       )}
-      {actionsDialog}
     </section>
   );
 }

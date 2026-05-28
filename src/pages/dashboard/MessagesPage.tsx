@@ -16,6 +16,7 @@ import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { GreAvatarSlot } from "../../components/ui/GreHeroBanner";
 import { Button } from "../../components/ui/Button";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
 import { useAuth } from "../../context/AuthContext";
 import { useUnreadCounts } from "../../hooks/useUnreadCounts";
 import {
@@ -115,6 +116,7 @@ export function MessagesPage() {
   const threadEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { data: unread } = useUnreadCounts();
+  const confirm = useConfirm();
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
@@ -274,28 +276,31 @@ export function MessagesPage() {
     },
   });
 
-  const handleDeleteThread = (target?: User) => {
+  const handleDeleteThread = async (target?: User) => {
     const person = target ?? partner;
     const pid = target?.id ?? (partnerId ? Number(partnerId) : 0);
     if (!person || !pid) return;
-    if (
-      !window.confirm(
-        `Delete your conversation with ${displayName(person)}? Message text will be cleared; deleted notices may remain in the thread.`
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: "Delete conversation?",
+      description: `Delete your conversation with ${displayName(person)}? Message text will be cleared; deleted notices may remain in the thread.`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+      tone: "danger",
+    });
+    if (!ok) return;
     deleteThreadMutation.mutate(pid);
   };
 
-  const handleDeleteMessage = (messageId: number) => {
-    if (
-      !window.confirm(
-        "Delete this message for both of you? The text will be removed but a notice will stay in the chat."
-      )
-    ) {
-      return;
-    }
+  const handleDeleteMessage = async (messageId: number) => {
+    const ok = await confirm({
+      title: "Delete message?",
+      description:
+        "Delete this message for both of you? The text will be removed but a notice will stay in the chat.",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+      tone: "danger",
+    });
+    if (!ok) return;
     deleteMessageMutation.mutate(messageId);
   };
 
@@ -446,7 +451,7 @@ export function MessagesPage() {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              handleDeleteThread(c);
+              void handleDeleteThread(c);
             }}
             disabled={deleteThreadMutation.isPending}
             className="gre-interactive absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 group-hover/contact:opacity-100 focus:opacity-100 disabled:opacity-40"
@@ -596,7 +601,7 @@ export function MessagesPage() {
                         <button
                           type="button"
                           disabled={deleteThreadMutation.isPending || thread.length === 0}
-                          onClick={() => handleDeleteThread()}
+                          onClick={() => void handleDeleteThread()}
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-40"
                         >
                           <Trash2 className="h-4 w-4 shrink-0" />
@@ -684,7 +689,7 @@ export function MessagesPage() {
                                   <button
                                     type="button"
                                     disabled={deleteMessageMutation.isPending}
-                                    onClick={() => handleDeleteMessage(m.id)}
+                                    onClick={() => void handleDeleteMessage(m.id)}
                                     className="flex h-7 w-7 items-center justify-center rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
                                     aria-label="Delete message"
                                     title="Delete"

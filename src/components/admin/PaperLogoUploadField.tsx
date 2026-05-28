@@ -6,6 +6,8 @@ interface Props {
   file: File | null;
   onChange: (file: File | null) => void;
   className?: string;
+  /** Inline row for dense admin forms */
+  compact?: boolean;
 }
 
 export function PaperLogoUploadField({
@@ -13,7 +15,26 @@ export function PaperLogoUploadField({
   file,
   onChange,
   className = "",
+  compact = false,
 }: Props) {
+  if (compact) {
+    return (
+      <div className={className}>
+        <p className="text-xs font-medium text-slate-700">{label}</p>
+        <label className="mt-1.5 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-brand-300 hover:bg-brand-50/50">
+          <ImagePlus className="h-4 w-4 shrink-0 text-brand-600" />
+          <span className="truncate">{file ? file.name : "Choose logo (optional)"}</span>
+          <input
+            type="file"
+            accept={PAPER_LOGO_ACCEPT}
+            className="hidden"
+            onChange={(e) => onChange(e.target.files?.[0] ?? null)}
+          />
+        </label>
+      </div>
+    );
+  }
+
   return (
     <div className={className}>
       <p className="text-sm font-medium text-slate-700">{label}</p>

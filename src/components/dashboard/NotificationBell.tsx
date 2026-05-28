@@ -55,6 +55,11 @@ function notificationHref(n: GreNotification): string {
   if (fromMessage) return fromMessage;
 
   if (n.type === "message") return "/dashboard/messages";
+  if (n.type === "meeting_summary") {
+    const archive = extractNotificationPath(n.link);
+    if (archive?.includes("/archive")) return archive;
+    return "/dashboard/meetings?scope=archived";
+  }
   if (n.type.startsWith("meeting_")) return "/dashboard/meetings";
   if (n.type === "forum_reply") return "/forum";
   if (n.type === "discussion") return "/";

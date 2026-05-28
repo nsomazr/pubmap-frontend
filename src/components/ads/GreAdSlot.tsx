@@ -13,7 +13,8 @@ import { buildPublicationPath } from "../../lib/publicationPaths";
 
 type Variant = "compact" | "banner" | "card";
 
-const ROTATE_MS = 8000;
+const ROTATE_MS = 6000;
+const FADE_MS = 320;
 
 interface GreAdSlotProps {
   ads: GreAd[];
@@ -137,14 +138,18 @@ function GreAdCarousel({
 
   useEffect(() => {
     if (ads.length <= 1 || paused) return;
+    let fadeTimer: ReturnType<typeof setTimeout> | undefined;
     const timer = window.setInterval(() => {
       setVisible(false);
-      window.setTimeout(() => {
+      fadeTimer = window.setTimeout(() => {
         setIndex((current) => (current + 1) % ads.length);
         setVisible(true);
-      }, 220);
+      }, FADE_MS);
     }, ROTATE_MS);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+      if (fadeTimer) window.clearTimeout(fadeTimer);
+    };
   }, [ads.length, paused]);
 
   const ad = ads[index];
@@ -161,7 +166,9 @@ function GreAdCarousel({
       }}
     >
       <div
-        className={`transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
+        className={`transition-[opacity,transform] duration-300 ease-out ${
+          visible ? "translate-x-0 opacity-100" : "translate-x-3 opacity-0"
+        }`}
         aria-live="polite"
       >
         <AdItem key={ad.id} ad={ad} placement={placement} variant={variant} />
@@ -179,7 +186,7 @@ function GreAdCarousel({
                 window.setTimeout(() => {
                   setIndex(dotIndex);
                   setVisible(true);
-                }, 120);
+                }, FADE_MS);
               }}
               className={`h-1.5 rounded-full transition-all ${
                 dotIndex === index ? "w-4 bg-brand-600" : "w-1.5 bg-slate-300 hover:bg-slate-400"
@@ -204,7 +211,7 @@ export function GreAdSlot({
     return emptyClassName ? <div className={emptyClassName} /> : null;
   }
 
-  const showCarousel = rotate && variant === "compact" && ads.length > 1;
+  const showCarousel = rotate && ads.length > 1;
 
   return (
     <aside

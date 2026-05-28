@@ -521,6 +521,8 @@ export interface MeetSession {
   summary?: string | null;
   summary_status: MeetSummaryStatus;
   meeting_minutes?: string | null;
+  minutes_email_sent_at?: string | null;
+  archive_link?: string | null;
   assistant_notes?: string | null;
   gre_assistant_enabled?: boolean;
   participant_count?: number;

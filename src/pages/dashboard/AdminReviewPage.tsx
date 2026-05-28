@@ -27,6 +27,11 @@ export function AdminReviewPage() {
   const focusPubId = params.get("pub");
   const { page, setPage } = usePageParam([status]);
 
+  const selectTab = (value: string) => {
+    setParams({ status: value });
+    setPage(1);
+  };
+
   const { data: listData, isLoading } = useQuery({
     queryKey: ["admin-review", status, page],
     queryFn: async () => {
@@ -49,19 +54,22 @@ export function AdminReviewPage() {
   }, [focusPubId, isLoading, publications.length]);
 
   return (
-    <div className="animate-fade-up">
-      <PageHeader title="Review queue" />
+    <div className="animate-fade-up space-y-5">
+      <PageHeader
+        title="Review queue"
+        description="Read the full submission—abstract, sections, and manuscript—before approving or requesting changes."
+      />
 
-      <div className="mb-8 inline-flex rounded-xl bg-slate-100/80 p-1 ring-1 ring-slate-200/60">
+      <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100/90 p-1.5 ring-1 ring-slate-200/70">
         {TABS.map((tab) => (
           <button
             key={tab.value}
             type="button"
-            onClick={() => setParams({ status: tab.value })}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+            onClick={() => selectTab(tab.value)}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
               status === tab.value
-                ? "bg-white text-brand-600 shadow-sm ring-1 ring-slate-200/80"
-                : "text-slate-600 hover:text-ink"
+                ? "gre-meet-tab--active"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             {tab.label}
@@ -72,7 +80,7 @@ export function AdminReviewPage() {
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2].map((i) => (
-            <div key={i} className="h-64 animate-pulse rounded-2xl bg-slate-100" />
+            <div key={i} className="gre-skeleton h-80 rounded-2xl" />
           ))}
         </div>
       ) : publications.length === 0 ? (
@@ -82,14 +90,14 @@ export function AdminReviewPage() {
           description="New PDF submissions from authors will appear here for your review."
         />
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {publications.map((pub) => (
             <div
               key={pub.id}
               id={`review-pub-${pub.id}`}
               className={
                 focusPubId === String(pub.id)
-                  ? "scroll-mt-6 rounded-2xl ring-2 ring-brand-400 ring-offset-2 transition-shadow"
+                  ? "scroll-mt-6 rounded-2xl ring-2 ring-brand-400 ring-offset-2"
                   : "scroll-mt-6"
               }
             >
@@ -105,7 +113,6 @@ export function AdminReviewPage() {
           totalCount={totalCount}
           onPageChange={setPage}
           itemLabel="submissions"
-          className="mt-8"
         />
       )}
     </div>

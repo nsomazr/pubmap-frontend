@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, CalendarCheck, Radio, Video } from "lucide-react";
+import { Calendar, CalendarCheck, FileText, Radio, Video } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
@@ -19,7 +19,7 @@ const tabs = [
   { id: "upcoming", label: "Upcoming", icon: Calendar },
   { id: "live", label: "Live", icon: Radio },
   { id: "mine", label: "Hosted", icon: Video },
-  { id: "archived", label: "Archived", icon: CalendarCheck },
+  { id: "archived", label: "Reports & archive", icon: CalendarCheck },
 ] as const;
 
 type MeetScope = (typeof tabs)[number]["id"];
@@ -28,7 +28,7 @@ const SCOPE_HINTS: Record<MeetScope, string> = {
   upcoming: "Scheduled research sessions on GRE.",
   live: "Sessions broadcasting right now — join from here.",
   mine: "Active meetings you host or manage.",
-  archived: "Ended sessions with recordings and summaries.",
+  archived: "Ended sessions you hosted or attended — open reports and recordings here.",
 };
 
 function meetingDescription(text?: string | null) {
@@ -76,6 +76,11 @@ function MeetingRow({ meeting }: { meeting: MeetSession }) {
         : "Join room";
   const archiveId = formatMeetingId(meeting.id);
   const participants = meeting.participant_count ?? 0;
+  const hasReport = Boolean(
+    meeting.meeting_minutes?.trim() ||
+      meeting.summary?.trim() ||
+      meeting.minutes_email_sent_at
+  );
 
   return (
     <article className="group flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-5 sm:py-3.5">
@@ -136,6 +141,11 @@ function MeetingRow({ meeting }: { meeting: MeetSession }) {
                 Recording
               </span>
             )}
+            {isArchived && hasReport && (
+              <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-medium text-brand-700">
+                Report
+              </span>
+            )}
           </div>
         </div>
 
@@ -156,6 +166,11 @@ function MeetingRow({ meeting }: { meeting: MeetSession }) {
               Recording
             </span>
           )}
+          {isArchived && hasReport && (
+            <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-medium text-brand-700">
+              Report
+            </span>
+          )}
         </div>
       </div>
 
@@ -172,8 +187,18 @@ function MeetingRow({ meeting }: { meeting: MeetSession }) {
         </Link>
         {isArchived && (
           <Link to={`/dashboard/meetings/${meeting.id}/archive`}>
-            <Button variant="secondary" className="!px-3 !py-2 text-xs">
-              Archive
+            <Button
+              variant={hasReport ? "primary" : "secondary"}
+              className="!px-3 !py-2 text-xs"
+            >
+              {hasReport ? (
+                <>
+                  <FileText className="h-3.5 w-3.5" />
+                  Open report
+                </>
+              ) : (
+                "Archive"
+              )}
             </Button>
           </Link>
         )}

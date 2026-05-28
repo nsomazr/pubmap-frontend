@@ -18,7 +18,8 @@ function breadcrumbLabel(pathname: string): string {
   if (pathname.includes("/account")) return "Account";
   if (pathname.includes("/review")) return "Review queue";
   if (pathname.includes("/authors")) return "Users";
-  if (pathname.includes("/categories")) return "Categories";
+  if (pathname.includes("/categories")) return "Fields";
+  if (pathname.includes("/managers")) return "Managers";
   if (pathname.includes("/events")) return "Events";
   if (pathname.includes("/plagiarism")) return "Plagiarism";
   if (pathname.includes("/ads")) return "Ads";

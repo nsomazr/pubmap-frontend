@@ -79,6 +79,7 @@ export function MeetingArchivePage() {
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({ queryKey: ["meeting", id] });
       await queryClient.invalidateQueries({ queryKey: ["meeting-archive", id] });
+      await queryClient.invalidateQueries({ queryKey: ["meetings"] });
       toast.success({
         title: "Report shared",
         description:

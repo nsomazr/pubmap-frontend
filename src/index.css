@@ -1316,25 +1316,23 @@ body {
 }
 
 .publication-chat-page {
-  min-height: min(72dvh, 760px);
+  flex: 1 1 0%;
+  min-height: 0;
+  max-height: 100%;
 }
 
 .publication-chat-page__body {
   min-height: 0;
+  flex: 1 1 0%;
+}
+
+.publication-chat__thread {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
 }
 
 .publication-chat__composer {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-}
-
-@media (max-width: 639px) {
-  .publication-chat-page {
-    min-height: min(68dvh, calc(100dvh - 12rem));
-  }
-
-  .publication-chat__thread {
-    max-height: none;
-  }
 }
 
 .gre-map--embedded .leaflet-bottom.leaflet-right {

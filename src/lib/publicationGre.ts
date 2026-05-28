@@ -91,6 +91,12 @@ export async function deletePublicationDocument(publicationId: number, documentI
   await api.delete(`/publications/${publicationId}/documents/${documentId}/`);
 }
 
+export function reviewManuscriptPdfUrl(publicationId: number, inline = true) {
+  const base = resolveApiBaseUrl().replace(/\/$/, "");
+  const params = inline ? "?inline=1" : "";
+  return `${base}/publications/${publicationId}/review-manuscript/${params}`;
+}
+
 export function summaryPdfUrl(
   publicationId: number,
   options: { discussions?: boolean; inline?: boolean } = {}

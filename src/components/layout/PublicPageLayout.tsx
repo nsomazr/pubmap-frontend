@@ -34,6 +34,8 @@ interface Props {
   back?: PageBack;
   /** Optional visual shown beside the hero heading. */
   heroVisual?: React.ReactNode;
+  /** Fill the viewport; main content scrolls inside children (e.g. research assistant). */
+  fillViewport?: boolean;
 }
 
 const accentStyles: Record<
@@ -65,12 +67,19 @@ export function PublicPageLayout({
   compactHero = false,
   back,
   heroVisual,
+  fillViewport = false,
 }: Props) {
   const a = accentStyles[accent];
   const contentShell = wide ? "gre-content-wide" : "gre-page-shell";
 
   return (
-    <div className="public-site-bg flex min-h-screen min-h-[100dvh] flex-col overflow-x-hidden">
+    <div
+      className={`public-site-bg flex flex-col overflow-x-hidden ${
+        fillViewport
+          ? "h-[100dvh] max-h-[100dvh] overflow-hidden"
+          : "min-h-screen min-h-[100dvh]"
+      }`}
+    >
       <PublicNav />
       <section className={`relative overflow-hidden ${a.hero}`}>
         <div
@@ -174,15 +183,27 @@ export function PublicPageLayout({
       </section>
 
       <main
-        className={`relative z-10 mx-auto w-full flex-1 px-4 pb-16 sm:px-6 ${contentShell}`}
+        className={`relative z-10 mx-auto flex w-full flex-1 flex-col px-4 sm:px-6 ${contentShell} ${
+          fillViewport ? "min-h-0 overflow-hidden pb-3 sm:pb-4" : "pb-16"
+        }`}
         style={{ marginTop: compactHero ? "-1.25rem" : "-2.5rem" }}
       >
-        <div className="animate-fade-up">
-          {back && <PageBackLink to={back.to} label={back.label} className="mb-6" />}
+        <div
+          className={`animate-fade-up ${
+            fillViewport ? "flex min-h-0 flex-1 flex-col" : ""
+          }`}
+        >
+          {back && (
+            <PageBackLink
+              to={back.to}
+              label={back.label}
+              className={fillViewport ? "mb-3 shrink-0" : "mb-6"}
+            />
+          )}
           {children}
         </div>
       </main>
-      <PublicFooter />
+      {!fillViewport && <PublicFooter />}
     </div>
   );
 }

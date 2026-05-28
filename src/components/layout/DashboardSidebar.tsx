@@ -41,7 +41,7 @@ const adminNav: { to: string; label: string; icon: LucideIcon }[] = [
   { to: "/dashboard/review", label: "Review queue", icon: ClipboardCheck },
   { to: "/dashboard/managers", label: "Managers", icon: UserCog },
   { to: "/dashboard/authors", label: "Users", icon: Users },
-  { to: "/dashboard/categories", label: "Categories", icon: BookOpen },
+  { to: "/dashboard/categories", label: "Fields", icon: BookOpen },
   { to: "/dashboard/events", label: "Events", icon: Calendar },
   { to: "/dashboard/ads", label: "Ads", icon: Megaphone },
 ];

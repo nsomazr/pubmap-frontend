@@ -51,9 +51,10 @@ export function EventsPage() {
 
       <GreAdPlacement
         placement="event_sponsor"
-        limit={2}
+        limit={6}
         variant="card"
-        className="mb-8 grid gap-4 sm:grid-cols-2"
+        rotate
+        className="mb-8"
       />
 
       {isLoading ? (

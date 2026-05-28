@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, Plus, Search, UserCog, UserPlus } from "lucide-react";
+import { ClipboardList, LogIn, Plus, Search, UserCog, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { EmptyState } from "../../components/dashboard/EmptyState";
@@ -37,6 +37,7 @@ export function ManagersPage() {
     affiliation: "",
   });
   const [error, setError] = useState("");
+  const [assignMode, setAssignMode] = useState<"existing" | "create">("create");
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-admin"],
@@ -164,6 +165,26 @@ export function ManagersPage() {
         }
       />
 
+      <section className="overflow-hidden rounded-2xl border border-brand-100 bg-brand-50/60 px-4 py-4 sm:px-5">
+        <div className="flex gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-brand-700 shadow-sm ring-1 ring-brand-100">
+            <LogIn className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 text-sm text-slate-700">
+            <p className="font-semibold text-ink">How managers sign in</p>
+            <p className="mt-1 leading-relaxed">
+              Managers use the same GRE sign-in as authors: open{" "}
+              <Link to="/login" className="font-semibold text-brand-700 hover:underline">
+                Sign in
+              </Link>
+              , enter the email you assign below, and use the one-time verification code sent to
+              that inbox. No separate password is required. After sign-in they open{" "}
+              <strong>Review queue</strong> for their subfield.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="gre-card space-y-4 p-6">
         <h2 className="flex items-center gap-2 font-semibold text-ink">
           <Plus className="h-5 w-5 text-brand-600" />
@@ -197,15 +218,124 @@ export function ManagersPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-2">
-          <form
-            className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setError("");
-              if (subcategoryId && selectedUser?.id) assignExistingMutation.mutate();
-            }}
+        <div className="flex flex-wrap gap-2 rounded-xl bg-slate-100/90 p-1.5 ring-1 ring-slate-200/70">
+          <button
+            type="button"
+            onClick={() => setAssignMode("create")}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              assignMode === "create"
+                ? "gre-meet-tab--active"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
           >
+            Create new manager
+          </button>
+          <button
+            type="button"
+            onClick={() => setAssignMode("existing")}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              assignMode === "existing"
+                ? "gre-meet-tab--active"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Assign existing user
+          </button>
+        </div>
+
+        <div className="relative overflow-hidden">
+          <div
+            className="flex w-[200%] transition-transform duration-300 ease-out"
+            style={{ transform: assignMode === "create" ? "translateX(0)" : "translateX(-50%)" }}
+          >
+            <form
+              className="w-1/2 shrink-0 space-y-4 rounded-2xl border border-slate-200 bg-white p-4 pr-5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setError("");
+                if (subcategoryId && createForm.firstname && createForm.lastname && createForm.email) {
+                  createManagerMutation.mutate();
+                }
+              }}
+            >
+              <div className="mb-4 flex items-start gap-3">
+                <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                  <UserPlus className="h-4 w-4" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-semibold text-ink">Create a new manager user</h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Add the user here and assign them to the selected subfield in one step. They
+                    receive an email with sign-in instructions.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  type="text"
+                  label="First name"
+                  value={createForm.firstname}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({ ...prev, firstname: e.target.value }))
+                  }
+                  required
+                />
+                <Input
+                  type="text"
+                  label="Last name"
+                  value={createForm.lastname}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({ ...prev, lastname: e.target.value }))
+                  }
+                  required
+                />
+              </div>
+
+              <div className="grid gap-3">
+                <Input
+                  type="email"
+                  label="Email"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
+                  placeholder="researcher@university.ac.tz"
+                  required
+                />
+                <Input
+                  type="text"
+                  label="Affiliation"
+                  value={createForm.affiliation}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({ ...prev, affiliation: e.target.value }))
+                  }
+                  placeholder="Institution or affiliation"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  loading={createManagerMutation.isPending}
+                  disabled={
+                    !subcategoryId ||
+                    !createForm.firstname.trim() ||
+                    !createForm.lastname.trim() ||
+                    !createForm.email.trim()
+                  }
+                >
+                  Create and assign
+                </Button>
+              </div>
+            </form>
+
+            <form
+              className="w-1/2 shrink-0 space-y-4 rounded-2xl border border-slate-200 bg-white p-4 pl-5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setError("");
+                if (subcategoryId && selectedUser?.id) assignExistingMutation.mutate();
+              }}
+            >
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-ink">Assign an existing user</h3>
               <p className="mt-1 text-sm text-slate-500">
@@ -267,7 +397,7 @@ export function ManagersPage() {
               )}
             </div>
 
-            <div className="mt-4 flex justify-end">
+            <div className="flex justify-end">
               <Button
                 type="submit"
                 loading={assignExistingMutation.isPending}
@@ -277,91 +407,13 @@ export function ManagersPage() {
               </Button>
             </div>
           </form>
-
-          <form
-            className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setError("");
-              if (subcategoryId && createForm.firstname && createForm.lastname && createForm.email) {
-                createManagerMutation.mutate();
-              }
-            }}
-          >
-            <div className="mb-4 flex items-start gap-3">
-              <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
-                <UserPlus className="h-4 w-4" />
-              </span>
-              <div>
-                <h3 className="text-sm font-semibold text-ink">Create a new manager user</h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Add the user here and assign them to the selected subfield in one step.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input
-                type="text"
-                label="First name"
-                value={createForm.firstname}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({ ...prev, firstname: e.target.value }))
-                }
-                required
-              />
-              <Input
-                type="text"
-                label="Last name"
-                value={createForm.lastname}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({ ...prev, lastname: e.target.value }))
-                }
-                required
-              />
-            </div>
-
-            <div className="mt-3 grid gap-3">
-              <Input
-                type="email"
-                label="Email"
-                value={createForm.email}
-                onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
-                placeholder="researcher@university.ac.tz"
-                required
-              />
-              <Input
-                type="text"
-                label="Affiliation"
-                value={createForm.affiliation}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({ ...prev, affiliation: e.target.value }))
-                }
-                placeholder="Institution or affiliation"
-              />
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <Button
-                type="submit"
-                loading={createManagerMutation.isPending}
-                disabled={
-                  !subcategoryId ||
-                  !createForm.firstname.trim() ||
-                  !createForm.lastname.trim() ||
-                  !createForm.email.trim()
-                }
-              >
-                Create and assign
-              </Button>
-            </div>
-          </form>
+          </div>
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
         <p className="text-xs text-slate-500">
           Managers can access the review queue only for their assigned subfields. Platform admins
-          already have full review access.
+          already have full review access. New and existing managers receive an email when assigned.
         </p>
       </section>
 

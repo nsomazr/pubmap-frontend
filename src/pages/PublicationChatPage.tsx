@@ -30,6 +30,7 @@ export function PublicationChatPage() {
     return (
       <PublicPageLayout
         compactHero
+        fillViewport
         accent="blue"
         title="Research assistant"
         crumbs={[{ label: "Home", to: "/" }, { label: "Loading…" }]}
@@ -44,6 +45,7 @@ export function PublicationChatPage() {
     return (
       <PublicPageLayout
         compactHero
+        fillViewport
         accent="blue"
         title="Research assistant"
         crumbs={[{ label: "Home", to: "/" }, { label: "Not found" }]}
@@ -64,6 +66,7 @@ export function PublicationChatPage() {
   return (
     <PublicPageLayout
       compactHero
+      fillViewport
       accent="blue"
       badge="GRE Assistant"
       title="Research assistant"
@@ -77,7 +80,7 @@ export function PublicationChatPage() {
       ]}
       back={{ to: "/", label: "Back to map" }}
     >
-      <div className="publication-chat-page gre-card flex min-h-[min(72dvh,760px)] flex-col overflow-hidden">
+      <div className="publication-chat-page gre-card flex min-h-0 flex-1 flex-col overflow-hidden">
         <header className="shrink-0 border-b border-slate-100 bg-slate-50/60 px-4 py-3 sm:px-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-center gap-3">

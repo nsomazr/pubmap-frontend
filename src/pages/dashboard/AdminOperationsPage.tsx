@@ -44,7 +44,7 @@ const QUICK_LINKS = [
   },
   {
     to: "/dashboard/categories",
-    label: "Categories",
+    label: "Fields",
     description: "Research taxonomy on the map",
     icon: BookOpen,
   },
