@@ -235,7 +235,9 @@ export function MeetRoomPage() {
   const [inviteSending, setInviteSending] = useState(false);
   const [replyTarget, setReplyTarget] = useState<MeetChatMessage | null>(null);
   const [tagTarget, setTagTarget] = useState<MeetChatMessage | null>(null);
+  const [activeMessageActionId, setActiveMessageActionId] = useState<number | null>(null);
   const assistantCaptureUnavailableRef = useRef(false);
+  const messageHoldTimeoutRef = useRef<number | null>(null);
 
   const { data: meeting, isLoading } = useQuery({
     queryKey: ["meeting-by-slug", slug],
@@ -387,6 +389,13 @@ export function MeetRoomPage() {
   const canManage = !!activeMeeting?.can_manage;
   const isLive = activeMeeting?.status === "live";
   const isHostUser = !!activeMeeting?.host_id && activeMeeting.host_id === user?.id;
+
+  const clearMessageHoldTimer = () => {
+    if (messageHoldTimeoutRef.current !== null) {
+      window.clearTimeout(messageHoldTimeoutRef.current);
+      messageHoldTimeoutRef.current = null;
+    }
+  };
 
   useEffect(() => {
     if (!participantActionMenuId) return;
@@ -1260,47 +1269,112 @@ export function MeetRoomPage() {
                         message.sender?.email ||
                         "Participant";
                       const isOwn = message.sender_id === user?.id;
+                      const initials =
+                        senderName
+                          .split(" ")
+                          .filter(Boolean)
+                          .slice(0, 2)
+                          .map((item) => item[0]?.toUpperCase() || "")
+                          .join("") || "U";
+                      const isActionOpen = activeMessageActionId === message.id;
                       return (
                         <div key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
-                          <div
-                            className={`w-full max-w-[92%] rounded-2xl border px-3 py-2.5 shadow-sm ${
-                              isOwn
-                                ? "border-brand-800/50 bg-brand-900/30"
-                                : "border-slate-700 bg-slate-800/90"
-                            }`}
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className={`flex w-full max-w-[96%] items-end gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
+                            <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-slate-700 bg-slate-800">
+                              {message.sender?.photo ? (
+                                <img src={message.sender.photo} alt={senderName} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-[11px] font-semibold text-slate-200">
+                                  {initials}
+                                </div>
+                              )}
+                            </div>
+                            <div
+                              onPointerDown={() => {
+                                clearMessageHoldTimer();
+                                messageHoldTimeoutRef.current = window.setTimeout(() => {
+                                  setActiveMessageActionId(message.id);
+                                }, 420);
+                              }}
+                              onPointerUp={clearMessageHoldTimer}
+                              onPointerLeave={clearMessageHoldTimer}
+                              onPointerCancel={clearMessageHoldTimer}
+                              onContextMenu={(event) => {
+                                event.preventDefault();
+                                setActiveMessageActionId(message.id);
+                              }}
+                              className={`w-full max-w-[92%] rounded-2xl border px-3 py-2.5 shadow-sm transition ${
+                                isOwn
+                                  ? "border-brand-800/50 bg-brand-900/30"
+                                  : "border-slate-700 bg-slate-800/90"
+                              }`}
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2">
                               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                              {senderName}
-                              {isOwn ? " · You" : ""}
+                                {senderName}
+                                {isOwn ? " · You" : ""}
                               </p>
                               <span className="text-[11px] text-slate-500">
                                 {formatChatTimestamp(message.created_at)}
                               </span>
-                            </div>
-                            <p className="mt-1 text-sm whitespace-pre-wrap leading-relaxed text-slate-100">{message.message}</p>
-                            <div className="mt-2 flex items-center gap-1.5">
-                              <button
-                                type="button"
-                                className="rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold text-brand-300 transition hover:border-brand-700/40 hover:bg-brand-900/30 hover:text-brand-200"
-                                onClick={() => setReplyTarget(message)}
-                              >
-                                Reply
-                              </button>
-                              {!isOwn && (
+                              </div>
+                              <p className="mt-1 text-sm whitespace-pre-wrap leading-relaxed text-slate-100">{message.message}</p>
+                              {isActionOpen ? (
+                                <div className="mt-2 flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    className="rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold text-brand-300 transition hover:border-brand-700/40 hover:bg-brand-900/30 hover:text-brand-200"
+                                    onClick={() => {
+                                      setReplyTarget(message);
+                                      setActiveMessageActionId(null);
+                                    }}
+                                  >
+                                    Reply
+                                  </button>
+                                  {!isOwn && (
+                                    <button
+                                      type="button"
+                                      className="rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold text-slate-300 transition hover:border-slate-600 hover:bg-slate-700/60 hover:text-slate-100"
+                                      onClick={() => {
+                                        setTagTarget(message);
+                                        const mentionToken = `@${senderName}`;
+                                        setText((prev) => {
+                                          if (prev.toLowerCase().includes(mentionToken.toLowerCase())) return prev;
+                                          return `${mentionToken} ${prev}`.trimStart();
+                                        });
+                                        setActiveMessageActionId(null);
+                                      }}
+                                    >
+                                      Tag
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className="rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold text-slate-300 transition hover:border-slate-600 hover:bg-slate-700/60 hover:text-slate-100"
+                                    onClick={() => {
+                                      void (navigator.clipboard?.writeText?.(message.message) ?? Promise.reject()).catch(
+                                        () => {}
+                                      );
+                                      setActiveMessageActionId(null);
+                                    }}
+                                  >
+                                    Copy
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold text-slate-400 transition hover:border-slate-600 hover:bg-slate-700/60 hover:text-slate-200"
+                                    onClick={() => setActiveMessageActionId(null)}
+                                  >
+                                    Close
+                                  </button>
+                                </div>
+                              ) : (
                                 <button
                                   type="button"
-                                  className="rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold text-slate-300 transition hover:border-slate-600 hover:bg-slate-700/60 hover:text-slate-100"
-                                  onClick={() => {
-                                    setTagTarget(message);
-                                    const mentionToken = `@${senderName}`;
-                                    setText((prev) => {
-                                      if (prev.toLowerCase().includes(mentionToken.toLowerCase())) return prev;
-                                      return `${mentionToken} ${prev}`.trimStart();
-                                    });
-                                  }}
+                                  className="mt-2 text-[11px] font-semibold text-slate-500"
+                                  onClick={() => setActiveMessageActionId(message.id)}
                                 >
-                                  Tag
+                                  Hold for actions
                                 </button>
                               )}
                             </div>
@@ -1338,6 +1412,7 @@ export function MeetRoomPage() {
                     onSubmit={(event) => {
                       event.preventDefault();
                       if (!text.trim()) return;
+                      setActiveMessageActionId(null);
                       sendChat.mutate();
                     }}
                   >
