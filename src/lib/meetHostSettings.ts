@@ -1,3 +1,4 @@
+import type { JitsiMeetExternalAPIInstance } from "./jitsi";
 import type { MeetSession } from "../types";
 
 export type MeetHostRoomSettings = {
@@ -21,6 +22,34 @@ export function meetHostSettingsFromSession(
     screen_share_moderator_only:
       meeting?.screen_share_moderator_only ?? DEFAULT_MEET_HOST_SETTINGS.screen_share_moderator_only,
   };
+}
+
+export function applyJitsiJoinMediaPolicy(
+  api: JitsiMeetExternalAPIInstance,
+  settings: MeetHostRoomSettings
+) {
+  if (settings.mute_audio_on_join) {
+    try {
+      api.executeCommand("setAudioMuted", true);
+    } catch {
+      try {
+        api.executeCommand("toggleAudio", false);
+      } catch {
+        // Jitsi version may not support one of these commands.
+      }
+    }
+  }
+  if (settings.video_off_on_join) {
+    try {
+      api.executeCommand("setVideoMuted", true);
+    } catch {
+      try {
+        api.executeCommand("toggleVideo", false);
+      } catch {
+        // Jitsi version may not support one of these commands.
+      }
+    }
+  }
 }
 
 export function buildJitsiConfigOverwrite(settings: MeetHostRoomSettings) {

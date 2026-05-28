@@ -42,7 +42,11 @@ import {
 import { BrandMark } from "../components/brand/BrandMark";
 import { MeetingGreAssistantPanel } from "../components/meet/MeetingGreAssistantPanel";
 import { captureMeetingAssistantNotes } from "../lib/meetAssistant";
-import { buildJitsiConfigOverwrite, meetHostSettingsFromSession } from "../lib/meetHostSettings";
+import {
+  applyJitsiJoinMediaPolicy,
+  buildJitsiConfigOverwrite,
+  meetHostSettingsFromSession,
+} from "../lib/meetHostSettings";
 import {
   fetchMeetingBySlug,
   formatMeetingDate,
@@ -152,6 +156,15 @@ function parseReplyPayload(rawMessage: string): {
   }
 
   return { body: text };
+}
+
+function normalizeRoomErrorMessage(raw: string): string {
+  const message = (raw || "").trim();
+  const lower = message.toLowerCase();
+  if (lower.includes("recording is not configured") || lower.includes("enable jibri")) {
+    return "Recording is not available on this meeting server yet. Please ask the GRE admin to enable recording.";
+  }
+  return message;
 }
 
 type CopilotTask = "notes" | "actions" | "recap" | "question";
@@ -388,7 +401,10 @@ export function MeetRoomPage() {
   });
 
   const startRecording = useMutation({
-    mutationFn: () => api.post(`/meetings/${meetingId}/recording/start/`),
+    mutationFn: async () => {
+      const { data } = await api.post<MeetSession>(`/meetings/${meetingId}/recording/start/`);
+      return data;
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
       await queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
@@ -406,7 +422,10 @@ export function MeetRoomPage() {
   });
 
   const stopRecording = useMutation({
-    mutationFn: () => api.post(`/meetings/${meetingId}/recording/stop/`),
+    mutationFn: async () => {
+      const { data } = await api.post<MeetSession>(`/meetings/${meetingId}/recording/stop/`);
+      return data;
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
       await queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
@@ -487,6 +506,7 @@ export function MeetRoomPage() {
       if (cancelled || !roomContainerRef.current || !window.JitsiMeetExternalAPI) return;
 
       const domain = new URL(joinData.server_url).host;
+      const joinHostSettings = meetHostSettingsFromSession(joinData.meeting ?? activeMeeting);
       apiInstance = new window.JitsiMeetExternalAPI(domain, {
         roomName: joinData.room_name,
         parentNode: roomContainerRef.current,
@@ -500,7 +520,7 @@ export function MeetRoomPage() {
             user?.email,
           email: user?.email,
         },
-        configOverwrite: buildJitsiConfigOverwrite(meetHostSettingsFromSession(activeMeeting)),
+        configOverwrite: buildJitsiConfigOverwrite(joinHostSettings),
       });
       setRoomDebug((prev) => ({ ...prev, apiConstructed: true }));
       jitsiApiRef.current = apiInstance;
@@ -517,9 +537,22 @@ export function MeetRoomPage() {
       const onJoined = () => {
         setJitsiReady(true);
         setRoomDebug((prev) => ({ ...prev, joinedEvent: true, lastError: "" }));
+        if (apiInstance) {
+          applyJitsiJoinMediaPolicy(apiInstance, joinHostSettings);
+        }
         refreshParticipants();
       };
-      const onParticipantJoined = () => refreshParticipants();
+      const onParticipantJoined = (payload: { id?: string; participantId?: string }) => {
+        refreshParticipants();
+        if (!joinHostSettings.mute_audio_on_join || !canManage || !apiInstance) return;
+        const participantId = payload?.id || payload?.participantId;
+        if (!participantId) return;
+        try {
+          apiInstance.executeCommand("muteParticipant", participantId);
+        } catch {
+          // Not available on all Jitsi builds; join-time local mute still applies per client.
+        }
+      };
       const onParticipantLeft = () => refreshParticipants();
       const onRoleChanged = (payload: { role?: string }) => {
         setIsModerator(payload?.role === "moderator" || canManage);
@@ -728,6 +761,31 @@ export function MeetRoomPage() {
     return `${activeMeeting.category_name} / ${activeMeeting.sub_category_name} · ${formatMeetingDate(activeMeeting.scheduled_at)}`;
   }, [activeMeeting]);
 
+  const runJitsiRecordingCommand = (action: "start" | "stop", mode = "file") => {
+    const apiInstance = jitsiApiRef.current;
+    if (!apiInstance) {
+      setRoomError("The Jitsi room is not ready yet.");
+      return false;
+    }
+    try {
+      if (action === "start") {
+        apiInstance.executeCommand("startRecording", { mode });
+      } else {
+        apiInstance.executeCommand("stopRecording", mode);
+      }
+      return true;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not run the Jitsi recording command.";
+      setRoomError(normalizeRoomErrorMessage(message));
+      syncRecordingMutation({
+        state: "failed",
+        error: message,
+      });
+      return false;
+    }
+  };
+
   const runModeratorCommand = (command: string, ...args: unknown[]) => {
     const apiInstance = jitsiApiRef.current;
     if (!apiInstance) {
@@ -796,10 +854,21 @@ export function MeetRoomPage() {
       return;
     }
     try {
-      await startRecording.mutateAsync();
-      runModeratorCommand("startRecording", { mode: "file" });
+      const updated = await startRecording.mutateAsync();
+      const mode = updated?.recording_egress_id || "file";
+      if (!runJitsiRecordingCommand("start", mode)) {
+        toast.error({
+          title: "Recording unavailable",
+          description: roomError || "Could not start recording in the meeting room.",
+        });
+      }
     } catch (error) {
-      setRoomError(parseApiError(error, "Could not request recording."));
+      const message = normalizeRoomErrorMessage(parseApiError(error, "Could not request recording."));
+      setRoomError(message);
+      toast.error({
+        title: "Recording unavailable",
+        description: message,
+      });
     }
   };
 
@@ -811,11 +880,22 @@ export function MeetRoomPage() {
       });
       return;
     }
-    if (!runModeratorCommand("stopRecording", "file")) return;
     try {
-      await stopRecording.mutateAsync();
+      const updated = await stopRecording.mutateAsync();
+      const mode = updated?.recording_egress_id || "file";
+      if (!runJitsiRecordingCommand("stop", mode)) {
+        toast.error({
+          title: "Could not stop recording",
+          description: roomError || "Could not stop recording in the meeting room.",
+        });
+      }
     } catch (error) {
-      setRoomError(parseApiError(error, "Could not stop recording."));
+      const message = normalizeRoomErrorMessage(parseApiError(error, "Could not stop recording."));
+      setRoomError(message);
+      toast.error({
+        title: "Could not stop recording",
+        description: message,
+      });
     }
   };
 
@@ -1081,7 +1161,7 @@ export function MeetRoomPage() {
         <div className="relative h-full w-full">
           <div ref={roomContainerRef} className="h-full w-full" />
           {roomError && (
-            <div className="absolute inset-x-4 top-4 rounded-2xl bg-red-950/90 px-4 py-3 text-sm text-red-200 shadow">
+            <div className="pointer-events-none absolute left-1/2 top-14 z-30 w-[min(92%,780px)] -translate-x-1/2 rounded-2xl border border-red-700/60 bg-red-950/95 px-4 py-3 text-sm text-red-100 shadow-[0_10px_28px_rgba(127,29,29,0.35)]">
               {roomError}
             </div>
           )}
