@@ -1343,6 +1343,22 @@ export function MeetRoomPage() {
                     </div>
                   )}
                   {roomParticipants.map((participant) => (
+                    (() => {
+                      const participantEmail = (participant.email || "").trim().toLowerCase();
+                      const linkedMeetingParticipant = activeMeeting?.participants?.find((row) => {
+                        const rowEmail = (row.user?.email || "").trim().toLowerCase();
+                        return !!participantEmail && !!rowEmail && rowEmail === participantEmail;
+                      });
+                      const isHostParticipant =
+                        linkedMeetingParticipant?.role === "host" ||
+                        (!!participantEmail &&
+                          participantEmail === (activeMeeting?.host?.email || "").trim().toLowerCase());
+                      const isAdminParticipant = Boolean(
+                        linkedMeetingParticipant?.user?.role_name &&
+                          linkedMeetingParticipant.user.role_name.toLowerCase().includes("admin")
+                      );
+                      const allowRemoveAction = !isHostParticipant && !isAdminParticipant;
+                      return (
                     <div
                       key={participant.id}
                       className="relative flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-2"
@@ -1466,30 +1482,34 @@ export function MeetRoomPage() {
                                   <ShieldCheck className="h-4 w-4" />
                                   Allow share
                                 </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left !text-red-300 hover:!bg-slate-800 hover:!text-red-200"
-                                  onClick={() => {
-                                    runParticipantAction(
-                                      participant.id,
-                                      "kickParticipant",
-                                      "Attendee removed",
-                                      "The attendee was removed from the meeting.",
-                                      "Could not remove this attendee."
-                                    );
-                                    setParticipantActionMenuId(null);
-                                  }}
-                                >
-                                  <UserX className="h-4 w-4" />
-                                  Remove attendee
-                                </Button>
+                                {allowRemoveAction && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left !text-red-300 hover:!bg-slate-800 hover:!text-red-200"
+                                    onClick={() => {
+                                      runParticipantAction(
+                                        participant.id,
+                                        "kickParticipant",
+                                        "Attendee removed",
+                                        "The attendee was removed from the meeting.",
+                                        "Could not remove this attendee."
+                                      );
+                                      setParticipantActionMenuId(null);
+                                    }}
+                                  >
+                                    <UserX className="h-4 w-4" />
+                                    Remove attendee
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           )}
                         </div>
                       )}
                     </div>
+                      );
+                    })()
                   ))}
                   {roomParticipants.length === 0 && (
                     <p className="text-sm text-slate-400">No room participants detected yet.</p>
