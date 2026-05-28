@@ -16,6 +16,7 @@ type Props = {
   canManage: boolean;
   showLiveControls?: boolean;
   roomReady?: boolean;
+  variant?: "dark" | "light";
   onMuteEveryone?: (mediaType: "audio" | "video") => void;
   onStopScreenshare?: () => void;
 };
@@ -65,6 +66,7 @@ function SettingToggle({
   description,
   checked,
   disabled,
+  variant,
   onChange,
 }: {
   id: string;
@@ -72,14 +74,18 @@ function SettingToggle({
   description: string;
   checked: boolean;
   disabled?: boolean;
+  variant: "dark" | "light";
   onChange: (checked: boolean) => void;
 }) {
+  const isLight = variant === "light";
   return (
     <label
       htmlFor={id}
-      className={`flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-3 transition ${
-        disabled ? "cursor-not-allowed opacity-60" : "hover:bg-slate-800"
-      }`}
+      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3.5 transition ${
+        isLight
+          ? `border-slate-200 bg-white shadow-sm ${disabled ? "opacity-60" : "hover:border-brand-200 hover:bg-brand-50/30"}`
+          : `border-slate-800 bg-slate-900/80 ${disabled ? "opacity-60" : "hover:bg-slate-800"}`
+      } ${disabled ? "cursor-not-allowed" : ""}`}
     >
       <input
         id={id}
@@ -87,11 +93,15 @@ function SettingToggle({
         checked={checked}
         disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
-        className="mt-1 h-4 w-4 rounded border-slate-600 bg-slate-950 text-brand-500 focus:ring-brand-500"
+        className={`mt-0.5 h-4 w-4 rounded text-brand-600 focus:ring-brand-500 ${
+          isLight ? "border-slate-300" : "border-slate-600 bg-slate-950"
+        }`}
       />
-      <span className="min-w-0">
-        <span className="block text-sm font-semibold text-slate-100">{label}</span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-slate-400">{description}</span>
+      <span className="min-w-0 flex-1">
+        <span className={`block text-sm font-semibold ${isLight ? "text-ink" : "text-slate-100"}`}>{label}</span>
+        <span className={`mt-0.5 block text-xs leading-relaxed ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+          {description}
+        </span>
       </span>
     </label>
   );
@@ -102,6 +112,7 @@ export function MeetHostToolsPanel({
   canManage,
   showLiveControls = false,
   roomReady = false,
+  variant = "dark",
   onMuteEveryone,
   onStopScreenshare,
 }: Props) {
@@ -171,16 +182,18 @@ export function MeetHostToolsPanel({
 
   if (!canManage) {
     return (
-      <p className="text-sm text-slate-400">Only the host or an admin can manage room controls.</p>
+      <p className={`text-sm ${variant === "light" ? "text-slate-500" : "text-slate-400"}`}>
+        Only the host or an admin can manage room controls.
+      </p>
     );
   }
 
   return (
     <div className="space-y-3">
-      
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         <SettingToggle
           id={`mute-audio-${meeting.id}`}
+          variant={variant}
           label="Mute microphones on join"
           description="New attendees join with their microphone off. They can unmute themselves unless you mute the room."
           checked={settings.mute_audio_on_join}
@@ -188,6 +201,7 @@ export function MeetHostToolsPanel({
         />
         <SettingToggle
           id={`video-off-${meeting.id}`}
+          variant={variant}
           label="Join with video off"
           description="Cameras stay off when someone enters. Useful for audio-first discussions."
           checked={settings.video_off_on_join}
@@ -195,6 +209,7 @@ export function MeetHostToolsPanel({
         />
         <SettingToggle
           id={`screen-host-${meeting.id}`}
+          variant={variant}
           label="Screen share for host only"
           description="Only the meeting host can share their screen. Attendees will not see a screen-share button."
           checked={settings.screen_share_moderator_only}
@@ -244,14 +259,23 @@ export function MeetHostToolsPanel({
       )}
 
       {meeting.status === "scheduled" && (
-        <p className="text-xs leading-relaxed text-slate-400">
-          Defaults apply when the meeting goes live. You can also use{" "}
-          <span className="font-medium text-slate-200">Mute all now</span> after you start and join.
+        <p
+          className={`rounded-lg px-3 py-2 text-xs leading-relaxed ${
+            variant === "light" ? "bg-slate-50 text-slate-600" : "text-slate-400"
+          }`}
+        >
+          These defaults apply when the meeting goes live. After you join, use{" "}
+          <span className={variant === "light" ? "font-semibold text-ink" : "font-medium text-slate-200"}>
+            Mute all
+          </span>{" "}
+          for immediate control.
         </p>
       )}
 
       <p
-        className="min-h-[1.25rem] text-xs font-medium text-brand-300 transition-opacity"
+        className={`min-h-[1.25rem] text-xs font-medium transition-opacity ${
+          variant === "light" ? "text-brand-600" : "text-brand-300"
+        }`}
         aria-live="polite"
         style={{ opacity: saveSettings.isPending ? 1 : 0 }}
       >

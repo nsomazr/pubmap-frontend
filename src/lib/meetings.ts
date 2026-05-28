@@ -53,10 +53,29 @@ export function formatMeetingDateInTimezone(date?: string | null, timeZone?: str
   if (!date) return "";
   try {
     const tz = (timeZone || "").trim() || GRE_MEETING_TIMEZONE;
-    const formatted = formatMeetingDate(date, tz);
-    return `${formatted} · ${formatTimezoneLabel(tz)}`;
+    return formatMeetingDate(date, tz);
   } catch {
-    return formatMeetingDate(date);
+    return date;
+  }
+}
+
+export function formatMeetingScheduleLines(date?: string | null, timeZone?: string | null) {
+  const tz = (timeZone || "").trim() || GRE_MEETING_TIMEZONE;
+  if (!date) return { when: "", zone: formatTimezoneLabel(tz), iana: tz };
+  try {
+    const when = new Intl.DateTimeFormat(undefined, {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: tz,
+      timeZoneName: "short",
+    }).format(new Date(date));
+    return { when, zone: formatTimezoneLabel(tz), iana: tz };
+  } catch {
+    return { when: date, zone: formatTimezoneLabel(tz), iana: tz };
   }
 }
 
