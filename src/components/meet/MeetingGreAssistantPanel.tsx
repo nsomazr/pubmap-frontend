@@ -108,17 +108,25 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
           {history.map((turn, index) => (
             <div
               key={`${turn.role}-${index}`}
-              className={
-                turn.role === "user"
-                  ? "rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-800"
-                  : "rounded-lg bg-brand-50/40 px-3 py-2 text-sm text-slate-700"
-              }
+              className={`flex ${turn.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                {turn.role === "user" ? "You" : "GRE Assistant"}
-              </p>
-              <div className="mt-1">
-                <FormattedAssistantText content={turn.content} />
+              <div
+                className={`max-w-[88%] rounded-2xl px-3 py-2 text-sm ${
+                  turn.role === "user"
+                    ? "rounded-br-md bg-emerald-100 text-emerald-950"
+                    : "rounded-bl-md bg-white text-slate-800"
+                }`}
+              >
+                <p
+                  className={`text-[11px] font-semibold uppercase tracking-wide ${
+                    turn.role === "user" ? "text-emerald-800/80" : "text-slate-400"
+                  }`}
+                >
+                  {turn.role === "user" ? "You" : "GRE Assistant"}
+                </p>
+                <div className="mt-1">
+                  <FormattedAssistantText content={turn.content} />
+                </div>
               </div>
             </div>
           ))}
