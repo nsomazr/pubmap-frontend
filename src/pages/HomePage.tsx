@@ -82,20 +82,6 @@ export function HomePage() {
     }
   }, [mapDeepLink.publicationId, mapDeepLink.panel, navigate]);
 
-  useEffect(() => {
-    if (mapDeepLink.affiliation) {
-      setAffiliation(mapDeepLink.affiliation);
-      skipAutoSearchRef.current = false;
-    }
-  }, [mapDeepLink.affiliation]);
-
-  useEffect(() => {
-    if (mapDeepLink.location) {
-      setLocation(mapDeepLink.location);
-      skipAutoSearchRef.current = false;
-    }
-  }, [mapDeepLink.location]);
-
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["map"],
     queryFn: async () => {
@@ -194,6 +180,62 @@ export function HomePage() {
       subCategoryId,
     ]
   );
+
+  const applyDeepLinkSearch = useCallback(
+    (patch: { author?: string; affiliation?: string; location?: string }) => {
+      skipAutoSearchRef.current = false;
+      userDismissedResultsRailRef.current = false;
+      const nextAuthor = patch.author !== undefined ? patch.author : author;
+      const nextAffiliation =
+        patch.affiliation !== undefined ? patch.affiliation : affiliation;
+      const nextLocation = patch.location !== undefined ? patch.location : location;
+      const nextRegion = patch.location !== undefined ? null : mapRegion;
+
+      if (patch.author !== undefined) {
+        setAuthor(patch.author);
+        setAffiliation("");
+      }
+      if (patch.affiliation !== undefined) {
+        setAffiliation(patch.affiliation);
+        setAuthor("");
+      }
+      if (patch.location !== undefined) {
+        setLocation(patch.location);
+        setMapRegion(null);
+      }
+
+      void runSearch(
+        {
+          author: patch.author !== undefined ? patch.author : nextAuthor,
+          affiliation:
+            patch.affiliation !== undefined ? patch.affiliation : nextAffiliation,
+          title,
+          location: nextLocation,
+          mapRegion: nextRegion,
+          categoryId,
+          subCategoryId,
+        },
+        { revealResults: true }
+      );
+    },
+    [author, affiliation, title, location, mapRegion, categoryId, subCategoryId, runSearch]
+  );
+
+  useEffect(() => {
+    if (!mapDeepLink.author) return;
+    applyDeepLinkSearch({ author: mapDeepLink.author });
+  }, [mapDeepLink.author, applyDeepLinkSearch]);
+
+  useEffect(() => {
+    if (!mapDeepLink.affiliation) return;
+    applyDeepLinkSearch({ affiliation: mapDeepLink.affiliation });
+  }, [mapDeepLink.affiliation, applyDeepLinkSearch]);
+
+  useEffect(() => {
+    if (!mapDeepLink.location) return;
+    setLocation(mapDeepLink.location);
+    skipAutoSearchRef.current = false;
+  }, [mapDeepLink.location]);
 
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -497,6 +539,7 @@ export function HomePage() {
               userDismissedResultsRailRef.current = false;
               clearFilters();
             }}
+            onApplyMapFilter={applyDeepLinkSearch}
           />
         )}
 

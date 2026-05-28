@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { useRef } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { buildMapAffiliationPath, buildMapAuthorPath } from "../../lib/mapSearchLink";
 import { abstractListingSnippet } from "../../lib/abstractText";
 import {
   leadingSubfieldFromPublications,
@@ -55,6 +56,48 @@ interface Props {
   collapsed: boolean;
   onToggleCollapse: () => void;
   onClose: () => void;
+  /** Apply author/affiliation filter on the map (runs search + updates markers). */
+  onApplyMapFilter?: (patch: { author?: string; affiliation?: string }) => void;
+}
+
+function MapFilterLink({
+  label,
+  mapUrl,
+  author,
+  affiliation,
+  onApplyMapFilter,
+  className = "mt-3 inline-flex text-xs font-semibold text-brand-600 hover:underline",
+}: {
+  label: string;
+  mapUrl: string;
+  author?: string;
+  affiliation?: string;
+  onApplyMapFilter?: (patch: { author?: string; affiliation?: string }) => void;
+  className?: string;
+}) {
+  const navigate = useNavigate();
+
+  if (!onApplyMapFilter) {
+    return (
+      <Link to={mapUrl} className={className}>
+        {label}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={`${className} cursor-pointer border-0 bg-transparent p-0 text-left`}
+      onClick={() => {
+        if (author) onApplyMapFilter({ author });
+        else if (affiliation) onApplyMapFilter({ affiliation });
+        navigate(mapUrl, { replace: true });
+      }}
+    >
+      {label}
+    </button>
+  );
 }
 
 type ResearcherResult = {
@@ -293,7 +336,7 @@ function institutionIdentityFromPaperResults(row: InstitutionResult): Institutio
   return {
     key: row.key,
     name: row.label,
-    map_url: `/?affiliation=${encodeURIComponent(row.label)}`,
+    map_url: buildMapAffiliationPath(row.label),
     publication_count: row.totalPublications,
     researcher_count: row.totalResearchers,
     discussions_count: row.totalDiscussions,
@@ -321,7 +364,7 @@ function researcherIdentityFromPaperResults(person: ResearcherResult): Researche
     user_id: person.userId,
     has_profile: Boolean(person.userId),
     profile_url: person.userId ? `/researcher/${person.userId}` : null,
-    papers_map_url: person.name ? `/?author=${encodeURIComponent(person.name)}` : null,
+    papers_map_url: person.name ? buildMapAuthorPath(person.name) : null,
     publication_count: person.totalPublications,
     discussions_count: sumDiscussions(person.publications),
     responses_count: sumResponses(person.publications),
@@ -336,9 +379,11 @@ function researcherIdentityFromPaperResults(person: ResearcherResult): Researche
 function InstitutionIdentityCard({
   institution,
   compact = false,
+  onApplyMapFilter,
 }: {
   institution: InstitutionSearchIdentity;
   compact?: boolean;
+  onApplyMapFilter?: (patch: { author?: string; affiliation?: string }) => void;
 }) {
   const subfields =
     institution.leading_subfields?.length
@@ -432,12 +477,12 @@ function InstitutionIdentityCard({
         <MapPublicationYearChart data={yearData} className="mt-4 border-t border-slate-100 pt-3" />
       )}
 
-      <Link
-        to={institution.map_url}
-        className="mt-3 inline-flex text-xs font-semibold text-brand-600 hover:underline"
-      >
-        View all papers on map
-      </Link>
+      <MapFilterLink
+        label="View all papers on map"
+        mapUrl={institution.map_url || buildMapAffiliationPath(institution.name)}
+        affiliation={institution.name}
+        onApplyMapFilter={onApplyMapFilter}
+      />
     </article>
   );
 }
@@ -445,13 +490,16 @@ function InstitutionIdentityCard({
 function ResearcherIdentityCard({
   person,
   compact = false,
+  onApplyMapFilter,
 }: {
   person: ResearcherSearchIdentity;
   compact?: boolean;
+  onApplyMapFilter?: (patch: { author?: string; affiliation?: string }) => void;
 }) {
   const profilePath =
     person.profile_url || (person.user_id ? `/researcher/${person.user_id}` : null);
-  const papersPath = person.papers_map_url || (person.name ? `/?author=${encodeURIComponent(person.name)}` : null);
+  const papersPath =
+    person.papers_map_url || (person.name ? buildMapAuthorPath(person.name) : null);
   const leadingSubfield = person.leading_subfield?.name
     ? person.leading_subfield
     : person.leading_interest
@@ -536,10 +584,14 @@ function ResearcherIdentityCard({
             Open researcher profile
           </Link>
         ) : null}
-        {papersPath ? (
-          <Link to={papersPath} className="text-xs font-semibold text-brand-600 hover:underline">
-            View papers on map
-          </Link>
+        {papersPath && person.name ? (
+          <MapFilterLink
+            label="View papers on map"
+            mapUrl={papersPath}
+            author={person.name}
+            onApplyMapFilter={onApplyMapFilter}
+            className="text-xs font-semibold text-brand-600 hover:underline"
+          />
         ) : null}
       </div>
     </article>
@@ -565,6 +617,7 @@ export function MapResultsRail({
   collapsed,
   onToggleCollapse,
   onClose,
+  onApplyMapFilter,
 }: Props) {
   const isMobile = useIsMobile();
   const swipeRef = useRef<{ startY: number } | null>(null);
@@ -785,7 +838,10 @@ export function MapResultsRail({
                       Researcher
                     </h3>
                   </div>
-                  <ResearcherIdentityCard person={exactResearcher} />
+                  <ResearcherIdentityCard
+                    person={exactResearcher}
+                    onApplyMapFilter={onApplyMapFilter}
+                  />
                 </section>
               )}
 
@@ -805,6 +861,7 @@ export function MapResultsRail({
                       <li key={person.key}>
                         <ResearcherIdentityCard
                           person={researcherIdentityFromPaperResults(person)}
+                          onApplyMapFilter={onApplyMapFilter}
                         />
                       </li>
                     ))}
@@ -827,7 +884,11 @@ export function MapResultsRail({
                   <ul className="space-y-2.5">
                     {fuzzyResearchers.map((person) => (
                       <li key={person.key}>
-                        <ResearcherIdentityCard person={person} compact />
+                        <ResearcherIdentityCard
+                          person={person}
+                          compact
+                          onApplyMapFilter={onApplyMapFilter}
+                        />
                       </li>
                     ))}
                   </ul>
@@ -921,7 +982,10 @@ export function MapResultsRail({
                       Institution
                     </h3>
                   </div>
-                  <InstitutionIdentityCard institution={exactInstitution} />
+                  <InstitutionIdentityCard
+                    institution={exactInstitution}
+                    onApplyMapFilter={onApplyMapFilter}
+                  />
                 </section>
               )}
 
@@ -941,6 +1005,7 @@ export function MapResultsRail({
                       <li key={row.key}>
                         <InstitutionIdentityCard
                           institution={institutionIdentityFromPaperResults(row)}
+                          onApplyMapFilter={onApplyMapFilter}
                         />
                       </li>
                     ))}
@@ -963,7 +1028,11 @@ export function MapResultsRail({
                   <ul className="space-y-2.5">
                     {fuzzyInstitutions.map((institution) => (
                       <li key={institution.key}>
-                        <InstitutionIdentityCard institution={institution} compact />
+                        <InstitutionIdentityCard
+                          institution={institution}
+                          compact
+                          onApplyMapFilter={onApplyMapFilter}
+                        />
                       </li>
                     ))}
                   </ul>

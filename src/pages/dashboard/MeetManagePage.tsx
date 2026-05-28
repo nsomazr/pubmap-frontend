@@ -3,6 +3,7 @@ import { ArrowLeft, CalendarClock, FileText, Link2, Search, Shield, UserPlus, Us
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
+import { UserAvatar } from "../../components/ui/UserAvatar";
 import { Button } from "../../components/ui/Button";
 import { useToast } from "../../components/ui/ToastProvider";
 import { Input } from "../../components/ui/Input";
@@ -26,6 +27,7 @@ import {
   utcToWallInputValue,
   wallTimeToUtcIso,
 } from "../../lib/meetTimezones";
+import { userFullName } from "../../lib/userDisplay";
 import type { Category, MeetParticipant, MeetParticipantRole, MeetSession, Publication, Topic, User } from "../../types";
 
 const emptyForm = {
@@ -41,7 +43,7 @@ const emptyForm = {
   forum_topic_id: "",
 };
 
-function FormSection({
+function MeetFormSection({
   icon: Icon,
   title,
   description,
@@ -53,19 +55,26 @@ function FormSection({
   children: ReactNode;
 }) {
   return (
-    <section className="gre-card-accent overflow-visible rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="gre-section-head px-5 pt-5">
-        <span className="gre-section-head__icon">
-          <Icon className="h-5 w-5" />
-        </span>
-        <div>
-          <h2 className="text-base font-semibold text-ink">{title}</h2>
-          {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
+    <section className="gre-dashboard-card space-y-4 overflow-visible p-5 sm:p-6">
+      <div className="border-b border-slate-100 pb-3">
+        <div className="flex items-start gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700">
+            <Icon className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-ink">{title}</h2>
+            {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
+          </div>
         </div>
       </div>
-      <div className="space-y-4 px-5 pb-5">{children}</div>
+      <div className="space-y-4">{children}</div>
     </section>
   );
+}
+
+function participantDisplayName(participant: MeetParticipant) {
+  if (participant.user) return userFullName(participant.user);
+  return "Participant";
 }
 
 export function MeetManagePage() {
@@ -320,19 +329,27 @@ export function MeetManagePage() {
   });
 
   return (
-    <div className="animate-fade-up space-y-8">
+    <div className="animate-fade-up space-y-6">
       <PageHeader
-        variant="premium"
+        variant="clean"
         title={isNew ? "Create GRE Meet session" : "Edit GRE Meet session"}
+        description={
+          isNew
+            ? "Schedule a session, set who can join, and link it to your GRE research context."
+            : "Update the schedule, access rules, and linked papers or discussions."
+        }
         action={
-          <Link to="/dashboard/meetings" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700">
+          <Link
+            to="/dashboard/meetings"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+          >
             <ArrowLeft className="h-4 w-4" />
             Back to meetings
           </Link>
         }
       />
 
-      <RequiredFieldsLegend className="-mt-4" />
+      <RequiredFieldsLegend />
 
       <form
         className="space-y-5"
@@ -342,10 +359,7 @@ export function MeetManagePage() {
           saveMutation.mutate();
         }}
       >
-        <FormSection
-          icon={CalendarClock}
-          title="Schedule"
-        >
+        <MeetFormSection icon={CalendarClock} title="Schedule">
           <Input
             label="Meeting title"
             value={form.title}
@@ -375,9 +389,9 @@ export function MeetManagePage() {
               <span className="font-semibold">Preview:</span> {schedulePreview}
             </p>
           )}
-        </FormSection>
+        </MeetFormSection>
 
-        <FormSection icon={Shield} title="Access and format">
+        <MeetFormSection icon={Shield} title="Access and format">
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               label="Meeting type"
@@ -402,12 +416,9 @@ export function MeetManagePage() {
               ))}
             </Select>
           </div>
-        </FormSection>
+        </MeetFormSection>
 
-        <FormSection
-          icon={Link2}
-          title="GRE research context"
-        >
+        <MeetFormSection icon={Link2} title="GRE research context">
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               label="Category"
@@ -478,9 +489,9 @@ export function MeetManagePage() {
               ))}
             </Select>
           </div>
-        </FormSection>
+        </MeetFormSection>
 
-        <FormSection icon={FileText} title="Description">
+        <MeetFormSection icon={FileText} title="Description">
           <Textarea
             label="Meeting description"
             value={form.description}
@@ -488,10 +499,10 @@ export function MeetManagePage() {
             rows={5}
             placeholder="Agenda, goals, pre-reading, or notes for participants…"
           />
-        </FormSection>
+        </MeetFormSection>
 
         {form.visibility === "invite_only" && (
-          <FormSection icon={Users} title="Guest invitations">
+          <MeetFormSection icon={Users} title="Guest invitations">
             <Textarea
               label="Guest emails"
               value={guestEmails}
@@ -525,12 +536,12 @@ export function MeetManagePage() {
               />
               Also invite matching field/subfield members when saving
             </label>
-          </FormSection>
+          </MeetFormSection>
         )}
 
         {error && <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div className="gre-dashboard-card flex flex-wrap items-center gap-3 p-5">
           <Button
             type="submit"
             loading={saveMutation.isPending}
@@ -560,17 +571,36 @@ export function MeetManagePage() {
       </form>
 
       {!isNew && meeting && (
-        <section className="gre-card space-y-4 p-6">
-          <h2 className="text-lg font-semibold text-ink">Host tools</h2>
+        <section className="gre-dashboard-card space-y-4 p-5 sm:p-6">
+          <div className="border-b border-slate-100 pb-3">
+            <div className="flex items-start gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700">
+                <Shield className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-base font-semibold text-ink">Host tools</h2>
+                <p className="mt-0.5 text-sm text-slate-500">Recording, room controls, and session options.</p>
+              </div>
+            </div>
+          </div>
           <MeetHostToolsPanel meeting={meeting} canManage={!!meeting.can_manage} />
         </section>
       )}
 
       {!isNew && meeting && (
-        <section className="gre-card space-y-5 p-6">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-brand-600" />
-            <h2 className="text-lg font-semibold text-ink">Participants and speakers</h2>
+        <section className="gre-dashboard-card space-y-5 p-5 sm:p-6">
+          <div className="border-b border-slate-100 pb-3">
+            <div className="flex items-start gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700">
+                <Users className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-base font-semibold text-ink">Participants and speakers</h2>
+                <p className="mt-0.5 text-sm text-slate-500">
+                  Search GRE members to add; invite status updates when they open the room link.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
@@ -594,58 +624,72 @@ export function MeetManagePage() {
           </div>
 
           {peopleSearch.trim().length >= 2 && (
-            <div className="grid gap-3 md:grid-cols-2">
-              {people.map((person) => (
-                <div key={person.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="font-semibold text-ink">{person.full_name || `${person.firstname} ${person.lastname}`}</p>
-                  <p className="mt-1 text-sm text-slate-500">{person.email}</p>
-                  <p className="mt-1 text-xs text-brand-700">{person.affiliation || "No affiliation"}</p>
-                  <Button
-                    className="mt-3"
-                    variant="secondary"
-                    loading={addParticipant.isPending}
-                    onClick={() => addParticipant.mutate({ userId: person.id, role: participantRole })}
+            <div className="grid gap-2 sm:grid-cols-2">
+              {people.map((person) => {
+                const name = userFullName(person) || person.email || "Researcher";
+                return (
+                  <article
+                    key={person.id}
+                    className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-white p-3 transition hover:border-slate-300 hover:shadow-sm"
                   >
-                    <UserPlus className="h-4 w-4" />
-                    Add to meeting
-                  </Button>
-                </div>
-              ))}
+                    <UserAvatar user={person} name={name} size="sm" className="shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-ink">{name}</p>
+                      <p className="truncate text-xs text-slate-500">{person.email}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-brand-700">
+                        {person.affiliation || "No affiliation"}
+                      </p>
+                      <Button
+                        className="mt-2 !px-2.5 !py-1.5 text-xs"
+                        variant="secondary"
+                        loading={addParticipant.isPending}
+                        onClick={() => addParticipant.mutate({ userId: person.id, role: participantRole })}
+                      >
+                        <UserPlus className="h-3.5 w-3.5" />
+                        Add
+                      </Button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
 
-          <div className="space-y-3">
-            {(meeting.participants ?? []).map((participant) => (
-              <div
-                key={participant.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3"
-              >
-                <div>
-                  <p className="font-semibold text-ink">
-                    {participant.user?.full_name ||
-                      `${participant.user?.firstname ?? ""} ${participant.user?.lastname ?? ""}`.trim() ||
-                      participant.user?.email}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {participant.role} · {participant.invite_status}
-                  </p>
-                </div>
-                {participant.user_id !== meeting.host_id && (
-                  <Button
-                    variant="ghost"
-                    className="text-red-600 hover:text-red-700"
-                    loading={removeParticipant.isPending}
-                    onClick={() => removeParticipant.mutate(participant.id)}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </div>
-            ))}
-            {(meeting.participants?.length ?? 0) === 0 && (
-              <p className="text-sm text-slate-500">No invited participants yet.</p>
-            )}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {(meeting.participants ?? []).map((participant) => {
+              const name = participantDisplayName(participant);
+              const isHost = participant.user_id === meeting.host_id;
+              return (
+                <article
+                  key={participant.id}
+                  className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5"
+                >
+                  <UserAvatar user={participant.user} name={name} size="sm" className="shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-ink">{name}</p>
+                    <p className="mt-0.5 text-[11px] capitalize text-slate-500">
+                      {participant.role} · {participant.invite_status}
+                    </p>
+                  </div>
+                  {!isHost && (
+                    <Button
+                      variant="ghost"
+                      className="shrink-0 text-xs text-red-600 hover:text-red-700"
+                      loading={removeParticipant.isPending}
+                      onClick={() => removeParticipant.mutate(participant.id)}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </article>
+              );
+            })}
           </div>
+          {(meeting.participants?.length ?? 0) === 0 && (
+            <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-center text-sm text-slate-500">
+              No invited participants yet. Search above to add researchers.
+            </p>
+          )}
         </section>
       )}
     </div>

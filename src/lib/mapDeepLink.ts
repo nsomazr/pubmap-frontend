@@ -3,6 +3,7 @@ export type MapDeepLinkPanel = "summary";
 export interface MapDeepLinkState {
   publicationId: number | null;
   panel: MapDeepLinkPanel | null;
+  author: string | null;
   affiliation: string | null;
   location: string | null;
 }
@@ -13,9 +14,10 @@ export function parseMapDeepLink(search: string): MapDeepLinkState {
   const publicationId = raw && /^\d+$/.test(raw) ? Number(raw) : null;
   const panelRaw = params.get("panel");
   const panel: MapDeepLinkPanel | null = panelRaw === "summary" ? "summary" : null;
+  const author = params.get("author")?.trim() || null;
   const affiliation = params.get("affiliation")?.trim() || null;
   const location = params.get("location")?.trim() || null;
-  return { publicationId, panel, affiliation, location };
+  return { publicationId, panel, author, affiliation, location };
 }
 
 export function buildMapFocusPath(

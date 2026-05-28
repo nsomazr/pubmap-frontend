@@ -25,7 +25,7 @@ Consistent UI rhythm for dashboard and public pages (inspired by modern control-
 
 | Component | Path | When |
 |-----------|------|------|
-| `PageHeader` | `components/dashboard/PageHeader.tsx` | Dashboard pages; `variant="clean"` default, `premium` for GRE Meet heroes |
+| `PageHeader` | `components/dashboard/PageHeader.tsx` | Dashboard pages; `variant="clean"` default (GRE Meet, Overview, etc.) |
 | `MetricTile` | `components/dashboard/MetricTile.tsx` | Clickable stat + sparkline + chevron |
 | `StatDisplayTile` | `components/dashboard/StatDisplayTile.tsx` | Read-only stat (e.g. public Statistics) |
 | `QuickLinkTile` | `components/dashboard/QuickLinkTile.tsx` | Secondary nav row with chevron |
@@ -61,7 +61,7 @@ CSS variables in `index.css`:
 - White / soft gray background, brand accent top line, dark title text
 - Used on Statistics, Events, Forum, Rankings, About, Research assistant (`/publication/:id/chat`), publications, etc.
 
-Pass **`heroVariant="premium"`** only when a dark gradient hero is intentional (rare).
+Pass **`heroVariant="premium"`** only when a dark gradient hero is intentional (rare; not used on GRE Meet or dashboard pages).
 
 ## Layout
 

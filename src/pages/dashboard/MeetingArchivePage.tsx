@@ -5,6 +5,7 @@ import {
   Download,
   ExternalLink,
   FileText,
+  MessageCircle,
   Send,
   Sparkles,
   Trash2,
@@ -13,11 +14,14 @@ import {
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
+import { StatDisplayTile } from "../../components/dashboard/StatDisplayTile";
 import { Button } from "../../components/ui/Button";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { Textarea } from "../../components/ui/Textarea";
 import { useToast } from "../../components/ui/ToastProvider";
 import api, { parseApiError } from "../../lib/api";
+import { MeetingArchiveParticipants } from "../../components/meet/MeetingArchiveParticipants";
+import { MeetingArchiveTranscript } from "../../components/meet/MeetingArchiveTranscript";
 import { MeetingGreAssistantPanel } from "../../components/meet/MeetingGreAssistantPanel";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
 import {
@@ -29,18 +33,37 @@ import {
 } from "../../lib/meetings";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 
-function formatMessageTime(value?: string | null) {
-  if (!value) return "";
-  try {
-    return new Date(value).toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return value;
-  }
+function statusValueClass(status: string) {
+  if (status === "live") return "text-teal-700";
+  if (status === "ended") return "text-slate-700";
+  if (status === "cancelled") return "text-red-700";
+  return "text-ink";
+}
+
+function ArchiveSectionTitle({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: typeof FileText;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="border-b border-slate-100 pb-3">
+      <div className="flex items-start gap-2.5">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700">
+          <Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-ink">{title}</h2>
+          {description && (
+            <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function MeetingArchivePage() {
@@ -124,7 +147,17 @@ export function MeetingArchivePage() {
   }, [meeting?.id, meeting?.meeting_minutes, meeting?.summary]);
 
   if (isLoading || !meeting) {
-    return <div className="gre-skeleton h-72 rounded-2xl" />;
+    return (
+      <div className="animate-fade-up space-y-6">
+        <div className="gre-skeleton h-24 rounded-2xl" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="gre-skeleton h-24 rounded-2xl" />
+          ))}
+        </div>
+        <div className="gre-skeleton h-96 rounded-2xl" />
+      </div>
+    );
   }
 
   const effectiveReport = reportDraft || meeting.meeting_minutes || meeting.summary || "";
@@ -166,16 +199,15 @@ export function MeetingArchivePage() {
   };
 
   return (
-    <div className="animate-fade-up space-y-8">
+    <div className="animate-fade-up space-y-6">
       <PageHeader
-        variant="premium"
         title={`${meeting.title} archive`}
         description={`${archiveId} · ${meeting.category_name} / ${meeting.sub_category_name}`}
         action={
           <div className="flex flex-wrap gap-2">
             <Link
               to={`/dashboard/meetings/${meeting.id}`}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/15 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/25"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to meeting
@@ -198,34 +230,23 @@ export function MeetingArchivePage() {
         }
       />
 
-      <section className="grid gap-4 lg:grid-cols-4">
-        <div className="gre-card gre-card-accent rounded-2xl p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Meeting ID</p>
-          <p className="mt-2 text-base font-semibold text-ink">{archiveId}</p>
-        </div>
-        <div className="gre-card gre-card-accent rounded-2xl p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</p>
-          <p className="mt-2 text-base font-semibold capitalize text-ink">{meeting.status}</p>
-        </div>
-        <div className="gre-card gre-card-accent rounded-2xl p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Messages</p>
-          <p className="mt-2 text-base font-semibold text-ink">{messageCount}</p>
-        </div>
-        <div className="gre-card gre-card-accent rounded-2xl p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Participants</p>
-          <p className="mt-2 text-base font-semibold text-ink">{participantCount}</p>
-        </div>
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatDisplayTile label="Meeting ID" value={archiveId} />
+        <StatDisplayTile
+          label="Status"
+          value={meeting.status}
+          valueClassName={`capitalize ${statusValueClass(meeting.status)}`}
+        />
+        <StatDisplayTile label="Messages" value={messageCount} />
+        <StatDisplayTile label="Participants" value={participantCount} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-6">
-          <div className="gre-card space-y-4 p-6">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-brand-600" />
-              <h2 className="text-lg font-semibold text-ink">Archive summary</h2>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl bg-slate-50 p-4">
+          <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
+            <ArchiveSectionTitle icon={FileText} title="Archive summary" />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Scheduled
                 </p>
@@ -233,7 +254,7 @@ export function MeetingArchivePage() {
                   {formatMeetingDateInTimezone(meeting.scheduled_at, meeting.scheduled_timezone)}
                 </p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Ended
                 </p>
@@ -244,7 +265,7 @@ export function MeetingArchivePage() {
             </div>
 
             {meeting.can_manage ? (
-              <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Assistant report (host edit before sharing)
                 </p>
@@ -289,7 +310,7 @@ export function MeetingArchivePage() {
                 )}
               </div>
             ) : meeting.meeting_minutes ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Full meeting minutes
                 </p>
@@ -298,13 +319,13 @@ export function MeetingArchivePage() {
                 </div>
               </div>
             ) : meeting.summary ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
                 <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
                   {meeting.summary}
                 </p>
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-5 text-sm text-slate-500">
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-500 sm:p-5">
                 {meeting.status === "ended"
                   ? "The meeting ended, but the archive summary is not ready yet."
                   : "The meeting is still active. The archive summary will appear here after it ends."}
@@ -312,67 +333,28 @@ export function MeetingArchivePage() {
             )}
           </div>
 
-          <div className="gre-card space-y-4 p-6">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-brand-600" />
-              <h2 className="text-lg font-semibold text-ink">Messages</h2>
-            </div>
-            {messageCount === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-5 text-sm text-slate-500">
-                No archived messages yet.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {meeting.chat_messages?.map((message, index) => (
-                  <article
-                    key={message.id}
-                    className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-ink">
-                          {message.sender?.full_name ||
-                            `${message.sender?.firstname ?? ""} ${message.sender?.lastname ?? ""}`.trim() ||
-                            message.sender?.email ||
-                            "Participant"}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Message {index + 1} · {formatMessageTime(message.created_at)}
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium capitalize text-slate-600">
-                        {message.message_type}
-                      </span>
-                    </div>
-                    <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">
-                      {message.message}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            )}
+          <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
+            <ArchiveSectionTitle
+              icon={MessageCircle}
+              title="Meeting transcript"
+              description="Chronological conversation from the live room — grouped by speaker, not a flat list."
+            />
+            <MeetingArchiveTranscript messages={meeting.chat_messages ?? []} />
           </div>
         </div>
 
         <aside className="space-y-6">
-          <div className="gre-card flex flex-col gap-4 p-6">
-            <div>
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-brand-600" />
-                <h2 className="text-lg font-semibold text-ink">Chat with GRE Assistant</h2>
-              </div>
-              <p className="mt-1.5 text-sm text-slate-500">
-                Ask follow-up questions about the minutes, decisions, and transcript from this meeting.
-              </p>
-            </div>
+          <div className="gre-dashboard-card flex flex-col gap-4 p-5 sm:p-6">
+            <ArchiveSectionTitle
+              icon={Sparkles}
+              title="Chat with GRE Assistant"
+              description="Ask follow-up questions about the minutes, decisions, and transcript from this meeting."
+            />
             <MeetingGreAssistantPanel meeting={meeting} variant="light" />
           </div>
 
-          <div className="gre-card space-y-4 p-6">
-            <div className="flex items-center gap-2">
-              <Video className="h-5 w-5 text-brand-600" />
-              <h2 className="text-lg font-semibold text-ink">Recording</h2>
-            </div>
+          <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
+            <ArchiveSectionTitle icon={Video} title="Recording" />
             {meeting.recording_url ? (
               <>
                 <video controls className="w-full rounded-2xl bg-black">
@@ -394,35 +376,20 @@ export function MeetingArchivePage() {
             )}
           </div>
 
-          <div className="gre-card space-y-4 p-6">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-brand-600" />
-              <h2 className="text-lg font-semibold text-ink">Participants</h2>
-            </div>
-            <div className="space-y-3">
-              {(meeting.participants ?? []).map((participant) => (
-                <div
-                  key={participant.id}
-                  className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3"
-                >
-                  <p className="font-semibold text-ink">
-                    {participant.user?.full_name ||
-                      `${participant.user?.firstname ?? ""} ${participant.user?.lastname ?? ""}`.trim() ||
-                      participant.user?.email}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {participant.role} · {participant.invite_status}
-                  </p>
-                </div>
-              ))}
-            </div>
+          <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
+            <ArchiveSectionTitle
+              icon={Users}
+              title="Participants"
+              description="Compact roster with search and grouped sections when the list grows."
+            />
+            <MeetingArchiveParticipants participants={meeting.participants ?? []} />
           </div>
 
           {(meeting.publication || meeting.forum_topic) && (
-            <div className="gre-card space-y-4 p-6">
-              <h2 className="text-lg font-semibold text-ink">Related context</h2>
+            <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
+              <ArchiveSectionTitle icon={FileText} title="Related context" />
               {meeting.publication && (
-                <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3">
+                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Paper</p>
                   <p className="mt-1 font-semibold text-ink">{meeting.publication.title}</p>
                   <Button
@@ -442,7 +409,7 @@ export function MeetingArchivePage() {
                 </div>
               )}
               {meeting.forum_topic && (
-                <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3">
+                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Discussion
                   </p>
