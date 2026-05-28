@@ -24,7 +24,7 @@ import "leaflet/dist/leaflet.css";
 
 const DEFAULT_CENTER: [number, number] = [-6.37, 34.89];
 const DEFAULT_ZOOM = 5;
-const PIN_ZOOM = 10;
+const PIN_ZOOM = 13;
 
 const pinIcon = L.icon({
   iconUrl: assets.marker,
@@ -354,7 +354,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-slate-600">
             {mode === "map"
-              ? "Click the map or drag the pin. Use +/− to zoom."
+              ? "Zoom in to a village or town, then click the map or drag the pin to set the study site."
               : "Preview: open expanded map to adjust the pin."}
           </p>
           <button

@@ -14,6 +14,7 @@ import { ResearchMap } from "../components/map/ResearchMap";
 import { MapPublicationSheet } from "../components/map/MapPublicationSheet";
 import { assets } from "../lib/brand";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { formatMapRegionLabel, reverseGeocode } from "../lib/geocode";
 import type {
   AuthorResearchResponse,
   Category,
@@ -22,6 +23,9 @@ import type {
   Publication,
   SubCategory,
 } from "../types";
+
+/** Local area search (~village / ward), not whole regions. */
+const MAP_REGION_RADIUS_KM = 8;
 
 type MapSearchFilters = {
   author: string;
@@ -129,20 +133,19 @@ export function HomePage() {
       const authorSearch = authorQuery.length >= 2;
       const institutionSearch = affiliationQuery.length >= 2 && !authorSearch;
       try {
-        const pubsRequest = institutionSearch
-          ? Promise.resolve({ data: [] as Publication[] })
-          : api.get<Publication[]>("/map/search/", {
-              params: {
-                author: authorSearch ? authorQuery : undefined,
-                title: active.title || undefined,
-                location: active.mapRegion ? undefined : active.location || undefined,
-                lat: active.mapRegion?.lat,
-                lng: active.mapRegion?.lng,
-                radius_km: active.mapRegion?.radiusKm,
-                category: active.categoryId || undefined,
-                sub_category: active.subCategoryId || undefined,
-              },
-            });
+        const pubsRequest = api.get<Publication[]>("/map/search/", {
+          params: {
+            author: authorSearch ? authorQuery : undefined,
+            affiliation: institutionSearch ? affiliationQuery : undefined,
+            title: active.title || undefined,
+            location: active.mapRegion ? undefined : active.location || undefined,
+            lat: active.mapRegion?.lat,
+            lng: active.mapRegion?.lng,
+            radius_km: active.mapRegion?.radiusKm,
+            category: active.categoryId || undefined,
+            sub_category: active.subCategoryId || undefined,
+          },
+        });
         const researcherRequest = authorSearch
             ? api.get<AuthorResearchResponse>("/map/researchers/search/", {
                 params: { q: authorQuery },
@@ -213,28 +216,37 @@ export function HomePage() {
 
   const handleMapRegionPick = useCallback(
     (lat: number, lng: number) => {
-      const selection: MapRegionSelection = {
-        lat,
-        lng,
-        radiusKm: 80,
-        label: `Map region (${lat.toFixed(2)}, ${lng.toFixed(2)})`,
-      };
-      setMapRegion(selection);
       setLocation("");
       setMapPickMode(false);
       skipAutoSearchRef.current = false;
-      void runSearch(
-        {
-          author,
-          affiliation,
-          title,
-          location: "",
-          mapRegion: selection,
-          categoryId,
-          subCategoryId,
-        },
-        { revealResults: true }
-      );
+
+      void (async () => {
+        let resolved: string | null = null;
+        try {
+          resolved = await reverseGeocode(lat, lng);
+        } catch {
+          resolved = null;
+        }
+        const selection: MapRegionSelection = {
+          lat,
+          lng,
+          radiusKm: MAP_REGION_RADIUS_KM,
+          label: formatMapRegionLabel(lat, lng, resolved),
+        };
+        setMapRegion(selection);
+        await runSearch(
+          {
+            author,
+            affiliation,
+            title,
+            location: "",
+            mapRegion: selection,
+            categoryId,
+            subCategoryId,
+          },
+          { revealResults: true }
+        );
+      })();
     },
     [author, affiliation, title, categoryId, subCategoryId, runSearch]
   );
@@ -310,12 +322,16 @@ export function HomePage() {
 
   const hasSearched = results !== null;
   const basePublications = hasSearched ? (results ?? []) : mapPublications;
+  const institutionOnlySearch =
+    affiliation.trim().length >= 2 && author.trim().length < 2;
   const publications = useMemo(() => {
     if (deepLinkPub && !basePublications.some((p) => p.id === deepLinkPub.id)) {
       return [deepLinkPub, ...basePublications];
     }
     return basePublications;
   }, [basePublications, deepLinkPub]);
+  const mapDisplayPublications =
+    hasSearched && institutionOnlySearch ? [] : publications;
   const categories = data?.categories ?? [];
   const subCategories = data?.sub_categories ?? [];
   const totalOnMap = mapPublications.length;
@@ -359,7 +375,7 @@ export function HomePage() {
             </div>
           ) : (
             <ResearchMap
-              publications={publications}
+              publications={mapDisplayPublications}
               focusPublicationId={focusPubId}
               height="100%"
               className="rounded-none border-0"

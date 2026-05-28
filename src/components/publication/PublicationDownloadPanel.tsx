@@ -5,11 +5,14 @@ import {
   Eye,
   EyeOff,
   FileText,
+  Link2,
   MessageSquare,
   Share2,
   ThumbsUp,
   X,
 } from "lucide-react";
+import { greDoiDisplayPath } from "../../lib/publicationGre";
+import { grePaperCode } from "../../lib/grePaperTitle";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useState } from "react";
 import api from "../../lib/api";
@@ -24,6 +27,9 @@ import { PdfPreview } from "./PdfPreview";
 interface Props {
   publicationId: number;
   gre?: PublicationGre;
+  greDoi?: string | null;
+  greDoiUrl?: string | null;
+  paperNumber?: string | null;
   documents?: GreDocument[];
   isClosed?: boolean;
   publicationTitle?: string;
@@ -36,6 +42,9 @@ interface Props {
 export function PublicationDownloadPanel({
   publicationId,
   gre,
+  greDoi,
+  greDoiUrl,
+  paperNumber,
   documents = [],
   isClosed,
   publicationTitle,
@@ -58,6 +67,9 @@ export function PublicationDownloadPanel({
   const supplementary = documents.filter((d) => d.kind === "supplementary");
   const fullUrl = manuscript?.document ? mediaUrl(manuscript.document) : null;
   const closedAccess = isClosed || gre?.access_type === "closed";
+  const doi = greDoi || gre?.gre_doi || null;
+  const doiHref = greDoiUrl || gre?.gre_doi_url || (doi ? greDoiDisplayPath(doi) : null);
+  const paperCode = grePaperCode(paperNumber ?? null);
   const publicationHref = useMemo(
     () => `${window.location.origin}${buildPublicationPath(publicationId, encodedId)}`,
     [publicationId, encodedId]
@@ -351,10 +363,34 @@ export function PublicationDownloadPanel({
 
   return (
     <section className="gre-card min-w-0 overflow-hidden p-5 sm:p-6">
-      <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">Downloads</h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Preview or download the GRE publication PDF, then share or save this paper.
-      </p>
+      <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
+            Publication access
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            GRE identifier, downloads, preview, and sharing for this paper.
+          </p>
+        </div>
+        {doi && doiHref && (
+          <a
+            href={doiHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex max-w-full shrink-0 items-start gap-2.5 rounded-2xl bg-slate-900 px-3.5 py-2.5 text-white shadow-sm transition hover:bg-slate-800"
+          >
+            <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-300" />
+            <span className="min-w-0 text-left text-xs leading-relaxed">
+              <span className="block font-semibold">DOI: {doi}</span>
+              {paperCode && (
+                <span className="mt-0.5 block text-[10px] font-medium tracking-wide text-slate-400">
+                  Paper {paperCode}
+                </span>
+              )}
+            </span>
+          </a>
+        )}
+      </div>
 
       <div className="mt-4 space-y-3">
         <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4">

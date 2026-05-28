@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
-import { Bot, Loader2, Send, Sparkles } from "lucide-react";
+import { Bot, Loader2, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "../ui/Button";
+import { InputWithSendAddon, TextareaWithSendAddon } from "../ui/FieldSendAddon";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
 import { askMeetingAssistant, type MeetingAssistantTurn } from "../../lib/meetAssistant";
 import { parseApiError } from "../../lib/api";
@@ -229,47 +229,33 @@ export function MeetingGreAssistantPanel({
               rows={1}
               className="max-h-28 min-h-11 w-full resize-y rounded-3xl border border-slate-700 bg-slate-950 py-3 pl-4 pr-24 text-sm text-slate-100 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-900/40"
             />
-            <Button
-              type="submit"
-              disabled={!question.trim()}
-              loading={askMutation.isPending}
-              className="absolute right-1.5 top-1/2 h-8 min-w-[72px] -translate-y-1/2 rounded-full px-3 text-sm"
-            >
-              <Sparkles className="h-4 w-4" />
-              Ask
-            </Button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <label className="min-w-0 flex-1">
-              <span className="sr-only">Ask GRE Assistant</span>
-              <textarea
-                value={question}
-                onChange={(event) => setQuestion(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key !== "Enter") return;
-                  if (event.shiftKey) return;
-                  event.preventDefault();
-                  handleAsk();
-                }}
-                placeholder="Ask a question…"
-                rows={compact ? 2 : 2}
-                className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-ink shadow-sm outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400"
-              />
-            </label>
             <button
               type="submit"
               disabled={!question.trim() || askMutation.isPending}
-              className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              className="absolute right-1.5 top-1/2 inline-flex h-8 min-w-[4.5rem] -translate-y-1/2 items-center justify-center gap-1 rounded-full bg-brand-600 px-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {askMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Send className="h-4 w-4" />
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Ask
+                </>
               )}
-              Ask
             </button>
           </div>
+        ) : (
+          <TextareaWithSendAddon
+            value={question}
+            onChange={setQuestion}
+            onSubmit={() => handleAsk()}
+            placeholder="Ask a question…"
+            loading={askMutation.isPending}
+            rows={compact ? 2 : 2}
+            submitLabel="Ask"
+            submitAriaLabel="Ask GRE Assistant"
+            icon={Sparkles}
+          />
         )}
         {error && (
           <p className={`text-sm ${isDark ? "text-red-400" : "text-red-600"}`}>{error}</p>

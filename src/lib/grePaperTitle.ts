@@ -1,3 +1,5 @@
+import { stripLatexForPlainText } from "./plainTitle";
+
 /** Normalize stored short_number (e.g. "001") to GRE code "GRE-001". */
 export function grePaperCode(shortNumber?: string | null): string | null {
   const raw = shortNumber?.trim();
@@ -13,9 +15,7 @@ export function stripGrePaperPrefix(title: string): string {
   const raw = (title || "").trim();
   const withoutGrePrefix = raw.replace(/^#?GRE-[\w-]+\s*:\s*/i, "").trim();
   const withoutMarkdownHeading = withoutGrePrefix.replace(/^#{1,6}\s+/, "").trim();
-  const latexTitleMatch = withoutMarkdownHeading.match(/^\\title\{([\s\S]+)\}$/i);
-  const withoutLatexTitle = latexTitleMatch ? latexTitleMatch[1].trim() : withoutMarkdownHeading;
-  return withoutLatexTitle.replace(/^\{+|\}+$/g, "").trim();
+  return stripLatexForPlainText(withoutMarkdownHeading);
 }
 
 /** Reader-facing title: stored title without GRE number prefix. */

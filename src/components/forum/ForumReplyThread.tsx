@@ -1,8 +1,8 @@
-import { ChevronDown, ChevronRight, MessageSquare, Reply, Send, X } from "lucide-react";
+import { ChevronDown, ChevronRight, MessageSquare, Reply, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { greFormPanelNestedClass } from "../../lib/formStyles";
 import { Button } from "../ui/Button";
-import { Textarea } from "../ui/Textarea";
+import { TextareaWithSendAddon } from "../ui/FieldSendAddon";
 import {
   buildReplyTree,
   countDescendants,
@@ -54,27 +54,26 @@ function ReplyComposer({
 }) {
   return (
     <div className={greFormPanelNestedClass}>
-      <Textarea
+      <TextareaWithSendAddon
         value={draft}
-        onChange={(e) => onDraftChange(e.target.value)}
+        onChange={onDraftChange}
+        onSubmit={onSubmit}
         rows={3}
         placeholder={placeholder}
-        className="!min-h-[4.5rem] !shadow-none"
+        loading={posting}
+        submitLabel="Post"
+        submitAriaLabel="Post reply"
+        footer={
+          <button
+            type="button"
+            onClick={onCancel}
+            className="gre-interactive mt-2 inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white/80"
+          >
+            <X className="h-4 w-4" />
+            Cancel
+          </button>
+        }
       />
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" onClick={onSubmit} loading={posting} disabled={!draft.trim()}>
-          <Send className="h-4 w-4" />
-          Post reply
-        </Button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="gre-interactive inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white/80"
-        >
-          <X className="h-4 w-4" />
-          Cancel
-        </button>
-      </div>
     </div>
   );
 }
@@ -328,31 +327,22 @@ export function ForumReplyThread({
 
       {canReply && replyingTo === null && (
         <div className="forum-compose-bar">
-          <form
-            className="forum-compose-shell"
-            onSubmit={(e) => {
-              e.preventDefault();
-              onTopLevelSubmit();
-            }}
-          >
-            <Textarea
-              label="Join the discussion"
-              value={topLevelDraft}
-              onChange={(e) => onTopLevelDraftChange(e.target.value)}
-              rows={4}
-              placeholder="Share your perspective, ask a question, or build on this thread…"
-              className="!min-h-[6rem] !border-slate-200/90"
-            />
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-slate-500">
+          <p className="mb-2 text-sm font-medium text-slate-700">Join the discussion</p>
+          <TextareaWithSendAddon
+            value={topLevelDraft}
+            onChange={onTopLevelDraftChange}
+            onSubmit={onTopLevelSubmit}
+            rows={4}
+            placeholder="Share your perspective, ask a question, or build on this thread…"
+            loading={posting}
+            submitLabel="Post"
+            submitAriaLabel="Post reply"
+            footer={
+              <p className="mt-2 text-xs text-slate-500">
                 Replies are threaded. Use Reply on any comment to respond directly.
               </p>
-              <Button type="submit" loading={posting} disabled={!topLevelDraft.trim()}>
-                <Send className="h-4 w-4" />
-                Post reply
-              </Button>
-            </div>
-          </form>
+            }
+          />
         </div>
       )}
     </section>

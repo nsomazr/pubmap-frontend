@@ -8,7 +8,6 @@ import { ReportPlagiarismDialog } from "../components/publication/ReportPlagiari
 import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import { ResearcherRankInline } from "../components/rankings/ResearcherRankInline";
 import { StarRating } from "../components/rankings/StarRating";
-import { GreDoiBadge } from "../components/publication/GreDoiBadge";
 import { PdfPreview } from "../components/publication/PdfPreview";
 import { PublicationDiscussions } from "../components/publication/PublicationDiscussions";
 import { CoAuthorsPanel } from "../components/publication/CoAuthorsPanel";
@@ -127,20 +126,13 @@ export function PublicationDetailPage() {
             accessType={pub.gre?.access_type}
           />
 
-          {pub.gre?.gre_doi && (
-            <section className="gre-card p-4 sm:p-5">
-              <GreDoiBadge
-                greDoi={pub.gre.gre_doi}
-                greDoiUrl={pub.gre.gre_doi_url}
-                paperNumber={pub.short_number}
-              />
-            </section>
-          )}
-
           <PublicationDownloadPanel
             publicationId={pub.id}
             encodedId={pub.encoded_id}
             gre={pub.gre}
+            greDoi={pub.gre?.gre_doi}
+            greDoiUrl={pub.gre?.gre_doi_url}
+            paperNumber={pub.short_number}
             documents={pub.documents}
             isClosed={isClosed}
             publicationTitle={crumbTitle}

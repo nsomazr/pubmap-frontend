@@ -1,9 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Reply, Send } from "lucide-react";
+import { MessageSquare, Reply } from "lucide-react";
+import { InputWithSendAddon, TextareaWithSendAddon } from "../ui/FieldSendAddon";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "../ui/Button";
-import { Textarea } from "../ui/Textarea";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 import { ResearcherRankInline } from "../rankings/ResearcherRankInline";
@@ -161,27 +160,21 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
                 )}
 
                 {user ? (
-                  <form
-                    className="mt-4 flex gap-2"
-                    onSubmit={(e) => {
-                      e.preventDefault();
+                  <InputWithSendAddon
+                    className="mt-4"
+                    value={replyDrafts[thread.id] ?? ""}
+                    onChange={(value) =>
+                      setReplyDrafts((d) => ({ ...d, [thread.id]: value }))
+                    }
+                    onSubmit={() => {
                       const text = (replyDrafts[thread.id] ?? "").trim();
                       if (text) postReply.mutate({ conversationId: thread.id, text });
                     }}
-                  >
-                    <input
-                      type="text"
-                      value={replyDrafts[thread.id] ?? ""}
-                      onChange={(e) =>
-                        setReplyDrafts((d) => ({ ...d, [thread.id]: e.target.value }))
-                      }
-                      placeholder="Write a response…"
-                      className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                    />
-                    <Button type="submit" variant="secondary" className="shrink-0 px-3">
-                      <Reply className="h-4 w-4" />
-                    </Button>
-                  </form>
+                    placeholder="Write a response…"
+                    loading={postReply.isPending}
+                    icon={Reply}
+                    submitAriaLabel="Post response"
+                  />
                 ) : null}
               </article>
             );
@@ -190,25 +183,21 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
       )}
 
       {user ? (
-        <form
-          className="mt-8 space-y-3 border-t border-slate-100 pt-6"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (newComment.trim()) postThread.mutate();
-          }}
-        >
-          <Textarea
-            label="Start a discussion"
+        <div className="mt-8 border-t border-slate-100 pt-6">
+          <p className="mb-2 text-sm font-medium text-slate-700">Start a discussion</p>
+          <TextareaWithSendAddon
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
+            onChange={setNewComment}
+            onSubmit={() => {
+              if (newComment.trim()) postThread.mutate();
+            }}
             rows={3}
             placeholder="What would you like to discuss about this study?"
+            loading={postThread.isPending}
+            submitLabel="Post"
+            submitAriaLabel="Post discussion"
           />
-          <Button type="submit" loading={postThread.isPending}>
-            <Send className="h-4 w-4" />
-            Post discussion
-          </Button>
-        </form>
+        </div>
       ) : (
         <p className="mt-6 text-center text-sm text-slate-500">
           <Link to="/login" className="font-semibold text-brand-600 hover:underline">

@@ -1,4 +1,5 @@
-import { Loader2, MessageCircle, Send, Sparkles } from "lucide-react";
+import { Loader2, MessageCircle, Sparkles } from "lucide-react";
+import { InputWithSendAddon } from "../ui/FieldSendAddon";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   assistantHealth,
@@ -239,27 +240,16 @@ export function PublicationSummaryAssistant({
     ) : null;
 
   const followUpForm = (
-    <form onSubmit={askFollowUp} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-      <label className="min-w-0 flex-1">
-        <span className="sr-only">Ask a follow-up question</span>
-        <input
-          type="text"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ask about authors, methods, findings…"
-          disabled={!canAskFollowUp}
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400"
-        />
-      </label>
-      <button
-        type="submit"
-        disabled={!canAskFollowUp || !question.trim()}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-      >
-        {followUpLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        Ask
-      </button>
-    </form>
+    <InputWithSendAddon
+      value={question}
+      onChange={setQuestion}
+      onSubmit={() => askFollowUp()}
+      placeholder="Ask about authors, methods, findings…"
+      disabled={!canAskFollowUp}
+      loading={followUpLoading}
+      submitLabel="Ask"
+      submitAriaLabel="Ask follow-up question"
+    />
   );
 
   const followUpThread = followUps.map((item) => (

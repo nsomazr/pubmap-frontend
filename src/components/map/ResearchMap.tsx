@@ -29,6 +29,17 @@ function FitBounds({ pubs }: { pubs: Publication[] }) {
   return null;
 }
 
+function FitMapRegion({ region }: { region: MapRegionSelection }) {
+  const map = useMap();
+  useEffect(() => {
+    const bounds = L.circle([region.lat, region.lng], {
+      radius: region.radiusKm * 1000,
+    }).getBounds();
+    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
+  }, [region, map]);
+  return null;
+}
+
 interface Props {
   publications: Publication[];
   height?: string;
@@ -71,8 +82,8 @@ export function ResearchMap({
       className={`gre-map ts-map relative w-full ${embedded ? "gre-map--embedded" : "gre-map--landing"} ${mapPickMode ? "gre-map--pick-mode" : ""} ${className || "rounded-none border-0 shadow-none"}`}
     >
       {mapPickMode && (
-        <div className="pointer-events-none absolute left-1/2 top-3 z-[1002] -translate-x-1/2 rounded-full bg-brand-600/95 px-4 py-2 text-xs font-semibold text-white shadow-lg">
-          Click the map to search this region
+        <div className="pointer-events-none absolute left-1/2 top-3 z-[1002] max-w-[min(92vw,22rem)] -translate-x-1/2 rounded-full bg-brand-600/95 px-4 py-2 text-center text-xs font-semibold text-white shadow-lg">
+          Click a village or town — search uses a small area (~8 km)
         </div>
       )}
       <MapContainer
@@ -94,6 +105,7 @@ export function ResearchMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {!focusPublicationId && !mapRegion && <FitBounds pubs={withCoords} />}
+        {mapRegion && <FitMapRegion region={mapRegion} />}
         {onMapRegionPick && (
           <MapRegionPicker
             enabled={mapPickMode}

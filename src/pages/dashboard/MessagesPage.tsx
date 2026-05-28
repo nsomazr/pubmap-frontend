@@ -752,53 +752,55 @@ export function MessagesPage() {
                     </div>
                   )}
 
-                  <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    rows={2}
-                    placeholder={`Write to ${partner.firstname}…`}
-                    disabled={drafting}
-                    className="block w-full resize-none border-0 bg-transparent px-4 pt-3 pb-1 text-sm text-ink placeholder:text-slate-400 focus:ring-0 focus:outline-none disabled:opacity-50"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend(e);
-                      }
-                    }}
-                  />
-
-                  <div className="flex items-center justify-between gap-2 px-2 pb-2">
-                    <button
-                      type="button"
+                  <div className="relative">
+                    <textarea
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      rows={2}
+                      placeholder={`Write to ${partner.firstname}…`}
                       disabled={drafting}
-                      onClick={() => setShowDraftMenu((v) => !v)}
-                      className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition ${
-                        showDraftMenu || drafting
-                          ? "bg-brand-50 text-brand-700 ring-1 ring-brand-200/70"
-                          : "text-slate-600 hover:bg-slate-50"
-                      }`}
-                      aria-expanded={showDraftMenu}
-                    >
-                      {drafting ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
-                      ) : (
-                        <Sparkles className="h-4 w-4 text-brand-600" />
-                      )}
-                      Draft with AI
-                    </button>
+                      className="block w-full resize-none border-0 bg-transparent px-4 pt-3 pb-10 pr-14 text-sm text-ink placeholder:text-slate-400 focus:ring-0 focus:outline-none disabled:opacity-50"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend(e);
+                        }
+                      }}
+                    />
 
-                    <Button
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={drafting}
+                        onClick={() => setShowDraftMenu((v) => !v)}
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium transition ${
+                          showDraftMenu || drafting
+                            ? "bg-brand-50 text-brand-700 ring-1 ring-brand-200/70"
+                            : "text-slate-600 hover:bg-slate-50"
+                        }`}
+                        aria-expanded={showDraftMenu}
+                      >
+                        {drafting ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-600" />
+                        ) : (
+                          <Sparkles className="h-3.5 w-3.5 text-brand-600" />
+                        )}
+                        AI
+                      </button>
+                    </div>
+
+                    <button
                       type="submit"
                       disabled={sendMutation.isPending || !text.trim() || drafting}
-                      className="!h-9 !min-w-9 gap-0 !rounded-xl !px-3"
-                      aria-label="Send"
+                      aria-label="Send message"
+                      className="absolute bottom-2 right-2 inline-flex h-9 min-w-9 items-center justify-center rounded-lg bg-brand-600 px-2.5 text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {sendMutation.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Send className="h-4 w-4" />
                       )}
-                    </Button>
+                    </button>
                   </div>
                 </div>
 

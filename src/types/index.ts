@@ -301,6 +301,16 @@ export interface PublicResearcherProfile {
   institution_map_url?: string;
 }
 
+export interface NamedPublicationCount {
+  name: string;
+  publication_count: number;
+}
+
+export interface YearPublicationCount {
+  year: number;
+  count: number;
+}
+
 export interface ResearcherSearchIdentity {
   key: string;
   name: string;
@@ -314,6 +324,9 @@ export interface ResearcherSearchIdentity {
   discussions_count: number;
   responses_count: number;
   leading_interest: string;
+  leading_subfield?: NamedPublicationCount;
+  publications_by_year?: YearPublicationCount[];
+  latest_publication_year?: number | null;
   ranking?: ResearcherRanking;
   publications?: Publication[];
 }
@@ -347,6 +360,10 @@ export interface InstitutionSearchIdentity {
   leading_researcher: InstitutionLeadingResearcher;
   leading_field: InstitutionLeadingArea;
   leading_subfield: InstitutionLeadingArea;
+  leading_subfields?: InstitutionLeadingArea[];
+  leading_researchers?: InstitutionLeadingResearcher[];
+  publications_by_year?: YearPublicationCount[];
+  latest_publication_year?: number | null;
 }
 
 export interface InstitutionResearchResponse {

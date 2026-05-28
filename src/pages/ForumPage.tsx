@@ -4,8 +4,9 @@ import { MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 import api from "../lib/api";
 import { ForumCategoryCard } from "../components/forum/ForumCategoryCard";
-import { DefaultBanner } from "../components/ui/DefaultBanner";
+import { SubcategoryVisual } from "../components/taxonomy/SubcategoryVisual";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
+import { resolveSubcategoryFromModel, resolveSubcategoryVisual } from "../lib/taxonomyVisuals";
 import type { Category, SubCategory, Topic } from "../types";
 
 export function ForumPage() {
@@ -34,6 +35,15 @@ export function ForumPage() {
     if (categoryFilter === "all") return subcategories;
     return subcategories.filter((s) => s.category_id === Number(categoryFilter));
   }, [subcategories, categoryFilter]);
+
+  const subVisualById = useMemo(() => {
+    const map = new Map<number, ReturnType<typeof resolveSubcategoryFromModel>>();
+    for (const sub of subcategories) {
+      const visual = resolveSubcategoryFromModel(sub);
+      if (visual) map.set(sub.id, visual);
+    }
+    return map;
+  }, [subcategories]);
 
   const { data: recentTopics = [] } = useQuery({
     queryKey: ["forum-recent"],
@@ -115,19 +125,35 @@ export function ForumPage() {
             Latest topics across all research areas.
           </p>
           <ul className="gre-card mt-4 divide-y divide-slate-100 overflow-hidden p-0">
-            {recentTopics.map((t) => (
+            {recentTopics.map((t) => {
+              const subVisual =
+                subVisualById.get(t.sub_category_id) ??
+                resolveSubcategoryVisual(t.sub_category_name || t.subfield_name);
+              return (
               <li key={t.id}>
                 <Link
                   to={`/forum/topic/${t.id}`}
                   className="gre-interactive flex items-center gap-3 px-4 py-4 hover:bg-brand-50/50 sm:gap-4 sm:px-5"
                 >
-                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
-                    <DefaultBanner kind="forum" seed={t.id} compact />
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl ring-1 ring-slate-200/80">
+                    {subVisual ? (
+                      <SubcategoryVisual
+                        visual={subVisual}
+                        size="md"
+                        fit="contain"
+                        clip={false}
+                        className="!h-12 !w-12 !rounded-xl"
+                      />
+                    ) : (
+                      <span className="flex h-12 w-12 items-center justify-center bg-brand-50 text-sm font-bold text-brand-700">
+                        {(t.sub_category_name || "GR").slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-ink">{t.topic}</p>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {t.sub_category_name}
+                      {t.sub_category_name || t.subfield_name}
                       {t.author?.full_name && ` · ${t.author.full_name}`}
                     </p>
                   </div>
@@ -136,7 +162,8 @@ export function ForumPage() {
                   </span>
                 </Link>
               </li>
-            ))}
+            );
+            })}
           </ul>
         </section>
       )}

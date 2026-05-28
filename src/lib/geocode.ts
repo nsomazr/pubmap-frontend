@@ -34,12 +34,42 @@ export async function reverseGeocode(lat: number, lon: number): Promise<string |
     lat: String(lat),
     lon: String(lon),
     format: "json",
+    zoom: "14",
+    addressdetails: "1",
   });
 
   const res = await fetch(`${NOMINATIM}/reverse?${params}`, { headers: HEADERS });
   if (!res.ok) return null;
-  const data = await res.json();
+  const data = (await res.json()) as {
+    display_name?: string;
+    address?: Record<string, string>;
+  };
+
+  const address = data.address;
+  if (address) {
+    const village =
+      address.village ||
+      address.hamlet ||
+      address.town ||
+      address.suburb ||
+      address.neighbourhood ||
+      address.locality;
+    const district = address.city_district || address.county || address.state_district;
+    const region = address.state || address.region;
+    const country = address.country;
+    const parts = [village, district, region, country].filter(Boolean);
+    if (parts.length >= 2) {
+      return parts.join(", ");
+    }
+  }
+
   return data.display_name ?? null;
+}
+
+/** Short label for a local map search pin (village / town scale). */
+export function formatMapRegionLabel(lat: number, lng: number, resolved?: string | null): string {
+  if (resolved?.trim()) return resolved.trim();
+  return `Near ${lat.toFixed(3)}, ${lng.toFixed(3)}`;
 }
 
 export function formatCoords(lat: string | number, lon: string | number): string {
