@@ -215,15 +215,24 @@ export function PublicationManagePage() {
       const limits = MANUSCRIPT_FIELD_WORD_LIMITS;
       const nextTitle = (payload.title || "").trim();
       if (nextTitle) setTitle(truncateToWordLimit(nextTitle, limits.title));
-      setAbstract(applyExtractedSection(payload.abstract, limits.abstract));
-      setIntroduction(applyExtractedSection(payload.introduction, limits.introduction));
-      setMethods(applyExtractedSection(payload.methods, limits.methods));
-      setResults(applyExtractedSection(payload.results, limits.results));
-      setFindings(applyExtractedSection(payload.findings, limits.findings));
-      setConclusion(applyExtractedSection(payload.conclusion, limits.conclusion));
-      setReferences(applyExtractedSection(payload.references, 350));
-      setFunder(truncateToWordLimit((payload.funder || "").trim(), limits.funder));
-      setKeywords(truncateToWordLimit((payload.keywords || "").trim(), limits.keywords));
+      const nextAbstract = applyExtractedSection(payload.abstract, limits.abstract);
+      if (nextAbstract) setAbstract(nextAbstract);
+      const nextIntroduction = applyExtractedSection(payload.introduction, limits.introduction);
+      if (nextIntroduction) setIntroduction(nextIntroduction);
+      const nextMethods = applyExtractedSection(payload.methods, limits.methods);
+      if (nextMethods) setMethods(nextMethods);
+      const nextResults = applyExtractedSection(payload.results, limits.results);
+      if (nextResults) setResults(nextResults);
+      const nextFindings = applyExtractedSection(payload.findings, limits.findings);
+      if (nextFindings) setFindings(nextFindings);
+      const nextConclusion = applyExtractedSection(payload.conclusion, limits.conclusion);
+      if (nextConclusion) setConclusion(nextConclusion);
+      const nextReferences = applyExtractedSection(payload.references, 350);
+      if (nextReferences) setReferences(nextReferences);
+      const nextFunder = truncateToWordLimit((payload.funder || "").trim(), limits.funder);
+      if (nextFunder) setFunder(nextFunder);
+      const nextKeywords = truncateToWordLimit((payload.keywords || "").trim(), limits.keywords);
+      if (nextKeywords) setKeywords(nextKeywords);
       setExtractionUi({
         status: "ready",
         warnings: [...new Set(payload.warnings ?? [])],
