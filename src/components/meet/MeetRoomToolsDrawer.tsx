@@ -100,7 +100,7 @@ export function MeetRoomControlsFab({
 }) {
   return (
     <div
-      className="pointer-events-none fixed bottom-3 right-3 z-[2147483645] w-auto sm:bottom-4 sm:right-4"
+      className="pointer-events-none fixed bottom-5 right-3 z-[2147483645] w-auto sm:bottom-6 sm:right-4"
       style={{ zIndex: 2147483647 }}
     >
       <div className="flex justify-end">

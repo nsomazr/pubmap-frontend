@@ -52,8 +52,18 @@ import {
 import type { MeetChatMessage, MeetSession } from "../types";
 
 function normalizeParticipants(rows: JitsiParticipantInfo[] | undefined, localEmail?: string) {
-  const seen = new Set<string>();
   const local = (localEmail || "").toLowerCase();
+  const byKey = new Map<
+    string,
+    {
+      id: string;
+      displayName: string;
+      email?: string;
+      isLocal?: boolean;
+      audioMuted?: boolean;
+      videoMuted?: boolean;
+    }
+  >();
   const normalized: {
     id: string;
     displayName: string;
@@ -62,22 +72,39 @@ function normalizeParticipants(rows: JitsiParticipantInfo[] | undefined, localEm
     audioMuted?: boolean;
     videoMuted?: boolean;
   }[] = [];
+
   for (const row of rows ?? []) {
     const id = row.participantId || row.id || "";
     const email = row.email?.toLowerCase() || "";
     const displayName = row.displayName || row.email || "Participant";
-    const key = id || email || displayName.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    normalized.push({
+    const candidate = {
       id,
       displayName,
       email: row.email,
       isLocal: !!local && email === local,
       audioMuted: !!(row.audioMuted ?? row.isAudioMuted ?? row.muted ?? row.isMuted),
       videoMuted: !!(row.videoMuted ?? row.isVideoMuted),
+    };
+    const key = email ? `email:${email}` : `name:${displayName.trim().toLowerCase()}`;
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, candidate);
+      continue;
+    }
+    byKey.set(key, {
+      id: existing.id || candidate.id,
+      displayName: existing.displayName || candidate.displayName,
+      email: existing.email || candidate.email,
+      isLocal: existing.isLocal || candidate.isLocal,
+      audioMuted: candidate.audioMuted,
+      videoMuted: candidate.videoMuted,
     });
   }
+
+  for (const value of byKey.values()) {
+    normalized.push(value);
+  }
+
   return normalized;
 }
 
@@ -1291,7 +1318,7 @@ export function MeetRoomPage() {
                       </form>
                     </div>
                   )}
-                  {canManage && (
+                  {canManage && waitingGuests.length > 0 && (
                     <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -1301,45 +1328,39 @@ export function MeetRoomPage() {
                           {waitingGuests.length}
                         </span>
                       </div>
-                      {waitingGuests.length > 0 ? (
-                        <>
-                          <div className="mt-3 space-y-2">
-                            {waitingGuests.map((guest) => (
-                              <div key={guest.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-800 px-3 py-2">
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-semibold text-slate-100">{guest.displayName}</p>
-                                  {guest.email && (
-                                    <p className="truncate text-xs text-slate-400">{guest.email}</p>
-                                  )}
-                                </div>
-                                <div className="flex shrink-0 gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
-                                    onClick={() => answerKnockingParticipant(guest.id, true)}
-                                  >
-                                    Admit
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
-                                    onClick={() => answerKnockingParticipant(guest.id, false)}
-                                  >
-                                    Deny
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
+                      <div className="mt-3 space-y-2">
+                        {waitingGuests.map((guest) => (
+                          <div key={guest.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-800 px-3 py-2">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-slate-100">{guest.displayName}</p>
+                              {guest.email && (
+                                <p className="truncate text-xs text-slate-400">{guest.email}</p>
+                              )}
+                            </div>
+                            <div className="flex shrink-0 gap-2">
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                                onClick={() => answerKnockingParticipant(guest.id, true)}
+                              >
+                                Admit
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                className="h-9 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                                onClick={() => answerKnockingParticipant(guest.id, false)}
+                              >
+                                Deny
+                              </Button>
+                            </div>
                           </div>
-                          <Button type="button" className="mt-3 h-10 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800" onClick={admitAllWaitingGuests}>
-                            Admit all
-                          </Button>
-                        </>
-                      ) : (
-                        <p className="mt-2 text-sm text-slate-400">No guests waiting for approval.</p>
-                      )}
+                        ))}
+                      </div>
+                      <Button type="button" className="mt-3 h-10 border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800" onClick={admitAllWaitingGuests}>
+                        Admit all
+                      </Button>
                     </div>
                   )}
                   {roomParticipants.map((participant) => (

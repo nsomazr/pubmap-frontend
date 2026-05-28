@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { Bot, Loader2, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "../ui/Button";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
 import { askMeetingAssistant, type MeetingAssistantTurn } from "../../lib/meetAssistant";
@@ -22,9 +22,33 @@ type Props = {
 };
 
 export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
+  const historyStorageKey = useMemo(
+    () => `gre-meet-assistant-history:${meeting.id}`,
+    [meeting.id]
+  );
   const [question, setQuestion] = useState("");
-  const [history, setHistory] = useState<MeetingAssistantTurn[]>([]);
+  const [history, setHistory] = useState<MeetingAssistantTurn[]>(() => {
+    try {
+      const raw = sessionStorage.getItem(`gre-meet-assistant-history:${meeting.id}`);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as MeetingAssistantTurn[];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(
+        (turn) => turn && (turn.role === "user" || turn.role === "assistant") && typeof turn.content === "string"
+      );
+    } catch {
+      return [];
+    }
+  });
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(historyStorageKey, JSON.stringify(history));
+    } catch {
+      // Ignore storage failures (private mode/quota), keep in-memory behavior.
+    }
+  }, [history, historyStorageKey]);
 
   const askMutation = useMutation({
     mutationFn: async (prompt: string) =>

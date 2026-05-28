@@ -23,6 +23,9 @@ export const MEETING_VISIBILITY_LABELS: Record<MeetVisibility, string> = {
   invite_only: "Invite only",
 };
 
+export const GRE_MEETING_TIMEZONE = "Africa/Dar_es_Salaam";
+export const GRE_MEETING_TIMEZONE_LABEL = "GMT+3";
+
 export function formatMeetingDate(date?: string | null) {
   if (!date) return "";
   try {
@@ -33,6 +36,8 @@ export function formatMeetingDate(date?: string | null) {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: GRE_MEETING_TIMEZONE,
+      timeZoneName: "short",
     });
   } catch {
     return date;
@@ -42,7 +47,7 @@ export function formatMeetingDate(date?: string | null) {
 export function formatMeetingDateInTimezone(date?: string | null, timeZone?: string | null) {
   if (!date) return "";
   try {
-    const tz = (timeZone || "").trim() || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const tz = (timeZone || "").trim() || GRE_MEETING_TIMEZONE;
     const parts = new Intl.DateTimeFormat(undefined, {
       weekday: "short",
       year: "numeric",

@@ -13,8 +13,9 @@ import { FormattedAssistantText } from "../../lib/formatAssistantText";
 import {
   fetchMeeting,
   formatMeetingDate,
-  formatMeetingDateInTimezone,
   formatMeetingId,
+  GRE_MEETING_TIMEZONE,
+  GRE_MEETING_TIMEZONE_LABEL,
   shareMeetingMinutes,
 } from "../../lib/meetings";
 import { buildPublicationPath } from "../../lib/publicationPaths";
@@ -122,7 +123,6 @@ export function MeetingArchivePage() {
   const archiveId = formatMeetingId(meeting.id);
   const messageCount = meeting.chat_messages?.length ?? 0;
   const participantCount = meeting.participants?.length ?? meeting.participant_count ?? 0;
-  const viewerTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
   const downloadSummary = () => {
     const parts = [
@@ -222,11 +222,7 @@ export function MeetingArchivePage() {
                   {formatMeetingDate(meeting.scheduled_at)}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  Your time ({viewerTimezone}): {formatMeetingDateInTimezone(meeting.scheduled_at, viewerTimezone)}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Organizer time ({meeting.scheduled_timezone || "UTC"}):{" "}
-                  {formatMeetingDateInTimezone(meeting.scheduled_at, meeting.scheduled_timezone || "UTC")}
+                  Timezone: {GRE_MEETING_TIMEZONE_LABEL} ({GRE_MEETING_TIMEZONE})
                 </p>
               </div>
               <div className="rounded-2xl bg-slate-50 p-4">

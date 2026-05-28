@@ -23,7 +23,8 @@ import api, { parseApiError } from "../../lib/api";
 import {
   fetchMeeting,
   formatMeetingDate,
-  formatMeetingDateInTimezone,
+  GRE_MEETING_TIMEZONE,
+  GRE_MEETING_TIMEZONE_LABEL,
   formatMeetingId,
   meetingCalendarDownloadUrl,
   MEETING_TYPE_LABELS,
@@ -107,7 +108,6 @@ export function MeetDetailPage() {
 
   const canManage = !!meeting?.can_manage;
   const isHost = meeting?.host_id === user?.id;
-  const viewerTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
   const copyLink = async () => {
     if (!meeting?.meeting_link) return;
@@ -180,11 +180,7 @@ export function MeetDetailPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Scheduled</p>
               <p className="mt-2 text-sm font-semibold text-ink">{formatMeetingDate(meeting.scheduled_at)}</p>
               <p className="mt-1 text-xs text-slate-500">
-                Your time ({viewerTimezone}): {formatMeetingDateInTimezone(meeting.scheduled_at, viewerTimezone)}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                Organizer time ({meeting.scheduled_timezone || "UTC"}):{" "}
-                {formatMeetingDateInTimezone(meeting.scheduled_at, meeting.scheduled_timezone || "UTC")}
+                Timezone: {GRE_MEETING_TIMEZONE_LABEL} ({GRE_MEETING_TIMEZONE})
               </p>
             </div>
             <div className="rounded-2xl bg-slate-50 p-4">

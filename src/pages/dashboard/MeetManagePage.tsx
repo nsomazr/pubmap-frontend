@@ -14,6 +14,8 @@ import { MeetHostToolsPanel } from "../../components/meet/MeetHostToolsPanel";
 import {
   fetchMeeting,
   formatMeetingDate,
+  GRE_MEETING_TIMEZONE,
+  GRE_MEETING_TIMEZONE_LABEL,
   inviteMeetingByEmailBulk,
   inviteMeetingFieldMembers,
   MEETING_TYPE_LABELS,
@@ -55,18 +57,7 @@ export function MeetManagePage() {
   const [guestInviteRole, setGuestInviteRole] = useState<"participant" | "speaker">("participant");
   const [guestInviteMessage, setGuestInviteMessage] = useState("");
   const [inviteMatchingMembers, setInviteMatchingMembers] = useState(false);
-  const browserTimezone = useMemo(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-    []
-  );
-  const timezoneOptions = useMemo(() => {
-    try {
-      const intlWithZones = Intl as typeof Intl & { supportedValuesOf?: (key: string) => string[] };
-      return intlWithZones.supportedValuesOf?.("timeZone") ?? [browserTimezone];
-    } catch {
-      return [browserTimezone];
-    }
-  }, [browserTimezone]);
+  const fixedTimezone = GRE_MEETING_TIMEZONE;
 
   const { data: meeting } = useQuery({
     queryKey: ["meeting", id],
@@ -120,16 +111,16 @@ export function MeetManagePage() {
       category_id: meeting.category_id ? String(meeting.category_id) : "",
       sub_category_id: meeting.sub_category_id ? String(meeting.sub_category_id) : "",
       scheduled_at: toLocalInputValue(meeting.scheduled_at),
-      scheduled_timezone: meeting.scheduled_timezone || browserTimezone,
+      scheduled_timezone: meeting.scheduled_timezone || fixedTimezone,
       publication_id: meeting.publication_id ? String(meeting.publication_id) : "",
       forum_topic_id: meeting.forum_topic_id ? String(meeting.forum_topic_id) : "",
     });
-  }, [browserTimezone, meeting]);
+  }, [fixedTimezone, meeting]);
 
   useEffect(() => {
     if (meeting) return;
-    setForm((prev) => (prev.scheduled_timezone ? prev : { ...prev, scheduled_timezone: browserTimezone }));
-  }, [browserTimezone, meeting]);
+    setForm((prev) => ({ ...prev, scheduled_timezone: fixedTimezone }));
+  }, [fixedTimezone, meeting]);
 
   const subcategories = useMemo(() => {
     const category = categories.find((item) => String(item.id) === form.category_id);
@@ -153,7 +144,7 @@ export function MeetManagePage() {
         visibility: form.visibility,
         sub_category_id: Number(form.sub_category_id),
         scheduled_at: new Date(form.scheduled_at).toISOString(),
-        scheduled_timezone: form.scheduled_timezone || browserTimezone,
+        scheduled_timezone: fixedTimezone,
         publication_id: form.publication_id ? Number(form.publication_id) : null,
         forum_topic_id: form.forum_topic_id ? Number(form.forum_topic_id) : null,
       };
@@ -340,18 +331,13 @@ export function MeetManagePage() {
               label="Organizer timezone"
               value={form.scheduled_timezone}
               onChange={(e) => setForm((prev) => ({ ...prev, scheduled_timezone: e.target.value }))}
-              list="meet-timezone-options"
-              placeholder="Africa/Dar_es_Salaam"
+              placeholder={GRE_MEETING_TIMEZONE}
+              disabled
               required
             />
             <p className="text-xs text-slate-500">
-              Stored as UTC and shown to everyone in their local timezone. Your current timezone: {browserTimezone}
+              GRE Meet is fixed to {GRE_MEETING_TIMEZONE_LABEL} ({GRE_MEETING_TIMEZONE}).
             </p>
-            <datalist id="meet-timezone-options">
-              {timezoneOptions.map((tz: string) => (
-                <option key={tz} value={tz} />
-              ))}
-            </datalist>
           </div>
           <Select
             label="Meeting type"
@@ -505,7 +491,12 @@ export function MeetManagePage() {
           </Button>
           {!isNew && meeting && (
             <p className="flex items-center text-sm text-slate-500">
-              Current schedule: {formatMeetingDate(meeting.scheduled_at)} ({meeting.scheduled_timezone || browserTimezone})
+              Current schedule: {formatMeetingDate(meeting.scheduled_at)} ({meeting.scheduled_timezone || fixedTimezone})
+            </p>
+          )}
+          {!isNew && meeting && (
+            <p className="flex items-center text-sm text-slate-500">
+              Timezone: {GRE_MEETING_TIMEZONE_LABEL} ({GRE_MEETING_TIMEZONE})
             </p>
           )}
           {!isNew && meeting && form.visibility === "invite_only" && (
