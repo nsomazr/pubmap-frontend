@@ -38,6 +38,7 @@ import {
   MeetRoomToolsDrawer,
   type MeetRoomDrawerTab,
 } from "../components/meet/MeetRoomToolsDrawer";
+import { BrandMark } from "../components/brand/BrandMark";
 import { MeetingGreAssistantPanel } from "../components/meet/MeetingGreAssistantPanel";
 import { captureMeetingAssistantNotes } from "../lib/meetAssistant";
 import { buildJitsiConfigOverwrite, meetHostSettingsFromSession } from "../lib/meetHostSettings";
@@ -976,6 +977,18 @@ export function MeetRoomPage() {
       )}
 
       {!drawerOpen && <MeetRoomControlsFab onClick={() => setDrawerOpen(true)} />}
+      <div
+        className="pointer-events-none fixed bottom-3 left-3 z-[2147483645] sm:bottom-4 sm:left-4"
+        style={{ zIndex: 2147483647 }}
+      >
+        <BrandMark
+          symbol="icon"
+          variant="float"
+          size="md"
+          className="border border-slate-700 bg-slate-900/95 p-2 ring-0"
+          title="GRE"
+        />
+      </div>
 
       {activeMeeting && (
         <MeetRoomToolsDrawer
