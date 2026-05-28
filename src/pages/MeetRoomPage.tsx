@@ -180,7 +180,6 @@ export function MeetRoomPage() {
     lastError: "",
   });
   const [inviteEmail, setInviteEmail] = useState("");
-  const [embedTimedOut, setEmbedTimedOut] = useState(false);
   const [pipOpening, setPipOpening] = useState(false);
   const [inviteSending, setInviteSending] = useState(false);
   const assistantCaptureUnavailableRef = useRef(false);
@@ -417,7 +416,6 @@ export function MeetRoomPage() {
 
       const onJoined = () => {
         setJitsiReady(true);
-        setEmbedTimedOut(false);
         setRoomDebug((prev) => ({ ...prev, joinedEvent: true, lastError: "" }));
         refreshParticipants();
       };
@@ -619,20 +617,11 @@ export function MeetRoomPage() {
     activeMeeting?.meeting_link ||
     (slug ? `${window.location.origin.replace(/\/$/, "")}/meet/${slug}` : "");
   const archiveId = activeMeeting ? formatMeetingId(activeMeeting.id) : "";
-  const embedUnavailable = isConnected && !jitsiReady && (embedTimedOut || !!roomError);
+  const embedMounted = roomDebug.apiConstructed;
+  const embedUnavailable = isConnected && !embedMounted && !!roomError;
   const embedStatusMessage =
     roomError ||
     "The embedded meeting is taking too long to start. This is usually a Jitsi network/auth issue.";
-  useEffect(() => {
-    if (!isConnected || jitsiReady || !!roomError) {
-      if (embedTimedOut) setEmbedTimedOut(false);
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      if (!jitsiReady) setEmbedTimedOut(true);
-    }, 12000);
-    return () => window.clearTimeout(timer);
-  }, [embedTimedOut, isConnected, jitsiReady, roomError]);
   const notesStatusLabel =
     notesState === "saving"
       ? "Saving notes..."
