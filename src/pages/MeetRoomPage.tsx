@@ -1067,7 +1067,7 @@ export function MeetRoomPage() {
                 <div className="space-y-2 pt-2">
                   <div className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-2.5">
                     <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Live actions</p>
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-2">
                     {activeMeeting.status === "scheduled" && (
                       <Button className="h-10" loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
                         Start on GRE
@@ -1090,7 +1090,7 @@ export function MeetRoomPage() {
                     )}
                     <Button
                       variant="danger"
-                      className="h-8 sm:col-span-2"
+                      className="h-8"
                       loading={endMeeting.isPending}
                       onClick={() => setConfirmEndOpen(true)}
                     >
@@ -1339,7 +1339,7 @@ export function MeetRoomPage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-slate-100 hover:bg-slate-800"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left !text-slate-100 hover:!bg-slate-800 hover:!text-slate-50"
                                   onClick={() => {
                                     const shouldMute = !participant.audioMuted;
                                     const ok = runParticipantAction(
@@ -1373,7 +1373,7 @@ export function MeetRoomPage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-slate-100 hover:bg-slate-800"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left !text-slate-100 hover:!bg-slate-800 hover:!text-slate-50"
                                   onClick={() => {
                                     const shouldTurnVideoOff = !participant.videoMuted;
                                     const ok = runParticipantAction(
@@ -1409,7 +1409,7 @@ export function MeetRoomPage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-slate-100 hover:bg-slate-800"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left !text-slate-100 hover:!bg-slate-800 hover:!text-slate-50"
                                   onClick={() => {
                                     runParticipantAction(
                                       participant.id,
@@ -1427,7 +1427,7 @@ export function MeetRoomPage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-red-400 hover:bg-slate-800 hover:text-red-300"
+                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left !text-red-300 hover:!bg-slate-800 hover:!text-red-200"
                                   onClick={() => {
                                     runParticipantAction(
                                       participant.id,
