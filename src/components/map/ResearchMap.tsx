@@ -1,6 +1,6 @@
 import { MapContainer, useMap, ZoomControl } from "react-leaflet";
 import L from "leaflet";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Publication } from "../../types";
 import { PublicationMarkerLayer } from "./PublicationMarkerLayer";
 import { MapExpandControl } from "./MapExpandControl";
@@ -11,6 +11,7 @@ import { MapBasemapTileLayer } from "./MapBasemapTileLayer";
 import { MapHeatLayer } from "./MapHeatLayer";
 import { MapScaleControl } from "./MapScaleControl";
 import { MapViewportCounter } from "./MapViewportCounter";
+import { MapInteractionHandlers } from "./MapInteractionHandlers";
 import {
   MapAdvancedControls,
   loadMapDisplayPrefs,
@@ -24,7 +25,19 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 function FitBounds({ pubs }: { pubs: Publication[] }) {
   const map = useMap();
+  const lastFitKeyRef = useRef<string | null>(null);
+  const pubKey = useMemo(
+    () =>
+      pubs
+        .filter((p) => p.coordinates?.latitude && p.coordinates?.longitude)
+        .map((p) => p.id)
+        .sort((a, b) => a - b)
+        .join(","),
+    [pubs]
+  );
+
   useEffect(() => {
+    if (!pubKey || lastFitKeyRef.current === pubKey) return;
     const coords = pubs
       .filter((p) => p.coordinates?.latitude && p.coordinates?.longitude)
       .map(
@@ -36,8 +49,10 @@ function FitBounds({ pubs }: { pubs: Publication[] }) {
       );
     if (coords.length > 0) {
       map.fitBounds(L.latLngBounds(coords), { padding: [60, 60], maxZoom: 8 });
+      lastFitKeyRef.current = pubKey;
     }
-  }, [pubs, map]);
+  }, [pubKey, pubs, map]);
+
   return null;
 }
 
@@ -141,8 +156,11 @@ export function ResearchMap({
         zoom={5}
         className={`h-full w-full ${embedded ? "rounded-none" : ""}`}
         scrollWheelZoom
+        touchZoom
+        doubleClickZoom
         zoomControl={false}
       >
+        <MapInteractionHandlers />
         <ZoomControl position={mapZoomPosition} />
         {showAdvanced && <MapScaleControl />}
         {!embedded && onMapExpandedChange && (

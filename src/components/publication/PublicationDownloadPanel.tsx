@@ -14,7 +14,16 @@ import {
 } from "lucide-react";
 import { greDoiDisplayPath } from "../../lib/publicationGre";
 import { grePaperCode } from "../../lib/grePaperTitle";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import api from "../../lib/api";
 import { summaryPdfUrl } from "../../lib/publicationGre";
 import { mediaUrl } from "../../lib/mediaUrl";
@@ -112,7 +121,15 @@ export function PublicationDownloadPanel({
 }: Props) {
   const { user } = useAuth();
   const toast = useToast();
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuWrapRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const menuPanelRef = useRef<HTMLDivElement>(null);
+  const [menuRect, setMenuRect] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    openUp: boolean;
+  } | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewDiscussions, setPreviewDiscussions] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -161,21 +178,61 @@ export function PublicationDownloadPanel({
     setShareCount(initialShareCount);
   }, [initialShareCount]);
 
+  const updateMenuRect = useCallback(() => {
+    const trigger = menuTriggerRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    const gap = 8;
+    const width = Math.min(288, window.innerWidth - 16);
+    const left = Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8));
+    const panelHeight = menuPanelRef.current?.offsetHeight ?? 280;
+    const spaceBelow = window.innerHeight - rect.bottom - gap;
+    const spaceAbove = rect.top - gap;
+    const openUp = spaceBelow < panelHeight && spaceAbove > spaceBelow;
+    setMenuRect({
+      left,
+      top: openUp ? rect.top - gap : rect.bottom + gap,
+      width,
+      openUp,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!menuOpen) {
+      setMenuRect(null);
+      return;
+    }
+    updateMenuRect();
+    const raf = requestAnimationFrame(() => updateMenuRect());
+    window.addEventListener("resize", updateMenuRect);
+    window.addEventListener("scroll", updateMenuRect, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", updateMenuRect);
+      window.removeEventListener("scroll", updateMenuRect, true);
+    };
+  }, [menuOpen, updateMenuRect]);
+
   useEffect(() => {
     if (!menuOpen) return;
     const onPointer = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
+      const target = event.target as Node;
+      if (
+        menuWrapRef.current?.contains(target) ||
+        menuPanelRef.current?.contains(target)
+      ) {
+        return;
       }
+      setMenuOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setMenuOpen(false);
     };
-    window.addEventListener("mousedown", onPointer);
-    window.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
     return () => {
-      window.removeEventListener("mousedown", onPointer);
-      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
     };
   }, [menuOpen]);
 
@@ -256,7 +313,7 @@ export function PublicationDownloadPanel({
   const closeMenu = () => setMenuOpen(false);
 
   return (
-    <section className="gre-public-card min-w-0 overflow-hidden p-5 sm:p-6">
+    <section className="gre-public-card min-w-0 overflow-visible p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
@@ -286,8 +343,8 @@ export function PublicationDownloadPanel({
         )}
       </div>
 
-      <div className="mt-5 rounded-2xl bg-gradient-to-br from-slate-50 via-white to-brand-50/40 p-4 ring-1 ring-slate-200/80 sm:p-5">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] sm:items-stretch">
+      <div className="mt-5 overflow-visible rounded-2xl bg-gradient-to-br from-slate-50 via-white to-brand-50/40 p-4 ring-1 ring-slate-200/80 sm:p-5">
+        <div className="grid gap-3 overflow-visible sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] sm:items-stretch">
           <a
             href={summaryPdfUrl(publicationId)}
             onClick={() => recordDownload()}
@@ -314,8 +371,9 @@ export function PublicationDownloadPanel({
             {previewOpen ? "Hide preview" : "Preview GRE PDF"}
           </button>
 
-          <div ref={menuRef} className="relative sm:self-stretch">
+          <div ref={menuWrapRef} className="relative z-20 sm:self-stretch">
             <button
+              ref={menuTriggerRef}
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
               aria-expanded={menuOpen}
@@ -339,11 +397,24 @@ export function PublicationDownloadPanel({
               />
             </button>
 
-            {menuOpen && (
-              <div
-                role="menu"
-                className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,20rem)] overflow-hidden rounded-2xl border border-slate-200/90 bg-white py-2 shadow-xl shadow-slate-900/10 ring-1 ring-slate-100 sm:w-72"
-              >
+            {menuOpen &&
+              typeof document !== "undefined" &&
+              createPortal(
+                <div
+                  ref={menuPanelRef}
+                  role="menu"
+                  className="fixed z-[10000] max-h-[min(70vh,24rem)] overflow-y-auto overscroll-contain rounded-2xl border border-slate-200/90 bg-white py-2 shadow-xl shadow-slate-900/15 ring-1 ring-slate-100"
+                  style={
+                    menuRect
+                      ? {
+                          left: menuRect.left,
+                          top: menuRect.top,
+                          width: menuRect.width,
+                          transform: menuRect.openUp ? "translateY(-100%)" : undefined,
+                        }
+                      : { visibility: "hidden", left: 0, top: 0, width: 288 }
+                  }
+                >
                 <MenuSection title="Documents">
                   <MenuItem
                     icon={FileText}
@@ -450,8 +521,9 @@ export function PublicationDownloadPanel({
                     </MenuItem>
                   )}
                 </MenuSection>
-              </div>
-            )}
+                </div>,
+                document.body
+              )}
           </div>
         </div>
 

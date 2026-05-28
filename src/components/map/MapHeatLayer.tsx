@@ -40,6 +40,11 @@ export function MapHeatLayer({ publications, enabled }: Props) {
     });
     heat.addTo(map);
 
+    const layer = heat as L.HeatLayer & { _canvas?: HTMLCanvasElement };
+    if (layer._canvas) {
+      layer._canvas.style.pointerEvents = "none";
+    }
+
     return () => {
       map.removeLayer(heat);
     };

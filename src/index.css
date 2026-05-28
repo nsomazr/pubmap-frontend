@@ -1157,10 +1157,12 @@ body {
 .map-expand-control {
   top: calc(0.75rem + env(safe-area-inset-top, 0px));
   right: 0.75rem;
-  z-index: 850;
+  z-index: 1250;
+  pointer-events: none;
 }
 
 .map-expand-control-inner {
+  pointer-events: auto;
   border: none !important;
   box-shadow: 0 4px 14px rgba(15, 20, 25, 0.12) !important;
   border-radius: 12px !important;
@@ -1390,12 +1392,13 @@ body {
 
 .gre-map--landing .leaflet-control-scale {
   margin-left: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
   border-radius: 0.5rem;
   background: rgba(255, 255, 255, 0.92);
   padding: 0.15rem 0.45rem;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
   line-height: 1.2;
+  z-index: 1240 !important;
 }
 
 .gre-map--dark-basemap .gre-marker-pin {
@@ -1482,13 +1485,29 @@ body {
 }
 
 .landing-page .leaflet-bottom.leaflet-right {
-  bottom: 2.75rem;
+  bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
   right: 0.5rem;
-  z-index: 800;
+  z-index: 1250 !important;
+  pointer-events: none;
 }
 
 .landing-page .leaflet-bottom.leaflet-right .leaflet-control-zoom {
   margin-bottom: 0;
+  pointer-events: auto;
+}
+
+.landing-page .leaflet-top.leaflet-right {
+  z-index: 1250 !important;
+  pointer-events: none;
+}
+
+.landing-page .leaflet-top.leaflet-right .leaflet-bar {
+  pointer-events: auto;
+}
+
+.landing-page .leaflet-control-scale {
+  z-index: 1240 !important;
+  pointer-events: none;
 }
 
 .leaflet-control-zoom {
