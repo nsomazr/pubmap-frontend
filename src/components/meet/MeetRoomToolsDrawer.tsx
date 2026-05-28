@@ -101,11 +101,12 @@ export function MeetRoomControlsFab({
     pointerId: number;
     startX: number;
     startY: number;
-    originX: number;
-    originY: number;
+    offsetX: number;
+    offsetY: number;
     moved: boolean;
   } | null>(null);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const clampToViewport = (x: number, y: number) => {
     const element = buttonRef.current;
@@ -154,7 +155,7 @@ export function MeetRoomControlsFab({
 
   return (
     <div
-      className={`fixed z-[2147483645] w-auto ${position ? "pointer-events-auto" : "pointer-events-none bottom-7 right-3 sm:bottom-8 sm:right-4"}`}
+      className={`fixed z-[2147483645] w-auto ${position ? "pointer-events-auto" : "pointer-events-none bottom-7 left-3 sm:bottom-8 sm:left-4"}`}
       style={
         position
           ? { zIndex: 2147483647, left: `${position.x}px`, top: `${position.y}px` }
@@ -166,37 +167,32 @@ export function MeetRoomControlsFab({
           ref={buttonRef}
           type="button"
           onPointerDown={(event) => {
-            if (!position) {
-              const rect = buttonRef.current?.getBoundingClientRect();
-              if (rect) {
-                const initial = clampToViewport(rect.left, rect.top);
-                setPosition(initial);
-              } else {
-                const fallback = clampToViewport(window.innerWidth - 220, window.innerHeight - 84);
-                setPosition(fallback);
-              }
-            }
-            const current = position ?? clampToViewport(window.innerWidth - 220, window.innerHeight - 84);
+            const rect = buttonRef.current?.getBoundingClientRect();
+            const current = position ?? clampToViewport(rect?.left ?? 16, rect?.top ?? window.innerHeight - 84);
             dragStateRef.current = {
               pointerId: event.pointerId,
               startX: event.clientX,
               startY: event.clientY,
-              originX: current.x,
-              originY: current.y,
+              offsetX: event.clientX - current.x,
+              offsetY: event.clientY - current.y,
               moved: false,
             };
+            setPosition(current);
             event.currentTarget.setPointerCapture(event.pointerId);
           }}
           onPointerMove={(event) => {
             const dragState = dragStateRef.current;
             if (!dragState || dragState.pointerId !== event.pointerId) return;
-            const dx = event.clientX - dragState.startX;
-            const dy = event.clientY - dragState.startY;
-            if (!dragState.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+            const movedX = event.clientX - dragState.startX;
+            const movedY = event.clientY - dragState.startY;
+            if (!dragState.moved && (Math.abs(movedX) > 4 || Math.abs(movedY) > 4)) {
               dragState.moved = true;
+              setIsDragging(true);
             }
             if (!dragState.moved) return;
-            setPosition(clampToViewport(dragState.originX + dx, dragState.originY + dy));
+            const nextX = event.clientX - dragState.offsetX;
+            const nextY = event.clientY - dragState.offsetY;
+            setPosition(clampToViewport(nextX, nextY));
           }}
           onPointerUp={(event) => {
             const dragState = dragStateRef.current;
@@ -204,12 +200,14 @@ export function MeetRoomControlsFab({
             event.currentTarget.releasePointerCapture(event.pointerId);
             const wasDrag = dragState.moved;
             dragStateRef.current = null;
+            setIsDragging(false);
             if (!wasDrag) onClick();
           }}
           onPointerCancel={() => {
             dragStateRef.current = null;
+            setIsDragging(false);
           }}
-          className="pointer-events-auto inline-flex h-10 items-center gap-2 rounded-full border border-slate-700 bg-slate-900/95 px-4 text-sm font-semibold text-slate-100 shadow-[0_8px_24px_rgba(2,6,23,0.45)] transition hover:border-slate-600 hover:bg-slate-800"
+          className={`pointer-events-auto inline-flex h-10 items-center gap-2 rounded-full border border-slate-700 bg-slate-900/95 px-4 text-sm font-semibold text-slate-100 shadow-[0_8px_24px_rgba(2,6,23,0.45)] select-none touch-none ${isDragging ? "cursor-grabbing" : "cursor-grab transition hover:border-slate-600 hover:bg-slate-800"}`}
         >
           <LayoutGrid className="h-4 w-4" />
           {label}

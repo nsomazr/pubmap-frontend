@@ -117,6 +117,42 @@ function formatChatTimestamp(value?: string | null) {
   }
 }
 
+function parseReplyPayload(rawMessage: string): {
+  replyToName?: string;
+  replySnippet?: string;
+  body: string;
+} {
+  const text = (rawMessage || "").trim();
+  if (!text) return { body: "" };
+
+  const lines = text.split("\n");
+  const firstLine = lines[0] || "";
+  const rest = lines.slice(1).join("\n").trim();
+
+  // New structured format used by this client.
+  if (firstLine.startsWith("[[GRE_REPLY]]")) {
+    const payload = firstLine.replace("[[GRE_REPLY]]", "");
+    const [name = "", snippet = ""] = payload.split("|||");
+    return {
+      replyToName: name.trim() || "Participant",
+      replySnippet: snippet.trim(),
+      body: rest,
+    };
+  }
+
+  // Backward compatibility with old inline text format.
+  const legacy = firstLine.match(/^↪\s*Reply to\s+(.+?):\s*"(.*)"$/);
+  if (legacy) {
+    return {
+      replyToName: (legacy[1] || "").trim() || "Participant",
+      replySnippet: (legacy[2] || "").trim(),
+      body: rest,
+    };
+  }
+
+  return { body: text };
+}
+
 type CopilotTask = "notes" | "actions" | "recap" | "question";
 
 function buildCopilotPrompt(
@@ -291,8 +327,9 @@ export function MeetRoomPage() {
       const prefixParts: string[] = [];
       if (taggedName) prefixParts.push(`@${taggedName}`);
       if (replyTarget) {
+        const snippet = (replyTarget.message || "").replace(/\s+/g, " ").trim().slice(0, 160);
         prefixParts.push(
-          `↪ Reply to ${replyName || "participant"}: "${(replyTarget.message || "").trim().slice(0, 120)}"`
+          `[[GRE_REPLY]]${replyName || "participant"}|||${snippet}`
         );
       }
       const composedMessage = [...prefixParts, messageText].join("\n").trim();
@@ -1052,16 +1089,16 @@ export function MeetRoomPage() {
 
       {!drawerOpen && <MeetRoomControlsFab onClick={() => setDrawerOpen(true)} />}
       <div
-        className="pointer-events-none fixed left-6 top-4 z-[2147483645] sm:left-8 sm:top-5"
+        className="pointer-events-none fixed left-6 top-6 z-[2147483645] sm:left-8 sm:top-7"
         style={{ zIndex: 2147483647 }}
       >
-        <BrandMark
-          symbol="full"
-          variant="plain"
-          size="md"
-          className="rounded-2xl border border-slate-700 bg-slate-900/95 px-3.5 py-2"
-          title="GRE"
-        />
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-700 bg-slate-900/95 px-4 py-2.5 shadow-[0_6px_18px_rgba(2,6,23,0.35)]">
+          <BrandMark symbol="icon" variant="plain" size="lg" className="shrink-0" title="GRE" />
+          <div className="leading-none text-slate-100">
+            <p className="text-sm font-extrabold tracking-wide">GRE</p>
+            <p className="mt-1 text-xs font-semibold text-slate-300">Meet</p>
+          </div>
+        </div>
       </div>
 
       {activeMeeting && (
@@ -1269,6 +1306,7 @@ export function MeetRoomPage() {
                         message.sender?.email ||
                         "Participant";
                       const isOwn = message.sender_id === user?.id;
+                      const parsedMessage = parseReplyPayload(message.message || "");
                       const initials =
                         senderName
                           .split(" ")
@@ -1318,7 +1356,19 @@ export function MeetRoomPage() {
                                 {formatChatTimestamp(message.created_at)}
                               </span>
                               </div>
-                              <p className="mt-1 text-sm whitespace-pre-wrap leading-relaxed text-slate-100">{message.message}</p>
+                              {parsedMessage.replySnippet && (
+                                <div className="mt-1.5 rounded-xl border border-slate-600/70 bg-slate-900/55 px-2.5 py-2">
+                                  <p className="text-[11px] font-semibold text-brand-200">
+                                    {parsedMessage.replyToName}
+                                  </p>
+                                  <p className="mt-0.5 line-clamp-2 text-xs text-slate-300">
+                                    {parsedMessage.replySnippet}
+                                  </p>
+                                </div>
+                              )}
+                              <p className="mt-1 text-sm whitespace-pre-wrap leading-relaxed text-slate-100">
+                                {parsedMessage.body}
+                              </p>
                               {isActionOpen ? (
                                 <div className="mt-2 flex items-center gap-1.5">
                                   <button
