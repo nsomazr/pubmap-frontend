@@ -203,38 +203,38 @@ export function MeetHostToolsPanel({
       </div>
 
       {showLiveControls && (
-        <div className="space-y-2 pt-2">
+        <div className="space-y-2 pt-1">
           <p className="text-xs font-semibold text-slate-500">Live controls</p>
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              variant="secondary"
-              className="h-10"
+              variant="ghost"
+              className="h-9"
               disabled={!roomReady}
               onClick={() => onMuteEveryone?.("audio")}
             >
               <VolumeX className="h-4 w-4" />
-              Mute all now
+              Mute all
             </Button>
             <Button
               type="button"
-              variant="secondary"
-              className="h-10"
+              variant="ghost"
+              className="h-9"
               disabled={!roomReady}
               onClick={() => onMuteEveryone?.("video")}
             >
               <VideoOff className="h-4 w-4" />
-              Turn off all cameras
+              Video off
             </Button>
             <Button
               type="button"
-              variant="secondary"
-              className="h-10"
+              variant="ghost"
+              className="h-9"
               disabled={!roomReady}
               onClick={() => onStopScreenshare?.()}
             >
               <MonitorX className="h-4 w-4" />
-              Stop screen shares
+              Stop share
             </Button>
           </div>
           {!roomReady && (

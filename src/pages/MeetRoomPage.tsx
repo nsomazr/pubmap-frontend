@@ -1081,21 +1081,17 @@ export function MeetRoomPage() {
                     </div>
                   </div>
                 )}
-                <div className="space-y-3 pt-2">
+                <div className="space-y-2 pt-2">
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {activeMeeting.status === "scheduled" && (
                       <Button className="h-10" loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
                         Start on GRE
                       </Button>
                     )}
-                    <Button variant="secondary" className="h-10" onClick={() => void handleOpenExternalRoom()}>
-                      <ExternalLink className="h-4 w-4" />
-                      Join in browser
-                    </Button>
                     {isModerator && isLive && activeMeeting.recording_status !== "recording" && (
                       <Button
-                        variant="secondary"
-                        className="h-10"
+                        variant="ghost"
+                        className="h-9"
                         loading={startRecording.isPending}
                         onClick={handleStartRecording}
                       >
@@ -1103,13 +1099,13 @@ export function MeetRoomPage() {
                       </Button>
                     )}
                     {isModerator && isLive && activeMeeting.recording_status === "recording" && (
-                      <Button variant="ghost" className="h-10" loading={stopRecording.isPending} onClick={handleStopRecording}>
+                      <Button variant="ghost" className="h-9" loading={stopRecording.isPending} onClick={handleStopRecording}>
                         Stop recording
                       </Button>
                     )}
                     <Button
                       variant="danger"
-                      className="h-10 sm:col-span-2"
+                      className="h-9 sm:col-span-2"
                       loading={endMeeting.isPending}
                       onClick={() => setConfirmEndOpen(true)}
                     >
@@ -1117,12 +1113,12 @@ export function MeetRoomPage() {
                     </Button>
                   </div>
                   {canManage && (
-                    <div className="space-y-2 pt-2">
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="space-y-2 pt-1">
+                      <div className="grid grid-cols-2 gap-2">
                         <Button
                           type="button"
-                          variant="secondary"
-                          className="h-10"
+                          variant="ghost"
+                          className="h-9"
                           loading={copilotLoading}
                           onClick={() => void runCopilot("notes")}
                         >
@@ -1132,7 +1128,7 @@ export function MeetRoomPage() {
                         <Button
                           type="button"
                           variant="ghost"
-                          className="h-10"
+                          className="h-9"
                           loading={copilotLoading}
                           onClick={() => void runCopilot("actions")}
                         >
