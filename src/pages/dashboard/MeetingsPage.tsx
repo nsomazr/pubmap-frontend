@@ -137,21 +137,32 @@ export function MeetingsPage() {
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {tabs.map(({ id, label, icon: Icon }) => (
+        {tabs.map(({ id, label, icon: Icon }) => {
+          const isActive = scope === id;
+          return (
           <button
             key={id}
             type="button"
             onClick={() => setSearchParams({ scope: id })}
-            className={`gre-card flex items-center gap-3 p-4 text-left transition ${
-              scope === id ? "ring-2 ring-brand-200 bg-brand-50/60" : "hover:ring-1 hover:ring-slate-200"
+            aria-pressed={isActive}
+            className={`gre-card flex items-center gap-3 p-4 text-left transition duration-200 ${
+              isActive
+                ? "gre-meet-tab--active"
+                : "gre-card-hover opacity-95 hover:opacity-100"
             }`}
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-brand-700 ring-1 ring-slate-200">
+            <span
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition ${
+                isActive
+                  ? "bg-gradient-to-br from-brand-600 to-teal-600 text-white shadow-md shadow-brand-600/30"
+                  : "bg-white text-brand-700 ring-1 ring-slate-200/90"
+              }`}
+            >
               <Icon className="h-5 w-5" />
             </span>
-            <div>
-              <p className="font-semibold text-ink">{label}</p>
-              <p className="text-xs text-slate-500">
+            <div className="min-w-0">
+              <p className={`font-semibold ${isActive ? "text-brand-900" : "text-ink"}`}>{label}</p>
+              <p className={`text-xs ${isActive ? "text-brand-700/80" : "text-slate-500"}`}>
                 {id === "mine"
                   ? "Meetings you host that are still active"
                   : id === "archived"
@@ -160,7 +171,8 @@ export function MeetingsPage() {
               </p>
             </div>
           </button>
-        ))}
+          );
+        })}
       </section>
 
       <section className="space-y-4">

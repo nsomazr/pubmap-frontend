@@ -50,17 +50,16 @@ export function DashboardPublicationRow({
     >
       <div className="shrink-0">
         {subVisual ? (
-          <div className="overflow-hidden rounded-xl ring-1 ring-slate-200/90">
-            <SubcategoryVisual
-              visual={subVisual}
-              size="md"
-              fit="contain"
-              clip={false}
-              className="!h-14 !w-14 sm:!h-16 sm:!w-16"
-            />
-          </div>
+          <SubcategoryVisual
+            visual={subVisual}
+            size="md"
+            fit="contain"
+            clip={false}
+            shadow={false}
+            className="!h-14 !w-14 sm:!h-16 sm:!w-16"
+          />
         ) : (
-          <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100 text-slate-500 ring-1 ring-slate-200/90 sm:h-16 sm:w-16">
+          <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100 text-slate-500 sm:h-16 sm:w-16">
             <FileText className="h-6 w-6" />
           </span>
         )}

@@ -259,6 +259,25 @@ body {
   /* Alias — accent is on all gre-card by default */
 }
 
+/* GRE Meet scope tabs — selected state uses accent bar + lift, no outline ring */
+.gre-meet-tab--active {
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--color-brand-50) 90%, white) 0%,
+    white 48%,
+    color-mix(in srgb, #f0fdfa 70%, white) 100%
+  );
+  box-shadow:
+    0 12px 32px -16px rgba(59, 91, 219, 0.22),
+    0 4px 12px -8px rgba(13, 148, 136, 0.12);
+  transform: translateY(-1px);
+}
+
+.gre-meet-tab--active::before {
+  height: 4px;
+  opacity: 1;
+}
+
 .gre-section-head {
   display: flex;
   align-items: flex-start;

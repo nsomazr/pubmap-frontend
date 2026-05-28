@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { greUnreadBadge } from "../../lib/greTheme";
 import { Bell, CheckCheck, Loader2, Trash2, X } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { extractNotificationPath } from "../../lib/mapDeepLink";
@@ -23,6 +23,8 @@ import { useUnreadCounts } from "../../hooks/useUnreadCounts";
 
 const PANEL_WIDTH_PX = 384;
 const PANEL_GAP_PX = 8;
+
+type PanelPosition = { top: number; left: number; width: number };
 
 function formatWhen(iso: string) {
   try {
@@ -51,16 +53,27 @@ function notificationHref(n: GreNotification): string {
   return "/dashboard";
 }
 
+function measurePanelPosition(button: HTMLElement): PanelPosition {
+  const rect = button.getBoundingClientRect();
+  const width = Math.min(PANEL_WIDTH_PX, window.innerWidth - 16);
+  const left = Math.min(Math.max(8, rect.right - width), window.innerWidth - width - 8);
+  const top = rect.bottom + PANEL_GAP_PX;
+  return { top, left, width };
+}
+
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<PanelPosition | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [panelRect, setPanelRect] = useState<{ top: number; left: number; width: number } | null>(
-    null
-  );
+  const panelRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: counts } = useUnreadCounts();
+
+  const syncPosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    setPosition(measurePanelPosition(buttonRef.current));
+  }, []);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["notifications"],
@@ -98,47 +111,56 @@ export function NotificationBell() {
     },
   });
 
-  const updatePanelPosition = () => {
-    const button = buttonRef.current;
-    if (!button) return;
-    const rect = button.getBoundingClientRect();
-    const width = Math.min(PANEL_WIDTH_PX, window.innerWidth - 16);
-    const left = Math.min(
-      Math.max(8, rect.right - width),
-      window.innerWidth - width - 8
-    );
-    const top = rect.bottom + PANEL_GAP_PX;
-    setPanelRect({ top, left, width });
-  };
-
   useLayoutEffect(() => {
-    if (!open) {
-      setPanelRect(null);
-      return;
-    }
-    updatePanelPosition();
-    window.addEventListener("resize", updatePanelPosition);
-    window.addEventListener("scroll", updatePanelPosition, true);
+    if (!open) return;
+    syncPosition();
+    window.addEventListener("resize", syncPosition);
+    window.addEventListener("scroll", syncPosition, true);
     return () => {
-      window.removeEventListener("resize", updatePanelPosition);
-      window.removeEventListener("scroll", updatePanelPosition, true);
+      window.removeEventListener("resize", syncPosition);
+      window.removeEventListener("scroll", syncPosition, true);
     };
-  }, [open]);
+  }, [open, syncPosition]);
 
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (rootRef.current?.contains(target)) return;
       if (buttonRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
       setOpen(false);
     };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    const timer = window.setTimeout(() => {
+      document.addEventListener("click", onDoc, true);
+    }, 0);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("click", onDoc, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) setPosition(null);
   }, [open]);
 
   const total = counts?.notifications ?? 0;
   const unreadItems = items.filter((n) => !n.read);
+
+  const toggleOpen = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    if (buttonRef.current) {
+      setPosition(measurePanelPosition(buttonRef.current));
+    }
+    setOpen(true);
+  };
 
   const openNotification = async (n: GreNotification) => {
     const href = notificationHref(n);
@@ -166,16 +188,16 @@ export function NotificationBell() {
 
   const panel =
     open &&
-    panelRect &&
+    position &&
     createPortal(
       <div
-        ref={rootRef}
-        className="gre-card fixed z-[1200] overflow-hidden p-0 shadow-[0_24px_60px_-16px_rgba(15,23,42,0.28)]"
+        ref={panelRef}
+        className="gre-card gre-card-plain fixed z-[9999] overflow-hidden p-0 shadow-[0_24px_60px_-16px_rgba(15,23,42,0.28)]"
         style={{
-          top: panelRect.top,
-          left: panelRect.left,
-          width: panelRect.width,
-          maxHeight: `min(70dvh, calc(100vh - ${panelRect.top}px - 12px))`,
+          top: position.top,
+          left: position.left,
+          width: position.width,
+          maxHeight: `min(70dvh, calc(100vh - ${position.top}px - 12px))`,
         }}
         role="dialog"
         aria-label="Notifications"
@@ -321,10 +343,14 @@ export function NotificationBell() {
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleOpen();
+        }}
         className="gre-interactive relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
         aria-label={total ? `${total} unread notifications` : "Notifications"}
         aria-expanded={open}
+        aria-haspopup="dialog"
       >
         <Bell className="h-5 w-5" />
         {total > 0 && (

@@ -124,7 +124,7 @@ export function ForumPage() {
           <p className="mt-1 text-sm text-slate-500">
             Latest topics across all research areas.
           </p>
-          <ul className="gre-card mt-4 divide-y divide-slate-100 overflow-hidden p-0">
+          <ul className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
             {recentTopics.map((t) => {
               const subVisual =
                 subVisualById.get(t.sub_category_id) ??
@@ -135,13 +135,14 @@ export function ForumPage() {
                   to={`/forum/topic/${t.id}`}
                   className="gre-interactive flex items-center gap-3 px-4 py-4 hover:bg-brand-50/50 sm:gap-4 sm:px-5"
                 >
-                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl ring-1 ring-slate-200/80">
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
                     {subVisual ? (
                       <SubcategoryVisual
                         visual={subVisual}
                         size="md"
                         fit="contain"
                         clip={false}
+                        shadow={false}
                         className="!h-12 !w-12 !rounded-xl"
                       />
                     ) : (
