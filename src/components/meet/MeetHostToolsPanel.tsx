@@ -77,8 +77,8 @@ function SettingToggle({
   return (
     <label
       htmlFor={id}
-      className={`flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 transition ${
-        disabled ? "cursor-not-allowed opacity-60" : "hover:border-brand-200"
+      className={`flex cursor-pointer items-start gap-3 rounded-xl bg-slate-50/70 px-4 py-3 transition ${
+        disabled ? "cursor-not-allowed opacity-60" : "hover:bg-slate-100"
       }`}
     >
       <input
@@ -176,11 +176,8 @@ export function MeetHostToolsPanel({
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-slate-500">
-        Set how attendees enter the room. Live actions below apply to everyone currently connected.
-      </p>
-
+    <div className="space-y-3">
+      
       <div className="space-y-2">
         <SettingToggle
           id={`mute-audio-${meeting.id}`}
@@ -206,8 +203,8 @@ export function MeetHostToolsPanel({
       </div>
 
       {showLiveControls && (
-        <div className="space-y-2 border-t border-slate-100 pt-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Live controls</p>
+        <div className="space-y-2 pt-2">
+          <p className="text-xs font-semibold text-slate-500">Live controls</p>
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"

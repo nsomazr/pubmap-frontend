@@ -86,7 +86,7 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
       </div>
 
       {isLive && liveNotes && (
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
+        <div className="rounded-xl bg-slate-50/70 p-3">
           <p className="text-xs font-semibold text-slate-500">Live notes</p>
           <div className="mt-2 max-h-40 overflow-y-auto rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
             <FormattedAssistantText content={liveNotes} />
@@ -95,7 +95,7 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
       )}
 
       {!isLive && minutesText && (
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
+        <div className="rounded-xl bg-slate-50/70 p-3">
           <p className="text-xs font-semibold text-slate-500">Minutes</p>
           <div className="mt-2 max-h-44 overflow-y-auto rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
             <FormattedAssistantText content={minutesText} />
@@ -104,14 +104,14 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
       )}
 
       {history.length > 0 && (
-        <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3">
+        <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl bg-slate-50/70 p-3">
           {history.map((turn, index) => (
             <div
               key={`${turn.role}-${index}`}
               className={
                 turn.role === "user"
                   ? "rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-800"
-                  : "rounded-lg border border-brand-100 bg-brand-50/40 px-3 py-2 text-sm text-slate-700"
+                  : "rounded-lg bg-brand-50/40 px-3 py-2 text-sm text-slate-700"
               }
             >
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
@@ -136,7 +136,7 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
           <button
             key={item}
             type="button"
-            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-700"
+            className="rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-brand-50/60 hover:text-brand-700"
             onClick={() => handleAsk(item)}
             disabled={askMutation.isPending}
           >
@@ -146,7 +146,7 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
       </div>
 
       <form
-        className="space-y-3 rounded-xl border border-slate-200 bg-white p-3"
+        className="space-y-3 rounded-xl bg-slate-50/70 p-3"
         onSubmit={(event) => {
           event.preventDefault();
           handleAsk();
