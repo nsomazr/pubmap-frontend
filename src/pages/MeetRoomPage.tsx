@@ -233,6 +233,8 @@ export function MeetRoomPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [pipOpening, setPipOpening] = useState(false);
   const [inviteSending, setInviteSending] = useState(false);
+  const [replyTarget, setReplyTarget] = useState<MeetChatMessage | null>(null);
+  const [tagTarget, setTagTarget] = useState<MeetChatMessage | null>(null);
   const assistantCaptureUnavailableRef = useRef(false);
 
   const { data: meeting, isLoading } = useQuery({
@@ -273,14 +275,35 @@ export function MeetRoomPage() {
 
   const sendChat = useMutation({
     mutationFn: async () => {
+      const taggedName =
+        tagTarget?.sender?.full_name ||
+        `${tagTarget?.sender?.firstname ?? ""} ${tagTarget?.sender?.lastname ?? ""}`.trim() ||
+        tagTarget?.sender?.email ||
+        "";
+      const replyName =
+        replyTarget?.sender?.full_name ||
+        `${replyTarget?.sender?.firstname ?? ""} ${replyTarget?.sender?.lastname ?? ""}`.trim() ||
+        replyTarget?.sender?.email ||
+        "";
+      const messageText = text.trim();
+      const prefixParts: string[] = [];
+      if (taggedName) prefixParts.push(`@${taggedName}`);
+      if (replyTarget) {
+        prefixParts.push(
+          `↪ Reply to ${replyName || "participant"}: "${(replyTarget.message || "").trim().slice(0, 120)}"`
+        );
+      }
+      const composedMessage = [...prefixParts, messageText].join("\n").trim();
       const { data } = await api.post<MeetChatMessage[]>(`/meetings/${meetingId}/chat/`, {
-        message: text,
+        message: composedMessage,
         message_type: "text",
       });
       return data;
     },
     onSuccess: () => {
       setText("");
+      setReplyTarget(null);
+      setTagTarget(null);
       setChatError("");
       queryClient.invalidateQueries({ queryKey: ["meeting-chat", meetingId] });
     },
@@ -363,6 +386,7 @@ export function MeetRoomPage() {
 
   const canManage = !!activeMeeting?.can_manage;
   const isLive = activeMeeting?.status === "live";
+  const isHostUser = !!activeMeeting?.host_id && activeMeeting.host_id === user?.id;
 
   useEffect(() => {
     if (!participantActionMenuId) return;
@@ -717,6 +741,13 @@ export function MeetRoomPage() {
   };
 
   const handleStartRecording = async () => {
+    if (!isHostUser) {
+      toast.error({
+        title: "Host only",
+        description: "Only the meeting host can start recording.",
+      });
+      return;
+    }
     try {
       await startRecording.mutateAsync();
       runModeratorCommand("startRecording", { mode: "file" });
@@ -726,6 +757,13 @@ export function MeetRoomPage() {
   };
 
   const handleStopRecording = async () => {
+    if (!isHostUser) {
+      toast.error({
+        title: "Host only",
+        description: "Only the meeting host can stop recording.",
+      });
+      return;
+    }
     if (!runModeratorCommand("stopRecording", "file")) return;
     try {
       await stopRecording.mutateAsync();
@@ -1005,14 +1043,14 @@ export function MeetRoomPage() {
 
       {!drawerOpen && <MeetRoomControlsFab onClick={() => setDrawerOpen(true)} />}
       <div
-        className="pointer-events-none fixed bottom-5 left-7 z-[2147483645] sm:bottom-6 sm:left-8"
+        className="pointer-events-none fixed right-6 top-4 z-[2147483645] sm:right-8 sm:top-5"
         style={{ zIndex: 2147483647 }}
       >
         <BrandMark
           symbol="full"
           variant="plain"
-          size="sm"
-          className="rounded-2xl border border-slate-700 bg-slate-900/95 px-2.5 py-1.5"
+          size="md"
+          className="rounded-2xl border border-slate-700 bg-slate-900/95 px-3.5 py-2"
           title="GRE"
         />
       </div>
@@ -1113,7 +1151,7 @@ export function MeetRoomPage() {
                         Start on GRE
                       </Button>
                     )}
-                    {isModerator && isLive && activeMeeting.recording_status !== "recording" && (
+                    {isHostUser && isModerator && isLive && activeMeeting.recording_status !== "recording" && (
                       <Button
                         variant="secondary"
                         className="h-8 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!border-slate-700 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100"
@@ -1123,7 +1161,7 @@ export function MeetRoomPage() {
                         Start recording
                       </Button>
                     )}
-                    {isModerator && isLive && activeMeeting.recording_status === "recording" && (
+                    {isHostUser && isModerator && isLive && activeMeeting.recording_status === "recording" && (
                       <Button variant="secondary" className="h-8 !border-slate-700 !bg-slate-900 !text-slate-100 hover:!bg-slate-800 disabled:!border-slate-700 disabled:!bg-slate-800 disabled:!text-slate-500 disabled:!opacity-100" loading={stopRecording.isPending} onClick={handleStopRecording}>
                         Stop recording
                       </Button>
@@ -1215,22 +1253,49 @@ export function MeetRoomPage() {
               chat: (
                 <div className="flex h-full min-h-0 flex-col gap-3">
                   <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900/70 p-2">
-                    {chat.map((message) => (
-                      <div key={message.id} className="rounded-xl bg-slate-800 px-3 py-2.5">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            {message.sender?.full_name ||
-                              `${message.sender?.firstname ?? ""} ${message.sender?.lastname ?? ""}`.trim() ||
-                              message.sender?.email}
-                            {message.sender_id === user?.id ? " · You" : ""}
-                          </p>
-                          <span className="text-[11px] text-slate-500">
-                            {formatChatTimestamp(message.created_at)}
-                          </span>
+                    {chat.map((message) => {
+                      const senderName =
+                        message.sender?.full_name ||
+                        `${message.sender?.firstname ?? ""} ${message.sender?.lastname ?? ""}`.trim() ||
+                        message.sender?.email ||
+                        "Participant";
+                      return (
+                        <div key={message.id} className="rounded-xl bg-slate-800 px-3 py-2.5">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                              {senderName}
+                              {message.sender_id === user?.id ? " · You" : ""}
+                            </p>
+                            <span className="text-[11px] text-slate-500">
+                              {formatChatTimestamp(message.created_at)}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sm whitespace-pre-wrap text-slate-100">{message.message}</p>
+                          <div className="mt-2 flex items-center gap-2">
+                            <button
+                              type="button"
+                              className="text-xs font-semibold text-brand-300 hover:text-brand-200"
+                              onClick={() => setReplyTarget(message)}
+                            >
+                              Reply
+                            </button>
+                            {message.sender_id !== user?.id && (
+                              <button
+                                type="button"
+                                className="text-xs font-semibold text-slate-300 hover:text-slate-100"
+                                onClick={() => {
+                                  setTagTarget(message);
+                                  const mentionToken = `@${senderName} `;
+                                  setText((prev) => (prev.includes(mentionToken) ? prev : `${mentionToken}${prev}`));
+                                }}
+                              >
+                                Tag
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <p className="mt-1 text-sm text-slate-100">{message.message}</p>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {chat.length === 0 && (
                       <p className="px-3 py-2 text-sm text-slate-400">
                         No messages yet.
@@ -1245,6 +1310,42 @@ export function MeetRoomPage() {
                       sendChat.mutate();
                     }}
                   >
+                    {(replyTarget || tagTarget) && (
+                      <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300">
+                        {replyTarget && (
+                          <p>
+                            Replying to{" "}
+                            <span className="font-semibold text-slate-100">
+                              {replyTarget.sender?.full_name ||
+                                `${replyTarget.sender?.firstname ?? ""} ${replyTarget.sender?.lastname ?? ""}`.trim() ||
+                                replyTarget.sender?.email ||
+                                "Participant"}
+                            </span>
+                          </p>
+                        )}
+                        {tagTarget && (
+                          <p>
+                            Tagging{" "}
+                            <span className="font-semibold text-slate-100">
+                              {tagTarget.sender?.full_name ||
+                                `${tagTarget.sender?.firstname ?? ""} ${tagTarget.sender?.lastname ?? ""}`.trim() ||
+                                tagTarget.sender?.email ||
+                                "Participant"}
+                            </span>
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          className="mt-1 text-[11px] font-semibold text-slate-400 hover:text-slate-200"
+                          onClick={() => {
+                            setReplyTarget(null);
+                            setTagTarget(null);
+                          }}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
                     <div className="relative">
                       <textarea
                         value={text}
@@ -1393,7 +1494,7 @@ export function MeetRoomPage() {
                           <p className="truncate text-xs text-slate-400">{participant.email}</p>
                         )}
                       </div>
-                      {isModerator && !participant.isLocal && participant.id && (
+                      {isHostUser && isModerator && !participant.isLocal && participant.id && (
                         <div className="relative">
                           <Button
                             type="button"

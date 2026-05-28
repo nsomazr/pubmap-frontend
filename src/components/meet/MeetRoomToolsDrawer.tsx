@@ -1,4 +1,4 @@
-import { Bot, FileText, Info, LayoutGrid, Settings2, Users, X } from "lucide-react";
+import { Bot, FileText, Info, LayoutGrid, Settings2, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "../ui/Button";
 
@@ -19,7 +19,6 @@ const TABS: { id: MeetRoomDrawerTab; label: string; icon: typeof Bot; hostOnly?:
   { id: "assistant", label: "Assistant", icon: Bot },
   { id: "chat", label: "Messages", icon: FileText },
   { id: "host", label: "Host", icon: Settings2, hostOnly: true },
-  { id: "people", label: "People", icon: Users },
 ];
 
 export function MeetRoomToolsDrawer({
@@ -100,7 +99,7 @@ export function MeetRoomControlsFab({
 }) {
   return (
     <div
-      className="pointer-events-none fixed bottom-5 right-3 z-[2147483645] w-auto sm:bottom-6 sm:right-4"
+      className="pointer-events-none fixed bottom-7 right-3 z-[2147483645] w-auto sm:bottom-8 sm:right-4"
       style={{ zIndex: 2147483647 }}
     >
       <div className="flex justify-end">
