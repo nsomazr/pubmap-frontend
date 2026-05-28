@@ -349,11 +349,6 @@ export function PublicationSummaryAssistant({
         </div>
 
         <div className="publication-chat__composer mt-3 shrink-0 border-t border-slate-100 bg-white pt-3">
-          {!summary.trim() && !summaryLoading && !summaryError && (
-            <p className="mb-3 text-xs text-slate-500">
-              Waiting for the summary before you can ask follow-ups.
-            </p>
-          )}
           {(summary.trim() || followUps.length > 0) && !summaryLoading && (
             <div className="space-y-2.5">
               <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-600">

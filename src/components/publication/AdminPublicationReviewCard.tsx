@@ -14,7 +14,9 @@ import { Textarea } from "../ui/Textarea";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import api from "../../lib/api";
 import { abstractPlainText } from "../../lib/abstractText";
+import { authorBylineFromPublication } from "../../lib/publicationAuthors";
 import { authorDisplayName } from "../../lib/userDisplay";
+import { PublicationAuthorByline } from "./PublicationAuthorByline";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { SubcategoryBadge } from "../taxonomy/SubcategoryBadge";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
@@ -35,6 +37,7 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
   const docPath = pub.documents?.[0]?.document ?? null;
   const hasPdf = Boolean(docPath && /\.pdf$/i.test(docPath.split("?")[0]));
   const author = authorDisplayName(pub.author);
+  const authorByline = authorBylineFromPublication(pub);
   const subVisual = publicationSubcategoryVisual(pub);
 
   const acceptMutation = useMutation({
@@ -79,10 +82,14 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
               <p className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
                 Submission for review
               </p>
-              <p className="mt-1 text-sm font-medium text-slate-600">{author}</p>
               <h3 className="mt-1 text-lg font-bold leading-snug text-ink">
                 {formatGrePaperTitle(pub.title, pub.short_number)}
               </h3>
+              {authorByline.authors.length > 0 ? (
+                <PublicationAuthorByline byline={authorByline} className="mt-2.5" />
+              ) : (
+                <p className="mt-2 text-sm font-medium text-slate-600">{author}</p>
+              )}
               {subVisual && (
                 <div className="mt-2">
                   <SubcategoryBadge visual={subVisual} size="xs" />

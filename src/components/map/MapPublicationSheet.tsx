@@ -1,4 +1,4 @@
-import { Eye, FileText, X } from "lucide-react";
+import { Download, Eye, FileText, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { buildPublicationChatPath } from "../../lib/publicationChat";
@@ -50,7 +50,7 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
               {views} views
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span aria-hidden>⬇</span>
+              <Download className="h-3.5 w-3.5" />
               {downloads} downloads
             </span>
           </div>

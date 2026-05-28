@@ -25,9 +25,6 @@ export function ExtractionLoadingPanel({ compact = false }: ExtractionLoadingPan
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-brand-900">Extracting manuscript details</p>
-          <p className="mt-1 text-sm leading-relaxed text-slate-600">
-            GRE is reading the file and preparing the title plus manuscript sections for review.
-          </p>
 
           <div className="mt-4">
             <div className="mb-1.5 flex items-center justify-between gap-3">

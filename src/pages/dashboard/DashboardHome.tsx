@@ -89,10 +89,7 @@ export function DashboardHome() {
 
   return (
     <div>
-      <PageHeader
-        title="Overview"
-        description="Track your research pipeline from draft to global visibility."
-      />
+      <PageHeader title="Overview" />
 
       <GreHeroBanner
         className="mb-8"

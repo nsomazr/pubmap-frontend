@@ -198,6 +198,7 @@ export function MeetDetailPage() {
             {!canManage && meeting.participant_invite_status === "invited" && (
               <>
                 <Button
+                  variant="secondary"
                   className={greBtnOnDarkPrimary}
                   loading={respondInvite.isPending}
                   onClick={() => respondInvite.mutate("accept")}
@@ -216,7 +217,7 @@ export function MeetDetailPage() {
             )}
             {meeting.can_join && meeting.status !== "ended" && meeting.status !== "cancelled" && (
               <Link to={`/meet/${meeting.join_slug}`}>
-                <Button className={greBtnOnDarkPrimary}>
+                <Button variant="secondary" className={greBtnOnDarkPrimary}>
                   {canManage && meeting.status === "scheduled" ? (
                     <>
                       <Radio className="h-4 w-4" />

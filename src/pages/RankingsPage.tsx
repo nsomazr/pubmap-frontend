@@ -5,14 +5,7 @@ import { Link } from "react-router-dom";
 import api from "../lib/api";
 import { greAccentBadge, greIconBrand, greIconTeal } from "../lib/greTheme";
 import { institutionMapUrl } from "../lib/institutionLinks";
-import {
-  INSTITUTION_PUBS_PER_STAR,
-  INSTITUTION_SORT_OPTIONS,
-  RESEARCHER_PUBS_PER_STAR,
-  RESEARCHER_SORT_OPTIONS,
-  institutionSortDescription,
-  researcherSortDescription,
-} from "../lib/rankings";
+import { INSTITUTION_SORT_OPTIONS, RESEARCHER_SORT_OPTIONS } from "../lib/rankings";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { ResearcherBadges } from "../components/rankings/ResearcherBadges";
 import { StarRating } from "../components/rankings/StarRating";
@@ -51,11 +44,6 @@ function SortSelect<T extends string>({
           ))}
         </select>
       </span>
-      {options.find((opt) => opt.value === value)?.description && (
-        <span className="max-w-xl text-xs leading-relaxed text-slate-500 sm:text-right">
-          {options.find((opt) => opt.value === value)?.description}
-        </span>
-      )}
     </label>
   );
 }
@@ -94,7 +82,6 @@ export function RankingsPage() {
       accent="teal"
       badge="Community & impact"
       title="Research Rankings"
-      subtitle="Institutional recognition and researcher contributions across the GRE map, measured by published work, community activity, and growth."
       crumbs={[{ label: "Home", to: "/" }, { label: "Rankings" }]}
     >
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -135,32 +122,6 @@ export function RankingsPage() {
           />
         )}
       </div>
-
-      <div className="mb-8 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl bg-gradient-to-br from-brand-50 to-white p-4 ring-1 ring-brand-100">
-          <p className="text-xs font-bold uppercase tracking-wider text-brand-700">
-            Institution stars
-          </p>
-          <p className="mt-1 text-sm text-slate-600">
-            1 star per {INSTITUTION_PUBS_PER_STAR.toLocaleString()} published studies linked to an
-            institution.
-          </p>
-        </div>
-        <div className="rounded-2xl bg-gradient-to-br from-teal-50 to-white p-4 ring-1 ring-teal-100">
-          <p className="text-xs font-bold uppercase tracking-wider text-teal-800">
-            Researcher stars
-          </p>
-          <p className="mt-1 text-sm text-slate-600">
-            1 star per {RESEARCHER_PUBS_PER_STAR} published studies by an author on the map.
-          </p>
-        </div>
-      </div>
-
-      <p className="mb-6 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-600">
-        {tab === "institutions"
-          ? institutionSortDescription(instSort)
-          : researcherSortDescription(researcherSort)}
-      </p>
 
       {tab === "institutions" ? (
         instLoading ? (
@@ -276,8 +237,8 @@ export function RankingsPage() {
                     <ResearcherBadges badges={person.badges} />
                   </div>
                   <p className="mt-2 text-xs text-slate-500">
-                    {person.published_count} published · {person.discussion_count} discussion
-                    contributions
+                    {person.published_count} published · {person.discussion_count}{" "}
+                    {person.discussion_count === 1 ? "discussion" : "discussions"}
                   </p>
                 </div>
               </div>

@@ -57,7 +57,7 @@ type ResearcherResult = {
   affiliation: string;
   photo?: string;
   ranking?: ResearcherRanking;
-  primarySubfield?: string;
+  leadSubfield?: string;
   interests: string[];
   totalPublications: number;
   totalDiscussions: number;
@@ -117,7 +117,7 @@ function collectResearcherResults(publications: Publication[]): ResearcherResult
         affiliation: author?.affiliation || "",
         photo: author?.photo,
         ranking: author?.ranking,
-        primarySubfield: topValues(
+        leadSubfield: topValues(
           pubs.map((pub) => pub.subfield_name || pub.sub_category_name || "")
         )[0],
         interests,
@@ -417,32 +417,55 @@ export function MapResultsRail({
     </button>
   );
 
-  const hasAuthorSearch = authorQuery.length >= 2;
+  const authorSearchActive = authorQuery.length >= 2;
+  const institutionSearchActive = affiliationQuery.length >= 2 && !authorSearchActive;
+  const hasTitleSearch = titleQuery.trim().length >= 2;
+  const hasLocationSearch = locationQuery.trim().length >= 2;
+
   const exactResearcher =
     authorResearch?.match_type === "exact" ? authorResearch.exact : null;
   const fuzzyResearchers =
     authorResearch?.match_type === "fuzzy" ? authorResearch.candidates : [];
   const legacyResearcherResults =
-    !hasAuthorSearch || (!exactResearcher && fuzzyResearchers.length === 0)
+    !authorSearchActive && !institutionSearchActive && !hasTitleSearch && !hasLocationSearch
       ? collectResearcherResults(publications).slice(0, 6)
       : [];
-  const hasAffiliationSearch = affiliationQuery.length >= 2;
+
   const exactInstitution =
     institutionResearch?.match_type === "exact" ? institutionResearch.exact : null;
   const fuzzyInstitutions =
     institutionResearch?.match_type === "fuzzy" ? institutionResearch.candidates : [];
-  const institutionResults =
-    !hasAffiliationSearch || (!exactInstitution && fuzzyInstitutions.length === 0)
-      ? collectInstitutionResults(publications).slice(0, 6)
-      : [];
 
-  const paperList =
-    exactResearcher?.publications && exactResearcher.publications.length > 0
+  const paperList = institutionSearchActive
+    ? []
+    : exactResearcher?.publications && exactResearcher.publications.length > 0
       ? exactResearcher.publications
-      : publications;
+      : authorSearchActive
+        ? publications.slice(0, 8)
+        : publications;
 
-  const hasTitleSearch = titleQuery.trim().length >= 2;
-  const hasLocationSearch = locationQuery.trim().length >= 2;
+  const institutionResultCount = exactInstitution
+    ? 1
+    : fuzzyInstitutions.length;
+
+  const institutionResultsEmpty =
+    institutionSearchActive &&
+    !institutionResearchLoading &&
+    !exactInstitution &&
+    fuzzyInstitutions.length === 0;
+
+  const authorResultsEmpty =
+    authorSearchActive &&
+    !authorResearchLoading &&
+    !exactResearcher &&
+    fuzzyResearchers.length === 0 &&
+    (authorResearch?.match_type === "none" || authorResearch == null);
+
+  const railEmpty = institutionSearchActive
+    ? institutionResultsEmpty
+    : authorSearchActive
+      ? authorResultsEmpty && paperList.length === 0
+      : publications.length === 0;
 
   const researcherCount = exactResearcher
     ? 1
@@ -452,27 +475,19 @@ export function MapResultsRail({
         ? legacyResearcherResults.length
         : 0;
 
-  const institutionCount = exactInstitution
-    ? 1
-    : fuzzyInstitutions.length > 0
-      ? fuzzyInstitutions.length
-      : institutionResults.length;
-
-  const countKind = hasTitleSearch
-    ? "paper"
-    : hasAuthorSearch
+  const countKind = institutionSearchActive
+    ? "institution"
+    : authorSearchActive
       ? "researcher"
-      : hasAffiliationSearch
-        ? "institution"
-        : hasLocationSearch
-          ? "paper"
-          : "paper";
+      : hasTitleSearch || hasLocationSearch
+        ? "paper"
+        : "paper";
 
   const countValue =
-    countKind === "researcher"
-      ? researcherCount
-      : countKind === "institution"
-        ? institutionCount
+    countKind === "institution"
+      ? institutionResultCount
+      : countKind === "researcher"
+        ? researcherCount
         : publications.length;
 
   const countLabel = `${countValue} matching ${countKind}${countValue === 1 ? "" : "s"}`;
@@ -518,30 +533,11 @@ export function MapResultsRail({
                 Search results
               </p>
               <p className="mt-0.5 text-lg font-bold leading-tight text-ink">{countLabel}</p>
-              {(exactResearcher ||
-                fuzzyResearchers.length > 0 ||
-                legacyResearcherResults.length > 0 ||
-                exactInstitution ||
-                fuzzyInstitutions.length > 0 ||
-                institutionResults.length > 0) && (
-                <p className="mt-1 text-xs text-slate-500">
-                  {exactResearcher
-                    ? "Exact researcher match"
-                    : fuzzyResearchers.length > 0
-                      ? `${fuzzyResearchers.length} similar researcher${
-                          fuzzyResearchers.length === 1 ? "" : "s"
-                        }`
-                      : legacyResearcherResults.length > 0
-                        ? `${legacyResearcherResults.length} researcher match${
-                            legacyResearcherResults.length === 1 ? "" : "es"
-                          }`
-                        : ""}
-                  {institutionResults.length > 0
-                    ? `${exactResearcher || fuzzyResearchers.length || legacyResearcherResults.length ? " · " : ""}${institutionResults.length} institution${
-                        institutionResults.length === 1 ? "" : "s"
-                      }`
-                    : ""}
-                </p>
+              {authorSearchActive && exactResearcher && (
+                <p className="mt-1 text-xs text-slate-500">Exact researcher match</p>
+              )}
+              {institutionSearchActive && exactInstitution && (
+                <p className="mt-1 text-xs text-slate-500">Exact institution match</p>
               )}
             </div>
             <button
@@ -559,22 +555,28 @@ export function MapResultsRail({
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 pb-4">
-          {publications.length === 0 ? (
+          {railEmpty ? (
             <div className="rounded-2xl border-2 border-dashed border-slate-200 px-4 py-12 text-center">
-              <MapPin className="mx-auto h-10 w-10 text-slate-300" />
-              <p className="mt-3 text-sm font-medium text-slate-600">No matches found</p>
+              {institutionSearchActive ? (
+                <Building2 className="mx-auto h-10 w-10 text-slate-300" />
+              ) : (
+                <MapPin className="mx-auto h-10 w-10 text-slate-300" />
+              )}
+              <p className="mt-3 text-sm font-medium text-slate-600">
+                {institutionSearchActive ? "No institutions found" : "No matches found"}
+              </p>
               <p className="mt-1 text-xs text-slate-400">Try different search terms.</p>
             </div>
           ) : (
             <div className="space-y-6 gre-stagger">
-              {hasAuthorSearch && authorResearchLoading && (
+              {authorSearchActive && authorResearchLoading && (
                 <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-600">
                   <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
                   Looking up researchers…
                 </div>
               )}
 
-              {exactResearcher && (
+              {authorSearchActive && exactResearcher && (
                 <section className="space-y-2.5">
                   <div className="flex items-center gap-2">
                     <GraduationCap className="h-4 w-4 text-brand-600" />
@@ -586,7 +588,7 @@ export function MapResultsRail({
                 </section>
               )}
 
-              {!exactResearcher && fuzzyResearchers.length > 0 && (
+              {authorSearchActive && !exactResearcher && fuzzyResearchers.length > 0 && (
                 <section className="space-y-2.5">
                   <div className="flex items-center gap-2">
                     <GraduationCap className="h-4 w-4 text-brand-600" />
@@ -608,15 +610,14 @@ export function MapResultsRail({
                 </section>
               )}
 
-              {( !hasAuthorSearch || authorResearch?.match_type === "none") &&
+              {!authorSearchActive &&
+                !institutionSearchActive &&
                 legacyResearcherResults.length > 0 && (
                 <section className="space-y-2.5">
                   <div className="flex items-center gap-2">
                     <GraduationCap className="h-4 w-4 text-brand-600" />
                     <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
-                      {hasAuthorSearch && authorResearch?.match_type === "none"
-                        ? "Researchers from papers"
-                        : "Researchers"}
+                      Researchers
                     </h3>
                   </div>
                   <ul className="space-y-2.5">
@@ -658,10 +659,10 @@ export function MapResultsRail({
                                   {person.totalDiscussions === 1 ? "" : "s"}
                                 </span>
                               </div>
-                              {person.primarySubfield && (
+                              {person.leadSubfield && (
                                 <p className="mt-2 text-xs text-slate-600">
-                                  <span className="font-semibold text-slate-700">Primary subfield: </span>
-                                  {person.primarySubfield}
+                                  <span className="font-semibold text-slate-700">Lead subfield: </span>
+                                  {person.leadSubfield}
                                 </p>
                               )}
                               {person.userId && (
@@ -681,25 +682,14 @@ export function MapResultsRail({
                 </section>
               )}
 
-              {hasAuthorSearch &&
-                !authorResearchLoading &&
-                authorResearch?.match_type === "none" &&
-                publications.length > 0 &&
-                legacyResearcherResults.length === 0 && (
-                  <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                    No exact researcher profile match for &ldquo;{authorQuery}&rdquo;. Showing
-                    researcher matches from published papers and the matching publications below.
-                  </p>
-                )}
-
-              {hasAffiliationSearch && institutionResearchLoading && (
+              {institutionSearchActive && institutionResearchLoading && (
                 <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-600">
                   <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
                   Looking up institutions…
                 </div>
               )}
 
-              {exactInstitution && (
+              {institutionSearchActive && exactInstitution && (
                 <section className="space-y-2.5">
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-brand-600" />
@@ -711,7 +701,7 @@ export function MapResultsRail({
                 </section>
               )}
 
-              {!exactInstitution && fuzzyInstitutions.length > 0 && (
+              {institutionSearchActive && !exactInstitution && fuzzyInstitutions.length > 0 && (
                 <section className="space-y-2.5">
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-brand-600" />
@@ -733,49 +723,16 @@ export function MapResultsRail({
                 </section>
               )}
 
-              {hasAffiliationSearch &&
-                !institutionResearchLoading &&
-                institutionResearch?.match_type === "none" &&
-                publications.length > 0 && (
-                  <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                    No institution matching &ldquo;{affiliationQuery}&rdquo; was found. Showing
-                    related publications below.
-                  </p>
-                )}
-
-              {institutionResults.length > 0 && (
-                <section className="space-y-2.5">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-brand-600" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
-                      Institutions
-                    </h3>
-                  </div>
-                  <ul className="space-y-2.5">
-                    {institutionResults.map((institution) => (
-                      <li key={institution.key}>
-                        <article className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5">
-                          <p className="text-sm font-semibold text-ink">{institution.label}</p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            {institution.totalPublications} publications ·{" "}
-                            {institution.totalResearchers} researchers
-                          </p>
-                        </article>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
+              {paperList.length > 0 && (
               <section className="space-y-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <BookOpenText className="h-4 w-4 text-brand-600" />
                     <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
-                      Papers
+                      {authorSearchActive ? "Top papers" : "Papers"}
                     </h3>
                   </div>
-                  {exactResearcher && exactResearcher.publication_count > (paperList.length || 0) && (
+                  {authorSearchActive && exactResearcher && exactResearcher.publication_count > (paperList.length || 0) && (
                     <p className="text-[11px] text-slate-500">
                       Showing {paperList.length} of {exactResearcher.publication_count}
                     </p>
@@ -850,6 +807,7 @@ export function MapResultsRail({
                   })}
                 </ul>
               </section>
+              )}
             </div>
           )}
         </div>

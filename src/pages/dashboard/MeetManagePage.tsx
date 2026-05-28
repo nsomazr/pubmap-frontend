@@ -323,11 +323,6 @@ export function MeetManagePage() {
     <div className="animate-fade-up space-y-8">
       <PageHeader
         title={isNew ? "Create GRE Meet session" : "Edit GRE Meet session"}
-        description={
-          isNew
-            ? "Schedule a research-centered meeting tied to a GRE subcategory."
-            : `Update meeting settings, invite participants, and refine the archive context for ${meeting?.title || "this session"}.`
-        }
         action={
           <Link to="/dashboard/meetings" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700">
             <ArrowLeft className="h-4 w-4" />
@@ -349,7 +344,6 @@ export function MeetManagePage() {
         <FormSection
           icon={CalendarClock}
           title="Schedule"
-          description="Set when the meeting happens. Date and time use the organizer timezone you choose below."
         >
           <Input
             label="Meeting title"
@@ -382,7 +376,7 @@ export function MeetManagePage() {
           )}
         </FormSection>
 
-        <FormSection icon={Shield} title="Access and format" description="Who can join and how the session is categorized.">
+        <FormSection icon={Shield} title="Access and format">
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               label="Meeting type"
@@ -412,7 +406,6 @@ export function MeetManagePage() {
         <FormSection
           icon={Link2}
           title="GRE research context"
-          description="Link the meeting to a subcategory and optional paper or forum thread."
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
@@ -486,7 +479,7 @@ export function MeetManagePage() {
           </div>
         </FormSection>
 
-        <FormSection icon={FileText} title="Description" description="Optional context for attendees and the GRE archive.">
+        <FormSection icon={FileText} title="Description">
           <Textarea
             label="Meeting description"
             value={form.description}
@@ -497,7 +490,7 @@ export function MeetManagePage() {
         </FormSection>
 
         {form.visibility === "invite_only" && (
-          <FormSection icon={Users} title="Guest invitations" description="Send invites when you save, or add guests later from the meeting page.">
+          <FormSection icon={Users} title="Guest invitations">
             <Textarea
               label="Guest emails"
               value={guestEmails}

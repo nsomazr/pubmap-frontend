@@ -143,13 +143,17 @@ function buildMetaRows({
     label: "Readers",
     value: `${viewsCount ?? 0} views · ${downloadsCount ?? 0} downloads`,
   });
-  rows.push({ label: "Discussions", value: String(discussionsCount ?? 0) });
+  const discussionTotal = discussionsCount ?? 0;
+  rows.push({
+    label: discussionTotal === 1 ? "Discussion" : "Discussions",
+    value: String(discussionTotal),
+  });
   if (typeof responsesCount === "number" || typeof teamSize === "number") {
-    const replies = responsesCount ?? 0;
+    const responses = responsesCount ?? 0;
     const authors = teamSize ?? 1;
     rows.push({
-      label: "Responses",
-      value: `${replies} replies · ${authors} author${authors === 1 ? "" : "s"}`,
+      label: responses === 1 ? "Response" : "Responses",
+      value: `${responses} ${responses === 1 ? "response" : "responses"} · ${authors} author${authors === 1 ? "" : "s"}`,
     });
   }
   if (greDoi?.trim()) {

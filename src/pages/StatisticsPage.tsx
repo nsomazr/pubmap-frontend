@@ -35,13 +35,11 @@ import type { PublicResearchStats } from "../types";
 function StatCard({
   label,
   value,
-  hint,
   icon: Icon,
   accent,
 }: {
   label: string;
   value: number;
-  hint: string;
   icon: typeof BarChart3;
   accent: string;
 }) {
@@ -53,7 +51,6 @@ function StatCard({
           <p className="mt-2 text-3xl font-bold tabular-nums text-ink sm:text-4xl">
             <AnimatedCounter value={value} />
           </p>
-          <p className="mt-2 text-sm text-slate-600">{hint}</p>
         </div>
         <div className="rounded-xl bg-white/70 p-3 shadow-sm">
           <Icon className="h-6 w-6 text-brand-600" />
@@ -102,7 +99,6 @@ export function StatisticsPage() {
       accent="blue"
       badge="Open data"
       title="Research Statistics"
-      subtitle="Live platform metrics: publications, geography, institutions, and community engagement. No account required."
       crumbs={[{ label: "Home", to: "/" }, { label: "Statistics" }]}
     >
       {isLoading ? (
@@ -123,31 +119,25 @@ export function StatisticsPage() {
             <StatCard
               label="Total publications"
               value={data.totals.publications}
-              hint="Published studies on the public map"
               icon={BarChart3}
               accent={greStatBgBrand}
             />
             <StatCard
               label="Total researchers"
               value={data.totals.researchers}
-              hint="Authors with at least one published study"
               icon={Users}
               accent={greStatBgTeal}
             />
             <StatCard
               label="Geolocated studies"
               value={data.totals.with_coordinates}
-              hint="Publications with map coordinates"
               icon={Globe2}
               accent="from-brand-50 to-teal-50/30"
             />
           </div>
 
           <div className="grid gap-6 xl:grid-cols-2">
-            <Section
-              title="Publications by field"
-              subtitle="Distribution across GRE research domains"
-            >
+            <Section title="Publications by field">
               <HorizontalBarChart
                 items={data.publications_by_category.map((row) => ({
                   label: row.name,
@@ -157,10 +147,7 @@ export function StatisticsPage() {
               />
             </Section>
 
-            <Section
-              title="Publications by subfield"
-              subtitle="Top thematic areas within each field"
-            >
+            <Section title="Publications by subfield">
               <HorizontalBarChart
                 items={data.publications_by_subcategory.map((row) => ({
                   label: row.subcategory,
@@ -173,10 +160,7 @@ export function StatisticsPage() {
           </div>
 
           <div className="grid gap-6 xl:grid-cols-2">
-            <Section
-              title="Publications by country"
-              subtitle="Inferred from study location labels on the map"
-            >
+            <Section title="Publications by country">
               <CountryHeatGrid
                 countries={data.publications_by_country}
                 selectedCountry={selectedCountry}
@@ -185,30 +169,21 @@ export function StatisticsPage() {
               <CountryHeatGridHint selectedCountry={selectedCountry} />
             </Section>
 
-            <Section title="Geographic heatmap" subtitle="Publication density by country centroid">
+            <Section title="Geographic heatmap">
               <StatsDensityMap
                 points={data.map_heatmap}
                 selectedCountry={selectedCountry}
                 onCountrySelect={setSelectedCountry}
               />
-              <p className="mt-3 text-xs text-slate-500">
-                Click a region to see its publication count and open those studies on the main map.
-              </p>
             </Section>
           </div>
 
           <div className="grid gap-6 xl:grid-cols-2">
-            <Section
-              title="Publication trend"
-              subtitle="Monthly published studies over the last year"
-            >
+            <Section title="Publication trend">
               <TrendLineChart points={data.publication_trend} />
             </Section>
 
-            <Section
-              title="Trending topics"
-              subtitle="Subfields with the most new publications (90 days)"
-            >
+            <Section title="Trending topics">
               {data.trending_topics.length === 0 ? (
                 <p className="rounded-xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
                   No recent topic activity yet.
@@ -291,10 +266,7 @@ export function StatisticsPage() {
               </Link>
             </Section>
 
-            <Section
-              title="Most discussed papers"
-              subtitle="Ranked by conversations, replies, and page views"
-            >
+            <Section title="Most discussed papers">
               {data.most_discussed_papers.length === 0 ? (
                 <p className="rounded-xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
                   Discussion metrics appear as readers engage with publications.
@@ -317,9 +289,13 @@ export function StatisticsPage() {
                         <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-500">
                           <span className="inline-flex items-center gap-1">
                             <MessageSquare className="h-3.5 w-3.5" />
-                            {paper.conversations} threads
+                            {paper.conversations}{" "}
+                            {paper.conversations === 1 ? "discussion" : "discussions"}
                           </span>
-                          <span>{paper.replies} replies</span>
+                          <span>
+                            {paper.replies}{" "}
+                            {paper.replies === 1 ? "response" : "responses"}
+                          </span>
                           <span>{paper.views.toLocaleString()} views</span>
                         </div>
                       </div>

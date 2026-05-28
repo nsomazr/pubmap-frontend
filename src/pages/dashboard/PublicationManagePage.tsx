@@ -43,6 +43,7 @@ import { SubmissionReviewDialog } from "../../components/publication/SubmissionR
 import { Textarea } from "../../components/ui/Textarea";
 import { useAuth } from "../../context/AuthContext";
 import api, { parseApiError } from "../../lib/api";
+import { sanitizeExtractionWarnings } from "../../lib/extractionWarnings";
 import { PublicationFiguresEditor } from "../../components/publication/PublicationFiguresEditor";
 import { PublicationSupplementaryUpload } from "../../components/publication/PublicationSupplementaryUpload";
 import { renderManuscriptHtml } from "../../lib/renderManuscriptHtml";
@@ -104,12 +105,10 @@ type ExtractionUiState = {
 function ComposerStage({
   number,
   title,
-  description,
   children,
 }: {
   number: string;
   title: string;
-  description: string;
   children: ReactNode;
 }) {
   return (
@@ -119,10 +118,7 @@ function ComposerStage({
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white shadow-sm">
             {number}
           </span>
-          <div>
-            <h2 className="text-lg font-bold text-ink">{title}</h2>
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">{description}</p>
-          </div>
+          <h2 className="text-lg font-bold text-ink">{title}</h2>
         </div>
       </div>
       <div className="mt-6">{children}</div>
@@ -235,7 +231,7 @@ export function PublicationManagePage() {
       if (nextKeywords) setKeywords(nextKeywords);
       setExtractionUi({
         status: "ready",
-        warnings: [...new Set(payload.warnings ?? [])],
+        warnings: sanitizeExtractionWarnings(payload.warnings),
         engine: payload.extraction_engine,
         sectionNotes: payload.section_notes ?? {},
       });
@@ -374,13 +370,9 @@ export function PublicationManagePage() {
             params: { use_ai: 0, ocr_backend: "tesseract" },
           }
         );
-        const warnings = data.warnings ?? [];
         return {
           ...data,
-          warnings: [
-            ...warnings,
-            "GRE retried extraction with the Tesseract fallback path after the primary extraction route was unavailable.",
-          ],
+          warnings: sanitizeExtractionWarnings(data.warnings),
         };
       }
     },
@@ -643,6 +635,7 @@ export function PublicationManagePage() {
       viewsCount: pub?.views_count ?? 0,
       downloadsCount: pub?.downloads_count ?? 0,
       discussionsCount: pub?.discussions_count ?? 0,
+      responsesCount: pub?.responses_count ?? 0,
     }),
     [
       title,
@@ -650,6 +643,7 @@ export function PublicationManagePage() {
       pub?.views_count,
       pub?.downloads_count,
       pub?.discussions_count,
+      pub?.responses_count,
       previewAuthorByline,
       coordinates.location,
       abstract,
@@ -677,8 +671,7 @@ export function PublicationManagePage() {
     hasTextContent(abstract) &&
     hasTextContent(introduction) &&
     hasTextContent(methods) &&
-    (hasTextContent(findings) || hasTextContent(results)) &&
-    hasTextContent(conclusion);
+    hasTextContent(findings);
   const openHasSource = hasDocument || Boolean(gre.external_url?.trim());
   const readyToSubmit =
     Boolean(title.trim() && abstract.trim() && subCategoryId) &&
@@ -711,10 +704,9 @@ export function PublicationManagePage() {
     if (isClosedAccess) {
       if (!hasTextContent(introduction)) return "Introduction is required for restricted access.";
       if (!hasTextContent(methods)) return "Methods is required for restricted access.";
-      if (!hasTextContent(results) && !hasTextContent(findings)) {
-        return "Results or Findings — discussion is required for restricted access.";
+      if (!hasTextContent(findings)) {
+        return "Findings — discussion is required for restricted access.";
       }
-      if (!hasTextContent(conclusion)) return "Conclusion is required for restricted access.";
       if (!gre.external_url?.trim()) return "Publisher access link is required for restricted access.";
     } else if (!openHasSource) {
       return "Upload a manuscript PDF or add an external access link.";
@@ -762,16 +754,7 @@ export function PublicationManagePage() {
   return (
     <div className="animate-fade-up pb-8">
       <PageHeader
-        title={isNew ? "New publication" : "Edit publication"}
-        description={
-          isNew
-            ? accessTypeChosen
-              ? isClosedAccess
-                ? "Complete all manuscript sections and the publisher access link, then submit for review."
-                : "Fill in publication details, add your paper or link, then submit for review."
-              : "Choose open or restricted access to begin your submission."
-            : pub?.title
-        }
+        title={isNew ? "New publication" : pub?.title || "Edit publication"}
         action={
           !isNew && pub ? (
             <div className="flex items-center gap-2">
@@ -997,11 +980,7 @@ export function PublicationManagePage() {
 
         {composerTab === "editor" && (
           <>
-            <ComposerStage
-              number="1"
-              title="Research setup"
-              description="Choose the field and subfield first so GRE can place the paper correctly across discovery and review."
-            >
+            <ComposerStage number="1" title="Research setup">
               <CategorySubcategoryPicker
                 categories={categories}
                 categoryId={categoryId}
@@ -1011,11 +990,7 @@ export function PublicationManagePage() {
               />
             </ComposerStage>
 
-            <ComposerStage
-              number="2"
-              title="Source paper"
-              description="Upload the manuscript source before continuing. Open papers show the uploaded file publicly after approval, while closed papers keep it visible only to the paper owner."
-            >
+            <ComposerStage number="2" title="Source paper">
                 {isNew ? (
                   <div className="space-y-3">
                     <ManuscriptUploadField
@@ -1024,26 +999,9 @@ export function PublicationManagePage() {
                       existingDocumentPath={existingDocPath}
                       disabled={isReadOnly}
                     />
-                    <div className="rounded-xl border border-brand-100 bg-brand-50/40 px-4 py-3 text-sm text-slate-600">
-                      <p>
-                        GRE will extract the title, abstract, introduction, methods, results,
-                        findings, conclusion, funding, keywords, and references from your uploaded
-                        paper using GRE document OCR. You can edit everything before saving.
-                      </p>
-                      {extractionUi.status === "extracting" && (
-                        <p className="mt-2 text-sm font-medium text-brand-700">
-                          Autofill is in progress. Review the manuscript workspace below.
-                        </p>
-                      )}
-                      {extractionUi.status === "ready" && (
-                        <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-brand-700">
-                          Autofill ready — review the manuscript sections in step 3.
-                        </p>
-                      )}
-                      {extractionUi.status === "error" && extractionUi.warnings[0] && (
-                        <p className="mt-2 text-sm text-red-600">{extractionUi.warnings[0]}</p>
-                      )}
-                    </div>
+                    {extractionUi.status === "error" && extractionUi.warnings[0] && (
+                      <p className="text-sm text-red-600">{extractionUi.warnings[0]}</p>
+                    )}
                   </div>
                 ) : id ? (
                   <PublicationDocumentUpload
@@ -1056,59 +1014,18 @@ export function PublicationManagePage() {
                 ) : null}
             </ComposerStage>
 
-            <ComposerStage
-              number="3"
-              title="Manuscript"
-              description={
-                isClosedAccess
-                  ? "Start with the title here, then review the closed-access manuscript sections filled from the source file."
-                  : "Start with the title here, then review and refine the manuscript sections filled from the paper."
-              }
-            >
+            <ComposerStage number="3" title="Manuscript">
               <div className="space-y-6">
-                {extractionUi.status === "extracting" && (
-                  <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-brand-700">
-                    Autofill workspace
-                  </p>
-                )}
-                {extractionUi.status === "extracting" && (
-                  <ExtractionLoadingPanel />
-                )}
-                {extractionUi.status === "ready" && (
-                  <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span>
-                        Extracted manuscript content is ready. You can edit every section below before
-                        saving.
-                      </span>
-                      {extractionUi.warnings.length > 0 && (
-                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800">
-                          Review notes available
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-3 text-sm text-amber-900">
-                      <p className="font-semibold">Check extracted content</p>
-                      <p className="mt-1 leading-relaxed text-amber-950/90">
-                        Automated extraction can misplace text, skip equations, or merge sections. Please
-                        read each field below and correct anything that does not match your paper before
-                        you save or submit.
-                      </p>
-                      {extractionUi.warnings.length > 0 && (
-                        <>
-                          <p className="mt-3 font-semibold">Extraction notes</p>
-                          <ul className="mt-2 space-y-2">
-                            {[...new Set(extractionUi.warnings)].map((warning) => (
-                              <li key={warning} className="flex gap-2">
-                                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                                <span>{warning}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                {extractionUi.status === "extracting" && <ExtractionLoadingPanel />}
+                {extractionUi.status === "ready" && extractionUi.warnings.length > 0 && (
+                  <ul className="mb-5 space-y-2 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
+                    {extractionUi.warnings.map((warning) => (
+                      <li key={warning} className="flex gap-2">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                        <span>{warning}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
                 {extractionUi.status === "error" && extractionUi.warnings[0] && (
                   <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -1125,11 +1042,7 @@ export function PublicationManagePage() {
               </div>
             </ComposerStage>
 
-        <ComposerStage
-          number="4"
-          title="Study context"
-          description="Confirm where the study takes place. Search for a city or landmark, or click the map to fill coordinates automatically."
-        >
+        <ComposerStage number="4" title="Study context">
           <LocationPicker
             value={coordinates}
             onChange={setCoordinates}
@@ -1137,18 +1050,10 @@ export function PublicationManagePage() {
           />
         </ComposerStage>
 
-        <ComposerStage
-          number="5"
-          title="Contributors"
-          description="Confirm your role on the paper, then add any additional co-authors and their affiliations."
-        >
+        <ComposerStage number="5" title="Contributors">
         <section className="space-y-4">
           <div>
             <h2 className="font-semibold text-ink">Your role on this publication</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              If you are submitting on behalf of the team, designate the lead author separately. Your
-              GRE account remains the submission owner for editing.
-            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             {(
@@ -1198,12 +1103,7 @@ export function PublicationManagePage() {
 
         <section className="mt-8 space-y-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-semibold text-ink">Additional co-authors</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                List other team members not covered by your role above.
-              </p>
-            </div>
+            <h2 className="font-semibold text-ink">Additional co-authors</h2>
             <button
               type="button"
               onClick={addCollaborator}
@@ -1267,11 +1167,7 @@ export function PublicationManagePage() {
         </section>
         </ComposerStage>
 
-        <ComposerStage
-          number="6"
-          title="Access & submit"
-          description="Set visibility at the end, then review any additional files before submitting the publication."
-        >
+        <ComposerStage number="6" title="Access & submit">
           <div className="space-y-8">
             <PublicationAccessFields
               gre={gre}

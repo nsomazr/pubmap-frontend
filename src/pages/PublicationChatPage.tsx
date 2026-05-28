@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRef } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ExternalLink, MapPin, Sparkles } from "lucide-react";
+import { Building2, ExternalLink, MapPin } from "lucide-react";
 import { formatGrePaperTitle } from "../lib/grePaperTitle";
 import api from "../lib/api";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
@@ -9,7 +9,10 @@ import { PublicationSummaryAssistant } from "../components/publication/Publicati
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
 import { SubcategoryVisual } from "../components/taxonomy/SubcategoryVisual";
-import { publicationMapLocationLabel } from "../lib/publicationMapLocation";
+import {
+  publicationMapLocationLabel,
+  publicationResearchInstitutionLabel,
+} from "../lib/publicationMapLocation";
 import { buildPublicationPath, publicationPublicApiPath } from "../lib/publicationPaths";
 import type { Publication } from "../types";
 
@@ -61,6 +64,7 @@ export function PublicationChatPage() {
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
   const subVisual = publicationSubcategoryVisual(pub);
   const locationLabel = publicationMapLocationLabel(pub);
+  const institutionLabel = publicationResearchInstitutionLabel(pub);
   const crumbTitle = formatGrePaperTitle(pub.title, pub.short_number);
 
   return (
@@ -70,7 +74,6 @@ export function PublicationChatPage() {
       accent="blue"
       badge="GRE Assistant"
       title="Research assistant"
-      subtitle="Read an AI summary and ask follow-up questions about this study."
       crumbs={[
         { label: "Home", to: "/" },
         {
@@ -103,9 +106,15 @@ export function PublicationChatPage() {
                   {crumbTitle}
                 </h1>
                 {author && <p className="mt-1 text-sm text-slate-600">{author}</p>}
-                {locationLabel && (
+                {institutionLabel && (
                   <p className="mt-1.5 flex items-start gap-1.5 text-xs text-slate-500 sm:text-sm">
-                    <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600 sm:h-4 sm:w-4" />
+                    <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600 sm:h-4 sm:w-4" />
+                    <span>{institutionLabel}</span>
+                  </p>
+                )}
+                {locationLabel && (
+                  <p className="mt-1 flex items-start gap-1.5 text-xs text-slate-500 sm:text-sm">
+                    <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400 sm:h-4 sm:w-4" />
                     <span>{locationLabel}</span>
                   </p>
                 )}
@@ -120,14 +129,6 @@ export function PublicationChatPage() {
             </Link>
           </div>
         </header>
-
-        <div className="shrink-0 border-b border-slate-100 bg-slate-50/70 px-4 py-2.5 sm:px-6">
-          <p className="flex items-start gap-2 text-sm leading-relaxed text-slate-700">
-            <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
-            GRE Assistant summarizes this study and answers follow-up questions about methods,
-            findings, authors, or location.
-          </p>
-        </div>
 
         <div className="publication-chat-page__body flex min-h-0 flex-1 flex-col px-4 py-3.5 sm:px-6 sm:py-4">
           <PublicationSummaryAssistant

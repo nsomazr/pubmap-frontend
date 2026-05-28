@@ -129,11 +129,6 @@ export function ReportPlagiarismDialog({
                   submitMutation.mutate();
                 }}
               >
-                <p className="text-sm text-slate-600">
-                  Describe why you believe this publication may involve plagiarism. GRE will hide
-                  the study from the public map, notify the author, and assign the claim to
-                  administrators.
-                </p>
                 <Textarea
                   label="Your report"
                   value={description}

@@ -40,7 +40,6 @@ export function EventsPage() {
       accent="blue"
       badge="Community"
       title="Available Events"
-      subtitle="Research conferences, symposia, and gatherings from the global community."
       crumbs={[{ label: "Home", to: "/" }, { label: "Events" }]}
     >
       <GreAdPlacement

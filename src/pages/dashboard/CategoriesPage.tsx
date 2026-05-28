@@ -244,7 +244,6 @@ export function CategoriesPage() {
     <div className="animate-fade-up space-y-8">
       <PageHeader
         title="Fields"
-        description="Manage the research taxonomy, paper logos, and subfields used on publications."
         action={
           <Link
             to="/"

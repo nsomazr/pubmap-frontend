@@ -70,19 +70,7 @@ export function ManuscriptSectionsEditor({
 }: Props) {
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-brand-100/80 bg-gradient-to-br from-brand-50/50 via-white to-teal-50/30 px-4 py-3.5 text-sm leading-relaxed text-slate-600 sm:px-5">
-        <p>
-          Upload extraction fills each section with a <strong className="font-semibold text-brand-800">short summary</strong>,
-          not the full paper. Review and edit before submitting.{" "}
-          <strong className="font-semibold text-brand-800">Results</strong> should list factual outcomes;{" "}
-          <strong className="font-semibold text-brand-800">Findings — discussion</strong> holds interpretation.
-        </p>
-      </div>
-
-      <ManuscriptGroup
-        title="Summary"
-        description="What readers see first in search and on the publication page."
-      >
+      <ManuscriptGroup title="Summary">
         <Input
           label="Title"
           value={title}
@@ -120,7 +108,7 @@ export function ManuscriptSectionsEditor({
         <FieldExtractionNote note={sectionNotes.keywords} />
       </ManuscriptGroup>
 
-      <ManuscriptGroup title="Background" description="Context, objectives, and study motivation.">
+      <ManuscriptGroup title="Background">
         <RichTextEditor
           label="Introduction"
           value={fields.introduction}
@@ -131,10 +119,7 @@ export function ManuscriptSectionsEditor({
         <FieldExtractionNote note={sectionNotes.introduction} />
       </ManuscriptGroup>
 
-      <ManuscriptGroup
-        title="Methods & results"
-        description="How the work was done and what was observed."
-      >
+      <ManuscriptGroup title="Methods">
         <RichTextEditor
           label="Methods"
           value={fields.methods}
@@ -143,17 +128,9 @@ export function ManuscriptSectionsEditor({
           maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.methods}
         />
         <FieldExtractionNote note={sectionNotes.methods} />
-        <RichTextEditor
-          label="Results"
-          value={fields.results}
-          onChange={(v) => onChange("results", v)}
-          placeholder="Key outcomes, measurements, and observations…"
-          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.results}
-        />
-        <FieldExtractionNote note={sectionNotes.results} />
       </ManuscriptGroup>
 
-      <ManuscriptGroup title="Discussion & closing" description="Interpretation and takeaways.">
+      <ManuscriptGroup title="Discussion & closing">
         <RichTextEditor
           label="Findings — discussion"
           value={fields.findings}
@@ -163,7 +140,7 @@ export function ManuscriptSectionsEditor({
         />
         <FieldExtractionNote note={sectionNotes.findings} />
         <RichTextEditor
-          label="Conclusion"
+          label="Conclusion (optional)"
           value={fields.conclusion}
           onChange={(v) => onChange("conclusion", v)}
           placeholder="Summarise implications and future work…"
@@ -172,7 +149,7 @@ export function ManuscriptSectionsEditor({
         <FieldExtractionNote note={sectionNotes.conclusion} />
       </ManuscriptGroup>
 
-      <ManuscriptGroup title="Funding & references" description="Acknowledgements and citations.">
+      <ManuscriptGroup title="Funding & references">
         <Input
           label="Funder — acknowledgements"
           value={fields.funder}

@@ -153,7 +153,6 @@ export function ManagersPage() {
     <div className="animate-fade-up space-y-8">
       <PageHeader
         title="Managers"
-        description="Assign and remove subfield managers who review submissions for specific research fields."
         action={
           <Link
             to="/dashboard/categories"

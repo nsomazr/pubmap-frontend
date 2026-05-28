@@ -98,7 +98,8 @@ export function ResearcherProfilePage() {
         }
         meta={
           <p className="text-sm text-slate-600">
-            {ranking.published_count} published · {ranking.discussion_count} discussion contributions
+            {ranking.published_count} published · {ranking.discussion_count}{" "}
+            {ranking.discussion_count === 1 ? "discussion" : "discussions"}
           </p>
         }
       />

@@ -109,6 +109,7 @@ export interface Publication {
   views_count?: number;
   downloads_count?: number;
   discussions_count?: number;
+  responses_count?: number;
   likes_count?: number;
   share_count?: number;
   liked_by_me?: boolean;

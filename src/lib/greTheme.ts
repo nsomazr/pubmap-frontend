@@ -22,8 +22,7 @@ export const grePillOnDarkMuted =
   "bg-white/10 text-white/90 ring-1 ring-white/15";
 export const greHeroIconBox =
   "flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20";
-export const greBtnOnDarkPrimary =
-  "!bg-white !text-brand-800 shadow-md hover:!bg-brand-50";
+export const greBtnOnDarkPrimary = "gre-btn-on-dark-primary shadow-md";
 export const greBtnOnDarkSecondary =
   "!border-white/25 !bg-white/10 !text-white hover:!bg-white/20";
 

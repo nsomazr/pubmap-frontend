@@ -1,6 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Download, ExternalLink, FileText, Send, Trash2, Users, Video } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  ExternalLink,
+  FileText,
+  Send,
+  Sparkles,
+  Trash2,
+  Users,
+  Video,
+} from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
@@ -163,7 +173,7 @@ export function MeetingArchivePage() {
           <div className="flex flex-wrap gap-2">
             <Link
               to={`/dashboard/meetings/${meeting.id}`}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/15 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/25"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to meeting
@@ -343,12 +353,17 @@ export function MeetingArchivePage() {
         </div>
 
         <aside className="space-y-6">
-          <div className="gre-card space-y-4 p-6">
-            <h2 className="text-lg font-semibold text-ink">Chat with GRE Assistant</h2>
-            <p className="text-sm text-slate-500">
-              Ask follow-up questions about the minutes, decisions, and transcript from this meeting.
-            </p>
-            <MeetingGreAssistantPanel meeting={meeting} />
+          <div className="gre-card flex flex-col gap-4 p-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-brand-600" />
+                <h2 className="text-lg font-semibold text-ink">Chat with GRE Assistant</h2>
+              </div>
+              <p className="mt-1.5 text-sm text-slate-500">
+                Ask follow-up questions about the minutes, decisions, and transcript from this meeting.
+              </p>
+            </div>
+            <MeetingGreAssistantPanel meeting={meeting} variant="light" />
           </div>
 
           <div className="gre-card space-y-4 p-6">

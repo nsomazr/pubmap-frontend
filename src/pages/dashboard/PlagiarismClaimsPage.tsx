@@ -200,16 +200,7 @@ export function PlagiarismClaimsPage() {
 
   return (
     <div className="animate-fade-up space-y-8">
-      <PageHeader
-        title="Plagiarism reports"
-        description={
-          isAdmin
-            ? "Review claims, inspect evidence, and hide, address, dismiss, or remove publications."
-            : tab === "publisher"
-              ? "Review claims and moderation requests related to your publications."
-              : "Track plagiarism reports you have submitted to GRE."
-        }
-      />
+      <PageHeader title="Plagiarism reports" />
 
       {isAdmin && stats && (
         <div className="grid gap-4 sm:grid-cols-2">

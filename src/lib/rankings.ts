@@ -21,7 +21,7 @@ export const INSTITUTION_SORT_OPTIONS: {
     value: "discussions",
     label: "Most discussed papers",
     description:
-      "Institutions whose linked publications received the most discussion threads and replies combined.",
+      "Institutions whose linked publications received the most discussions and responses combined.",
   },
   {
     value: "growth",
@@ -50,7 +50,7 @@ export const RESEARCHER_SORT_OPTIONS: {
     value: "discussions",
     label: "Most discussed",
     description:
-      "Authors whose publications received the most comments and replies from the GRE community.",
+      "Authors whose publications received the most discussions and responses from the GRE community.",
   },
 ];
 

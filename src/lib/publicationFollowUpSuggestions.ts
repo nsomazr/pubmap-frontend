@@ -60,9 +60,16 @@ export function buildPublicationFollowUpSuggestions(
     push("What were the key findings?");
   }
 
+  const institution =
+    pub.coordinates?.institution?.trim() ||
+    pub.co_authors?.primary_author?.affiliation?.trim();
+  if (institution) {
+    push(`What institution or affiliation is associated with this research (${institution})?`);
+  }
+
   if (pub.coordinates?.location?.trim()) {
     const place = pub.coordinates.location.trim();
-    push(place ? `Tell me about the study location in ${place}.` : "Where was this study conducted?");
+    push(place ? `Where was this study conducted (${place})?` : "Where was this study conducted?");
   }
 
   if (authorCount(pub) > 1) {

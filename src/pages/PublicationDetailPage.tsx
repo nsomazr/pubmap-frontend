@@ -21,10 +21,7 @@ import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { StudyLocationSection } from "../components/map/StudyLocationSection";
 import { ManuscriptContent } from "../components/publication/ManuscriptContent";
 import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
-import {
-  authorBylineFromPublication,
-  authorBylineWithoutAffiliations,
-} from "../lib/publicationAuthors";
+import { authorBylineFromPublication } from "../lib/publicationAuthors";
 import { publicationMapLocationLabel } from "../lib/publicationMapLocation";
 import { publicationPublicApiPath } from "../lib/publicationPaths";
 import type { Publication } from "../types";
@@ -116,7 +113,7 @@ export function PublicationDetailPage() {
             title={pub.title}
             greNumber={pub.short_number}
             funder={pub.funder}
-            authorByline={authorBylineWithoutAffiliations(authorBylineFromPublication(pub))}
+            authorByline={authorBylineFromPublication(pub)}
             subVisual={subVisual}
             subCategoryName={pub.sub_category_name}
             publishedLabel={formatPublishedDate(pub.created_at)}
@@ -124,6 +121,7 @@ export function PublicationDetailPage() {
             viewsCount={pub.views_count ?? 0}
             downloadsCount={pub.downloads_count ?? 0}
             discussionsCount={pub.discussions_count ?? 0}
+            responsesCount={pub.responses_count ?? 0}
             teamSize={pub.co_authors?.total_authors}
             greDoi={pub.gre?.gre_doi}
             accessType={pub.gre?.access_type}

@@ -75,7 +75,6 @@ export function AdsPage() {
     <div className="animate-fade-up space-y-10">
       <PageHeader
         title="Advertisements"
-        description="Structured placements across the map, publications, events, and institutional pages, always labeled as sponsored."
       />
 
       <GreAdAnalyticsPanel days={30} />

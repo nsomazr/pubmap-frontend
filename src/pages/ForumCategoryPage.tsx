@@ -78,7 +78,6 @@ export function ForumCategoryPage() {
       accent="blue"
       badge={sub?.field_name || sub?.category_name}
       title={sub?.name ?? "Forum"}
-      subtitle="Browse topics and start a new discussion in this subfield."
       heroVisual={(() => {
         const visual = sub ? resolveSubcategoryFromModel(sub) : null;
         return visual ? (

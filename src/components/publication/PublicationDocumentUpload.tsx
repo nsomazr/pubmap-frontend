@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileText, Loader2, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import api, { parseApiError } from "../../lib/api";
+import { sanitizeExtractionWarnings } from "../../lib/extractionWarnings";
 import { mediaUrl } from "../../lib/mediaUrl";
 import type { Publication } from "../../types";
 import { PdfPreview } from "./PdfPreview";
@@ -75,10 +76,7 @@ export function PublicationDocumentUpload({
         if (data?.extracted) {
           data.extracted = {
             ...data.extracted,
-            warnings: [
-              ...(data.extracted.warnings ?? []),
-              "GRE retried extraction with the Tesseract fallback path after the primary extraction route was unavailable.",
-            ],
+            warnings: sanitizeExtractionWarnings(data.extracted.warnings),
           };
         }
         return data;
@@ -87,7 +85,10 @@ export function PublicationDocumentUpload({
     onSuccess: (data) => {
       setLocalError("");
       if (data?.extracted && onExtracted) {
-        onExtracted(data.extracted);
+        onExtracted({
+          ...data.extracted,
+          warnings: sanitizeExtractionWarnings(data.extracted.warnings),
+        });
       }
       queryClient.invalidateQueries({ queryKey: ["publication-edit", String(publicationId)] });
     },

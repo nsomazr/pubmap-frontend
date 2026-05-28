@@ -136,6 +136,17 @@ body {
   color: #fff;
 }
 
+/* Solid CTA on dark heroes — overrides .gre-gradient-cta from primary buttons */
+.gre-btn-on-dark-primary {
+  background: #fff !important;
+  background-image: none !important;
+  color: var(--color-brand-800) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+.gre-btn-on-dark-primary:hover {
+  background: var(--color-brand-50) !important;
+}
+
 .gre-gradient-hero-bright {
   background: var(--gre-gradient-brand-x);
 }
@@ -1632,6 +1643,18 @@ body {
   margin: 0.5rem 1rem;
   font-size: 0.75rem;
   color: #64748b;
+}
+
+.gre-popup-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.gre-popup-stat-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
 }
 
 .gre-popup-actions {

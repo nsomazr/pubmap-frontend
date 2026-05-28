@@ -322,10 +322,7 @@ export function AccountPage() {
 
   return (
     <div className="animate-fade-up">
-      <PageHeader
-        title="Account"
-        description="View your public profile, edit details when needed, and manage your password."
-      />
+      <PageHeader title="Account" />
 
       <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {statsError && (
@@ -635,14 +632,6 @@ export function AccountPage() {
               </li>
             </ul>
           </section>
-
-          <div className="flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50/50 p-4">
-            <Phone className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-            <p className="text-xs leading-relaxed text-slate-600">
-              Your profile appears on published studies and forum discussions. Keep affiliation and
-              name accurate so collaborators can find you.
-            </p>
-          </div>
 
           {profileEditing && (
             <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 p-4 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm xl:hidden pb-[max(1rem,env(safe-area-inset-bottom))]">

@@ -126,35 +126,36 @@ export function HomePage() {
       setSearchError(null);
       const authorQuery = active.author.trim();
       const affiliationQuery = active.affiliation.trim();
+      const authorSearch = authorQuery.length >= 2;
+      const institutionSearch = affiliationQuery.length >= 2 && !authorSearch;
       try {
-        const pubsRequest = api.get<Publication[]>("/map/search/", {
-          params: {
-            author: authorQuery || undefined,
-            affiliation: affiliationQuery || undefined,
-            title: active.title || undefined,
-            location: active.mapRegion ? undefined : active.location || undefined,
-            lat: active.mapRegion?.lat,
-            lng: active.mapRegion?.lng,
-            radius_km: active.mapRegion?.radiusKm,
-            category: active.categoryId || undefined,
-            sub_category: active.subCategoryId || undefined,
-          },
-        });
-        const researcherRequest =
-          authorQuery.length >= 2
+        const pubsRequest = institutionSearch
+          ? Promise.resolve({ data: [] as Publication[] })
+          : api.get<Publication[]>("/map/search/", {
+              params: {
+                author: authorSearch ? authorQuery : undefined,
+                title: active.title || undefined,
+                location: active.mapRegion ? undefined : active.location || undefined,
+                lat: active.mapRegion?.lat,
+                lng: active.mapRegion?.lng,
+                radius_km: active.mapRegion?.radiusKm,
+                category: active.categoryId || undefined,
+                sub_category: active.subCategoryId || undefined,
+              },
+            });
+        const researcherRequest = authorSearch
             ? api.get<AuthorResearchResponse>("/map/researchers/search/", {
                 params: { q: authorQuery },
               })
             : Promise.resolve(null);
-        const institutionRequest =
-          affiliationQuery.length >= 2
+        const institutionRequest = institutionSearch
             ? api.get<InstitutionResearchResponse>("/map/institutions/search/", {
                 params: { q: affiliationQuery },
               })
             : Promise.resolve(null);
 
-        setAuthorResearchLoading(authorQuery.length >= 2);
-        setInstitutionResearchLoading(affiliationQuery.length >= 2);
+        setAuthorResearchLoading(authorSearch);
+        setInstitutionResearchLoading(institutionSearch);
         const [pubsResponse, researcherResponse, institutionResponse] = await Promise.all([
           pubsRequest,
           researcherRequest,

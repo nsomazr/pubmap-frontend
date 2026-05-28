@@ -1,4 +1,4 @@
-import { Eye, MapPin, Maximize2, X } from "lucide-react";
+import { Download, Eye, MapPin, Maximize2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
@@ -47,7 +47,7 @@ function StudyLocationInfoPanel({
             {views} views
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden>⬇</span>
+            <Download className="h-3.5 w-3.5" />
             {downloads} downloads
           </span>
         </div>

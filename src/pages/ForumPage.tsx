@@ -53,7 +53,6 @@ export function ForumPage() {
       accent="blue"
       badge="Discussions"
       title="Forum Discussions"
-      subtitle="Choose a research area to browse topics and join the conversation."
       crumbs={[{ label: "Home", to: "/" }, { label: "Forum" }]}
     >
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -113,7 +112,7 @@ export function ForumPage() {
         <section className="mt-12">
           <h2 className="text-lg font-semibold text-ink">Recent discussions</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Latest topics across all research areas. Replies are stored in the database.
+            Latest topics across all research areas.
           </p>
           <ul className="gre-card mt-4 divide-y divide-slate-100 overflow-hidden p-0">
             {recentTopics.map((t) => (

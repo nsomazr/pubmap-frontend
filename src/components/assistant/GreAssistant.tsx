@@ -14,7 +14,7 @@ const STARTERS = [
 
 const INITIAL_MESSAGE: Msg = {
   role: "assistant",
-  text: "Hi, I'm GRE Assistant. I can answer from live GRE data: categories, geology subcategories, published studies on the map, forum topics, and events, plus how to publish and use the platform.",
+  text: "Ask about publications on the map, research categories, forum topics, or events.",
 };
 
 export function GreAssistant() {

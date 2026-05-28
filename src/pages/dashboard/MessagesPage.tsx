@@ -448,7 +448,6 @@ export function MessagesPage() {
     <div className="animate-fade-up flex h-[calc(100dvh-5.5rem)] flex-col">
       <PageHeader
         title="Messages"
-        description="Chat with researchers connected to your work on GRE."
         className="mb-4"
       />
       <div className="gre-card-plain flex min-h-0 flex-1 flex-col overflow-hidden p-0 md:flex-row">

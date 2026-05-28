@@ -58,8 +58,14 @@ export function buildPublicationPopupHtml(
         </div>
       </div>
       <div class="gre-popup-stats">
-        <span>👁 ${views}</span>
-        <span>⬇ ${downloads}</span>
+        <span class="gre-popup-stat">
+          <svg class="gre-popup-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          ${views}
+        </span>
+        <span class="gre-popup-stat">
+          <svg class="gre-popup-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          ${downloads}
+        </span>
       </div>
       <div class="gre-popup-actions">
         <a href="${publicationChatPath}" class="gre-popup-summary-btn" data-pub-id="${pub.id}">

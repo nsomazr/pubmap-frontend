@@ -105,9 +105,6 @@ export function PublicationPaperPreview({
             <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
               Manuscript PDF review
             </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              This is how readers will open the full paper for open-access publications.
-            </p>
           </div>
           <PdfPreview
             file={pendingFile}

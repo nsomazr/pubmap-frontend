@@ -54,7 +54,6 @@ export function AuthorsPage() {
     <div className="animate-fade-up">
       <PageHeader
         title="User management"
-        description="Authors, platform admins, and subcategory managers. Promote users to admin, deactivate accounts, or permanently delete users."
       />
 
       <div className="mb-6 flex flex-wrap gap-2">

@@ -122,7 +122,6 @@ export function MeetingsPage() {
     <div className="animate-fade-up space-y-8">
       <PageHeader
         title="GRE Meet"
-        description="Research-native meetings for paper discussions, workshops, presentations, and live collaboration inside GRE."
         action={
           <div className="flex flex-wrap gap-2">
             <Link to="/dashboard/meetings/new">

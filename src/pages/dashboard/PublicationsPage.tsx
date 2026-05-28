@@ -120,7 +120,6 @@ export function PublicationsPage() {
     <div className="animate-fade-up">
       <PageHeader
         title="Publications"
-        description="Manage your research submissions through review and publication."
         action={
           <div className="flex flex-wrap items-center gap-2">
             {isAdmin && (
@@ -171,18 +170,13 @@ export function PublicationsPage() {
         ))}
       </div>
 
-      <p className="mb-8 text-xs text-slate-500">
-        Workflow: Draft → submit → Pending → admin review → Published, or Revision with feedback.
-        {canReview && status === "1" && (
-          <>
-            {" "}
-            <Link to="/dashboard/review" className="font-semibold text-brand-600 hover:underline">
-              Open review queue
-            </Link>{" "}
-            to preview PDFs and approve.
-          </>
-        )}
-      </p>
+      {canReview && status === "1" && (
+        <p className="mb-8 text-sm">
+          <Link to="/dashboard/review" className="font-semibold text-brand-600 hover:underline">
+            Open review queue
+          </Link>
+        </p>
+      )}
 
       {isLoading ? (
         <div className="space-y-3">

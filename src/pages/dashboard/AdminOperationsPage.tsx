@@ -144,7 +144,6 @@ export function AdminOperationsPage() {
     <div className="animate-fade-up space-y-8">
       <PageHeader
         title="Admin operations"
-        description="Platform oversight: review submissions, manage users, and keep GRE running smoothly."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">

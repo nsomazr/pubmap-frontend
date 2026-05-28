@@ -108,12 +108,9 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
         Discussion
         <span className="text-sm font-normal text-slate-400">({threads.length})</span>
       </h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Ask questions or share feedback on this publication. Replies are stored with your account.
-      </p>
 
       {isLoading ? (
-        <p className="mt-6 text-sm text-slate-500">Loading discussion…</p>
+        <p className="mt-6 text-sm text-slate-500">Loading discussions…</p>
       ) : (
         <div className="mt-6 space-y-5">
           {threads.map((thread) => {
@@ -178,7 +175,7 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
                       onChange={(e) =>
                         setReplyDrafts((d) => ({ ...d, [thread.id]: e.target.value }))
                       }
-                      placeholder="Write a reply…"
+                      placeholder="Write a response…"
                       className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
                     />
                     <Button type="submit" variant="secondary" className="shrink-0 px-3">
@@ -201,7 +198,7 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
           }}
         >
           <Textarea
-            label="Start a conversation"
+            label="Start a discussion"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             rows={3}
@@ -209,7 +206,7 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
           />
           <Button type="submit" loading={postThread.isPending}>
             <Send className="h-4 w-4" />
-            Post comment
+            Post discussion
           </Button>
         </form>
       ) : (
