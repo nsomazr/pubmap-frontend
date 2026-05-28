@@ -15,6 +15,7 @@ import {
   fetchMeeting,
   formatMeetingDate,
   inviteMeetingByEmailBulk,
+  inviteMeetingFieldMembers,
   MEETING_TYPE_LABELS,
   MEETING_VISIBILITY_LABELS,
 } from "../../lib/meetings";
@@ -53,6 +54,7 @@ export function MeetManagePage() {
   const [guestEmails, setGuestEmails] = useState("");
   const [guestInviteRole, setGuestInviteRole] = useState<"participant" | "speaker">("participant");
   const [guestInviteMessage, setGuestInviteMessage] = useState("");
+  const [inviteMatchingMembers, setInviteMatchingMembers] = useState(false);
 
   const { data: meeting } = useQuery({
     queryKey: ["meeting", id],
@@ -154,8 +156,9 @@ export function MeetManagePage() {
         .map((email) => email.trim().toLowerCase())
         .filter(Boolean);
       const shouldSendGuestInvites = data.visibility === "invite_only" && emails.length > 0;
+      const shouldInviteMatching = data.visibility === "invite_only" && inviteMatchingMembers;
       const afterSave = async () => {
-        if (!shouldSendGuestInvites) {
+        if (!shouldSendGuestInvites && !shouldInviteMatching) {
           toast.success({
             title: isNew ? "Meeting created" : "Meeting updated",
             description: isNew
@@ -165,18 +168,26 @@ export function MeetManagePage() {
           navigate(`/dashboard/meetings/${data.id}`);
           return;
         }
-        const result = await inviteMeetingByEmailBulk(data.id, {
-          emails,
-          role: guestInviteRole,
-          message: guestInviteMessage.trim() || undefined,
-        });
+        let result: { total: number; sent: number; failed: number } | null = null;
+        if (shouldSendGuestInvites) {
+          result = await inviteMeetingByEmailBulk(data.id, {
+            emails,
+            role: guestInviteRole,
+            message: guestInviteMessage.trim() || undefined,
+          });
+        }
+        if (shouldInviteMatching) {
+          await inviteMeetingFieldMembers(data.id, {});
+        }
         setGuestEmails("");
         toast.success({
-          title: isNew ? "Meeting created and guests invited" : "Guests invited",
+          title: isNew ? "Meeting created and invitations sent" : "Invitations sent",
           description:
-            result.failed > 0
-              ? `${result.sent}/${result.total} invitations sent. ${result.failed} failed.`
-              : `${result.sent} invitations sent successfully.`,
+            shouldSendGuestInvites && result && result.failed > 0
+              ? `${result.sent}/${result.total} email invites sent. ${result.failed} failed.`
+              : shouldSendGuestInvites
+                ? `${result?.sent ?? 0} email invites sent successfully.`
+                : "Matching field/subfield members were invited.",
         });
         navigate(`/dashboard/meetings/${data.id}`);
       };
@@ -444,6 +455,14 @@ export function MeetManagePage() {
                   placeholder="Optional personal message included in the invite email."
                 />
               </div>
+              <label className="sm:col-span-2 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={inviteMatchingMembers}
+                  onChange={(e) => setInviteMatchingMembers(e.target.checked)}
+                />
+                Invite matching field/subfield members when saving
+              </label>
             </>
           )}
         </div>

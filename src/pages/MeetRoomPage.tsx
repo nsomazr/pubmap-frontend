@@ -6,6 +6,7 @@ import {
   ExternalLink,
   Loader2,
   MicOff,
+  MoreVertical,
   PictureInPicture2,
   Radio,
   RefreshCcw,
@@ -45,18 +46,29 @@ import {
   formatMeetingDate,
   formatMeetingId,
   inviteMeetingByEmail,
-  inviteMeetingFieldMembers,
   joinMeetingRoom,
 } from "../lib/meetings";
 import type { MeetChatMessage, MeetSession } from "../types";
 
 function normalizeParticipants(rows: JitsiParticipantInfo[] | undefined, localEmail?: string) {
-  return (rows ?? []).map((row) => ({
-    id: row.participantId || row.id || "",
-    displayName: row.displayName || row.email || "Participant",
-    email: row.email,
-    isLocal: !!localEmail && row.email?.toLowerCase() === localEmail.toLowerCase(),
-  }));
+  const seen = new Set<string>();
+  const local = (localEmail || "").toLowerCase();
+  const normalized: { id: string; displayName: string; email?: string; isLocal?: boolean }[] = [];
+  for (const row of rows ?? []) {
+    const id = row.participantId || row.id || "";
+    const email = row.email?.toLowerCase() || "";
+    const displayName = row.displayName || row.email || "Participant";
+    const key = id || email || displayName.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    normalized.push({
+      id,
+      displayName,
+      email: row.email,
+      isLocal: !!local && email === local,
+    });
+  }
+  return normalized;
 }
 
 function formatChatTimestamp(value?: string | null) {
@@ -183,7 +195,6 @@ export function MeetRoomPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [pipOpening, setPipOpening] = useState(false);
   const [inviteSending, setInviteSending] = useState(false);
-  const [fieldInviteSending, setFieldInviteSending] = useState(false);
   const assistantCaptureUnavailableRef = useRef(false);
 
   const { data: meeting, isLoading } = useQuery({
@@ -414,6 +425,13 @@ export function MeetRoomPage() {
       setRoomDebug((prev) => ({ ...prev, apiConstructed: true }));
       jitsiApiRef.current = apiInstance;
       setIsModerator(canManage);
+      if (activeMeeting?.title) {
+        try {
+          apiInstance.executeCommand("subject", `GRE Room : ${activeMeeting.title}`);
+        } catch {
+          // Non-fatal if subject command is unavailable.
+        }
+      }
       refreshParticipants();
 
       const onJoined = () => {
@@ -604,29 +622,6 @@ export function MeetRoomPage() {
       });
     } finally {
       setInviteSending(false);
-    }
-  };
-
-  const inviteFieldMembers = async () => {
-    if (!meetingId) return;
-    setFieldInviteSending(true);
-    try {
-      const result = await inviteMeetingFieldMembers(meetingId, {});
-      toast.success({
-        title: "Field members notified",
-        description: `${result.invited_count} members received an email invite${
-          result.already_invited_count > 0 ? ` (${result.already_invited_count} already invited).` : "."
-        }`,
-      });
-      queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
-      queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
-    } catch (error) {
-      toast.error({
-        title: "Could not notify field members",
-        description: parseApiError(error, "Could not send invitations to matching members."),
-      });
-    } finally {
-      setFieldInviteSending(false);
     }
   };
 
@@ -1178,11 +1173,11 @@ export function MeetRoomPage() {
                         <span className="text-[11px] text-slate-400">Auto-saved</span>
                       </div>
                       <Textarea
-                        label="Meeting notes"
                         value={notes}
                         onChange={(event) => setNotes(event.target.value)}
-                        placeholder="Notes..."
-                        rows={4}
+                        placeholder="Write quick host notes..."
+                        rows={2}
+                        className="min-h-[3rem] rounded-2xl"
                       />
                       <p
                         className={`text-xs font-medium ${notesState === "error" ? "text-red-600" : "text-slate-500"}`}
@@ -1293,15 +1288,6 @@ export function MeetRoomPage() {
                           Send invite
                         </Button>
                       </form>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="mt-2 h-9 w-full"
-                        loading={fieldInviteSending}
-                        onClick={() => void inviteFieldMembers()}
-                      >
-                        Invite matching field/subfield members
-                      </Button>
                     </div>
                   )}
                   {canManage && (
@@ -1382,7 +1368,7 @@ export function MeetRoomPage() {
                               );
                             }}
                           >
-                            Actions
+                            <MoreVertical className="h-4 w-4" />
                           </Button>
                           {participantActionMenuId === participant.id && (
                             <div className="absolute right-0 top-11 z-20 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">

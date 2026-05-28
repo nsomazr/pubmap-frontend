@@ -2,7 +2,6 @@ import { useMutation } from "@tanstack/react-query";
 import { Bot, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/Button";
-import { Textarea } from "../ui/Textarea";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
 import { askMeetingAssistant, type MeetingAssistantTurn } from "../../lib/meetAssistant";
 import { parseApiError } from "../../lib/api";
@@ -156,32 +155,37 @@ export function MeetingGreAssistantPanel({ meeting, compact = false }: Props) {
       )}
 
       <form
-        className="space-y-3 rounded-xl bg-slate-50/70 p-3"
+        className="space-y-2 rounded-xl bg-slate-50/70 p-3"
         onSubmit={(event) => {
           event.preventDefault();
           handleAsk();
         }}
       >
-        <Textarea
-          label="Ask"
-          value={question}
-          onChange={(event) => setQuestion(event.target.value)}
-          placeholder="Ask a question..."
-          rows={2}
-          className="min-h-[4rem]"
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex justify-end">
+        <div className="relative">
+          <textarea
+            value={question}
+            onChange={(event) => setQuestion(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              if (event.shiftKey) return;
+              event.preventDefault();
+              handleAsk();
+            }}
+            placeholder="Ask a question..."
+            rows={1}
+            className="max-h-28 min-h-11 w-full resize-y rounded-3xl border border-slate-200 bg-white py-3 pl-4 pr-24 text-sm text-ink outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+          />
           <Button
             type="submit"
             disabled={!question.trim()}
             loading={askMutation.isPending}
-            className="h-10 min-w-[92px]"
+            className="absolute right-1.5 top-1/2 h-8 min-w-[72px] -translate-y-1/2 rounded-full px-3 text-sm"
           >
             <Sparkles className="h-4 w-4" />
             Ask
           </Button>
         </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
     </div>
   );
