@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileText, LogOut, Radio, Shield } from "lucide-react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/ToastProvider";
 import { buildMeetingPath } from "../../lib/meetingPaths";
 import { endMeetingSession } from "../../lib/meetings";
@@ -19,10 +21,12 @@ export function MeetingQuickActions({ meeting, showAdminBadge, compact }: Props)
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const [confirmEndOpen, setConfirmEndOpen] = useState(false);
 
   const endMeeting = useMutation({
     mutationFn: () => endMeetingSession(meeting),
     onSuccess: async () => {
+      setConfirmEndOpen(false);
       await queryClient.invalidateQueries({ queryKey: ["meetings"] });
       await queryClient.invalidateQueries({ queryKey: ["meeting", meeting.encoded_id] });
       await queryClient.invalidateQueries({ queryKey: ["meeting", String(meeting.id)] });
@@ -91,15 +95,7 @@ export function MeetingQuickActions({ meeting, showAdminBadge, compact }: Props)
             variant="danger"
             className={btnClass}
             loading={endMeeting.isPending}
-            onClick={() => {
-              if (
-                window.confirm(
-                  `End "${meeting.title}" for everyone? The host and attendees will leave the live room.`
-                )
-              ) {
-                endMeeting.mutate();
-              }
-            }}
+            onClick={() => setConfirmEndOpen(true)}
           >
             <LogOut className="h-3.5 w-3.5" />
             End
@@ -113,6 +109,20 @@ export function MeetingQuickActions({ meeting, showAdminBadge, compact }: Props)
           </Link>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmEndOpen}
+        title={`End "${meeting.title}"?`}
+        description="Everyone will leave the live room. GRE will start building the meeting archive and report."
+        confirmLabel="End meeting for everyone"
+        cancelLabel="Keep meeting live"
+        tone="danger"
+        loading={endMeeting.isPending}
+        onClose={() => {
+          if (!endMeeting.isPending) setConfirmEndOpen(false);
+        }}
+        onConfirm={() => endMeeting.mutate()}
+      />
     </div>
   );
 }

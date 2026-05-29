@@ -26,10 +26,7 @@ export interface PublicationPaperHeaderProps {
   draft?: boolean;
 }
 
-function GreBrandBlock({
-  draft,
-  accessType,
-}: Pick<PublicationPaperHeaderProps, "draft" | "accessType">) {
+function GreBrandBlock({ draft }: Pick<PublicationPaperHeaderProps, "draft">) {
   return (
     <div className="flex w-[4.25rem] shrink-0 flex-col items-center gap-1.5 sm:w-[6.5rem] sm:gap-2">
       <img
@@ -37,18 +34,11 @@ function GreBrandBlock({
         alt="Global Research Exchange"
         className="h-12 w-12 shrink-0 object-contain sm:h-[4.5rem] sm:w-[4.5rem]"
       />
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {draft && (
-          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
-            Draft preview
-          </span>
-        )}
-        {accessType === "closed" && (
-          <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-            Restricted
-          </span>
-        )}
-      </div>
+      {draft && (
+        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
+          Draft preview
+        </span>
+      )}
     </div>
   );
 }
@@ -184,7 +174,6 @@ export function PublicationPaperHeader({
   responsesCount,
   teamSize,
   greDoi,
-  accessType,
   draft,
 }: PublicationPaperHeaderProps) {
   const displayTitle = formatGrePaperTitle(title, greNumber);
@@ -207,7 +196,7 @@ export function PublicationPaperHeader({
     <header className="publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
       <div className="flex flex-col items-center gap-4 border-b border-slate-100 bg-white px-3 py-4 sm:grid sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] sm:items-center sm:gap-3 sm:px-7">
         <div className="sm:justify-self-start">
-          <GreBrandBlock draft={draft} accessType={accessType} />
+          <GreBrandBlock draft={draft} />
         </div>
         <div className="flex w-full min-w-0 items-center justify-center sm:w-auto">
           <PlatformNameBadge />
