@@ -7,10 +7,15 @@ export function userFirstName(user?: Pick<User, "firstname"> | null): string {
   return user?.firstname?.trim() || "Researcher";
 }
 
+export type UserNameLike = {
+  firstname?: string | null;
+  middlename?: string | null;
+  lastname?: string | null;
+  full_name?: string | null;
+};
+
 /** Full name without honorific. */
-export function userFullName(
-  user?: Pick<User, "firstname" | "middlename" | "lastname" | "full_name"> | null
-): string {
+export function userFullName(user?: UserNameLike | null): string {
   const parts = [user?.firstname, user?.middlename, user?.lastname].filter((p) => p?.trim());
   if (parts.length) return parts.join(" ");
 

@@ -139,7 +139,18 @@ export function MapFilterChips({ chips, onClearAll, className = "" }: ChipsProps
   );
 }
 
-export function buildSearchSuggestions(publications: { title?: string; author?: { firstname?: string; lastname?: string; full_name?: string; affiliation?: string } }[]) {
+export function buildSearchSuggestions(
+  publications: {
+    title?: string;
+    author?: {
+      firstname?: string;
+      middlename?: string;
+      lastname?: string;
+      full_name?: string;
+      affiliation?: string;
+    };
+  }[]
+) {
   const titles = new Set<string>();
   const authors = new Set<string>();
   const institutions = new Set<string>();
