@@ -294,15 +294,7 @@ export function HomePage() {
     [author, affiliation, title, categoryId, subCategoryId, runSearch]
   );
 
-  const clearFilters = useCallback(() => {
-    setAuthor("");
-    setAffiliation("");
-    setTitle("");
-    setLocation("");
-    setMapRegion(null);
-    setMapPickMode(false);
-    setCategoryId("");
-    setSubCategoryId("");
+  const returnToMapOverview = useCallback(() => {
     setResults(null);
     setSearchError(null);
     setAuthorResearch(null);
@@ -313,17 +305,61 @@ export function HomePage() {
     setResultsRailCollapsed(false);
     setSelectedPublicationId(null);
     setFocusPubId(null);
-    setDeepLinkPub(null);
-    setMapViewResetToken((token) => token + 1);
     userDismissedResultsRailRef.current = false;
+    setMapViewResetToken((token) => token + 1);
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setAuthor("");
+    setAffiliation("");
+    setTitle("");
+    setLocation("");
+    setMapRegion(null);
+    setMapPickMode(false);
+    setCategoryId("");
+    setSubCategoryId("");
+    setDeepLinkPub(null);
+    returnToMapOverview();
     skipAutoSearchRef.current = true;
     setSearchParams({}, { replace: true });
-  }, [setSearchParams]);
+  }, [returnToMapOverview, setSearchParams]);
+
+  const hasImmediateMapFilters = Boolean(
+    author.trim() ||
+      affiliation.trim() ||
+      title.trim() ||
+      location.trim() ||
+      mapRegion ||
+      categoryId ||
+      subCategoryId
+  );
+
+  useEffect(() => {
+    if (hasImmediateMapFilters) return;
+    if (
+      results !== null ||
+      resultsRailOpen ||
+      authorResearch ||
+      institutionResearch ||
+      searchError
+    ) {
+      returnToMapOverview();
+    }
+  }, [
+    hasImmediateMapFilters,
+    results,
+    resultsRailOpen,
+    authorResearch,
+    institutionResearch,
+    searchError,
+    returnToMapOverview,
+  ]);
 
   useEffect(() => {
     if (skipAutoSearchRef.current) return;
     if (searchPanelOpen) return;
-    const hasFilter =
+    if (!hasImmediateMapFilters) return;
+    const hasDebouncedFilter =
       debouncedAuthor ||
       debouncedAffiliation ||
       debouncedTitle ||
@@ -331,9 +367,10 @@ export function HomePage() {
       mapRegion ||
       categoryId ||
       subCategoryId;
-    if (!hasFilter) return;
+    if (!hasDebouncedFilter) return;
     void runSearch();
   }, [
+    hasImmediateMapFilters,
     debouncedAuthor,
     debouncedAffiliation,
     debouncedTitle,
@@ -550,10 +587,7 @@ export function HomePage() {
             open={resultsRailOpen}
             collapsed={resultsRailCollapsed}
             onToggleCollapse={() => setResultsRailCollapsed((c) => !c)}
-            onClose={() => {
-              userDismissedResultsRailRef.current = false;
-              clearFilters();
-            }}
+            onClose={clearFilters}
             onApplyMapFilter={applyDeepLinkSearch}
           />
         )}

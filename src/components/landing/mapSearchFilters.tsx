@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { userFullName } from "../../lib/userDisplay";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import { resolveCategoryVisual, resolveSubcategoryFromModel } from "../../lib/taxonomyVisuals";
 import type { Category, SubCategory, SubcategoryVisual as Visual } from "../../types";
@@ -146,10 +147,8 @@ export function buildSearchSuggestions(publications: { title?: string; author?: 
   for (const pub of publications.slice(0, 120)) {
     const t = pub.title?.trim();
     if (t && t.length > 2) titles.add(t);
-    const a =
-      pub.author?.full_name?.trim() ||
-      `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
-    if (a) authors.add(a);
+    const a = userFullName(pub.author);
+    if (a && a !== "Researcher") authors.add(a);
     const aff = pub.author?.affiliation?.trim();
     if (aff) institutions.add(aff);
   }
