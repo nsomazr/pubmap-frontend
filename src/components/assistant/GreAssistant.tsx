@@ -125,10 +125,10 @@ export function GreAssistant() {
   const isStreaming = messages.some((m) => m.streaming);
   const canClear = messages.length > 1 || loading;
   const fabBottomClass = isMapLanding
-    ? "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-4 right-auto sm:bottom-[calc(env(safe-area-inset-bottom)+4.5rem)]"
+    ? "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 left-auto sm:bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] sm:right-6"
     : "bottom-6 right-4 sm:bottom-8 sm:right-8";
   const panelPositionClass = isMapLanding
-    ? "bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] left-4 right-4 sm:right-auto sm:max-w-[380px]"
+    ? "bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] left-4 right-4 sm:left-auto sm:right-6 sm:w-[min(100vw-2rem,380px)] sm:max-w-[380px]"
     : "bottom-4 left-4 right-4 sm:bottom-6 sm:left-auto sm:right-6 sm:w-[min(100vw-2rem,380px)]";
 
   useEffect(() => {

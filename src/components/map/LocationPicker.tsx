@@ -1,6 +1,6 @@
 import L from "leaflet";
 import { Loader2, MapPin, Maximize2, Search, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { createPortal } from "react-dom";
 import {
   Circle,
@@ -27,7 +27,7 @@ import "leaflet/dist/leaflet.css";
 
 const DEFAULT_CENTER: [number, number] = [-6.37, 34.89];
 const DEFAULT_ZOOM = 5;
-/** Map zoom when a region is selected (province / district scale, not street level). */
+const INLINE_MAP_HEIGHT_PX = 320;
 const REGION_CENTER_ZOOM = 8;
 
 const pinIcon = L.icon({
@@ -39,6 +39,7 @@ const pinIcon = L.icon({
 function MapFitRegion({ lat, lng, radiusKm }: { lat: number; lng: number; radiusKm: number }) {
   const map = useMap();
   useEffect(() => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
     const bounds = L.circle([lat, lng], { radius: radiusKm * 1000 }).getBounds();
     map.fitBounds(bounds, { padding: [32, 32], maxZoom: 11 });
   }, [lat, lng, radiusKm, map]);
@@ -48,11 +49,14 @@ function MapFitRegion({ lat, lng, radiusKm }: { lat: number; lng: number; radius
 function MapInvalidateSize() {
   const map = useMap();
   useEffect(() => {
-    const t1 = setTimeout(() => map.invalidateSize(), 50);
-    const t2 = setTimeout(() => map.invalidateSize(), 300);
+    const run = () => map.invalidateSize();
+    const t1 = window.setTimeout(run, 0);
+    const t2 = window.setTimeout(run, 100);
+    const t3 = window.setTimeout(run, 400);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
+      clearTimeout(t3);
     };
   }, [map]);
   return null;
@@ -67,37 +71,40 @@ function MapClickPick({ onPick }: { onPick: (lat: number, lng: number) => void }
   return null;
 }
 
-interface MapViewProps {
+type LocationMapInnerProps = {
   center: [number, number];
   zoom: number;
-  height: string;
+  heightPx: number;
   hasPin: boolean;
   lat: number;
   lng: number;
-  pickEnabled: boolean;
   onPick: (lat: number, lng: number) => void;
   onDragEnd: (lat: number, lng: number) => void;
-}
+  instanceKey: string;
+};
 
-function LocationMapView({
+function LocationMapInner({
   center,
   zoom,
-  height,
+  heightPx,
   hasPin,
   lat,
   lng,
-  pickEnabled,
   onPick,
   onDragEnd,
-  mapKey,
-}: MapViewProps & { mapKey: string }) {
+  instanceKey,
+}: LocationMapInnerProps) {
+  const safeCenter: [number, number] = Number.isFinite(center[0]) && Number.isFinite(center[1])
+    ? center
+    : DEFAULT_CENTER;
+
   return (
     <MapContainer
-      key={mapKey}
-      center={center}
+      key={instanceKey}
+      center={safeCenter}
       zoom={zoom}
-      className="location-picker-map h-full w-full cursor-crosshair"
-      style={{ height }}
+      className="location-picker-map w-full cursor-crosshair"
+      style={{ height: heightPx, minHeight: heightPx }}
       scrollWheelZoom
       zoomControl={false}
     >
@@ -107,7 +114,7 @@ function LocationMapView({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <MapInvalidateSize />
-      {hasPin && (
+      {hasPin && Number.isFinite(lat) && Number.isFinite(lng) && (
         <>
           <MapFitRegion lat={lat} lng={lng} radiusKm={MAP_REGION_RADIUS_KM} />
           <Circle
@@ -123,7 +130,7 @@ function LocationMapView({
           <Marker
             position={[lat, lng]}
             icon={pinIcon}
-            draggable={pickEnabled}
+            draggable
             eventHandlers={{
               dragend: (e) => {
                 const p = e.target.getLatLng();
@@ -133,16 +140,52 @@ function LocationMapView({
           />
         </>
       )}
-      {pickEnabled && <MapClickPick onPick={onPick} />}
+      <MapClickPick onPick={onPick} />
     </MapContainer>
   );
+}
+
+/** Defer Leaflet mount until the panel is visible and sized (avoids blank map / crash). */
+function DeferredLocationMap(props: LocationMapInnerProps & { active: boolean }) {
+  const { active, ...mapProps } = props;
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (!active) {
+      setReady(false);
+      return;
+    }
+    const id = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => setReady(true));
+    });
+    return () => {
+      window.cancelAnimationFrame(id);
+      setReady(false);
+    };
+  }, [active, mapProps.instanceKey]);
+
+  if (!active) return null;
+
+  if (!ready) {
+    return (
+      <div
+        className="flex w-full items-center justify-center rounded-xl bg-slate-100 text-sm text-slate-500"
+        style={{ height: mapProps.heightPx, minHeight: mapProps.heightPx }}
+      >
+        <Loader2 className="mr-2 h-5 w-5 animate-spin text-brand-600" />
+        Loading map…
+      </div>
+    );
+  }
+
+  return <LocationMapInner {...mapProps} />;
 }
 
 type Mode = "search" | "map";
 
 interface Props {
   value: Coordinate;
-  onChange: (coord: Coordinate) => void;
+  onChange: Dispatch<SetStateAction<Coordinate>>;
   institutionDefault?: string;
 }
 
@@ -154,6 +197,8 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [reverseLoading, setReverseLoading] = useState(false);
+  const [inlineMapEpoch, setInlineMapEpoch] = useState(0);
+  const [expandMapEpoch, setExpandMapEpoch] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const appliedInstitutionDefaultRef = useRef(false);
 
@@ -175,27 +220,26 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
 
   const applyCoords = useCallback(
     async (latitude: number, longitude: number, locationName?: string) => {
-      let location = locationName ?? value.location;
-      if (!locationName) {
+      let resolvedName = locationName;
+      if (!resolvedName) {
         setReverseLoading(true);
         try {
-          const name = await reverseGeocodeRegion(latitude, longitude);
-          if (name) location = name;
+          resolvedName = (await reverseGeocodeRegion(latitude, longitude)) ?? undefined;
         } catch {
           /* keep existing label */
         } finally {
           setReverseLoading(false);
         }
       }
-      onChange({
-        ...value,
-        location,
+      onChange((prev) => ({
+        ...prev,
+        location: resolvedName ?? prev.location,
         latitude: String(latitude),
         longitude: String(longitude),
-        institution: value.institution || institutionDefault || "",
-      });
+        institution: prev.institution || institutionDefault || "",
+      }));
     },
-    [onChange, value, institutionDefault]
+    [onChange, institutionDefault]
   );
 
   const regionLabelFromResult = (displayName: string) => {
@@ -208,8 +252,19 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
     const label = regionLabelFromResult(r.display_name);
     setQuery(label);
     setResults([]);
-    applyCoords(parseFloat(r.lat), parseFloat(r.lon), label);
+    void applyCoords(parseFloat(r.lat), parseFloat(r.lon), label);
+    openMapMode();
+  };
+
+  const openMapMode = () => {
     setMode("map");
+    setInlineMapEpoch((n) => n + 1);
+  };
+
+  const openExpandedMap = () => {
+    openMapMode();
+    setExpanded(true);
+    setExpandMapEpoch((n) => n + 1);
   };
 
   useEffect(() => {
@@ -217,10 +272,11 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setExpanded(false);
     };
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKey);
     };
   }, [expanded]);
@@ -253,34 +309,27 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
     };
   }, [query, mode]);
 
-  const mapCenter: [number, number] = hasPin ? [lat, lng] : DEFAULT_CENTER;
+  const mapCenter: [number, number] =
+    hasPin && Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : DEFAULT_CENTER;
   const mapZoom = hasPin ? REGION_CENTER_ZOOM : DEFAULT_ZOOM;
   const regionHint = formatRegionRadiusLabel(MAP_REGION_RADIUS_KM);
 
-  const mapProps: MapViewProps & { mapKey: string } = {
+  const sharedMapProps = {
     center: mapCenter,
     zoom: mapZoom,
-    height: "100%",
     hasPin,
     lat,
     lng,
-    pickEnabled: true,
     onPick: applyCoords,
     onDragEnd: applyCoords,
-    mapKey: expanded ? "location-picker-expanded" : "location-picker-inline",
-  };
-
-  const openExpandedMap = () => {
-    setMode("map");
-    setExpanded(true);
   };
 
   const expandOverlay =
     expanded &&
     createPortal(
       <div className="location-picker-expand fixed inset-0 z-[2000] flex flex-col bg-slate-900/50 p-3 sm:p-6">
-        <div className="mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-          <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
+        <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
             <div>
               <p className="font-semibold text-ink">Pick study region</p>
               <p className="text-xs text-slate-500">
@@ -297,10 +346,15 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
             </button>
           </div>
           <div className="relative min-h-0 flex-1">
-            <LocationMapView {...mapProps} mapKey="location-picker-expanded" />
+            <DeferredLocationMap
+              active={expanded}
+              {...sharedMapProps}
+              heightPx={480}
+              instanceKey={`expand-${expandMapEpoch}`}
+            />
           </div>
           {hasPin && (
-            <div className="border-t border-slate-100 px-4 py-2 text-xs text-slate-600 sm:px-5">
+            <div className="shrink-0 border-t border-slate-100 px-4 py-2 text-xs text-slate-600 sm:px-5">
               <span className="font-medium text-slate-700">Coordinates: </span>
               {formatCoords(value.latitude, value.longitude)}
               {value.location && (
@@ -330,7 +384,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
         </button>
         <button
           type="button"
-          onClick={() => setMode("map")}
+          onClick={openMapMode}
           className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
             mode === "map"
               ? "bg-white text-brand-700 shadow-sm"
@@ -343,62 +397,62 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
       </div>
 
       {mode === "search" && (
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-slate-700">Find a location</label>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g. Dar es Salaam, University of Nairobi, Cape Town…"
-              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
-            />
-            {searching && (
-              <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-brand-600" />
+        <>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">Find a location</label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="e.g. Dar es Salaam, University of Nairobi, Cape Town…"
+                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+              />
+              {searching && (
+                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-brand-600" />
+              )}
+            </div>
+            {searchError && <p className="text-sm text-amber-700">{searchError}</p>}
+            {results.length > 0 && (
+              <ul className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                {results.map((r) => (
+                  <li key={r.place_id}>
+                    <button
+                      type="button"
+                      onClick={() => selectResult(r)}
+                      className="w-full px-4 py-3 text-left text-sm transition hover:bg-brand-50"
+                    >
+                      <span className="font-medium text-ink">
+                        {r.display_name.split(",").slice(0, 2).join(",")}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-slate-500 line-clamp-1">
+                        {r.display_name}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-          {searchError && <p className="text-sm text-amber-700">{searchError}</p>}
-          {results.length > 0 && (
-            <ul className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
-              {results.map((r) => (
-                <li key={r.place_id}>
-                  <button
-                    type="button"
-                    onClick={() => selectResult(r)}
-                    className="w-full px-4 py-3 text-left text-sm transition hover:bg-brand-50"
-                  >
-                    <span className="font-medium text-ink">
-                      {r.display_name.split(",").slice(0, 2).join(",")}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-slate-500 line-clamp-1">
-                      {r.display_name}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
 
-      {mode === "search" && (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-8 text-center">
-          <MapPin className="mx-auto h-8 w-8 text-brand-600/80" aria-hidden />
-          <p className="mt-3 text-sm font-medium text-ink">Need to click the map?</p>
-          <p className="mt-1 text-sm text-slate-600">
-            Switch to <span className="font-semibold">Pick on map</span> or open the expanded map to place
-            your study region.
-          </p>
-          <button
-            type="button"
-            onClick={openExpandedMap}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-300 hover:text-brand-700"
-          >
-            <Maximize2 className="h-4 w-4" />
-            Open map
-          </button>
-        </div>
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-8 text-center">
+            <MapPin className="mx-auto h-8 w-8 text-brand-600/80" aria-hidden />
+            <p className="mt-3 text-sm font-medium text-ink">Need to click the map?</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Switch to <span className="font-semibold">Pick on map</span> or open the expanded map to place
+              your study region.
+            </p>
+            <button
+              type="button"
+              onClick={openExpandedMap}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-300 hover:text-brand-700"
+            >
+              <Maximize2 className="h-4 w-4" />
+              Open map
+            </button>
+          </div>
+        </>
       )}
 
       {mode === "map" && !expanded && (
@@ -418,9 +472,12 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
             </button>
           </div>
           <div className="location-picker-frame relative isolate overflow-hidden rounded-xl border border-slate-200 shadow-inner">
-            <div className="h-[min(320px,50vh)] min-h-[240px] w-full sm:h-[320px]">
-              <LocationMapView {...mapProps} height="100%" mapKey="location-picker-inline" />
-            </div>
+            <DeferredLocationMap
+              active={mode === "map" && !expanded}
+              {...sharedMapProps}
+              heightPx={INLINE_MAP_HEIGHT_PX}
+              instanceKey={`inline-${inlineMapEpoch}`}
+            />
           </div>
           {reverseLoading && (
             <p className="mt-2 text-xs text-slate-500">Looking up place name…</p>

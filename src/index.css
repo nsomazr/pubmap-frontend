@@ -1256,16 +1256,18 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Keep picker tiles inside the card — avoids map layers covering the dashboard */
+/* Location picker: clip tiles to the card without CSS contain (breaks Leaflet painting) */
 .location-picker-frame {
-  contain: layout paint;
   position: relative;
   z-index: 0;
+  overflow: hidden;
+  isolation: isolate;
 }
 
 .location-picker-frame .leaflet-container {
-  position: relative;
-  z-index: 0;
+  width: 100%;
+  min-height: 240px;
+  background: #e8eef4;
 }
 
 .location-picker-frame .leaflet-bottom.leaflet-right,
