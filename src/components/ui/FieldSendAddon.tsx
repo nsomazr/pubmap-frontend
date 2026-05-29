@@ -70,7 +70,11 @@ function SubmitButton({
       disabled={disabled}
       aria-label={submitAriaLabel}
       className={`inline-flex shrink-0 items-center justify-center gap-1.5 font-semibold transition disabled:cursor-not-allowed ${
-        compact ? "h-8 rounded-lg px-2.5 text-xs" : "h-9 rounded-xl px-3 text-sm"
+        compact
+          ? submitLabel
+            ? "h-8 rounded-lg px-2.5 text-xs"
+            : "h-8 w-8 rounded-lg p-0"
+          : "h-9 rounded-xl px-3 text-sm"
       } ${submitBtnClass[variant]}`}
     >
       {loading ? (

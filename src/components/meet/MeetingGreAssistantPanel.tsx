@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { Bot, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Bot, Loader2, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { InputWithSendAddon, TextareaWithSendAddon } from "../ui/FieldSendAddon";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
@@ -279,9 +279,8 @@ export function MeetingGreAssistantPanel({
           loading={askMutation.isPending}
           disabled={askMutation.isPending}
           rows={compact ? 2 : 2}
-          submitLabel="Ask"
-          submitAriaLabel="Ask GRE Assistant"
-          icon={Sparkles}
+          submitAriaLabel="Send question"
+          icon={ArrowRight}
           variant={isDark ? "dark" : "light"}
         />
         {error && (

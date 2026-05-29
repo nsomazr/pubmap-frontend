@@ -206,7 +206,7 @@ export function MeetRoomControlsFab({
 
   return (
     <div
-      className={`fixed z-[2147483645] w-auto ${position ? "pointer-events-auto" : "pointer-events-none bottom-7 left-5 sm:bottom-8 sm:left-6"}`}
+      className={`fixed z-[2147483645] w-auto ${position ? "pointer-events-auto" : "pointer-events-none bottom-7 left-7 sm:bottom-8 sm:left-9"}`}
       style={
         position
           ? { zIndex: 2147483647, left: `${position.x}px`, top: `${position.y}px` }
@@ -219,7 +219,7 @@ export function MeetRoomControlsFab({
           type="button"
           onPointerDown={(event) => {
             const rect = buttonRef.current?.getBoundingClientRect();
-            const current = position ?? clampToViewport(rect?.left ?? 24, rect?.top ?? window.innerHeight - 84);
+            const current = position ?? clampToViewport(rect?.left ?? 36, rect?.top ?? window.innerHeight - 84);
             dragStateRef.current = {
               pointerId: event.pointerId,
               startX: event.clientX,
