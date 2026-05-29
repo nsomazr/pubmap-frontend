@@ -1,3 +1,4 @@
+import { cleanFunderNames } from "../../lib/manuscriptFieldLimits";
 import { metaCountValue } from "../../lib/formatMetaCount";
 import { formatGrePaperTitle, grePaperCode } from "../../lib/grePaperTitle";
 import { assets } from "../../lib/brand";
@@ -124,8 +125,9 @@ function buildMetaRows({
   if (location) {
     rows.push({ label: "Area", value: location });
   }
-  if (funder?.trim()) {
-    rows.push({ label: "Funder", value: funder.trim() });
+  const funderNames = cleanFunderNames(funder ?? "");
+  if (funderNames) {
+    rows.push({ label: "Funder", value: funderNames });
   }
   rows.push({ label: "Views", value: metaCountValue(viewsCount) });
   rows.push({ label: "Downloads", value: metaCountValue(downloadsCount) });

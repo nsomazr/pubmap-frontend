@@ -31,11 +31,19 @@ export function countWords(value: string): number {
   return text.split(/\s+/).filter(Boolean).length;
 }
 
+/** Remove trailing ellipsis / continuation dots from summarized GRE fields. */
+export function stripContinuationMarkers(value: string): string {
+  let text = (value || "").trimEnd();
+  if (!text) return "";
+  text = text.replace(/(?:…|\.{3,})\s*$/u, "");
+  return text.replace(/[ .,;:]+$/u, "").trimEnd();
+}
+
 export function truncateToWordLimit(text: string, maxWords: number): string {
   if (maxWords <= 0) return "";
   const words = text.trim().split(/\s+/).filter(Boolean);
-  if (words.length <= maxWords) return text.trim();
-  return `${words.slice(0, maxWords).join(" ")}…`;
+  if (words.length <= maxWords) return stripContinuationMarkers(text.trim());
+  return stripContinuationMarkers(words.slice(0, maxWords).join(" "));
 }
 
 export function truncateHtmlToWordLimit(html: string, maxWords: number): string {
@@ -89,7 +97,8 @@ const NARRATIVE_FUNDER =
   /\b(?:despite|although|however|demonstrat|promising|our study|this work|we thank|the authors?|findings?|results?|conclusion)\b/i;
 const ORG_SUFFIX =
   /\b(?:foundation|university|institute|institution|agency|council|commission|ministry|laborator(?:y|ies)|organisation|organization|programme|program|academy|society|trust|fund|bank|hospital|centre|center|college)\b/i;
-const KNOWN_FUNDER_ACRONYM = /\b(?:NSF|NIH|USAID|DFID|ERC|EU|NASA|DARPA|WHO|UNICEF)\b/i;
+const KNOWN_FUNDER_ACRONYM = /\b(?:NSF|NIH|USAID|DFID|ERC|EU|NASA|DARPA|WHO|UNICEF|Gates Foundation)\b/i;
+const SLASH_FUNDER_TOKEN = /^[A-Z][A-Za-z0-9]{1,24}(?:\/[A-Z][A-Za-z0-9]{1,24})+$/;
 
 /** Keep organization names only — mirrors backend clean_funder_text. */
 export function cleanFunderNames(value: string): string {
@@ -97,20 +106,25 @@ export function cleanFunderNames(value: string): string {
   if (!text) return "";
 
   const candidates: string[] = [];
-  const add = (raw: string) => {
+  const add = (raw: string, fromClause = false) => {
     const name = raw.replace(/\s+/g, " ").trim().replace(/^[,;.\s]+|[,;.\s]+$/g, "");
-    if (name.length < 3 || name.length > 120) return;
+    if (name.length < 2 || name.length > 120) return;
     if (NARRATIVE_FUNDER.test(name)) return;
     if (!/[A-Za-z]/.test(name)) return;
     if (candidates.some((c) => c.toLowerCase() === name.toLowerCase())) return;
-    if (ORG_SUFFIX.test(name) || KNOWN_FUNDER_ACRONYM.test(name)) {
+    const isOrg = ORG_SUFFIX.test(name) || KNOWN_FUNDER_ACRONYM.test(name);
+    const isSlash = SLASH_FUNDER_TOKEN.test(name);
+    const isAcronym = /^[A-Z][A-Z0-9]{1,11}$/.test(name);
+    const isClauseName = fromClause && /^[A-Z][A-Za-z0-9&./-]{1,40}$/.test(name);
+    if (isOrg || isSlash || isAcronym || isClauseName) {
       candidates.push(name);
     }
   };
 
-  const fundedBy = [...text.matchAll(/(?:funded|supported|financed|sponsored)\s+by\s+([^.;]+)/gi)];
-  for (const match of fundedBy) {
-    for (const part of match[1].split(/,|\band\b/i)) add(part);
+  const fromClause =
+    /(?:funded|supported|financed|sponsored)\s+by|(?:financial\s+)?support\s+from|without\s+financial\s+support\s+from|funding\s+from|grant\s+from)\s+([^.;]+)/gi;
+  for (const match of text.matchAll(fromClause)) {
+    for (const part of match[1].split(/,|\band\b|\//i)) add(part, true);
   }
 
   const orgMatches = [
@@ -125,7 +139,7 @@ export function cleanFunderNames(value: string): string {
       const trimmed = part
         .trim()
         .replace(/^(?:we thank|thanks to|acknowledg(?:e)?ments?|funding from|grant from)\s*/i, "");
-      add(trimmed);
+      for (const sub of trimmed.split("/")) add(sub);
     }
   }
 

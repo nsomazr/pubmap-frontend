@@ -12,6 +12,7 @@ export interface PublicationGre {
   gre_doi?: string | null;
   gre_doi_url?: string | null;
   author_summary?: string;
+  authors_comment?: string;
   summary_pdf_path?: string;
   has_summary_pdf?: boolean;
 }

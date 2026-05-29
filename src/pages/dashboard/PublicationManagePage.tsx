@@ -42,6 +42,7 @@ import {
   PublicationAccessTypeGate,
 } from "../../components/publication/PublicationAccessTypeGate";
 import { PublicationAccessFields } from "../../components/publication/PublicationAccessFields";
+import { AuthorsCommentSection } from "../../components/publication/AuthorsCommentSection";
 import { PublicationPaperPreview } from "../../components/publication/PublicationPaperPreview";
 import { SubmissionReviewDialog } from "../../components/publication/SubmissionReviewDialog";
 import { Textarea } from "../../components/ui/Textarea";
@@ -1206,6 +1207,10 @@ export function PublicationManagePage() {
               />
             )}
           </div>
+        </ComposerStage>
+
+        <ComposerStage number="7" title="Authors' comment">
+          <AuthorsCommentSection gre={gre} onChange={setGre} disabled={isReadOnly} />
         </ComposerStage>
 
         <div

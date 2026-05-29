@@ -12,6 +12,7 @@ import { StatusBadge } from "../dashboard/StatusBadge";
 import { Button } from "../ui/Button";
 import { Textarea } from "../ui/Textarea";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
+import { cleanFunderNames } from "../../lib/manuscriptFieldLimits";
 import api from "../../lib/api";
 import { publicationApiSegment } from "../../lib/publicationPaths";
 import { abstractPlainText } from "../../lib/abstractText";
@@ -83,6 +84,10 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
     if (!raw?.length) return [];
     return raw.map((k) => k.trim()).filter(Boolean);
   }, [reviewPub.keywords]);
+  const funderNames = useMemo(
+    () => cleanFunderNames(reviewPub.funder ?? ""),
+    [reviewPub.funder]
+  );
 
   const acceptMutation = useMutation({
     mutationFn: () =>
@@ -178,14 +183,14 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
               </div>
             )}
 
-            {reviewPub.funder?.trim() && (
+            {funderNames ? (
               <div>
                 <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
                   Funder
                 </h4>
-                <p className="mt-1 text-sm text-slate-700">{reviewPub.funder.trim()}</p>
+                <p className="mt-1 text-sm text-slate-700">{funderNames}</p>
               </div>
-            )}
+            ) : null}
 
             {reviewPub.coordinates && (
               <div>
@@ -264,6 +269,17 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
               </h4>
               <p className="mt-2 text-sm leading-relaxed text-slate-700">
                 {reviewPub.gre.author_summary.trim()}
+              </p>
+            </div>
+          )}
+
+          {reviewPub.gre?.authors_comment?.trim() && (
+            <div className="border-t border-slate-100 p-4 sm:p-5">
+              <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                Authors&apos; comment
+              </h4>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                {reviewPub.gre.authors_comment.trim()}
               </p>
             </div>
           )}
