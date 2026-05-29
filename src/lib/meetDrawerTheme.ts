@@ -13,7 +13,7 @@ export const meetDrawer = {
   badgeAccent:
     "rounded-full bg-cyan-950/35 px-2.5 py-1 font-semibold text-cyan-200/90 ring-1 ring-cyan-900/45",
   input:
-    "min-w-0 flex-1 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-800 focus:ring-2 focus:ring-cyan-950/40",
+    "min-w-0 flex-1 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-800 focus:ring-0 focus:shadow-[0_0_0_3px_rgba(14,116,144,0.25)]",
   muted: "text-sm text-slate-400",
   hostHint: "text-sm text-slate-400",
   btn: "h-9 w-full !border-slate-600 !bg-slate-800 !text-slate-100 hover:!bg-slate-700",

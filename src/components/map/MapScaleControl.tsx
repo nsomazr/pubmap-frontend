@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
+import { safeMapOp } from "../../lib/safeLeaflet";
 
 export function MapScaleControl() {
   const map = useMap();
@@ -10,9 +11,9 @@ export function MapScaleControl() {
       imperial: false,
       position: "bottomleft",
     });
-    scale.addTo(map);
+    safeMapOp(map, (m) => scale.addTo(m));
     return () => {
-      scale.remove();
+      safeMapOp(map, () => scale.remove());
     };
   }, [map]);
 

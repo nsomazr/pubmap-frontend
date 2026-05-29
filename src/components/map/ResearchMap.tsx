@@ -1,4 +1,6 @@
-import { MapContainer, useMap, ZoomControl } from "react-leaflet";
+import { useMap, ZoomControl } from "react-leaflet";
+import { GreMapContainer } from "./GreMapContainer";
+import { safeMapOp } from "../../lib/safeLeaflet";
 import L from "leaflet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Publication } from "../../types";
@@ -48,8 +50,10 @@ function FitBounds({ pubs }: { pubs: Publication[] }) {
           ] as [number, number]
       );
     if (coords.length > 0) {
-      map.fitBounds(L.latLngBounds(coords), { padding: [60, 60], maxZoom: 8 });
-      lastFitKeyRef.current = pubKey;
+      safeMapOp(map, (m) => {
+        m.fitBounds(L.latLngBounds(coords), { padding: [60, 60], maxZoom: 8 });
+        lastFitKeyRef.current = pubKey;
+      });
     }
   }, [pubKey, pubs, map]);
 
@@ -62,7 +66,9 @@ function FitMapRegion({ region }: { region: MapRegionSelection }) {
     const bounds = L.circle([region.lat, region.lng], {
       radius: region.radiusKm * 1000,
     }).getBounds();
-    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
+    safeMapOp(map, (m) => {
+      m.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
+    });
   }, [region, map]);
   return null;
 }
@@ -151,7 +157,7 @@ export function ResearchMap({
         />
       )}
 
-      <MapContainer
+      <GreMapContainer
         center={[-6.37, 34.89]}
         zoom={5}
         className={`h-full w-full ${embedded ? "rounded-none" : ""}`}
@@ -196,7 +202,7 @@ export function ResearchMap({
           clustered={showAdvanced ? displayPrefs.showClusters : true}
           onPublicationSelect={onPublicationSelect}
         />
-      </MapContainer>
+      </GreMapContainer>
     </div>
   );
 }

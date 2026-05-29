@@ -1,6 +1,7 @@
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
+import { safeMapOp } from "../../lib/safeLeaflet";
 
 interface Props {
   expanded: boolean;
@@ -12,7 +13,7 @@ function MapResizeWatcher({ expanded }: { expanded: boolean }) {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      map.invalidateSize({ animate: false });
+      safeMapOp(map, (m) => m.invalidateSize({ animate: false }));
     }, 60);
     return () => window.clearTimeout(timer);
   }, [expanded, map]);

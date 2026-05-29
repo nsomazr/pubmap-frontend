@@ -7,6 +7,7 @@ import { buildPublicationPopupHtml } from "./publicationPopup";
 import { attachPublicationPopupSummary } from "./publicationPopupSummary";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
+import { safeMapOff, safeMapOp, safeRemoveLayer } from "../../lib/safeLeaflet";
 
 const FOCUS_ZOOM = 13;
 const LANDING_POPUP_BOTTOM_PAD = 148;
@@ -132,7 +133,7 @@ export function PublicationMarkerLayer({
       if (useSheet) onPublicationSelectRef.current?.(null);
     };
     if (useSheet) {
-      map.on("click", onMapClick);
+      safeMapOp(map, (m) => m.on("click", onMapClick));
     }
 
     const detachSummary = useSheet ? () => {} : attachPublicationPopupSummary(map);
@@ -141,14 +142,14 @@ export function PublicationMarkerLayer({
       if (cluster) {
         cluster.off("clusterclick", onClusterClick);
         cluster.off("spiderfied", onSpiderfied);
-        map.removeLayer(cluster);
+        safeRemoveLayer(map, cluster);
         cluster.clearLayers();
       } else if (layerGroup) {
-        map.removeLayer(layerGroup);
+        safeRemoveLayer(map, layerGroup);
         layerGroup.clearLayers();
       }
       if (useSheet) {
-        map.off("click", onMapClick);
+        safeMapOff(map, "click", onMapClick);
       }
       detachSummary();
       clusterRef.current = null;
@@ -177,22 +178,24 @@ export function PublicationMarkerLayer({
 
     lastFocusRef.current = focusPublicationId;
     const zoom = embedded ? EMBEDDED_FOCUS_ZOOM : FOCUS_ZOOM;
-    map.flyTo([lat, lng], zoom, { duration: 0.85 });
+    safeMapOp(map, (m) => m.flyTo([lat, lng], zoom, { duration: 0.85 }));
 
     const timer = window.setTimeout(() => {
-      const reveal = () => {
-        if (embedded) return;
-        if (useSheet) {
-          onPublicationSelectRef.current?.(pub);
-          return;
+      safeMapOp(map, () => {
+        const reveal = () => {
+          if (embedded) return;
+          if (useSheet) {
+            onPublicationSelectRef.current?.(pub);
+            return;
+          }
+          marker.openPopup();
+        };
+        if (cluster) {
+          cluster.zoomToShowLayer(marker, reveal);
+        } else {
+          reveal();
         }
-        marker.openPopup();
-      };
-      if (cluster) {
-        cluster.zoomToShowLayer(marker, reveal);
-      } else {
-        reveal();
-      }
+      });
     }, 900);
 
     return () => window.clearTimeout(timer);

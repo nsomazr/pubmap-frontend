@@ -212,9 +212,46 @@ body {
   transform: scale(0.985);
 }
 
-:focus-visible {
+:focus-visible:not(:where(input, textarea, select)) {
   outline: 2px solid color-mix(in srgb, var(--color-brand-600) 85%, white);
   outline-offset: 2px;
+}
+
+/* Drop Tailwind focus rings on native fields (avoids inner double-border look) */
+:where(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+    textarea,
+    select
+  ):focus,
+:where(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+    textarea,
+    select
+  ):focus-visible {
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
+}
+
+/* Single outer glow on focus — no inner rectangle from outline + ring */
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+  textarea,
+  select).gre-field:focus,
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+  textarea,
+  select).gre-field:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-500) 16%, transparent);
+}
+
+.gre-field-composer:focus-within {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-500) 16%, transparent);
+}
+
+.gre-field-composer--dark:focus-within {
+  border-color: rgb(22 78 99);
+  box-shadow: 0 0 0 3px color-mix(in srgb, rgb(14 116 144) 35%, transparent);
 }
 
 .gre-stagger > * {
@@ -1191,6 +1228,8 @@ body {
 .landing-page {
   min-height: 100vh;
   min-height: 100dvh;
+  /* Clearance for floating PublicNav (logo + actions row) */
+  --gre-map-nav-clearance: 4.75rem;
 }
 
 .landing-page--map-expanded {
@@ -1199,6 +1238,7 @@ body {
   z-index: 1900;
   min-height: 100dvh;
   background: #e2e8f0;
+  --gre-map-nav-clearance: 0.75rem;
 }
 
 .landing-page--map-expanded main {
@@ -1228,12 +1268,13 @@ body {
 }
 
 .landing-page--map-expanded .leaflet-top.leaflet-right {
-  top: calc(0.75rem + env(safe-area-inset-top, 0px));
+  top: calc(var(--gre-map-nav-clearance, 0.75rem) + env(safe-area-inset-top, 0px));
 }
 
 .map-expand-control {
-  top: calc(0.75rem + env(safe-area-inset-top, 0px));
-  right: 0.75rem;
+  top: calc(var(--gre-map-nav-clearance, 4.75rem) + env(safe-area-inset-top, 0px));
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  left: auto;
   z-index: 1250;
   pointer-events: none;
 }
@@ -2429,8 +2470,11 @@ body {
   padding-bottom: 0.625rem;
 }
 
-.gre-manuscript-group .gre-field:focus {
+.gre-manuscript-group .gre-field:focus,
+.gre-manuscript-group .gre-field:focus-visible {
   border-color: #60a5fa;
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-500) 16%, transparent);
 }
 
 .gre-ckeditor-host--cms .ck-editor__editable {

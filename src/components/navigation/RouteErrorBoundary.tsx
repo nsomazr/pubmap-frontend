@@ -2,8 +2,19 @@ import { AlertCircle, RefreshCw } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-type Props = { children: ReactNode };
+type Props = {
+  children: ReactNode;
+  /** When any value changes (e.g. route path), recover from a previous render error. */
+  resetKeys?: readonly unknown[];
+};
 type State = { error: Error | null };
+
+function resetKeysChanged(prev: readonly unknown[] | undefined, next: readonly unknown[] | undefined): boolean {
+  const a = prev ?? [];
+  const b = next ?? [];
+  if (a.length !== b.length) return true;
+  return a.some((value, index) => !Object.is(value, b[index]));
+}
 
 function isChunkLoadError(error: Error): boolean {
   const msg = error.message.toLowerCase();
@@ -24,6 +35,12 @@ export class RouteErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[GRE] Route render failed", error, info.componentStack);
+  }
+
+  componentDidUpdate(prevProps: Props) {
+    if (this.state.error && resetKeysChanged(prevProps.resetKeys, this.props.resetKeys)) {
+      this.setState({ error: null });
+    }
   }
 
   private handleRetry = () => {
@@ -65,6 +82,7 @@ export class RouteErrorBoundary extends Component<Props, State> {
             </button>
             <Link
               to="/"
+              onClick={() => this.setState({ error: null })}
               className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
               Back to map

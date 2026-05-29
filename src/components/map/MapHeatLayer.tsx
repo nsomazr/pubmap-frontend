@@ -3,6 +3,7 @@ import { useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet.heat/dist/leaflet-heat.js";
 import type { Publication } from "../../types";
+import { safeMapOp, safeRemoveLayer } from "../../lib/safeLeaflet";
 
 interface Props {
   publications: Publication[];
@@ -46,7 +47,7 @@ export function MapHeatLayer({ publications, enabled }: Props) {
     }
 
     return () => {
-      map.removeLayer(heat);
+      safeRemoveLayer(map, heat);
     };
   }, [map, publications, enabled]);
 

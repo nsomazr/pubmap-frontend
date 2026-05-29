@@ -268,7 +268,7 @@ export function GreAssistant() {
               loading={loading}
               disabled={loading}
               submitAriaLabel="Send message"
-              className="[&_input]:shadow-none [&_input]:focus:ring-1 [&_input]:focus:ring-brand-200"
+              className="[&_input]:shadow-none"
             />
           </div>
         </div>

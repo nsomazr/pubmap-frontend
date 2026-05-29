@@ -169,7 +169,7 @@ function PickerDropdown({
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Type to filter…"
               autoFocus
-              className="w-full rounded-lg border border-slate-200/80 bg-white py-2 pl-8 pr-3 text-sm text-ink placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+              className="w-full rounded-lg border border-slate-200/80 bg-white py-2 pl-8 pr-3 text-sm text-ink placeholder:text-slate-400 focus:border-brand-400 gre-field focus:outline-none focus:ring-0"
             />
           </div>
         </div>

@@ -172,7 +172,7 @@ export function ScrollableSelect({
           if (disabled) return;
           setOpen((current) => !current);
         }}
-        className={`flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white py-2.5 text-left text-sm shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-60 ${triggerClassName}`}
+        className={`flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white py-2.5 text-left text-sm shadow-sm transition focus:border-brand-500 gre-field focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60 ${triggerClassName}`}
       >
         {icon && <span className="shrink-0 text-slate-400">{icon}</span>}
         <span className={`min-w-0 flex-1 truncate ${selected ? "text-ink" : "text-slate-400"}`}>

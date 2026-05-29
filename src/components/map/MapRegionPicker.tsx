@@ -12,7 +12,8 @@ export function MapRegionPicker({ enabled, region, onPick }: Props) {
   useMapEvents({
     click(event) {
       if (!enabled) return;
-      onPick(event.latlng.lat, event.latlng.lng);
+      const { lat, lng } = event.latlng;
+      window.setTimeout(() => onPick(lat, lng), 0);
     },
   });
 

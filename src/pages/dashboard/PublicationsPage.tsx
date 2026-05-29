@@ -138,12 +138,12 @@ export function PublicationsPage() {
             {canReview && (
               <Link
                 to="/dashboard/review"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/15 px-4 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition hover:bg-white/25"
+                className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-900 shadow-sm transition hover:border-violet-300 hover:bg-violet-100"
               >
-                <Clock className="h-4 w-4" />
+                <Clock className="h-4 w-4 shrink-0 text-violet-700" />
                 Review queue
                 {(counts?.["1"] ?? 0) > 0 && (
-                  <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold">
+                  <span className="rounded-full bg-violet-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
                     {counts?.["1"]}
                   </span>
                 )}
@@ -151,7 +151,7 @@ export function PublicationsPage() {
             )}
             <Link
               to="/dashboard/publications/new"
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-brand-800 shadow-md transition hover:bg-brand-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
             >
               <Plus className="h-4 w-4" />
               New publication

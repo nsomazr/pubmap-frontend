@@ -132,7 +132,7 @@ function MapSearchField({
 }) {
   return (
     <div className="relative">
-      <label className="map-search-field flex items-start gap-3 rounded-xl border border-slate-100/90 bg-slate-50/60 px-3 py-2.5 transition focus-within:border-brand-200 focus-within:bg-white focus-within:shadow-sm focus-within:ring-2 focus-within:ring-brand-100/90">
+      <label className="map-search-field gre-field-composer flex items-start gap-3 rounded-xl border border-slate-100/90 bg-slate-50/60 px-3 py-2.5 transition focus-within:border-brand-300 focus-within:bg-white">
         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm ring-1 ring-slate-100/90">
           <Icon className="h-4 w-4" aria-hidden />
         </span>

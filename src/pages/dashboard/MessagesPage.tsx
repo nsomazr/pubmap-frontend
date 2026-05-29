@@ -493,7 +493,7 @@ export function MessagesPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name or area…"
-                className="w-full rounded-xl border-0 bg-slate-100/90 py-2.5 pl-9 pr-3 text-sm text-ink placeholder:text-slate-400 ring-1 ring-slate-200/60 transition focus:bg-white focus:ring-2 focus:ring-brand-200/80 focus:outline-none"
+                className="gre-field w-full rounded-xl border-0 bg-slate-100/90 py-2.5 pl-9 pr-3 text-sm text-ink placeholder:text-slate-400 ring-1 ring-slate-200/60 transition focus:bg-white focus:outline-none focus:ring-0"
               />
             </div>
           </div>
@@ -644,11 +644,11 @@ export function MessagesPage() {
                       return (
                         <div
                           key={m.id}
-                          className={`group/message flex flex-col gap-1 ${mine ? "items-end" : "items-start"}`}
+                          className={`group/message flex w-full flex-col gap-1 ${mine ? "items-end" : "items-start"}`}
                         >
                           <div
-                            className={`flex max-w-[min(88%,26rem)] items-end gap-1.5 ${
-                              mine ? "flex-row-reverse" : "flex-row"
+                            className={`flex w-full max-w-[min(100%,26rem)] flex-col gap-1.5 ${
+                              mine ? "items-end" : "items-start"
                             }`}
                           >
                             {deleted ? (
@@ -664,7 +664,7 @@ export function MessagesPage() {
                             ) : (
                               <>
                                 <div
-                                  className={`px-4 py-2.5 text-[15px] leading-relaxed ${
+                                  className={`w-full px-4 py-2.5 text-[15px] leading-relaxed break-words ${
                                     mine
                                       ? "rounded-2xl rounded-br-md bg-brand-600 text-white shadow-sm shadow-brand-600/15"
                                       : "rounded-2xl rounded-bl-md border border-slate-200/70 bg-white text-slate-800 shadow-sm"
@@ -673,28 +673,28 @@ export function MessagesPage() {
                                   {body}
                                 </div>
                                 <div
-                                  className={`mb-1 flex shrink-0 items-center gap-0.5 rounded-lg border border-slate-200/90 bg-white p-0.5 shadow-sm opacity-0 transition group-hover/message:opacity-100 focus-within:opacity-100 ${
-                                    mine ? "order-first" : ""
-                                  }`}
+                                  className="flex items-center gap-0.5 rounded-lg border border-slate-200/90 bg-white p-0.5 shadow-sm opacity-100 transition focus-within:opacity-100 sm:opacity-0 sm:group-hover/message:opacity-100"
+                                  role="toolbar"
+                                  aria-label="Message actions"
                                 >
                                   <button
                                     type="button"
                                     onClick={() => handleCopyMessage(body)}
-                                    className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                    className="flex h-9 w-9 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-800 sm:h-7 sm:w-7"
                                     aria-label="Copy message"
                                     title="Copy"
                                   >
-                                    <Copy className="h-3.5 w-3.5" />
+                                    <Copy className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                                   </button>
                                   <button
                                     type="button"
                                     disabled={deleteMessageMutation.isPending}
                                     onClick={() => void handleDeleteMessage(m.id)}
-                                    className="flex h-7 w-7 items-center justify-center rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
+                                    className="flex h-9 w-9 items-center justify-center rounded-md text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-40 sm:h-7 sm:w-7"
                                     aria-label="Delete message"
                                     title="Delete"
                                   >
-                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                                   </button>
                                 </div>
                               </>
@@ -719,7 +719,7 @@ export function MessagesPage() {
                   <p className="mb-2 text-sm text-red-600">{sendError || draftError}</p>
                 )}
 
-                <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80 transition focus-within:ring-2 focus-within:ring-brand-200/60">
+                <div className="gre-field-composer overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition">
                   {showDraftMenu && (
                     <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-100 px-3 py-2">
                       <span className="mr-1 text-[10px] font-medium text-slate-400 uppercase">

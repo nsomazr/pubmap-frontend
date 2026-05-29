@@ -1,5 +1,5 @@
 import L from "leaflet";
-import { buildPublicationChatPath } from "../../lib/publicationChat";
+import { safeMapOff, safeMapOp } from "../../lib/safeLeaflet";
 
 export const GRE_SUMMARY_REQUEST = "gre:summary-request";
 
@@ -28,12 +28,12 @@ export function attachPublicationPopupSummary(map: L.Map): () => void {
       if (!pubId) return;
 
       requestPublicationSummary(pubId);
-      map.closePopup();
+      safeMapOp(map, (m) => m.closePopup());
     };
 
     btn.addEventListener("click", handler);
   };
 
-  map.on("popupopen", onPopupOpen);
-  return () => map.off("popupopen", onPopupOpen);
+  safeMapOp(map, (m) => m.on("popupopen", onPopupOpen));
+  return () => safeMapOff(map, "popupopen", onPopupOpen);
 }

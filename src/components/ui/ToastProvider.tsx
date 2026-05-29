@@ -29,7 +29,7 @@ type ToastContextValue = {
   success: (input: ToastInput) => void;
   error: (input: ToastInput) => void;
   info: (input: ToastInput) => void;
-  /** Error-style feedback anchored on the left (same as `error`). */
+  /** Error-style feedback (same as `error`, bottom-right stack). */
   alert: (input: ToastInput) => void;
 };
 
@@ -120,34 +120,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [show]
   );
 
-  const centerToasts = toasts.filter((t) => t.tone !== "error");
-  const leftAlerts = toasts.filter((t) => t.tone === "error");
-
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {typeof document !== "undefined" && centerToasts.length > 0
+      {typeof document !== "undefined" && toasts.length > 0
         ? createPortal(
             <div
-              className="pointer-events-none fixed inset-0 z-[10100] flex flex-col items-center justify-center gap-3 p-4"
+              className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom,0px)+1rem)] right-4 z-[10100] flex max-h-[min(70vh,28rem)] w-[min(calc(100vw-2rem),22rem)] flex-col gap-3 overflow-y-auto sm:bottom-6 sm:right-6"
               aria-label="Notifications"
             >
-              <div className="flex w-full max-w-sm flex-col gap-3">
-                {centerToasts.map((toast) => (
-                  <ToastCard key={toast.id} toast={toast} onDismiss={dismiss} />
-                ))}
-              </div>
-            </div>,
-            document.body
-          )
-        : null}
-      {typeof document !== "undefined" && leftAlerts.length > 0
-        ? createPortal(
-            <div
-              className="pointer-events-none fixed left-4 top-1/2 z-[10100] flex w-[min(92vw,22rem)] -translate-y-1/2 flex-col gap-3 sm:left-6"
-              aria-label="Alerts"
-            >
-              {leftAlerts.map((toast) => (
+              {toasts.map((toast) => (
                 <ToastCard key={toast.id} toast={toast} onDismiss={dismiss} />
               ))}
             </div>,

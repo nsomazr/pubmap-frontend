@@ -368,7 +368,7 @@ export function CategoriesPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search fields or subfields…"
-              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm shadow-sm focus:border-brand-500 gre-field focus:outline-none focus:ring-0"
             />
           </div>
         </div>

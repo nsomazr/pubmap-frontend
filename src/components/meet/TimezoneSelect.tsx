@@ -80,7 +80,7 @@ export function TimezoneSelect({ label, value, onChange, required, disabled, hin
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search city or region"
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-ink placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-ink placeholder:text-slate-400 focus:border-brand-400 gre-field focus:outline-none focus:ring-0"
             autoFocus
           />
         </div>

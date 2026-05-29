@@ -145,7 +145,7 @@ export function CountryInstitutionPicker({
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
                 placeholder="Filter institutions in this country…"
-                className="mb-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                className="mb-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 gre-field focus:outline-none focus:ring-0"
               />
               <ScrollableSelect
                 value={institution}
@@ -194,7 +194,7 @@ export function CountryInstitutionPicker({
                   placeholder="Type institution or affiliation"
                   onChange={(e) => onInstitutionChange(e.target.value)}
                   onBlur={() => onInstitutionChange(normalizeInstitutionLabel(institution))}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-brand-500 gre-field focus:outline-none focus:ring-0"
                 />
               </div>
               <p className="text-xs text-slate-500">

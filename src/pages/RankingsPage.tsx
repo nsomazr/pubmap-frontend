@@ -35,7 +35,7 @@ function SortSelect<T extends string>({
         <select
           value={value}
           onChange={(e) => onChange(e.target.value as T)}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-ink shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-ink shadow-sm focus:border-brand-500 gre-field focus:outline-none focus:ring-0"
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>

@@ -140,8 +140,10 @@ function OnboardingRoute() {
 }
 
 function AppRoutes() {
+  const location = useLocation();
+
   return (
-    <RouteErrorBoundary>
+    <RouteErrorBoundary resetKeys={[location.pathname, location.search]}>
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
         <Route path="/" element={<HomePage />} />

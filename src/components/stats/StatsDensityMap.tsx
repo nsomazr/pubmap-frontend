@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import L from "leaflet";
-import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { CircleMarker, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { GreMapContainer } from "../map/GreMapContainer";
+import { safeMapOp } from "../../lib/safeLeaflet";
 import type { PublicStatsHeatmapPoint } from "../../types";
 import { buildMapLocationPath } from "../../lib/mapDeepLink";
 import "leaflet/dist/leaflet.css";
@@ -33,7 +35,9 @@ function FlyToCountry({
     if (!selectedCountry) return;
     const point = points.find((row) => row.country === selectedCountry);
     if (!point) return;
-    map.flyTo([point.latitude, point.longitude], 5, { duration: 0.65 });
+    safeMapOp(map, (m) => {
+      m.flyTo([point.latitude, point.longitude], 5, { duration: 0.65 });
+    });
   }, [map, points, selectedCountry]);
 
   return null;
@@ -127,7 +131,7 @@ export function StatsDensityMap({
       className="gre-map overflow-hidden rounded-2xl ring-1 ring-slate-200"
       style={{ height }}
     >
-      <MapContainer center={center} zoom={3} className="h-full w-full" scrollWheelZoom={false}>
+      <GreMapContainer center={center} zoom={3} className="h-full w-full" scrollWheelZoom={false}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -142,7 +146,7 @@ export function StatsDensityMap({
             onSelect={onCountrySelect}
           />
         ))}
-      </MapContainer>
+      </GreMapContainer>
     </div>
   );
 }

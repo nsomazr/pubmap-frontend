@@ -174,7 +174,7 @@ export function StudyLocationSection({ publication }: Props) {
             Expand map
           </button>
         </div>
-        <ResearchMap {...mapProps} height="380px" />
+        {!expanded && <ResearchMap {...mapProps} height="380px" />}
         <StudyLocationInfoPanel publication={publication} chatPath={chatPath} />
       </section>
       {expandOverlay}

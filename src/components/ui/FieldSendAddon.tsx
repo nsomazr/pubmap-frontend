@@ -19,9 +19,8 @@ type BaseProps = {
 };
 
 const shellClass: Record<Variant, string> = {
-  light:
-    "border-slate-200/90 bg-white shadow-sm focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100/80",
-  dark: "border-slate-600/80 bg-slate-950/90 shadow-sm shadow-black/20 focus-within:border-cyan-800/80 focus-within:ring-2 focus-within:ring-cyan-950/35",
+  light: "gre-field-composer border-slate-200/90 bg-white shadow-sm",
+  dark: "gre-field-composer gre-field-composer--dark border-slate-600/80 bg-slate-950/90 shadow-sm shadow-black/20",
 };
 
 const fieldClass: Record<Variant, string> = {

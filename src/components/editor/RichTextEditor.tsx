@@ -118,7 +118,7 @@ export function RichTextEditor({
           ) : null}
         </div>
       </div>
-      <div className="gre-manuscript-editor-shell overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100/90">
+      <div className="gre-manuscript-editor-shell overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition gre-field-composer focus-within:border-brand-400 focus-within:ring-0">
         <div
           id={id}
           ref={hostRef}

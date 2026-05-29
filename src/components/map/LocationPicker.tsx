@@ -4,13 +4,14 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateA
 import { createPortal } from "react-dom";
 import {
   Circle,
-  MapContainer,
   Marker,
   TileLayer,
   useMap,
   useMapEvents,
   ZoomControl,
 } from "react-leaflet";
+import { GreMapContainer } from "./GreMapContainer";
+import { safeMapOp } from "../../lib/safeLeaflet";
 import { assets } from "../../lib/brand";
 import {
   formatCoords,
@@ -51,12 +52,14 @@ function MapViewSync({
   const map = useMap();
   useEffect(() => {
     if (!hasPin || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    try {
-      const bounds = L.circle([lat, lng], { radius: radiusKm * 1000 }).getBounds();
-      map.fitBounds(bounds, { padding: [32, 32], maxZoom: 11 });
-    } catch {
-      map.setView([lat, lng], REGION_CENTER_ZOOM);
-    }
+    safeMapOp(map, (m) => {
+      try {
+        const bounds = L.circle([lat, lng], { radius: radiusKm * 1000 }).getBounds();
+        m.fitBounds(bounds, { padding: [32, 32], maxZoom: 11 });
+      } catch {
+        m.setView([lat, lng], REGION_CENTER_ZOOM);
+      }
+    });
   }, [lat, lng, hasPin, radiusKm, map]);
   return null;
 }
@@ -64,7 +67,7 @@ function MapViewSync({
 function MapInvalidateSize() {
   const map = useMap();
   useEffect(() => {
-    const run = () => map.invalidateSize();
+    const run = () => safeMapOp(map, (m) => m.invalidateSize());
     const t1 = window.setTimeout(run, 0);
     const t2 = window.setTimeout(run, 100);
     const t3 = window.setTimeout(run, 400);
@@ -116,7 +119,7 @@ function LocationMapInner({
     Number.isFinite(center[0]) && Number.isFinite(center[1]) ? center : DEFAULT_CENTER;
 
   return (
-    <MapContainer
+    <GreMapContainer
       center={safeCenter}
       zoom={zoom}
       className="location-picker-map w-full cursor-crosshair"
@@ -158,7 +161,7 @@ function LocationMapInner({
         </>
       )}
       <MapClickPick onPick={onPick} />
-    </MapContainer>
+    </GreMapContainer>
   );
 }
 
@@ -215,6 +218,14 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
   const [reverseLoading, setReverseLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const appliedInstitutionDefaultRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const lat = parseFloat(value.latitude);
   const lng = parseFloat(value.longitude);
@@ -242,18 +253,19 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
     async (latitude: number, longitude: number, locationName?: string) => {
       let resolvedName = locationName?.trim();
       if (!resolvedName) {
-        setReverseLoading(true);
+        if (mountedRef.current) setReverseLoading(true);
         try {
           const reversed = await reverseGeocodeRegion(latitude, longitude);
           resolvedName = reversed ? formatStudyRegionLabel(reversed) : undefined;
         } catch {
           /* keep existing label */
         } finally {
-          setReverseLoading(false);
+          if (mountedRef.current) setReverseLoading(false);
         }
       } else {
         resolvedName = formatStudyRegionLabel(resolvedName);
       }
+      if (!mountedRef.current) return;
       onChange((prev) => ({
         ...prev,
         location: resolvedName ?? prev.location,
@@ -428,7 +440,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="e.g. Dar es Salaam, University of Nairobi, Cape Town…"
-              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm shadow-sm focus:border-brand-400 gre-field focus:outline-none focus:ring-0"
             />
             {searching && (
               <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-brand-600" />
@@ -500,7 +512,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
             value={value.location}
             onChange={(e) => onChange({ ...value, location: e.target.value })}
             placeholder="e.g. Dar es Salaam Region, Tanzania"
-            className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm shadow-sm focus:border-brand-400 gre-field focus:outline-none focus:ring-0"
           />
         </div>
         <div>
@@ -519,7 +531,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
             value={value.study_area || ""}
             onChange={(e) => onChange({ ...value, study_area: e.target.value })}
             placeholder="Region or study zone"
-            className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm shadow-sm focus:border-brand-400 gre-field focus:outline-none focus:ring-0"
           />
         </div>
       </div>

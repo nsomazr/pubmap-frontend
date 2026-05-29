@@ -191,7 +191,7 @@ export function InstitutionPicker({
               onChange(normalizeInstitutionLabel(query));
             }, 150);
           }}
-          className={`w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 ${inputClassName}`}
+          className={`w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-brand-500 gre-field focus:outline-none focus:ring-0 ${inputClassName}`}
         />
         {searching && (
           <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-brand-600" />

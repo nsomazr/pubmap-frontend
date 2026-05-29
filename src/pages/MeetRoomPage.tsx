@@ -137,8 +137,19 @@ function formatChatTimestamp(value?: string | null) {
   }
 }
 
+/** Jitsi/Jibri noise when recording is not running — not actionable for attendees. */
+function isBenignJitsiRoomError(raw: string): boolean {
+  const lower = (raw || "").trim().toLowerCase().replace(/_/g, "-");
+  return (
+    lower === "service-unavailable" ||
+    lower === "unavailable" ||
+    lower.endsWith("service-unavailable")
+  );
+}
+
 function normalizeRoomErrorMessage(raw: string): string {
   const message = (raw || "").trim();
+  if (isBenignJitsiRoomError(message)) return "";
   const lower = message.toLowerCase();
   if (lower.includes("recording is not configured") || lower.includes("enable jibri")) {
     return "Recording is not enabled on GRE yet. Ask your admin to configure Jitsi recording (Jibri).";
@@ -494,12 +505,16 @@ export function MeetRoomPage() {
         refreshParticipants();
       };
       const onRecordingChanged = (payload: { on?: boolean; error?: string }) => {
+        if (payload?.error && isBenignJitsiRoomError(payload.error)) {
+          return;
+        }
         syncRecordingMutation({
           state: payload?.error ? "failed" : payload?.on ? "recording" : "ready",
           error: payload?.error || "",
         });
         if (payload?.error) {
           const message = normalizeRoomErrorMessage(payload.error);
+          if (!message) return;
           setRoomError(message);
           if (canManage) {
             toast.error({
@@ -673,6 +688,7 @@ export function MeetRoomPage() {
     if (!activeMeeting) return "";
     return `${activeMeeting.category_name} / ${activeMeeting.sub_category_name} · ${formatMeetingDate(activeMeeting.scheduled_at)}`;
   }, [activeMeeting]);
+  const recordingErrorMessage = normalizeRoomErrorMessage(activeMeeting?.recording_error || "");
 
   const runJitsiRecordingCommand = (action: "start" | "stop", mode = "file") => {
     const apiInstance = jitsiApiRef.current;
@@ -690,11 +706,14 @@ export function MeetRoomPage() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Could not run the Jitsi recording command.";
-      setRoomError(normalizeRoomErrorMessage(message));
-      syncRecordingMutation({
-        state: "failed",
-        error: message,
-      });
+      const normalized = normalizeRoomErrorMessage(message);
+      if (normalized) {
+        setRoomError(normalized);
+        syncRecordingMutation({
+          state: "failed",
+          error: message,
+        });
+      }
       return false;
     }
   };
@@ -736,11 +755,13 @@ export function MeetRoomPage() {
       runJitsiRecordingCommand("start", mode);
     } catch (error) {
       const message = normalizeRoomErrorMessage(parseApiError(error, "Could not request recording."));
-      setRoomError(message);
-      toast.error({
-        title: "Could not start recording",
-        description: message,
-      });
+      if (message) {
+        setRoomError(message);
+        toast.error({
+          title: "Could not start recording",
+          description: message,
+        });
+      }
     }
   };
 
@@ -763,11 +784,13 @@ export function MeetRoomPage() {
       }
     } catch (error) {
       const message = normalizeRoomErrorMessage(parseApiError(error, "Could not stop recording."));
-      setRoomError(message);
-      toast.error({
-        title: "Could not stop recording",
-        description: message,
-      });
+      if (message) {
+        setRoomError(message);
+        toast.error({
+          title: "Could not stop recording",
+          description: message,
+        });
+      }
     }
   };
 
@@ -1068,9 +1091,9 @@ export function MeetRoomPage() {
               </Button>
             </div>
           )}
-          {(joinMutation.isError || roomError) && (
+          {(joinMutation.isError || roomError.trim()) && (
             <p className="text-sm text-red-400">
-              {roomError || parseApiError(joinMutation.error, "Could not join the meeting room.")}
+              {roomError.trim() || parseApiError(joinMutation.error, "Could not join the meeting room.")}
             </p>
           )}
           {!drawerOpen && (
@@ -1109,7 +1132,7 @@ export function MeetRoomPage() {
       ) : (
         <div className="relative h-full w-full">
           <div ref={roomContainerRef} className="h-full w-full" />
-          {roomError && (
+          {roomError.trim() && (
             <div className="pointer-events-none absolute left-1/2 top-14 z-30 w-[min(92%,780px)] -translate-x-1/2 rounded-2xl border border-red-700/60 bg-red-950/95 px-4 py-3 text-sm text-red-100 shadow-[0_10px_28px_rgba(127,29,29,0.35)]">
               {roomError}
             </div>
@@ -1248,10 +1271,8 @@ export function MeetRoomPage() {
                         <span className="font-mono text-slate-300">JITSI_ENABLE_RECORDING=true</span>.
                       </p>
                     )}
-                    {canManage && isLive && recordingAvailable && activeMeeting.recording_error && (
-                      <p className="text-xs leading-relaxed text-red-400">
-                        {normalizeRoomErrorMessage(activeMeeting.recording_error)}
-                      </p>
+                    {canManage && isLive && recordingAvailable && recordingErrorMessage && (
+                      <p className="text-xs leading-relaxed text-red-400">{recordingErrorMessage}</p>
                     )}
                   </div>
                 </div>

@@ -180,7 +180,7 @@ export function ManuscriptUploadField({
                 }
               }}
               placeholder="https://journal.example.org/article.pdf"
-              className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+              className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-brand-400 gre-field focus:outline-none focus:ring-0"
             />
             <button
               type="button"
