@@ -5,18 +5,13 @@ import {
   Copy,
   ExternalLink,
   Loader2,
-  Mic,
-  MicOff,
-  MoreVertical,
+  LogOut,
   PictureInPicture2,
   Radio,
   RefreshCcw,
   Send,
   Sparkles,
-  ShieldCheck,
-  UserX,
   Video,
-  VideoOff,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -42,6 +37,7 @@ import {
 import { BrandMark } from "../components/brand/BrandMark";
 import { MeetingGreAssistantPanel } from "../components/meet/MeetingGreAssistantPanel";
 import { captureMeetingAssistantNotes } from "../lib/meetAssistant";
+import { meetDrawer } from "../lib/meetDrawerTheme";
 import { buildMeetingPath, meetingApiSegment } from "../lib/meetingPaths";
 import {
   applyJitsiJoinMediaPolicy,
@@ -52,7 +48,6 @@ import {
   fetchMeetingBySlug,
   formatMeetingDate,
   formatMeetingId,
-  inviteMeetingByEmail,
   joinMeetingRoom,
 } from "../lib/meetings";
 import type { MeetChatMessage, MeetSession } from "../types";
@@ -256,7 +251,6 @@ export function MeetRoomPage() {
       videoMuted?: boolean;
     }[]
   >([]);
-  const [isModerator, setIsModerator] = useState(false);
   const [copilotOutput, setCopilotOutput] = useState("");
   const [copilotError, setCopilotError] = useState("");
   const [copilotLoading, setCopilotLoading] = useState(false);
@@ -270,10 +264,6 @@ export function MeetRoomPage() {
   const copilotAbortRef = useRef<AbortController | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<MeetRoomDrawerTab>("assistant");
-  const [participantActionMenuId, setParticipantActionMenuId] = useState<string | null>(null);
-  const [waitingGuests, setWaitingGuests] = useState<
-    { id: string; displayName: string; email?: string }[]
-  >([]);
   const [roomDebug, setRoomDebug] = useState({
     bootRuns: 0,
     scriptLoaded: false,
@@ -281,9 +271,7 @@ export function MeetRoomPage() {
     joinedEvent: false,
     lastError: "",
   });
-  const [inviteEmail, setInviteEmail] = useState("");
   const [pipOpening, setPipOpening] = useState(false);
-  const [inviteSending, setInviteSending] = useState(false);
   const [replyTarget, setReplyTarget] = useState<MeetChatMessage | null>(null);
   const [tagTarget, setTagTarget] = useState<MeetChatMessage | null>(null);
   const [activeMessageActionId, setActiveMessageActionId] = useState<number | null>(null);
@@ -414,12 +402,6 @@ export function MeetRoomPage() {
         description: "GRE asked Jitsi to start recording this meeting.",
       });
     },
-    onError: (error) => {
-      toast.error({
-        title: "Could not start recording",
-        description: parseApiError(error, "Could not request recording."),
-      });
-    },
   });
 
   const stopRecording = useMutation({
@@ -435,12 +417,6 @@ export function MeetRoomPage() {
         description: "GRE asked Jitsi to stop recording this meeting.",
       });
     },
-    onError: (error) => {
-      toast.error({
-        title: "Could not stop recording",
-        description: parseApiError(error, "Could not stop recording."),
-      });
-    },
   });
   const syncRecordingMutation = syncRecordingState.mutate;
 
@@ -454,30 +430,6 @@ export function MeetRoomPage() {
       messageHoldTimeoutRef.current = null;
     }
   };
-
-  useEffect(() => {
-    if (!participantActionMenuId) return;
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-      if (
-        target.closest("[data-participant-menu='true']") ||
-        target.closest("[data-participant-menu-trigger='true']")
-      ) {
-        return;
-      }
-      setParticipantActionMenuId(null);
-    };
-    const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setParticipantActionMenuId(null);
-    };
-    window.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("keydown", handleEsc);
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("keydown", handleEsc);
-    };
-  }, [participantActionMenuId]);
 
   useEffect(() => {
     const joinData = joinMutation.data;
@@ -508,6 +460,7 @@ export function MeetRoomPage() {
 
       const domain = new URL(joinData.server_url).host;
       const joinHostSettings = meetHostSettingsFromSession(joinData.meeting ?? activeMeeting);
+      const isGreModerator = canManage;
       apiInstance = new window.JitsiMeetExternalAPI(domain, {
         roomName: joinData.room_name,
         parentNode: roomContainerRef.current,
@@ -521,11 +474,10 @@ export function MeetRoomPage() {
             user?.email,
           email: user?.email,
         },
-        configOverwrite: buildJitsiConfigOverwrite(joinHostSettings),
+        configOverwrite: buildJitsiConfigOverwrite(joinHostSettings, isGreModerator),
       });
       setRoomDebug((prev) => ({ ...prev, apiConstructed: true }));
       jitsiApiRef.current = apiInstance;
-      setIsModerator(canManage);
       if (activeMeeting?.title) {
         try {
           apiInstance.executeCommand("subject", `GRE Room : ${activeMeeting.title}`);
@@ -555,8 +507,7 @@ export function MeetRoomPage() {
         }
       };
       const onParticipantLeft = () => refreshParticipants();
-      const onRoleChanged = (payload: { role?: string }) => {
-        setIsModerator(payload?.role === "moderator" || canManage);
+      const onRoleChanged = () => {
         refreshParticipants();
       };
       const onRecordingChanged = (payload: { on?: boolean; error?: string }) => {
@@ -565,32 +516,12 @@ export function MeetRoomPage() {
           error: payload?.error || "",
         });
       };
-      const onKnockingParticipant = (payload: {
-        id?: string;
-        participant?: { id?: string; name?: string; email?: string };
-        name?: string;
-        displayName?: string;
-        email?: string;
-      }) => {
-        const participantId = payload?.id || payload?.participant?.id || "";
-        if (!participantId) return;
-        const displayName =
-          payload?.displayName || payload?.name || payload?.participant?.name || "Guest";
-        const email = payload?.email || payload?.participant?.email;
-        setWaitingGuests((current) => {
-          if (current.some((guest) => guest.id === participantId)) return current;
-          return [...current, { id: participantId, displayName, email }];
-        });
-      };
-      const removeWaitingGuest = (payload: { id?: string; participantId?: string }) => {
-        const participantId = payload?.id || payload?.participantId || "";
-        if (!participantId) return;
-        setWaitingGuests((current) => current.filter((guest) => guest.id !== participantId));
-      };
       const onReadyToClose = () => {
         queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
         queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
-        if (meetingId) navigate(buildMeetingPath(meetingId, "archive"));
+        if (canManage && meetingId) {
+          navigate(buildMeetingPath(meetingId, "archive"));
+        }
       };
 
       apiInstance.addListener("videoConferenceJoined", onJoined);
@@ -598,9 +529,6 @@ export function MeetRoomPage() {
       apiInstance.addListener("participantLeft", onParticipantLeft);
       apiInstance.addListener("participantRoleChanged", onRoleChanged);
       apiInstance.addListener("recordingStatusChanged", onRecordingChanged);
-      apiInstance.addListener("knockingParticipant", onKnockingParticipant);
-      apiInstance.addListener("knockingParticipantAccepted", removeWaitingGuest);
-      apiInstance.addListener("knockingParticipantRejected", removeWaitingGuest);
       apiInstance.addListener("readyToClose", onReadyToClose);
     };
 
@@ -613,7 +541,6 @@ export function MeetRoomPage() {
     return () => {
       cancelled = true;
       setJitsiReady(false);
-      setWaitingGuests([]);
       try {
         apiInstance?.dispose?.();
       } catch {
@@ -706,39 +633,6 @@ export function MeetRoomPage() {
     }
   };
 
-  const inviteParticipantByEmail = async () => {
-    const email = inviteEmail.trim();
-    if (!meetingId) return;
-    if (!email) {
-      toast.error({
-        title: "Enter an email",
-        description: "Add an attendee email address before sending an invite.",
-      });
-      return;
-    }
-
-    setInviteSending(true);
-    try {
-      const result = await inviteMeetingByEmail(meetingId, { email });
-      setInviteEmail("");
-      toast.success({
-        title: "Invitation sent",
-        description: result.user_found
-          ? `${email} received a GRE Meet invite email and in-app notification.`
-          : `${email} received a GRE Meet invite email with join instructions.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
-      queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
-    } catch (error) {
-      toast.error({
-        title: "Could not send invite",
-        description: parseApiError(error, "Could not send the meeting invitation email."),
-      });
-    } finally {
-      setInviteSending(false);
-    }
-  };
-
   const canJoinMeeting =
     meeting?.can_join !== false &&
     (meeting?.status === "scheduled" || meeting?.status === "live");
@@ -747,9 +641,6 @@ export function MeetRoomPage() {
   const isPreparingRoom =
     joinMutation.isPending || startMeeting.isPending || autoJoining;
   const showManualJoin = lobbyOnly || autoJoinFailed || joinMutation.isError;
-  const shareLink =
-    activeMeeting?.meeting_link ||
-    (slug ? `${window.location.origin.replace(/\/$/, "")}/meet/${slug}` : "");
   const archiveId = activeMeeting ? formatMeetingId(activeMeeting) : "";
   const embedMounted = roomDebug.apiConstructed;
   const embedUnavailable = isConnected && !embedMounted && !!roomError;
@@ -802,50 +693,6 @@ export function MeetRoomPage() {
     }
   };
 
-  const runParticipantAction = (
-    participantId: string,
-    command: string,
-    successTitle: string,
-    successDescription: string,
-    fallbackError: string
-  ) => {
-    if (!participantId) return false;
-    const ok = runModeratorCommand(command, participantId);
-    if (ok) {
-      toast.success({ title: successTitle, description: successDescription });
-    } else {
-      toast.error({
-        title: "Could not run attendee action",
-        description: fallbackError,
-      });
-    }
-    return ok;
-  };
-
-  const answerKnockingParticipant = (participantId: string, approve: boolean) => {
-    const ok = runModeratorCommand("answerKnockingParticipant", participantId, approve);
-    if (!ok) return;
-    setWaitingGuests((current) => current.filter((guest) => guest.id !== participantId));
-    toast.success({
-      title: approve ? "Guest admitted" : "Guest denied",
-      description: approve
-        ? "Guest can now enter the meeting."
-        : "Guest request was declined from the waiting room.",
-    });
-  };
-
-  const admitAllWaitingGuests = () => {
-    if (!waitingGuests.length) return;
-    waitingGuests.forEach((guest) => {
-      runModeratorCommand("answerKnockingParticipant", guest.id, true);
-    });
-    setWaitingGuests([]);
-    toast.success({
-      title: "All guests admitted",
-      description: "Every waiting guest has been approved to join.",
-    });
-  };
-
   const handleStartRecording = async () => {
     if (!isHostUser) {
       toast.error({
@@ -867,7 +714,7 @@ export function MeetRoomPage() {
       const message = normalizeRoomErrorMessage(parseApiError(error, "Could not request recording."));
       setRoomError(message);
       toast.error({
-        title: "Recording unavailable",
+        title: "Could not start recording",
         description: message,
       });
     }
@@ -900,10 +747,34 @@ export function MeetRoomPage() {
     }
   };
 
-  const handleEndConference = async () => {
-    if (canManage) {
-      runModeratorCommand("endConference");
+  const handleLeaveMeeting = () => {
+    const apiInstance = jitsiApiRef.current;
+    if (apiInstance) {
+      try {
+        apiInstance.executeCommand("hangup");
+      } catch {
+        /* hangup may be unavailable; dispose below */
+      }
+      try {
+        apiInstance.dispose?.();
+      } catch {
+        /* ignore */
+      }
     }
+    jitsiApiRef.current = null;
+    setJitsiReady(false);
+    joinMutation.reset();
+    toast.success({
+      title: "You left the meeting",
+      description: canManage
+        ? "The room is still live for other participants."
+        : "You can rejoin from this page while the meeting is live.",
+    });
+  };
+
+  const handleEndConference = () => {
+    if (!canManage) return;
+    runModeratorCommand("endConference");
     endMeeting.mutate();
   };
 
@@ -1199,58 +1070,44 @@ export function MeetRoomPage() {
           meetingTitle={headerTitle}
           panels={{
             info: (
-              <div className="space-y-4">
+              <div className="flex min-h-0 flex-1 flex-col gap-4">
                 <Link
                   to={meetingId ? buildMeetingPath(meetingId) : "/dashboard/meetings"}
-                  className="inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-brand-700 transition hover:text-brand-800"
+                  className={meetDrawer.link}
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Back to meeting
                 </Link>
-                <h3 className="text-lg font-semibold text-ink">{headerTitle}</h3>
+                <h3 className={meetDrawer.title}>{headerTitle}</h3>
                 <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="rounded-full bg-brand-50 px-2.5 py-1 font-semibold text-brand-800 ring-1 ring-brand-100">
-                    {archiveId}
-                  </span>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 capitalize font-medium text-slate-700 ring-1 ring-slate-200/80">
-                    {activeMeeting.status}
-                  </span>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600 ring-1 ring-slate-200/80">
+                  <span className={meetDrawer.badgeAccent}>{archiveId}</span>
+                  <span className={meetDrawer.badge}>{activeMeeting.status}</span>
+                  <span className={meetDrawer.badge}>
                     {roomParticipants.length} live participant
                     {roomParticipants.length === 1 ? "" : "s"}
                   </span>
                 </div>
-                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Quick actions</p>
+                <div className={`space-y-2 ${meetDrawer.card}`}>
+                  <p className={meetDrawer.label}>Quick actions</p>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <Button variant="secondary" className="h-9 w-full" onClick={copyLink}>
+                    <Button variant="secondary" className={meetDrawer.btn} onClick={copyLink}>
                       <Copy className="h-4 w-4" />
                       Copy link
                     </Button>
                     <Button
                       variant="secondary"
-                      className="h-9 w-full"
+                      className={meetDrawer.btn}
                       loading={pipOpening}
                       onClick={() => void openMeetingPictureInPicture()}
                     >
                       <PictureInPicture2 className="h-4 w-4" />
                       Picture in picture
                     </Button>
-                    {shareLink && (
-                      <a href={shareLink} target="_blank" rel="noreferrer" className="sm:col-span-2">
-                        <Button variant="secondary" className="h-9 w-full">
-                          <ExternalLink className="h-4 w-4" />
-                          Open GRE link
-                        </Button>
-                      </a>
-                    )}
                   </div>
                 </div>
                 {!isConnected && (
-                  <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Join room
-                    </p>
+                  <div className={`space-y-3 ${meetDrawer.card}`}>
+                    <p className={meetDrawer.label}>Join room</p>
                     <div className="flex flex-wrap gap-2">
                       <Button className="h-10" loading={isPreparingRoom} onClick={() => void handleEnterRoom()}>
                         {canManage && activeMeeting.status === "scheduled" ? (
@@ -1265,60 +1122,50 @@ export function MeetRoomPage() {
                           </>
                         )}
                       </Button>
-                      <Button variant="secondary" className="h-10" onClick={() => void handleOpenExternalRoom()}>
+                      <Button variant="secondary" className={`h-10 ${meetDrawer.btn}`} onClick={() => void handleOpenExternalRoom()}>
                         <ExternalLink className="h-4 w-4" />
                         Join in browser
                       </Button>
                     </div>
                   </div>
                 )}
-                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Live actions</p>
+                <div className={`space-y-2 ${meetDrawer.card}`}>
+                  <p className={meetDrawer.label}>Live actions</p>
                   <div className="grid grid-cols-1 gap-2">
                     {activeMeeting.status === "scheduled" && (
                       <Button className="h-10" loading={startMeeting.isPending} onClick={() => startMeeting.mutate()}>
                         Start on GRE
                       </Button>
                     )}
-                    {isHostUser && isModerator && isLive && activeMeeting.recording_status !== "recording" && (
+                    {canManage && isLive && activeMeeting.recording_status !== "recording" && (
                       <Button
                         variant="secondary"
-                        className="h-9"
+                        className={meetDrawer.btn}
                         loading={startRecording.isPending}
                         onClick={handleStartRecording}
                       >
                         Start recording
                       </Button>
                     )}
-                    {isHostUser && isModerator && isLive && activeMeeting.recording_status === "recording" && (
+                    {canManage && isLive && activeMeeting.recording_status === "recording" && (
                       <Button
                         variant="secondary"
-                        className="h-9"
+                        className={meetDrawer.btn}
                         loading={stopRecording.isPending}
                         onClick={handleStopRecording}
                       >
                         Stop recording
                       </Button>
                     )}
-                    <Button
-                      variant="danger"
-                      className="h-9"
-                      loading={endMeeting.isPending}
-                      onClick={() => setConfirmEndOpen(true)}
-                    >
-                      End meeting
-                    </Button>
                   </div>
                 </div>
-                {isHostUser && (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                    <p className="pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Host controls
-                    </p>
+                {canManage && (
+                  <div className={meetDrawer.card}>
+                    <p className={`pb-2 ${meetDrawer.label}`}>Host controls</p>
                     <MeetHostToolsPanel
                       meeting={activeMeeting}
                       canManage={canManage}
-                      variant="light"
+                      variant="dark"
                       showLiveControls
                       roomReady={isConnected && jitsiReady}
                       onMuteEveryone={(mediaType) => runModeratorCommand("muteEveryone", mediaType)}
@@ -1330,21 +1177,48 @@ export function MeetRoomPage() {
                     />
                   </div>
                 )}
+                <div className={`mt-auto space-y-3 ${meetDrawer.card}`}>
+                  <p className={meetDrawer.label}>
+                    {canManage ? "Leave or end session" : "Leave session"}
+                  </p>
+                  <p className="text-xs leading-relaxed text-slate-400">
+                    {canManage
+                      ? "Leaving keeps the meeting live for everyone else. End meeting closes the room for all attendees."
+                      : "You will leave the video room. The meeting continues for other participants."}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className={meetDrawer.btn}
+                    onClick={handleLeaveMeeting}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Leave meeting
+                  </Button>
+                  {canManage && (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      className="h-10 w-full"
+                      loading={endMeeting.isPending}
+                      onClick={() => setConfirmEndOpen(true)}
+                    >
+                      End meeting for everyone
+                    </Button>
+                  )}
+                </div>
               </div>
             ),
             assistant: (
-              <div className="flex h-full min-h-[min(24rem,60vh)] flex-col gap-4">
-                <div className="min-h-0 flex-1">
-                  <MeetingGreAssistantPanel meeting={activeMeeting} compact variant="light" />
-                </div>
+              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
                 {canManage && (
-                  <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Assistant tools</p>
+                  <div className={`shrink-0 space-y-2 ${meetDrawer.card}`}>
+                    <p className={meetDrawer.label}>Assistant tools</p>
                     <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
                       <Button
                         type="button"
                         variant="secondary"
-                        className="h-9 w-full"
+                        className={meetDrawer.btn}
                         loading={copilotLoading}
                         onClick={() => void runCopilot("notes")}
                       >
@@ -1354,7 +1228,7 @@ export function MeetRoomPage() {
                       <Button
                         type="button"
                         variant="secondary"
-                        className="h-9 w-full"
+                        className={meetDrawer.btn}
                         loading={copilotLoading}
                         onClick={() => void runCopilot("actions")}
                       >
@@ -1362,18 +1236,22 @@ export function MeetRoomPage() {
                       </Button>
                     </div>
                     {(copilotOutput || copilotError || copilotLoading) && (
-                      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                      <div className={`max-h-40 overflow-y-auto overscroll-contain ${meetDrawer.copilotOutput}`}>
                         {copilotError ? (
-                          <p className="text-sm text-red-600">{copilotError}</p>
+                          <p className="text-sm text-red-400">{copilotError}</p>
                         ) : (
-                          <FormattedAssistantText content={copilotOutput} streaming={copilotLoading} />
+                          <FormattedAssistantText
+                            content={copilotOutput}
+                            streaming={copilotLoading}
+                            className="!text-slate-200"
+                          />
                         )}
                         {!!copilotOutput && !copilotLoading && (
                           <div className="mt-3 flex justify-end">
                             <Button
                               type="button"
                               variant="secondary"
-                              className="h-8"
+                              className={`h-8 ${meetDrawer.btn}`}
                               onClick={() => {
                                 if (!copilotOutput.trim()) return;
                                 const write = navigator.clipboard?.writeText?.(copilotOutput) ?? Promise.reject();
@@ -1401,11 +1279,19 @@ export function MeetRoomPage() {
                     )}
                   </div>
                 )}
+                <div className="flex min-h-0 flex-1 flex-col">
+                  <MeetingGreAssistantPanel
+                    meeting={activeMeeting}
+                    compact
+                    variant="dark"
+                    drawerLayout
+                  />
+                </div>
               </div>
             ),
               chat: (
-                <div className="flex h-full min-h-[min(24rem,60vh)] flex-col gap-3">
-                  <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+                  <div className={meetDrawer.chatShell}>
                     {chat.map((message) => {
                       const senderName =
                         message.sender?.full_name ||
@@ -1436,13 +1322,13 @@ export function MeetRoomPage() {
                               className={`w-full max-w-[92%] rounded-2xl px-3 py-2.5 shadow-sm transition ${
                                 isOwn
                                   ? "bg-brand-600 text-white"
-                                  : "bg-white text-slate-800 ring-1 ring-slate-200/80"
+                                  : "bg-slate-800 text-slate-100 ring-1 ring-slate-600/80"
                               }`}
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2">
                               <p
                                 className={`text-[11px] font-semibold uppercase tracking-wide ${
-                                  isOwn ? "text-white/80" : "text-slate-500"
+                                  isOwn ? "text-white/80" : "text-slate-400"
                                 }`}
                               >
                                 {senderName}
@@ -1457,20 +1343,20 @@ export function MeetRoomPage() {
                                   className={`mt-1.5 rounded-xl px-2.5 py-2 ${
                                     isOwn
                                       ? "bg-white/15"
-                                      : "border border-slate-200/80 bg-slate-50"
+                                      : "border border-slate-600/80 bg-slate-900/60"
                                   }`}
                                 >
-                                  <p className={`text-[11px] font-semibold ${isOwn ? "text-white" : "text-brand-700"}`}>
+                                  <p className={`text-[11px] font-semibold ${isOwn ? "text-white" : "text-brand-400"}`}>
                                     {parsedMessage.replyToName}
                                   </p>
-                                  <p className={`mt-0.5 line-clamp-2 text-xs ${isOwn ? "text-white/85" : "text-slate-600"}`}>
+                                  <p className={`mt-0.5 line-clamp-2 text-xs ${isOwn ? "text-white/85" : "text-slate-300"}`}>
                                     {parsedMessage.replySnippet}
                                   </p>
                                 </div>
                               )}
                               <p
                                 className={`mt-1 text-sm whitespace-pre-wrap leading-relaxed ${
-                                  isOwn ? "text-white" : "text-slate-800"
+                                  isOwn ? "text-white" : "text-slate-100"
                                 }`}
                               >
                                 {parsedMessage.body}
@@ -1482,7 +1368,7 @@ export function MeetRoomPage() {
                                     className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
                                       isOwn
                                         ? "text-white/90 hover:bg-white/15"
-                                        : "text-brand-700 hover:bg-brand-50"
+                                        : "text-brand-400 hover:bg-slate-700"
                                     }`}
                                     onClick={() => {
                                       setReplyTarget(message);
@@ -1494,7 +1380,7 @@ export function MeetRoomPage() {
                                   {!isOwn && (
                                     <button
                                       type="button"
-                                      className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100"
+                                      className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-300 transition hover:bg-slate-700"
                                       onClick={() => {
                                         setTagTarget(message);
                                         const mentionToken = `@${senderName}`;
@@ -1510,7 +1396,7 @@ export function MeetRoomPage() {
                                   )}
                                   <button
                                     type="button"
-                                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100"
+                                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-300 transition hover:bg-slate-700"
                                     onClick={() => {
                                       void (navigator.clipboard?.writeText?.(message.message) ?? Promise.reject()).catch(
                                         () => {}
@@ -1522,7 +1408,7 @@ export function MeetRoomPage() {
                                   </button>
                                   <button
                                     type="button"
-                                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-500 transition hover:bg-slate-100"
+                                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-400 transition hover:bg-slate-700"
                                     onClick={() => setActiveMessageActionId(null)}
                                   >
                                     Close
@@ -1531,7 +1417,7 @@ export function MeetRoomPage() {
                               ) : (
                                 <button
                                   type="button"
-                                  className={`mt-2 text-[11px] font-semibold ${isOwn ? "text-white/70" : "text-slate-500"}`}
+                                  className={`mt-2 text-[11px] font-semibold ${isOwn ? "text-white/70" : "text-slate-400"}`}
                                   onClick={() => setActiveMessageActionId(message.id)}
                                 >
                                   Hold for actions
@@ -1543,13 +1429,13 @@ export function MeetRoomPage() {
                       );
                     })}
                     {chat.length === 0 && (
-                      <p className="px-3 py-6 text-center text-sm text-slate-500">
+                      <p className="px-3 py-6 text-center text-sm text-slate-400">
                         No messages yet. Start the conversation below.
                       </p>
                     )}
                   </div>
                   <form
-                    className="mt-auto space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+                    className={meetDrawer.chatForm}
                     onSubmit={(event) => {
                       event.preventDefault();
                       if (!text.trim()) return;
@@ -1558,11 +1444,11 @@ export function MeetRoomPage() {
                     }}
                   >
                     {(replyTarget || tagTarget) && (
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      <div className={meetDrawer.chatReplyBanner}>
                         {replyTarget && (
                           <p>
                             Replying to{" "}
-                            <span className="font-semibold text-ink">
+                            <span className="font-semibold text-slate-100">
                               {replyTarget.sender?.full_name ||
                                 `${replyTarget.sender?.firstname ?? ""} ${replyTarget.sender?.lastname ?? ""}`.trim() ||
                                 replyTarget.sender?.email ||
@@ -1573,7 +1459,7 @@ export function MeetRoomPage() {
                         {tagTarget && (
                           <p>
                             Tagging{" "}
-                            <span className="font-semibold text-ink">
+                            <span className="font-semibold text-slate-100">
                               {tagTarget.sender?.full_name ||
                                 `${tagTarget.sender?.firstname ?? ""} ${tagTarget.sender?.lastname ?? ""}`.trim() ||
                                 tagTarget.sender?.email ||
@@ -1583,7 +1469,7 @@ export function MeetRoomPage() {
                         )}
                         <button
                           type="button"
-                          className="mt-1 text-[11px] font-semibold text-slate-500 hover:text-brand-700"
+                          className="mt-1 text-[11px] font-semibold text-slate-400 hover:text-brand-400"
                           onClick={() => {
                             setReplyTarget(null);
                             setTagTarget(null);
@@ -1606,7 +1492,7 @@ export function MeetRoomPage() {
                         }}
                         placeholder="Message..."
                         rows={1}
-                        className="max-h-28 min-h-11 w-full resize-y rounded-3xl border border-slate-200 bg-white py-3 pl-4 pr-14 text-sm text-ink outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 sm:pr-28"
+                        className={meetDrawer.textarea}
                       />
                       <Button
                         type="submit"
@@ -1619,284 +1505,34 @@ export function MeetRoomPage() {
                         <span className="hidden sm:inline">Send</span>
                       </Button>
                     </div>
-                    {chatError && <p className="text-sm text-red-600">{chatError}</p>}
+                    {chatError && <p className="text-sm text-red-400">{chatError}</p>}
                   </form>
                 </div>
               ),
               host: (
-                <div className="text-sm text-slate-500">Host controls are available in the Meeting tab.</div>
-              ),
-              people: (
-                <div className="space-y-3">
-                  {canManage && (
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                      <p className="text-xs font-semibold text-slate-600">Invite by email</p>
-                      <form
-                        className="mt-2 flex flex-col gap-2 sm:flex-row"
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          void inviteParticipantByEmail();
-                        }}
-                      >
-                        <input
-                          type="email"
-                          value={inviteEmail}
-                          onChange={(event) => setInviteEmail(event.target.value)}
-                          placeholder="attendee@example.com"
-                          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                        />
-                        <Button
-                          type="submit"
-                          loading={inviteSending}
-                          disabled={!inviteEmail.trim()}
-                          className="h-10 min-w-[132px] sm:shrink-0"
-                        >
-                          Send invite
-                        </Button>
-                      </form>
-                    </div>
-                  )}
-                  {canManage && waitingGuests.length > 0 && (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
-                          Waiting room
-                        </p>
-                        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
-                          {waitingGuests.length}
-                        </span>
-                      </div>
-                      <div className="mt-3 space-y-2">
-                        {waitingGuests.map((guest) => (
-                          <div
-                            key={guest.id}
-                            className="flex flex-col gap-2 rounded-lg border border-amber-100 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-ink">{guest.displayName}</p>
-                              {guest.email && (
-                                <p className="truncate text-xs text-slate-500">{guest.email}</p>
-                              )}
-                            </div>
-                            <div className="flex shrink-0 gap-2 sm:justify-end">
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                className="h-9 flex-1 sm:flex-none"
-                                onClick={() => answerKnockingParticipant(guest.id, true)}
-                              >
-                                Admit
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                className="h-9 flex-1 sm:flex-none"
-                                onClick={() => answerKnockingParticipant(guest.id, false)}
-                              >
-                                Deny
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <Button type="button" className="mt-3 h-10" onClick={admitAllWaitingGuests}>
-                        Admit all
-                      </Button>
-                    </div>
-                  )}
-                  {roomParticipants.map((participant) => (
-                    (() => {
-                      const participantEmail = (participant.email || "").trim().toLowerCase();
-                      const linkedMeetingParticipant = activeMeeting?.participants?.find((row) => {
-                        const rowEmail = (row.user?.email || "").trim().toLowerCase();
-                        return !!participantEmail && !!rowEmail && rowEmail === participantEmail;
-                      });
-                      const isHostParticipant =
-                        linkedMeetingParticipant?.role === "host" ||
-                        (!!participantEmail &&
-                          participantEmail === (activeMeeting?.host?.email || "").trim().toLowerCase());
-                      const isAdminParticipant = Boolean(
-                        linkedMeetingParticipant?.user?.role_name &&
-                          linkedMeetingParticipant.user.role_name.toLowerCase().includes("admin")
-                      );
-                      const allowRemoveAction = !isHostParticipant && !isAdminParticipant;
-                      return (
-                    <div
-                      key={participant.id}
-                      className="relative flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-ink">
-                          {participant.displayName}
-                          {participant.isLocal ? " · You" : ""}
-                        </p>
-                        {participant.email && (
-                          <p className="truncate text-xs text-slate-500">{participant.email}</p>
-                        )}
-                      </div>
-                      {isHostUser && isModerator && !participant.isLocal && participant.id && (
-                        <div className="relative">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className="h-9 shrink-0 text-slate-600 hover:bg-slate-100"
-                            data-participant-menu-trigger="true"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setParticipantActionMenuId((prev) =>
-                                prev === participant.id ? null : participant.id
-                              );
-                            }}
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                          {participantActionMenuId === participant.id && (
-                            <div
-                              className="absolute right-0 top-11 z-20 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-lg ring-1 ring-slate-100"
-                              data-participant-menu="true"
-                            >
-                              <div className="space-y-1">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-ink hover:bg-slate-50"
-                                  onClick={() => {
-                                    const shouldMute = !participant.audioMuted;
-                                    const ok = runParticipantAction(
-                                      participant.id,
-                                      shouldMute ? "muteParticipant" : "unmuteParticipant",
-                                      shouldMute ? "Mute requested" : "Unmute requested",
-                                      shouldMute
-                                        ? "Moderator mute command sent for attendee microphone."
-                                        : "Moderator unmute command sent for attendee microphone.",
-                                      shouldMute
-                                        ? "Could not mute this attendee's microphone."
-                                        : "Could not unmute this attendee's microphone."
-                                    );
-                                    if (ok) {
-                                      setRoomParticipants((current) =>
-                                        current.map((item) =>
-                                          item.id === participant.id ? { ...item, audioMuted: shouldMute } : item
-                                        )
-                                      );
-                                    }
-                                    setParticipantActionMenuId(null);
-                                  }}
-                                >
-                                  {participant.audioMuted ? (
-                                    <Mic className="h-4 w-4" />
-                                  ) : (
-                                    <MicOff className="h-4 w-4" />
-                                  )}
-                                  {participant.audioMuted ? "Unmute mic" : "Mute mic"}
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-ink hover:bg-slate-50"
-                                  onClick={() => {
-                                    const shouldTurnVideoOff = !participant.videoMuted;
-                                    const ok = runParticipantAction(
-                                      participant.id,
-                                      shouldTurnVideoOff ? "muteParticipantVideo" : "unmuteParticipantVideo",
-                                      shouldTurnVideoOff ? "Video-off requested" : "Video-on requested",
-                                      shouldTurnVideoOff
-                                        ? "Moderator camera-off command sent for attendee video."
-                                        : "Moderator camera-on command sent for attendee video.",
-                                      shouldTurnVideoOff
-                                        ? "Could not turn off this attendee's camera."
-                                        : "Could not turn on this attendee's camera."
-                                    );
-                                    if (ok) {
-                                      setRoomParticipants((current) =>
-                                        current.map((item) =>
-                                          item.id === participant.id
-                                            ? { ...item, videoMuted: shouldTurnVideoOff }
-                                            : item
-                                        )
-                                      );
-                                    }
-                                    setParticipantActionMenuId(null);
-                                  }}
-                                >
-                                  {participant.videoMuted ? (
-                                    <Video className="h-4 w-4" />
-                                  ) : (
-                                    <VideoOff className="h-4 w-4" />
-                                  )}
-                                  {participant.videoMuted ? "Video on" : "Video off"}
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-ink hover:bg-slate-50"
-                                  onClick={() => {
-                                    runParticipantAction(
-                                      participant.id,
-                                      "grantModerator",
-                                      "Screen sharing allowed",
-                                      "Attendee can now share screen as a moderator.",
-                                      "Could not allow screen sharing for this attendee."
-                                    );
-                                    setParticipantActionMenuId(null);
-                                  }}
-                                >
-                                  <ShieldCheck className="h-4 w-4" />
-                                  Allow share
-                                </Button>
-                                {allowRemoveAction && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="h-10 w-full justify-start gap-2 whitespace-nowrap px-2.5 text-left text-red-600 hover:bg-red-50"
-                                    onClick={() => {
-                                      runParticipantAction(
-                                        participant.id,
-                                        "kickParticipant",
-                                        "Attendee removed",
-                                        "The attendee was removed from the meeting.",
-                                        "Could not remove this attendee."
-                                      );
-                                      setParticipantActionMenuId(null);
-                                    }}
-                                  >
-                                    <UserX className="h-4 w-4" />
-                                    Remove attendee
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                      );
-                    })()
-                  ))}
-                  {roomParticipants.length === 0 && (
-                    <p className="text-sm text-slate-400">No room participants detected yet.</p>
-                  )}
-                </div>
+                <div className={meetDrawer.hostHint}>Host controls are available in the Meeting tab.</div>
               ),
             }}
           />
       )}
       </div>
 
-      <ConfirmDialog
-        open={confirmEndOpen}
-        title="End this meeting?"
-        description="This will close the live room for everyone and finalize the GRE archive."
-        confirmLabel="End meeting"
-        cancelLabel="Keep meeting live"
-        tone="danger"
-        loading={endMeeting.isPending}
-        onClose={() => setConfirmEndOpen(false)}
-        onConfirm={() => {
-          handleEndConference();
-          setConfirmEndOpen(false);
-        }}
-      />
+      {canManage && (
+        <ConfirmDialog
+          open={confirmEndOpen}
+          title="End this meeting?"
+          description="This will close the live room for everyone and finalize the GRE archive."
+          confirmLabel="End meeting for everyone"
+          cancelLabel="Keep meeting live"
+          tone="danger"
+          loading={endMeeting.isPending}
+          onClose={() => setConfirmEndOpen(false)}
+          onConfirm={() => {
+            handleEndConference();
+            setConfirmEndOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

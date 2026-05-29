@@ -24,8 +24,12 @@ export function buildMeetingPath(
   return base;
 }
 
-/** API path segment for meeting detail actions (accepts encoded or legacy integer). */
+/**
+ * API path segment for meeting detail actions.
+ * Prefer numeric id when we have a meeting record (reliable); accept encoded or integer strings otherwise.
+ */
 export function meetingApiSegment(meeting: MeetingLike): string {
-  if (typeof meeting === "object") return meetingRef(meeting);
-  return String(meeting);
+  if (typeof meeting === "object") return String(meeting.id);
+  const text = String(meeting).trim();
+  return text;
 }

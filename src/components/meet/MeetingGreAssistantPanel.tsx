@@ -21,14 +21,18 @@ type Props = {
   compact?: boolean;
   /** Light cards (archive, dashboard); dark drawer in live meet room. */
   variant?: "light" | "dark";
+  /** Meet drawer: thread scrolls, input stays pinned at the bottom. */
+  drawerLayout?: boolean;
 };
 
 export function MeetingGreAssistantPanel({
   meeting,
   compact = false,
   variant = "light",
+  drawerLayout = false,
 }: Props) {
   const isDark = variant === "dark";
+  const useDrawerChrome = isDark && drawerLayout;
   const threadRef = useRef<HTMLDivElement>(null);
   const historyStorageKey = useMemo(
     () => `gre-meet-assistant-history:${meeting.id}`,
@@ -98,11 +102,13 @@ export function MeetingGreAssistantPanel({
     );
   }
 
-  const threadShell = isDark
-    ? "min-h-0 flex-1 space-y-2 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900/70 p-3"
-    : `min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50/80 p-3 ${
-        compact ? "max-h-64" : "max-h-80"
-      }`;
+  const threadShell = useDrawerChrome
+    ? "min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain rounded-2xl border border-slate-800 bg-slate-900/70 p-3"
+    : isDark
+      ? "min-h-0 flex-1 space-y-2 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900/70 p-3"
+      : `min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50/80 p-3 ${
+          compact ? "max-h-64" : "max-h-80"
+        }`;
 
   const emptyHint = isDark
     ? "text-sm text-slate-400"
@@ -169,9 +175,11 @@ export function MeetingGreAssistantPanel({
   );
 
   return (
-    <div className={`flex h-full min-h-0 flex-col ${compact ? "gap-3" : "gap-4"}`}>
+    <div
+      className={`flex min-h-0 flex-col ${useDrawerChrome ? "h-full gap-3" : compact ? "h-full gap-3" : "gap-4"}`}
+    >
       {isDark && (
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <Bot className="h-4 w-4 text-brand-400" />
           <p className="text-sm font-semibold text-slate-100">GRE Assistant</p>
           {isLive && (
@@ -208,7 +216,13 @@ export function MeetingGreAssistantPanel({
       </div>
 
       <form
-        className={isDark ? "mt-auto space-y-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-3" : "space-y-2"}
+        className={
+          useDrawerChrome
+            ? "shrink-0 space-y-2 border-t border-slate-800 bg-slate-900/95 p-3"
+            : isDark
+              ? "mt-auto shrink-0 space-y-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-3"
+              : "shrink-0 space-y-2"
+        }
         onSubmit={(event) => {
           event.preventDefault();
           handleAsk();

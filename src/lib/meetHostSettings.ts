@@ -52,27 +52,40 @@ export function applyJitsiJoinMediaPolicy(
   }
 }
 
-export function buildJitsiConfigOverwrite(settings: MeetHostRoomSettings) {
+const JITSI_TOOLBAR_ATTENDEE = [
+  "microphone",
+  "camera",
+  "desktop",
+  "participants-pane",
+  "tileview",
+  "select-background",
+  "settings",
+  "raisehand",
+  "videoquality",
+  "hangup",
+] as const;
+
+const JITSI_TOOLBAR_MODERATOR = [
+  ...JITSI_TOOLBAR_ATTENDEE.filter((btn) => btn !== "hangup"),
+  "recording",
+  "mute-everyone",
+  "end-conference",
+  "hangup",
+] as const;
+
+export function buildJitsiConfigOverwrite(
+  settings: MeetHostRoomSettings,
+  isMeetingModerator = false
+) {
   return {
     prejoinPageEnabled: false,
     disableDeepLinking: true,
     startAudioOnly: false,
     startWithAudioMuted: settings.mute_audio_on_join,
     startWithVideoMuted: settings.video_off_on_join,
-    toolbarButtons: [
-      "microphone",
-      "camera",
-      "desktop",
-      "participants-pane",
-      "tileview",
-      "select-background",
-      "settings",
-      "raisehand",
-      "videoquality",
-      "recording",
-      "end-conference",
-      "mute-everyone",
-      "hangup",
-    ],
+    disableRemoteMute: !isMeetingModerator,
+    toolbarButtons: isMeetingModerator
+      ? [...JITSI_TOOLBAR_MODERATOR]
+      : [...JITSI_TOOLBAR_ATTENDEE],
   };
 }

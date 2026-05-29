@@ -987,6 +987,14 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+.meet-drawer-panel--dark {
+  color: rgb(226 232 240);
+}
+
+.meet-drawer-panel--dark ::selection {
+  background: color-mix(in srgb, var(--color-brand-600) 45%, transparent);
+}
+
 .gre-dashboard-card {
   border-radius: 1rem;
   border: 1px solid rgb(226 232 240);

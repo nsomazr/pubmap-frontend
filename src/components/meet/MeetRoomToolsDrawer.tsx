@@ -1,8 +1,8 @@
-import { Bot, FileText, Info, LayoutGrid, Users, X } from "lucide-react";
+import { Bot, FileText, Info, LayoutGrid, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../ui/Button";
 
-export type MeetRoomDrawerTab = "info" | "assistant" | "chat" | "host" | "people";
+export type MeetRoomDrawerTab = "info" | "assistant" | "chat" | "host";
 
 type Props = {
   open: boolean;
@@ -18,7 +18,6 @@ const TABS: { id: MeetRoomDrawerTab; label: string; icon: typeof Bot; hostOnly?:
   { id: "info", label: "Meeting", icon: Info },
   { id: "assistant", label: "Assistant", icon: Bot },
   { id: "chat", label: "Messages", icon: FileText },
-  { id: "people", label: "People", icon: Users },
 ];
 
 const DRAWER_TRANSITION_MS = 320;
@@ -77,29 +76,29 @@ export function MeetRoomToolsDrawer({
     >
       <button
         type="button"
-        className={`absolute inset-0 bg-slate-900/20 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${
+        className={`absolute inset-0 bg-slate-950/55 backdrop-blur-sm transition-opacity duration-300 ease-out ${
           animating ? "opacity-100" : "opacity-0"
         }`}
         aria-label="Close meeting controls"
         onClick={onClose}
       />
       <aside
-        className={`relative flex h-full w-full max-w-md flex-col border-l border-slate-200/90 bg-white text-ink shadow-[-12px_0_40px_-12px_rgba(15,23,42,0.12)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:max-w-lg ${
+        className={`relative flex h-full w-full max-w-md flex-col border-l border-slate-700/90 bg-slate-900 text-slate-100 shadow-[-16px_0_48px_-12px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:max-w-lg ${
           animating ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3.5 sm:px-5">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-800 px-4 py-3.5 sm:px-5">
           <div className="min-w-0 border-l-[3px] border-brand-500 pl-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               Meeting controls
             </p>
-            <h2 className="truncate text-lg font-semibold text-ink">
+            <h2 className="truncate text-lg font-semibold text-slate-100">
               {meetingTitle || "GRE Meet"}
             </h2>
           </div>
           <Button
             variant="ghost"
-            className="shrink-0 px-2 text-slate-500 hover:bg-slate-100 hover:text-ink"
+            className="shrink-0 px-2 !text-slate-400 hover:!bg-slate-800 hover:!text-slate-100"
             onClick={onClose}
             aria-label="Close panel"
           >
@@ -107,7 +106,7 @@ export function MeetRoomToolsDrawer({
           </Button>
         </div>
 
-        <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-slate-100 px-3 py-2.5 sm:px-4">
+        <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-slate-800 px-3 py-2.5 sm:px-4">
           {visibleTabs.map((item) => {
             const Icon = item.icon;
             const active = tab === item.id;
@@ -118,8 +117,8 @@ export function MeetRoomToolsDrawer({
                 onClick={() => onTabChange(item.id)}
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 ease-out ${
                   active
-                    ? "bg-brand-600 text-white shadow-sm shadow-brand-600/20"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-ink"
+                    ? "bg-brand-600 text-white shadow-sm shadow-brand-600/30"
+                    : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-slate-100"
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -129,7 +128,11 @@ export function MeetRoomToolsDrawer({
           })}
         </div>
 
-        <div className="meet-drawer-panel flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4 sm:p-5">
+        <div
+          className={`meet-drawer-panel meet-drawer-panel--dark flex min-h-0 flex-1 flex-col overscroll-contain p-4 sm:p-5 ${
+            tab === "assistant" || tab === "chat" ? "overflow-hidden" : "overflow-y-auto"
+          }`}
+        >
           {panels[tab]}
         </div>
       </aside>
@@ -255,13 +258,13 @@ export function MeetRoomControlsFab({
             dragStateRef.current = null;
             setIsDragging(false);
           }}
-          className={`pointer-events-auto inline-flex h-10 min-h-11 items-center gap-2 rounded-full border border-slate-200/90 bg-white/95 px-3 text-sm font-semibold text-slate-700 shadow-[0_8px_28px_-6px_rgba(15,23,42,0.14)] backdrop-blur-sm select-none touch-none sm:px-4 ${
+          className={`pointer-events-auto inline-flex h-10 min-h-11 items-center gap-2 rounded-full border border-slate-600/90 bg-slate-900/95 px-3 text-sm font-semibold text-slate-100 shadow-[0_8px_28px_-6px_rgba(0,0,0,0.45)] backdrop-blur-sm select-none touch-none sm:px-4 ${
             isDragging
-              ? "cursor-grabbing scale-[0.98] ring-2 ring-brand-200/80"
-              : "cursor-grab transition-all duration-200 ease-out hover:border-brand-200 hover:bg-brand-50/40 hover:text-brand-800 hover:shadow-[0_10px_32px_-6px_rgba(59,91,219,0.2)]"
+              ? "cursor-grabbing scale-[0.98] ring-2 ring-brand-500/50"
+              : "cursor-grab transition-all duration-200 ease-out hover:border-brand-500/60 hover:bg-slate-800 hover:text-white hover:shadow-[0_10px_32px_-6px_rgba(59,91,219,0.35)]"
           }`}
         >
-          <LayoutGrid className="h-4 w-4 shrink-0 text-brand-600" />
+          <LayoutGrid className="h-4 w-4 shrink-0 text-brand-400" />
           <span className="sm:hidden">Menu</span>
           <span className="hidden sm:inline">{label}</span>
         </button>
