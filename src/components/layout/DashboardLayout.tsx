@@ -1,6 +1,7 @@
 import { ChevronRight, ExternalLink, Menu, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { RouteLoadingFallback } from "../navigation/RouteLoadingFallback";
 import { useAuth } from "../../context/AuthContext";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { NotificationBell } from "../dashboard/NotificationBell";
@@ -66,6 +67,13 @@ export function DashboardLayout() {
     if (!isMobile) setMobileOpen(false);
   }, [isMobile]);
 
+  useEffect(() => {
+    void import("../../pages/dashboard/PublicationManagePage");
+    void import("../../pages/dashboard/MeetManagePage");
+    void import("../../pages/dashboard/MeetingsPage");
+    void import("../../pages/dashboard/PublicationsPage");
+  }, []);
+
   const handleLogout = () => {
     logout();
     navigate("/login", { replace: true });
@@ -126,7 +134,9 @@ export function DashboardLayout() {
 
         <div className="flex-1 overflow-x-hidden p-3 sm:p-6 lg:p-8">
           <div className="gre-dashboard-shell gre-page-shell mx-auto min-h-[calc(100vh-8rem)] w-full">
-            <Outlet />
+            <Suspense fallback={<RouteLoadingFallback label="Loading…" />}>
+              <Outlet />
+            </Suspense>
           </div>
         </div>
       </main>

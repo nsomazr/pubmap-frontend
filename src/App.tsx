@@ -1,11 +1,15 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthScreen, AuthScreenLoading } from "./components/auth/AuthScreen";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { RouteErrorBoundary } from "./components/navigation/RouteErrorBoundary";
+import { RouteLoadingFallback } from "./components/navigation/RouteLoadingFallback";
+import { RouteNavigationEffects } from "./components/navigation/RouteNavigationEffects";
 import { SummaryNavigationBridge } from "./components/navigation/SummaryNavigationBridge";
 import { ConfirmProvider } from "./components/ui/ConfirmDialog";
 import { ToastProvider } from "./components/ui/ToastProvider";
+import { lazyPage } from "./lib/lazyRoute";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
@@ -13,104 +17,87 @@ import { OnboardingPage } from "./pages/auth/OnboardingPage";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 import { GreAssistant } from "./components/assistant/GreAssistant";
 
-const PublicationDetailPage = lazy(() =>
-  import("./pages/PublicationDetailPage").then((m) => ({ default: m.PublicationDetailPage }))
+const PublicationDetailPage = lazyPage(
+  () => import("./pages/PublicationDetailPage"),
+  "PublicationDetailPage"
 );
-const PublicationChatPage = lazy(() =>
-  import("./pages/PublicationChatPage").then((m) => ({ default: m.PublicationChatPage }))
+const PublicationChatPage = lazyPage(
+  () => import("./pages/PublicationChatPage"),
+  "PublicationChatPage"
 );
-const ForumPage = lazy(() => import("./pages/ForumPage").then((m) => ({ default: m.ForumPage })));
-const ForumCategoryPage = lazy(() =>
-  import("./pages/ForumCategoryPage").then((m) => ({ default: m.ForumCategoryPage }))
+const ForumPage = lazyPage(() => import("./pages/ForumPage"), "ForumPage");
+const ForumCategoryPage = lazyPage(
+  () => import("./pages/ForumCategoryPage"),
+  "ForumCategoryPage"
 );
-const ForumTopicPage = lazy(() =>
-  import("./pages/ForumTopicPage").then((m) => ({ default: m.ForumTopicPage }))
-);
-const EventsPage = lazy(() => import("./pages/EventsPage").then((m) => ({ default: m.EventsPage })));
-const EventDetailPage = lazy(() =>
-  import("./pages/EventDetailPage").then((m) => ({ default: m.EventDetailPage }))
-);
-const MeetRoomPage = lazy(() =>
-  import("./pages/MeetRoomPage").then((m) => ({ default: m.MeetRoomPage }))
-);
-const AboutPage = lazy(() => import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })));
-const DoiRedirectPage = lazy(() =>
-  import("./pages/DoiRedirectPage").then((m) => ({ default: m.DoiRedirectPage }))
-);
-const RankingsPage = lazy(() =>
-  import("./pages/RankingsPage").then((m) => ({ default: m.RankingsPage }))
-);
-const StatisticsPage = lazy(() =>
-  import("./pages/StatisticsPage").then((m) => ({ default: m.StatisticsPage }))
-);
-const ResearcherProfilePage = lazy(() =>
-  import("./pages/ResearcherProfilePage").then((m) => ({ default: m.ResearcherProfilePage }))
+const ForumTopicPage = lazyPage(() => import("./pages/ForumTopicPage"), "ForumTopicPage");
+const EventsPage = lazyPage(() => import("./pages/EventsPage"), "EventsPage");
+const EventDetailPage = lazyPage(() => import("./pages/EventDetailPage"), "EventDetailPage");
+const MeetRoomPage = lazyPage(() => import("./pages/MeetRoomPage"), "MeetRoomPage");
+const AboutPage = lazyPage(() => import("./pages/AboutPage"), "AboutPage");
+const DoiRedirectPage = lazyPage(() => import("./pages/DoiRedirectPage"), "DoiRedirectPage");
+const RankingsPage = lazyPage(() => import("./pages/RankingsPage"), "RankingsPage");
+const StatisticsPage = lazyPage(() => import("./pages/StatisticsPage"), "StatisticsPage");
+const ResearcherProfilePage = lazyPage(
+  () => import("./pages/ResearcherProfilePage"),
+  "ResearcherProfilePage"
 );
 
-const DashboardHome = lazy(() =>
-  import("./pages/dashboard/DashboardHome").then((m) => ({ default: m.DashboardHome }))
+const DashboardHome = lazyPage(() => import("./pages/dashboard/DashboardHome"), "DashboardHome");
+const PublicationsPage = lazyPage(
+  () => import("./pages/dashboard/PublicationsPage"),
+  "PublicationsPage"
 );
-const PublicationsPage = lazy(() =>
-  import("./pages/dashboard/PublicationsPage").then((m) => ({ default: m.PublicationsPage }))
+const PublicationManagePage = lazyPage(
+  () => import("./pages/dashboard/PublicationManagePage"),
+  "PublicationManagePage"
 );
-const PublicationManagePage = lazy(() =>
-  import("./pages/dashboard/PublicationManagePage").then((m) => ({ default: m.PublicationManagePage }))
+const PublicationReaderPage = lazyPage(
+  () => import("./pages/dashboard/PublicationReaderPage"),
+  "PublicationReaderPage"
 );
-const PublicationReaderPage = lazy(() =>
-  import("./pages/dashboard/PublicationReaderPage").then((m) => ({ default: m.PublicationReaderPage }))
+const AccountPage = lazyPage(() => import("./pages/dashboard/AccountPage"), "AccountPage");
+const MessagesPage = lazyPage(() => import("./pages/dashboard/MessagesPage"), "MessagesPage");
+const AdminReviewPage = lazyPage(
+  () => import("./pages/dashboard/AdminReviewPage"),
+  "AdminReviewPage"
 );
-const AccountPage = lazy(() =>
-  import("./pages/dashboard/AccountPage").then((m) => ({ default: m.AccountPage }))
+const AuthorsPage = lazyPage(() => import("./pages/dashboard/AuthorsPage"), "AuthorsPage");
+const CategoriesPage = lazyPage(
+  () => import("./pages/dashboard/CategoriesPage"),
+  "CategoriesPage"
 );
-const MessagesPage = lazy(() =>
-  import("./pages/dashboard/MessagesPage").then((m) => ({ default: m.MessagesPage }))
+const ManagersPage = lazyPage(() => import("./pages/dashboard/ManagersPage"), "ManagersPage");
+const EventsAdminPage = lazyPage(
+  () => import("./pages/dashboard/EventsAdminPage"),
+  "EventsAdminPage"
 );
-const AdminReviewPage = lazy(() =>
-  import("./pages/dashboard/AdminReviewPage").then((m) => ({ default: m.AdminReviewPage }))
+const MeetingsPage = lazyPage(() => import("./pages/dashboard/MeetingsPage"), "MeetingsPage");
+const MeetManagePage = lazyPage(
+  () => import("./pages/dashboard/MeetManagePage"),
+  "MeetManagePage"
 );
-const AuthorsPage = lazy(() =>
-  import("./pages/dashboard/AuthorsPage").then((m) => ({ default: m.AuthorsPage }))
+const MeetDetailPage = lazyPage(
+  () => import("./pages/dashboard/MeetDetailPage"),
+  "MeetDetailPage"
 );
-const CategoriesPage = lazy(() =>
-  import("./pages/dashboard/CategoriesPage").then((m) => ({ default: m.CategoriesPage }))
+const MeetingArchivePage = lazyPage(
+  () => import("./pages/dashboard/MeetingArchivePage"),
+  "MeetingArchivePage"
 );
-const ManagersPage = lazy(() =>
-  import("./pages/dashboard/ManagersPage").then((m) => ({ default: m.ManagersPage }))
+const AdsPage = lazyPage(() => import("./pages/dashboard/AdsPage"), "AdsPage");
+const AdminOperationsPage = lazyPage(
+  () => import("./pages/dashboard/AdminOperationsPage"),
+  "AdminOperationsPage"
 );
-const EventsAdminPage = lazy(() =>
-  import("./pages/dashboard/EventsAdminPage").then((m) => ({ default: m.EventsAdminPage }))
-);
-const MeetingsPage = lazy(() =>
-  import("./pages/dashboard/MeetingsPage").then((m) => ({ default: m.MeetingsPage }))
-);
-const MeetManagePage = lazy(() =>
-  import("./pages/dashboard/MeetManagePage").then((m) => ({ default: m.MeetManagePage }))
-);
-const MeetDetailPage = lazy(() =>
-  import("./pages/dashboard/MeetDetailPage").then((m) => ({ default: m.MeetDetailPage }))
-);
-const MeetingArchivePage = lazy(() =>
-  import("./pages/dashboard/MeetingArchivePage").then((m) => ({ default: m.MeetingArchivePage }))
-);
-const AdsPage = lazy(() => import("./pages/dashboard/AdsPage").then((m) => ({ default: m.AdsPage })));
-const AdminOperationsPage = lazy(() =>
-  import("./pages/dashboard/AdminOperationsPage").then((m) => ({ default: m.AdminOperationsPage }))
-);
-const PlagiarismClaimsPage = lazy(() =>
-  import("./pages/dashboard/PlagiarismClaimsPage").then((m) => ({ default: m.PlagiarismClaimsPage }))
+const PlagiarismClaimsPage = lazyPage(
+  () => import("./pages/dashboard/PlagiarismClaimsPage"),
+  "PlagiarismClaimsPage"
 );
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
 });
-
-function RouteFallback() {
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center text-slate-500">
-      Loading…
-    </div>
-  );
-}
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, onboardingRequired } = useAuth();
@@ -154,8 +141,9 @@ function OnboardingRoute() {
 
 function AppRoutes() {
   return (
-    <Suspense fallback={<RouteFallback />}>
-      <Routes>
+    <RouteErrorBoundary>
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <Routes>
         <Route path="/" element={<HomePage />} />
         <Route element={<AuthRoute />}>
           <Route path="/login" element={<LoginPage />} />
@@ -216,8 +204,9 @@ function AppRoutes() {
           <Route path="cms" element={<Navigate to="/dashboard/operations" replace />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
+        </Routes>
+      </Suspense>
+    </RouteErrorBoundary>
   );
 }
 
@@ -227,6 +216,7 @@ function AppShell() {
 
   return (
     <>
+      <RouteNavigationEffects />
       <SummaryNavigationBridge />
       <AppRoutes />
       {!hideAssistant && <GreAssistant />}
