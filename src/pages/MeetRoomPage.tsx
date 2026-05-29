@@ -1334,57 +1334,59 @@ export function MeetRoomPage() {
                         <div key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
                           <div className={`flex w-full max-w-[96%] items-end gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
                             <UserAvatar user={message.sender} name={senderName} size="sm" className="shrink-0" />
-                            <div
-                              className={`group/msg w-full max-w-[92%] rounded-2xl px-3 py-2.5 shadow-sm transition ${
-                                isOwn
-                                  ? "bg-brand-600 text-white"
-                                  : "bg-slate-800 text-slate-100 ring-1 ring-slate-600/80"
-                              }`}
-                            >
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                              <p
-                                className={`text-[11px] font-semibold uppercase tracking-wide ${
-                                  isOwn ? "text-white/80" : "text-slate-400"
+                            <div className="group/msg relative w-full max-w-[92%] pb-6">
+                              <div
+                                className={`rounded-2xl px-3 py-2.5 shadow-sm ${
+                                  isOwn
+                                    ? "bg-brand-600 text-white"
+                                    : "bg-slate-800 text-slate-100 ring-1 ring-slate-600/80"
                                 }`}
                               >
-                                {senderName}
-                                {isOwn ? " · You" : ""}
-                              </p>
-                              <span className={`text-[11px] ${isOwn ? "text-white/70" : "text-slate-400"}`}>
-                                {formatChatTimestamp(message.created_at)}
-                              </span>
-                              </div>
-                              {parsedMessage.replySnippet && (
-                                <div
-                                  className={`mt-1.5 rounded-xl px-2.5 py-2 ${
-                                    isOwn
-                                      ? "bg-white/15"
-                                      : "border border-slate-600/80 bg-slate-900/60"
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p
+                                    className={`text-[11px] font-semibold uppercase tracking-wide ${
+                                      isOwn ? "text-white/80" : "text-slate-400"
+                                    }`}
+                                  >
+                                    {senderName}
+                                    {isOwn ? " · You" : ""}
+                                  </p>
+                                  <span className={`text-[11px] ${isOwn ? "text-white/70" : "text-slate-400"}`}>
+                                    {formatChatTimestamp(message.created_at)}
+                                  </span>
+                                </div>
+                                {parsedMessage.replySnippet && (
+                                  <div
+                                    className={`mt-1.5 rounded-xl px-2.5 py-2 ${
+                                      isOwn
+                                        ? "bg-white/15"
+                                        : "border border-slate-600/80 bg-slate-900/60"
+                                    }`}
+                                  >
+                                    <p className={`text-[11px] font-semibold ${isOwn ? "text-white" : "text-brand-400"}`}>
+                                      {parsedMessage.replyToName}
+                                    </p>
+                                    <p className={`mt-0.5 line-clamp-2 text-xs ${isOwn ? "text-white/85" : "text-slate-300"}`}>
+                                      {parsedMessage.replySnippet}
+                                    </p>
+                                  </div>
+                                )}
+                                <p
+                                  className={`mt-1 text-sm whitespace-pre-wrap leading-relaxed ${
+                                    isOwn ? "text-white" : "text-slate-100"
                                   }`}
                                 >
-                                  <p className={`text-[11px] font-semibold ${isOwn ? "text-white" : "text-brand-400"}`}>
-                                    {parsedMessage.replyToName}
-                                  </p>
-                                  <p className={`mt-0.5 line-clamp-2 text-xs ${isOwn ? "text-white/85" : "text-slate-300"}`}>
-                                    {parsedMessage.replySnippet}
-                                  </p>
-                                </div>
-                              )}
-                              <p
-                                className={`mt-1 text-sm whitespace-pre-wrap leading-relaxed ${
-                                  isOwn ? "text-white" : "text-slate-100"
+                                  {parsedMessage.body}
+                                </p>
+                              </div>
+                              <div
+                                className={`${meetDrawer.messageActions} ${
+                                  isOwn ? meetDrawer.messageActionsEnd : meetDrawer.messageActionsStart
                                 }`}
                               >
-                                {parsedMessage.body}
-                              </p>
-                              <div className="mt-2 flex items-center gap-1.5 [@media(hover:hover)]:hidden [@media(hover:hover)]:group-hover/msg:flex">
                                 <button
                                   type="button"
-                                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
-                                    isOwn
-                                      ? "text-white/90 hover:bg-white/15"
-                                      : "text-brand-400 hover:bg-slate-700"
-                                  }`}
+                                  className={isOwn ? meetDrawer.messageActionBtnOwn : meetDrawer.messageActionBtnAccent}
                                   onClick={() => setReplyTarget(message)}
                                 >
                                   Reply
@@ -1392,7 +1394,7 @@ export function MeetRoomPage() {
                                 {!isOwn && (
                                   <button
                                     type="button"
-                                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-300 transition hover:bg-slate-700"
+                                    className={meetDrawer.messageActionBtn}
                                     onClick={() => {
                                       setTagTarget(message);
                                       const mentionToken = `@${senderName}`;
@@ -1407,11 +1409,7 @@ export function MeetRoomPage() {
                                 )}
                                 <button
                                   type="button"
-                                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
-                                    isOwn
-                                      ? "text-white/90 hover:bg-white/15"
-                                      : "text-slate-300 hover:bg-slate-700"
-                                  }`}
+                                  className={isOwn ? meetDrawer.messageActionBtnOwn : meetDrawer.messageActionBtn}
                                   onClick={() => {
                                     void (navigator.clipboard?.writeText?.(message.message) ?? Promise.reject()).catch(
                                       () => {}

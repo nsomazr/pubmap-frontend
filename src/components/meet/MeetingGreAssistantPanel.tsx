@@ -98,8 +98,9 @@ export function MeetingGreAssistantPanel({
     void (navigator.clipboard?.writeText?.(content) ?? Promise.reject()).catch(() => {});
   };
 
-  const messageActionBarClass =
-    "mt-2 flex items-center gap-1.5 [@media(hover:hover)]:hidden [@media(hover:hover)]:group-hover/msg:flex";
+  const messageActionsShell = isDark
+    ? "absolute z-10 top-full mt-1 flex items-center gap-0.5 rounded-full border border-slate-700/90 bg-slate-900/95 px-1.5 py-0.5 shadow-md opacity-0 pointer-events-none transition-opacity duration-150 [@media(hover:hover)]:group-hover/msg:opacity-100 [@media(hover:hover)]:group-hover/msg:pointer-events-auto [@media(hover:none)]:relative [@media(hover:none)]:mt-1.5 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto"
+    : "absolute z-10 top-full mt-1 flex items-center gap-0.5 rounded-full border border-slate-200/90 bg-white/95 px-1.5 py-0.5 shadow-md opacity-0 pointer-events-none transition-opacity duration-150 [@media(hover:hover)]:group-hover/msg:opacity-100 [@media(hover:hover)]:group-hover/msg:pointer-events-auto [@media(hover:none)]:relative [@media(hover:none)]:mt-1.5 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto";
 
   const messageActionBtn = (kind: "user" | "assistant") => {
     if (isDark) {
@@ -137,13 +138,15 @@ export function MeetingGreAssistantPanel({
     if (isUser) {
       return (
         <div key={`${turn.role}-${index}`} className="flex justify-end">
-          <div
-            className={`group/msg max-w-[92%] rounded-2xl rounded-br-md px-3.5 py-2.5 text-sm leading-relaxed ${
-              isDark ? "bg-brand-900/40 text-slate-100" : "bg-brand-600 text-white"
-            }`}
-          >
-            <p className="whitespace-pre-wrap">{turn.content}</p>
-            <div className={messageActionBarClass}>
+          <div className="group/msg relative max-w-[92%] pb-6">
+            <div
+              className={`rounded-2xl rounded-br-md px-3.5 py-2.5 text-sm leading-relaxed ${
+                isDark ? "bg-brand-900/40 text-slate-100" : "bg-brand-600 text-white"
+              }`}
+            >
+              <p className="whitespace-pre-wrap">{turn.content}</p>
+            </div>
+            <div className={`${messageActionsShell} right-0`}>
               <button
                 type="button"
                 className={messageActionBtn("user")}
@@ -173,15 +176,17 @@ export function MeetingGreAssistantPanel({
         >
           <Sparkles className="h-3.5 w-3.5" />
         </span>
-        <div
-          className={`group/msg min-w-0 max-w-[88%] flex-1 rounded-2xl rounded-tl-md px-3.5 py-2.5 text-sm leading-relaxed ${
-            isDark
-              ? "bg-slate-800 text-slate-100"
-              : "bg-white text-slate-800 ring-1 ring-slate-200/80"
-          }`}
-        >
-          <FormattedAssistantText content={turn.content} />
-          <div className={messageActionBarClass}>
+        <div className="group/msg relative min-w-0 max-w-[88%] flex-1 pb-6">
+          <div
+            className={`rounded-2xl rounded-tl-md px-3.5 py-2.5 text-sm leading-relaxed ${
+              isDark
+                ? "bg-slate-800 text-slate-100"
+                : "bg-white text-slate-800 ring-1 ring-slate-200/80"
+            }`}
+          >
+            <FormattedAssistantText content={turn.content} />
+          </div>
+          <div className={`${messageActionsShell} left-0`}>
             <button
               type="button"
               className={messageActionBtn("assistant")}
