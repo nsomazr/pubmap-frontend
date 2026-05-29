@@ -92,7 +92,7 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
             className="gre-interactive inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-800"
           >
             <Sparkles className="h-4 w-4 text-brand-600" />
-            Get summary
+            Ask about paper
           </Link>
           <Link
             to={buildPublicationPath(publication.id, publication.encoded_id)}

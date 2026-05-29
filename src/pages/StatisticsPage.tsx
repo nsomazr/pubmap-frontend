@@ -28,7 +28,7 @@ import { CountryHeatGrid, CountryHeatGridHint } from "../components/stats/Countr
 import { HorizontalBarChart } from "../components/stats/HorizontalBarChart";
 import { StatsDensityMap } from "../components/stats/StatsDensityMap";
 import { TrendLineChart } from "../components/stats/TrendLineChart";
-import { StarRating } from "../components/rankings/StarRating";
+import { RankedNameLabel } from "../components/rankings/RankedNameLabel";
 import type { PublicResearchStats } from "../types";
 
 function Section({
@@ -220,12 +220,19 @@ export function StatisticsPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 shrink-0 text-slate-400" />
-                          <h3 className="truncate font-semibold text-ink">{inst.name}</h3>
+                          <h3 className="min-w-0 truncate font-semibold text-ink">
+                            <RankedNameLabel
+                              name={inst.name}
+                              stars={inst.stars}
+                              nameClassName="truncate font-semibold text-ink"
+                              compact
+                              showBadges={false}
+                            />
+                          </h3>
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                           <span>{inst.total_publications} publications</span>
                           <span>{inst.total_researchers} researchers</span>
-                          <StarRating stars={inst.stars} size="sm" />
                         </div>
                       </div>
                     </article>

@@ -23,7 +23,7 @@ export function GreDoiBadge({
         <span className="block">DOI: {greDoi}</span>
         {code && (
           <span className="block text-[10px] font-normal tracking-wide text-slate-400">
-            Paper number: {code}
+            Paper ID: {code}
           </span>
         )}
       </span>

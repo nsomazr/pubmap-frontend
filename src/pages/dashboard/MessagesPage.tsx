@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
-  Copy,
   Loader2,
   MessageSquare,
   MoreVertical,
@@ -14,6 +13,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
+import { MessageThreadBubble } from "../../components/messages/MessageThreadBubble";
 import { GreAvatarSlot } from "../../components/ui/GreHeroBanner";
 import { Button } from "../../components/ui/Button";
 import { useConfirm } from "../../components/ui/ConfirmDialog";
@@ -468,12 +468,17 @@ export function MessagesPage() {
   const hasContacts =
     conversationContacts.length > 0 || suggestedContacts.length > 0;
 
+  const mobileThreadOpen = Boolean(partnerId && partner);
+
   return (
-    <div className="animate-fade-up flex h-[calc(100dvh-5.5rem)] flex-col">
-      <PageHeader
-        title="Messages"
-        className="mb-4"
-      />
+    <div
+      className={`animate-fade-up flex min-h-0 flex-col ${
+        mobileThreadOpen
+          ? "h-[calc(100dvh-0.5rem)] md:h-[calc(100dvh-5.5rem)]"
+          : "h-[calc(100dvh-2rem)] md:h-[calc(100dvh-5.5rem)]"
+      }`}
+    >
+      <PageHeader title="Messages" className="mb-4 shrink-0 max-md:hidden" />
       <div className="gre-card-plain flex min-h-0 flex-1 flex-col overflow-hidden p-0 md:flex-row">
         {/* Sidebar */}
         <aside
@@ -613,7 +618,7 @@ export function MessagesPage() {
                 </div>
               </header>
 
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-6">
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-3 py-4 sm:px-6 sm:py-5">
                 {threadLoading ? (
                   <div className="flex flex-1 items-center justify-center">
                     <Loader2 className="h-6 w-6 animate-spin text-slate-300" />
@@ -636,74 +641,21 @@ export function MessagesPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="mt-auto space-y-4">
+                  <div className="mt-auto space-y-3 sm:space-y-4">
                     {thread.map((m) => {
                       const mine = m.from_user?.id === myId;
-                      const deleted = !!m.is_deleted;
                       const body = m.message || "";
                       return (
-                        <div
+                        <MessageThreadBubble
                           key={m.id}
-                          className={`group/message flex w-full flex-col gap-1 ${mine ? "items-end" : "items-start"}`}
-                        >
-                          <div
-                            className={`flex w-full max-w-[min(100%,26rem)] flex-col gap-1.5 ${
-                              mine ? "items-end" : "items-start"
-                            }`}
-                          >
-                            {deleted ? (
-                              <div
-                                className={`rounded-2xl border border-dashed px-4 py-2.5 text-sm italic ${
-                                  mine
-                                    ? "border-brand-200/80 bg-brand-50/90 text-brand-800/70"
-                                    : "border-slate-200 bg-slate-100/90 text-slate-500"
-                                }`}
-                              >
-                                This message was deleted
-                              </div>
-                            ) : (
-                              <>
-                                <div
-                                  className={`w-full px-4 py-2.5 text-[15px] leading-relaxed break-words ${
-                                    mine
-                                      ? "rounded-2xl rounded-br-md bg-brand-600 text-white shadow-sm shadow-brand-600/15"
-                                      : "rounded-2xl rounded-bl-md border border-slate-200/70 bg-white text-slate-800 shadow-sm"
-                                  }`}
-                                >
-                                  {body}
-                                </div>
-                                <div
-                                  className="flex items-center gap-0.5 rounded-lg border border-slate-200/90 bg-white p-0.5 shadow-sm opacity-100 transition focus-within:opacity-100 sm:opacity-0 sm:group-hover/message:opacity-100"
-                                  role="toolbar"
-                                  aria-label="Message actions"
-                                >
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCopyMessage(body)}
-                                    className="flex h-9 w-9 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-800 sm:h-7 sm:w-7"
-                                    aria-label="Copy message"
-                                    title="Copy"
-                                  >
-                                    <Copy className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={deleteMessageMutation.isPending}
-                                    onClick={() => void handleDeleteMessage(m.id)}
-                                    className="flex h-9 w-9 items-center justify-center rounded-md text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-40 sm:h-7 sm:w-7"
-                                    aria-label="Delete message"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                          <span className="px-1 text-[10px] tabular-nums text-slate-400">
-                            {formatTime(m.created_at)}
-                          </span>
-                        </div>
+                          body={body}
+                          deleted={!!m.is_deleted}
+                          mine={mine}
+                          timeLabel={formatTime(m.created_at)}
+                          deletePending={deleteMessageMutation.isPending}
+                          onCopy={() => void handleCopyMessage(body)}
+                          onDelete={() => void handleDeleteMessage(m.id)}
+                        />
                       );
                     })}
                     <div ref={threadEndRef} />
@@ -713,7 +665,7 @@ export function MessagesPage() {
 
               <form
                 onSubmit={handleSend}
-                className="shrink-0 border-t border-slate-200/60 bg-white/80 px-4 py-3 backdrop-blur-sm sm:px-5 sm:py-4"
+                className="shrink-0 border-t border-slate-200/60 bg-white/80 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:px-5 sm:py-4"
               >
                 {(sendError || draftError) && (
                   <p className="mb-2 text-sm text-red-600">{sendError || draftError}</p>
@@ -721,7 +673,7 @@ export function MessagesPage() {
 
                 <div className="gre-field-composer overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition">
                   {showDraftMenu && (
-                    <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-100 px-3 py-2">
+                    <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto border-b border-slate-100 px-3 py-2 [-webkit-overflow-scrolling:touch]">
                       <span className="mr-1 text-[10px] font-medium text-slate-400 uppercase">
                         AI
                       </span>
@@ -805,7 +757,7 @@ export function MessagesPage() {
                   </div>
                 </div>
 
-                <p className="mt-2 text-center text-[10px] text-slate-400 sm:text-left">
+                <p className="mt-2 hidden text-[10px] text-slate-400 sm:block">
                   Enter to send · Shift+Enter for new line
                 </p>
               </form>

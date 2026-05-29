@@ -9,6 +9,7 @@ import { MapResultsRail } from "../components/landing/MapResultsRail";
 import { MapSearchHub } from "../components/landing/MapSearchHub";
 import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import { PublicFooter } from "../components/layout/PublicFooter";
+import { EagerRouteComplete } from "../components/navigation/EagerRouteComplete";
 import { PublicNav } from "../components/layout/PublicNav";
 import { ResearchMap } from "../components/map/ResearchMap";
 import { MapPublicationSheet } from "../components/map/MapPublicationSheet";
@@ -37,7 +38,7 @@ type MapSearchFilters = {
 
 export function HomePage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const mapDeepLink = useMemo(
     () => parseMapDeepLink(searchParams.toString()),
     [searchParams]
@@ -68,6 +69,7 @@ export function HomePage() {
   const mapChromeBoundsRef = useRef<HTMLElement | null>(null);
   const skipAutoSearchRef = useRef(true);
   const userDismissedResultsRailRef = useRef(false);
+  const [mapViewResetToken, setMapViewResetToken] = useState(0);
 
   const debouncedAuthor = useDebouncedValue(author, 400);
   const debouncedAffiliation = useDebouncedValue(affiliation, 400);
@@ -292,7 +294,7 @@ export function HomePage() {
     [author, affiliation, title, categoryId, subCategoryId, runSearch]
   );
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setAuthor("");
     setAffiliation("");
     setTitle("");
@@ -302,15 +304,21 @@ export function HomePage() {
     setCategoryId("");
     setSubCategoryId("");
     setResults(null);
+    setSearchError(null);
     setAuthorResearch(null);
     setAuthorResearchLoading(false);
     setInstitutionResearch(null);
     setInstitutionResearchLoading(false);
     setResultsRailOpen(false);
     setResultsRailCollapsed(false);
+    setSelectedPublicationId(null);
+    setFocusPubId(null);
+    setDeepLinkPub(null);
+    setMapViewResetToken((token) => token + 1);
     userDismissedResultsRailRef.current = false;
     skipAutoSearchRef.current = true;
-  };
+    setSearchParams({}, { replace: true });
+  }, [setSearchParams]);
 
   useEffect(() => {
     if (skipAutoSearchRef.current) return;
@@ -369,16 +377,13 @@ export function HomePage() {
 
   const hasSearched = results !== null;
   const basePublications = hasSearched ? (results ?? []) : mapPublications;
-  const institutionOnlySearch =
-    affiliation.trim().length >= 2 && author.trim().length < 2;
   const publications = useMemo(() => {
     if (deepLinkPub && !basePublications.some((p) => p.id === deepLinkPub.id)) {
       return [deepLinkPub, ...basePublications];
     }
     return basePublications;
   }, [basePublications, deepLinkPub]);
-  const mapDisplayPublications =
-    hasSearched && institutionOnlySearch ? [] : publications;
+  const mapDisplayPublications = publications;
   const categories = data?.categories ?? [];
   const subCategories = data?.sub_categories ?? [];
   const totalOnMap = mapPublications.length;
@@ -401,7 +406,9 @@ export function HomePage() {
   }, [mapExpanded]);
 
   return (
-    <div
+    <>
+      <EagerRouteComplete />
+      <div
       className={`landing-page relative flex min-h-[100dvh] flex-col overflow-hidden bg-slate-200${
         resultsRailOpen && !resultsRailCollapsed ? " landing-page--results-open" : ""
       }${selectedPublication ? " landing-page--marker-sheet-open" : ""}${
@@ -424,6 +431,7 @@ export function HomePage() {
             <ResearchMap
               publications={mapDisplayPublications}
               focusPublicationId={focusPubId}
+              mapViewResetToken={mapViewResetToken}
               height="100%"
               className="rounded-none border-0"
               mappedTotal={data?.meta?.with_coordinates}
@@ -566,5 +574,6 @@ export function HomePage() {
         <PublicFooter variant="compact" publicationCount={onMapWithCoords || totalOnMap} />
       )}
     </div>
+    </>
   );
 }

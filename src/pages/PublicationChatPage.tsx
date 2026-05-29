@@ -70,13 +70,14 @@ export function PublicationChatPage() {
       accent="blue"
       badge="GRE Assistant"
       title="Research assistant"
+      subtitle="Ask questions about this paper's manuscript — answers use the uploaded PDF and GRE sections for this study only."
       crumbs={[
         { label: "Home", to: "/" },
         {
           label: crumbTitle.slice(0, 48) + (crumbTitle.length > 48 ? "…" : ""),
           to: buildPublicationPath(pub.id, pub.encoded_id),
         },
-        { label: "Chat" },
+        { label: "Manuscript chat" },
       ]}
       back={{ to: "/", label: "Back to map" }}
     >

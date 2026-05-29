@@ -6,8 +6,7 @@ import { formatGrePaperTitle } from "../lib/grePaperTitle";
 import api from "../lib/api";
 import { ReportPlagiarismDialog } from "../components/publication/ReportPlagiarismDialog";
 import { GreAdPlacement } from "../components/ads/GreAdSlot";
-import { ResearcherRankInline } from "../components/rankings/ResearcherRankInline";
-import { StarRating } from "../components/rankings/StarRating";
+import { RankedNameLabel } from "../components/rankings/RankedNameLabel";
 import { PdfPreview } from "../components/publication/PdfPreview";
 import { PublicationDiscussions } from "../components/publication/PublicationDiscussions";
 import { CoAuthorsPanel } from "../components/publication/CoAuthorsPanel";
@@ -86,8 +85,10 @@ export function PublicationDetailPage() {
   const manuscriptSections = [
     { title: "Introduction", body: pub.introduction },
     { title: "Methods", body: pub.methods },
-    { title: "Results", body: pub.results },
-    { title: "Findings — discussion", body: pub.findings },
+    {
+      title: "Findings",
+      body: pub.findings?.trim() ? pub.findings : pub.results,
+    },
     { title: "Conclusion", body: pub.conclusion },
   ].filter((section) => Boolean(section.body?.trim()));
 
@@ -112,17 +113,17 @@ export function PublicationDetailPage() {
             <div className="flex items-center gap-3">
               <UserAvatar user={pub.author} size="md" />
               <div className="min-w-0">
-                <p className="font-semibold text-ink">{authorName}</p>
+                <RankedNameLabel
+                  name={authorName}
+                  nameClassName="font-semibold text-ink"
+                  ranking={pub.author?.ranking}
+                />
                 <p className="truncate text-xs text-slate-500">{pub.author?.affiliation}</p>
               </div>
             </div>
             {pub.author?.ranking && (
-              <div className="mt-4 space-y-2 border-t border-slate-100 pt-4">
-                <ResearcherRankInline ranking={pub.author.ranking} />
-                <div className="flex items-center gap-2 text-xs text-slate-600">
-                  <StarRating stars={pub.author.ranking.stars} size="sm" />
-                  <span>{pub.author.ranking.published_count} on GRE</span>
-                </div>
+              <div className="mt-4 border-t border-slate-100 pt-4 text-xs text-slate-600">
+                <span>{pub.author.ranking.published_count} on GRE</span>
               </div>
             )}
             {pub.author?.id && (
@@ -151,7 +152,6 @@ export function PublicationDetailPage() {
             downloadsCount={pub.downloads_count ?? 0}
             discussionsCount={pub.discussions_count ?? 0}
             responsesCount={pub.responses_count ?? 0}
-            teamSize={pub.co_authors?.total_authors}
             greDoi={pub.gre?.gre_doi}
             accessType={pub.gre?.access_type}
           />

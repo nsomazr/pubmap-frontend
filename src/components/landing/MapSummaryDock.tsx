@@ -62,7 +62,7 @@ export function MapSummaryDock({ publication, onClose }: Props) {
             onClick={() => setMinimized(false)}
             className="min-w-0 flex-1 text-left"
           >
-            <p className="truncate text-xs font-semibold text-brand-700">Research summary</p>
+            <p className="truncate text-xs font-semibold text-brand-700">Manuscript chat</p>
             <p className="truncate text-[11px] text-slate-500">
               {formatGrePaperTitle(publication.title, publication.short_number)}
             </p>
@@ -104,7 +104,7 @@ export function MapSummaryDock({ publication, onClose }: Props) {
             />
             <div className="min-w-0 flex-1 text-left">
               <p className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
-                Research summary
+                Research assistant
               </p>
               <h3 className="line-clamp-2 text-left text-base font-bold leading-snug text-ink">
                 {formatGrePaperTitle(publication.title, publication.short_number)}

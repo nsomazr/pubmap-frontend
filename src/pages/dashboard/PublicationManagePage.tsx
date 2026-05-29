@@ -152,7 +152,6 @@ export function PublicationManagePage() {
   const [abstract, setAbstract] = useState("");
   const [introduction, setIntroduction] = useState("");
   const [methods, setMethods] = useState("");
-  const [results, setResults] = useState("");
   const [findings, setFindings] = useState("");
   const [conclusion, setConclusion] = useState("");
   const [funder, setFunder] = useState("");
@@ -185,7 +184,6 @@ export function PublicationManagePage() {
     abstract,
     introduction,
     methods,
-    results,
     findings,
     conclusion,
     funder,
@@ -198,7 +196,6 @@ export function PublicationManagePage() {
       abstract: setAbstract,
       introduction: setIntroduction,
       methods: setMethods,
-      results: setResults,
       findings: setFindings,
       conclusion: setConclusion,
       funder: setFunder,
@@ -224,9 +221,10 @@ export function PublicationManagePage() {
       if (nextIntroduction) setIntroduction(nextIntroduction);
       const nextMethods = applyExtractedSection(payload.methods, limits.methods);
       if (nextMethods) setMethods(nextMethods);
-      const nextResults = applyExtractedSection(payload.results, limits.results);
-      if (nextResults) setResults(nextResults);
-      const nextFindings = applyExtractedSection(payload.findings, limits.findings);
+      const findingsSource = payload.findings?.trim()
+        ? payload.findings
+        : payload.results;
+      const nextFindings = applyExtractedSection(findingsSource, limits.findings);
       if (nextFindings) setFindings(nextFindings);
       const nextConclusion = applyExtractedSection(payload.conclusion, limits.conclusion);
       if (nextConclusion) setConclusion(nextConclusion);
@@ -278,8 +276,7 @@ export function PublicationManagePage() {
     setAbstract(pub.abstract ?? "");
     setIntroduction(pub.introduction ?? "");
     setMethods(pub.methods ?? "");
-    setResults(pub.results ?? "");
-    setFindings(pub.findings ?? "");
+    setFindings(pub.findings?.trim() ? pub.findings : (pub.results ?? ""));
     setConclusion(pub.conclusion ?? "");
     setFunder(cleanFunderNames(pub.funder ?? ""));
     setReferences(limitReferences(pub.references ?? "", pub.title ?? ""));
@@ -444,7 +441,7 @@ export function PublicationManagePage() {
         abstract,
         introduction,
         methods,
-        results,
+        results: "",
         findings,
         conclusion,
         funder,
@@ -647,7 +644,6 @@ export function PublicationManagePage() {
       funder,
       introduction,
       methods,
-      results,
       findings,
       conclusion,
       subVisual,
@@ -674,7 +670,6 @@ export function PublicationManagePage() {
       funder,
       introduction,
       methods,
-      results,
       findings,
       conclusion,
       subVisual,
@@ -717,7 +712,7 @@ export function PublicationManagePage() {
       if (!hasTextContent(introduction)) return "Introduction is required for restricted access.";
       if (!hasTextContent(methods)) return "Methods is required for restricted access.";
       if (!hasTextContent(findings)) {
-        return "Findings — discussion is required for restricted access.";
+        return "Findings is required for restricted access.";
       }
       if (!gre.external_url?.trim()) return "Publisher access link is required for restricted access.";
     } else if (!openHasSource) {

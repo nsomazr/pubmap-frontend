@@ -329,6 +329,7 @@ export interface ResearcherSearchIdentity {
   publications_by_year?: YearPublicationCount[];
   latest_publication_year?: number | null;
   ranking?: ResearcherRanking;
+  publication_ids?: number[];
   publications?: Publication[];
 }
 

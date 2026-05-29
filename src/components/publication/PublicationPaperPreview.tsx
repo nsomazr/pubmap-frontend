@@ -16,7 +16,6 @@ export interface PublicationPaperPreviewData {
   funder?: string;
   introduction?: string;
   methods?: string;
-  results?: string;
   findings?: string;
   conclusion?: string;
   subVisual?: SubcategoryVisual | null;
@@ -27,7 +26,6 @@ export interface PublicationPaperPreviewData {
   downloadsCount?: number;
   discussionsCount?: number;
   responsesCount?: number;
-  teamSize?: number;
   greDoi?: string | null;
   accessType?: "open" | "closed";
 }
@@ -68,7 +66,6 @@ export function PublicationPaperPreview({
         downloadsCount={data.downloadsCount}
         discussionsCount={data.discussionsCount}
         responsesCount={data.responsesCount}
-        teamSize={data.teamSize}
         greDoi={data.greDoi}
         accessType={data.accessType}
         draft={draft}
@@ -94,8 +91,7 @@ export function PublicationPaperPreview({
       <div className="space-y-4">
         <PublicationManuscriptSection title="Introduction" body={data.introduction} />
         <PublicationManuscriptSection title="Methods" body={data.methods} />
-        <PublicationManuscriptSection title="Results" body={data.results} />
-        <PublicationManuscriptSection title="Findings — discussion" body={data.findings} />
+        <PublicationManuscriptSection title="Findings" body={data.findings} />
         <PublicationManuscriptSection title="Conclusion" body={data.conclusion} />
       </div>
 

@@ -27,7 +27,7 @@ import { buildPublicationChatPath } from "../../lib/publicationChat";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { MapPublicationYearChart } from "./MapPublicationYearChart";
 import { useIsMobile } from "../../hooks/useMediaQuery";
-import { ResearcherRankInline } from "../rankings/ResearcherRankInline";
+import { RankedNameLabel } from "../rankings/RankedNameLabel";
 import { SubcategoryBadge } from "../taxonomy/SubcategoryBadge";
 import { UserAvatar } from "../ui/UserAvatar";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
@@ -121,6 +121,7 @@ type InstitutionResult = {
   totalResearchers: number;
   totalDiscussions: number;
   totalResponses: number;
+  leadingFields: { name: string; publication_count: number }[];
   leadingSubfields: { name: string; publication_count: number }[];
   leadingResearchers: { name: string; user_id?: number | null; publication_count: number }[];
   publicationsByYear: { year: number; count: number }[];
@@ -256,8 +257,11 @@ function collectInstitutionResults(publications: Publication[]): InstitutionResu
 
   return [...grouped.entries()]
     .map(([key, entry]) => {
+      const fieldCounts = new Map<string, number>();
       const subfieldCounts = new Map<string, number>();
       for (const pub of entry.publications) {
+        const field = (pub.field_name || "").trim();
+        if (field) fieldCounts.set(field, (fieldCounts.get(field) ?? 0) + 1);
         const subfield = (pub.subfield_name || pub.sub_category_name || "").trim();
         if (!subfield) continue;
         subfieldCounts.set(subfield, (subfieldCounts.get(subfield) ?? 0) + 1);
@@ -281,6 +285,10 @@ function collectInstitutionResults(publications: Publication[]): InstitutionResu
         totalResearchers: entry.researcherIds.size || entry.researcherNames.size,
         totalDiscussions: sumDiscussions(entry.publications),
         totalResponses: sumResponses(entry.publications),
+        leadingFields: [...fieldCounts.entries()]
+          .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+          .slice(0, 10)
+          .map(([name, publication_count]) => ({ name, publication_count })),
         leadingSubfields: [...subfieldCounts.entries()]
           .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
           .slice(0, 10)
@@ -332,6 +340,7 @@ function institutionIdentityFromPaperResults(row: InstitutionResult): Institutio
     user_id: null,
     publication_count: 0,
   };
+  const topField = row.leadingFields[0] ?? { name: "", publication_count: 0 };
   const topSubfield = row.leadingSubfields[0] ?? { name: "", publication_count: 0 };
   return {
     key: row.key,
@@ -342,7 +351,7 @@ function institutionIdentityFromPaperResults(row: InstitutionResult): Institutio
     discussions_count: row.totalDiscussions,
     responses_count: row.totalResponses,
     leading_researcher: topResearcher,
-    leading_field: topSubfield,
+    leading_field: topField,
     leading_subfield: topSubfield,
     leading_subfields: row.leadingSubfields,
     leading_researchers: row.leadingResearchers,
@@ -398,6 +407,9 @@ function InstitutionIdentityCard({
         ? [institution.leading_researcher]
         : [];
   const yearData = institution.publications_by_year ?? [];
+  const leadingField = institution.leading_field?.name
+    ? institution.leading_field
+    : subfields[0] ?? { name: "", publication_count: 0 };
 
   return (
     <article
@@ -410,7 +422,12 @@ function InstitutionIdentityCard({
           <Building2 className="h-6 w-6" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-base font-semibold leading-snug text-ink">{institution.name}</p>
+          <RankedNameLabel
+            name={institution.name}
+            nameClassName="text-base font-semibold leading-snug text-ink"
+            institutionPublicationCount={institution.publication_count}
+            compact
+          />
           {institution.latest_publication_year ? (
             <p className="mt-0.5 text-xs text-slate-500">
               Latest publication: {institution.latest_publication_year}
@@ -421,10 +438,36 @@ function InstitutionIdentityCard({
 
       <div className="mt-3 grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
         <InsightStat icon={BookOpenText} label="Publications" value={institution.publication_count} tone="brand" />
+        <div className="rounded-xl border border-brand-100 bg-brand-50/50 px-2.5 py-2 ring-1 ring-brand-100/80">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
+            <Sparkles className="h-3 w-3 shrink-0" />
+            Leading field
+          </div>
+          <p className="mt-1 line-clamp-2 text-sm font-bold leading-snug text-ink">
+            {leadingField.name || "—"}
+          </p>
+          {leadingField.name ? (
+            <p className="text-[11px] font-semibold text-brand-800/80">
+              {leadingField.publication_count} paper
+              {leadingField.publication_count === 1 ? "" : "s"}
+            </p>
+          ) : null}
+        </div>
         <InsightStat icon={Users} label="Researchers" value={institution.researcher_count} />
         <InsightStat icon={MessageSquare} label="Discussions" value={institution.discussions_count} tone="teal" />
         <InsightStat icon={Reply} label="Responses" value={institution.responses_count} tone="brand" />
       </div>
+
+      {leadingField.name && !compact && (
+        <p className="mt-2 rounded-lg bg-brand-50/80 px-2.5 py-2 text-xs text-brand-900">
+          <span className="font-semibold">Leading field:</span> {leadingField.name}
+          <span className="text-brand-700">
+            {" "}
+            · {leadingField.publication_count} paper
+            {leadingField.publication_count === 1 ? "" : "s"}
+          </span>
+        </p>
+      )}
 
       {!compact && subfields.length > 0 && (
         <div className="mt-4">
@@ -521,27 +564,25 @@ function ResearcherIdentityCard({
           className="h-12 w-12 rounded-xl border-2 text-sm"
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-base font-semibold leading-snug text-ink">{person.name}</p>
-              {person.affiliation && (
-                <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{person.affiliation}</p>
-              )}
-              {!person.has_profile && (
-                <p className="mt-1 text-[11px] font-medium text-amber-800">
-                  Co-author on GRE papers (no platform profile yet)
-                </p>
-              )}
-              {person.latest_publication_year ? (
-                <p className="mt-1 text-[11px] text-slate-500">
-                  Latest publication: {person.latest_publication_year}
-                </p>
-              ) : null}
-            </div>
-            {person.ranking ? (
-              <div className="shrink-0">
-                <ResearcherRankInline ranking={person.ranking} compact />
-              </div>
+          <div className="min-w-0">
+            <RankedNameLabel
+              name={person.name}
+              nameClassName="text-base font-semibold leading-snug text-ink"
+              ranking={person.ranking}
+              compact
+            />
+            {person.affiliation && (
+              <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{person.affiliation}</p>
+            )}
+            {!person.has_profile && (
+              <p className="mt-1 text-[11px] font-medium text-amber-800">
+                Co-author on GRE papers (no platform profile yet)
+              </p>
+            )}
+            {person.latest_publication_year ? (
+              <p className="mt-1 text-[11px] text-slate-500">
+                Latest publication: {person.latest_publication_year}
+              </p>
             ) : null}
           </div>
         </div>
@@ -686,13 +727,7 @@ export function MapResultsRail({
           .slice(0, 3)
       : [];
 
-  const paperList = institutionSearchActive
-    ? []
-    : exactResearcher?.publications && exactResearcher.publications.length > 0
-      ? exactResearcher.publications
-      : authorSearchActive
-        ? publications.slice(0, 8)
-        : publications;
+  const paperList = publications;
 
   const institutionResultCount = exactInstitution
     ? 1
@@ -917,20 +952,18 @@ export function MapResultsRail({
                               className="h-11 w-11 rounded-xl border-2 text-sm"
                             />
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-semibold text-ink">
-                                    {person.name}
+                              <div className="min-w-0">
+                                <RankedNameLabel
+                                  name={person.name}
+                                  nameClassName="truncate text-sm font-semibold text-ink"
+                                  ranking={person.ranking}
+                                  compact
+                                />
+                                {person.affiliation && (
+                                  <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
+                                    {person.affiliation}
                                   </p>
-                                  {person.affiliation && (
-                                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
-                                      {person.affiliation}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="shrink-0">
-                                  <ResearcherRankInline ranking={person.ranking} compact />
-                                </div>
+                                )}
                               </div>
                               <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-600">
                                 <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
@@ -940,8 +973,7 @@ export function MapResultsRail({
                                 </span>
                                 <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold">
                                   <MessageSquare className="h-3 w-3 text-teal-600" />
-                                  {person.totalDiscussions} discussion
-                                  {person.totalDiscussions === 1 ? "" : "s"}
+                                  {person.totalDiscussions} discussions
                                 </span>
                               </div>
                               {person.leadSubfield && (
@@ -1078,12 +1110,17 @@ export function MapResultsRail({
                                 {formatGrePaperTitle(pub.title, pub.short_number)}
                               </p>
                               <p className="mt-1 truncate text-xs text-slate-500">
-                                {authorDisplayName(pub.author) ||
-                                  `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim()}
+                                <RankedNameLabel
+                                  name={
+                                    authorDisplayName(pub.author) ||
+                                    `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim()
+                                  }
+                                  nameClassName="truncate"
+                                  ranking={pub.author?.ranking}
+                                  compact
+                                  showBadges={false}
+                                />
                               </p>
-                              <div className="mt-1.5">
-                                <ResearcherRankInline ranking={pub.author?.ranking} compact />
-                              </div>
                               {location && (
                                 <p className="mt-1 flex items-start gap-1 text-xs text-slate-600">
                                   <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-teal-600" />
@@ -1108,7 +1145,7 @@ export function MapResultsRail({
                               className="gre-interactive flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-ink transition hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-800"
                             >
                               <Sparkles className="h-3.5 w-3.5 text-brand-600" />
-                              Get summary
+                              Ask about paper
                             </Link>
                             <Link
                               to={buildPublicationPath(pub.id, pub.encoded_id)}

@@ -3,7 +3,6 @@ export type DraftFields = {
   abstract: string;
   introduction?: string;
   methods?: string;
-  results?: string;
   findings?: string;
   conclusion?: string;
 };
@@ -12,7 +11,6 @@ const SECTIONS: { label: string; key: keyof DraftFields }[] = [
   { label: "Abstract", key: "abstract" },
   { label: "Introduction", key: "introduction" },
   { label: "Methods", key: "methods" },
-  { label: "Results", key: "results" },
   { label: "Findings", key: "findings" },
   { label: "Conclusion", key: "conclusion" },
 ];

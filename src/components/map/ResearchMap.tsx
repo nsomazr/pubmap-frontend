@@ -25,9 +25,20 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
-function FitBounds({ pubs }: { pubs: Publication[] }) {
+function FitBounds({
+  pubs,
+  resetToken = 0,
+}: {
+  pubs: Publication[];
+  resetToken?: number;
+}) {
   const map = useMap();
   const lastFitKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    lastFitKeyRef.current = null;
+  }, [resetToken]);
+
   const pubKey = useMemo(
     () =>
       pubs
@@ -79,6 +90,8 @@ interface Props {
   className?: string;
   zoomPosition?: "bottomright" | "bottomleft" | "topright" | "topleft";
   focusPublicationId?: number | null;
+  /** Increment to refit the default map viewport (e.g. after clearing search). */
+  mapViewResetToken?: number;
   variant?: "default" | "embedded";
   advancedControls?: boolean;
   mappedTotal?: number;
@@ -96,6 +109,7 @@ export function ResearchMap({
   className = "",
   zoomPosition = "bottomright",
   focusPublicationId = null,
+  mapViewResetToken = 0,
   variant = "default",
   advancedControls,
   mappedTotal,
@@ -185,7 +199,9 @@ export function ResearchMap({
             onCount={handleViewportCount}
           />
         )}
-        {!focusPublicationId && !mapRegion && <FitBounds pubs={withCoords} />}
+        {!focusPublicationId && !mapRegion && (
+          <FitBounds pubs={withCoords} resetToken={mapViewResetToken} />
+        )}
         {mapRegion && <FitMapRegion region={mapRegion} />}
         {onMapRegionPick && (
           <MapRegionPicker

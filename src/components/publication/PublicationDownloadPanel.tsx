@@ -335,7 +335,7 @@ export function PublicationDownloadPanel({
               <span className="block font-semibold">DOI: {doi}</span>
               {paperCode && (
                 <span className="mt-0.5 block text-[10px] font-medium tracking-wide text-slate-400">
-                  Paper {paperCode}
+                  Paper ID {paperCode}
                 </span>
               )}
             </span>

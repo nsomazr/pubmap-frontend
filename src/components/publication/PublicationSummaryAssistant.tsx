@@ -1,4 +1,5 @@
-import { Loader2, MessageCircle, Sparkles } from "lucide-react";
+import { MessageCircle, Sparkles } from "lucide-react";
+import { AssistantThinkingIndicator } from "../assistant/AssistantThinkingIndicator";
 import { InputWithSendAddon } from "../ui/FieldSendAddon";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
@@ -121,7 +122,12 @@ export function PublicationSummaryAssistant({
 
   const submitFollowUp = async (questionText: string) => {
     const trimmed = questionText.trim();
-    if (!trimmed || !summary.trim() || summaryLoading || followUpLoading) return;
+    if (!trimmed || followUpLoading) return;
+
+    if (summaryLoading) {
+      summaryAbortRef.current?.abort();
+      setSummaryLoading(false);
+    }
 
     followUpAbortRef.current?.abort();
     const itemId = `${Date.now()}`;
@@ -170,7 +176,7 @@ export function PublicationSummaryAssistant({
             setFollowUpLoading(false);
           },
         },
-        { summary, history, signal: controller.signal }
+        { summary: summary.trim() || undefined, history, signal: controller.signal }
       );
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
@@ -194,9 +200,17 @@ export function PublicationSummaryAssistant({
     void submitFollowUp(question);
   };
 
-  const canAskFollowUp = Boolean(summary.trim()) && !summaryLoading && !followUpLoading;
+  const canAskManuscript = !followUpLoading;
+  const showComposer = !followUpLoading;
   const isDock = layout === "dock";
   const isPage = layout === "page";
+
+  const manuscriptNotice = (
+    <p className="rounded-xl border border-brand-100 bg-brand-50/60 px-3.5 py-2.5 text-xs leading-relaxed text-slate-600 sm:text-sm">
+      Chat about this paper&apos;s manuscript — methods, findings, authors, and claims. Answers use
+      the uploaded PDF or GRE sections for this publication only.
+    </p>
+  );
 
   const publicationHref = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -230,7 +244,7 @@ export function PublicationSummaryAssistant({
           <button
             key={suggestion}
             type="button"
-            disabled={!canAskFollowUp}
+            disabled={!canAskManuscript}
             onClick={() => void submitFollowUp(suggestion)}
             className="rounded-full bg-slate-100 px-2.5 py-1.5 text-left text-[11px] font-medium leading-snug text-slate-600 transition hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 sm:text-xs"
           >
@@ -245,8 +259,8 @@ export function PublicationSummaryAssistant({
       value={question}
       onChange={setQuestion}
       onSubmit={() => askFollowUp()}
-      placeholder="Ask about authors, methods, findings…"
-      disabled={!canAskFollowUp}
+      placeholder="Ask about this paper's methods, findings, authors…"
+      disabled={!canAskManuscript}
       loading={followUpLoading}
       submitAriaLabel="Ask follow-up question"
     />
@@ -279,6 +293,8 @@ export function PublicationSummaryAssistant({
             Retry this question
           </button>
         </div>
+      ) : item.loading && !item.answer.trim() ? (
+        <AssistantThinkingIndicator />
       ) : (
         <div className="flex gap-2.5">
           <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
@@ -299,6 +315,7 @@ export function PublicationSummaryAssistant({
           ref={scrollContainerRef}
           className="publication-chat__thread min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1 sm:space-y-4"
         >
+          {manuscriptNotice}
           {summaryError ? (
             <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3.5 shadow-sm">
               <p className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
@@ -313,20 +330,17 @@ export function PublicationSummaryAssistant({
                 Try again
               </button>
             </div>
-          ) : !summary && summaryLoading ? (
+          ) : summaryLoading && !summary.trim() ? (
             <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-600">
-                Summary
+              <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-brand-600">
+                Overview
               </p>
-              <span className="inline-flex items-center gap-2 text-sm text-slate-600">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating summary…
-              </span>
+              <AssistantThinkingIndicator />
             </div>
           ) : summary ? (
             <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm">
               <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-600">
-                Summary
+                Overview
               </p>
               <div className="text-sm leading-relaxed text-slate-800">
                 <FormattedAssistantText content={summary} streaming={summaryLoading} />
@@ -339,11 +353,11 @@ export function PublicationSummaryAssistant({
         </div>
 
         <div className="publication-chat__composer mt-3 shrink-0 border-t border-slate-100 bg-white pt-3">
-          {(summary.trim() || followUps.length > 0) && !summaryLoading && (
+          {showComposer && (
             <div className="space-y-2.5">
               <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-600">
                 <MessageCircle className="h-3.5 w-3.5" />
-                Follow-up questions
+                Chat about this manuscript
               </p>
               {suggestionChips && (
                 <div className="space-y-2">
@@ -361,14 +375,12 @@ export function PublicationSummaryAssistant({
 
   return (
     <div className={`space-y-3 ${className}`}>
+      {manuscriptNotice}
       <div>
         {summaryError ? (
           <p className="text-sm text-amber-800">{summaryError}</p>
-        ) : !summary && summaryLoading ? (
-          <span className="inline-flex items-center gap-2 text-sm text-slate-500">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Generating summary…
-          </span>
+        ) : summaryLoading && !summary.trim() ? (
+          <AssistantThinkingIndicator variant="compact" />
         ) : (
           <>
             <FormattedAssistantText content={summary} streaming={summaryLoading} />
@@ -377,11 +389,11 @@ export function PublicationSummaryAssistant({
         )}
       </div>
 
-      {(summary.trim() || followUps.length > 0) && !summaryLoading && (
+      {showComposer && (
         <div className={`space-y-3 ${isDock ? "border-t border-slate-100 pt-3" : "border-t border-brand-100 pt-4"}`}>
           <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-600">
             <MessageCircle className="h-3.5 w-3.5" />
-            Follow-up questions
+            Chat about this manuscript
           </p>
           {suggestionChips && (
             <div className="space-y-2">

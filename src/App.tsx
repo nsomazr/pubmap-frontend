@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { RouteErrorBoundary } from "./components/navigation/RouteErrorBoundary";
 import { RouteLoadingFallback } from "./components/navigation/RouteLoadingFallback";
 import { RouteNavigationEffects } from "./components/navigation/RouteNavigationEffects";
+import { NavigationProgressProvider } from "./components/navigation/navigationProgress";
 import { SummaryNavigationBridge } from "./components/navigation/SummaryNavigationBridge";
 import { ConfirmProvider } from "./components/ui/ConfirmDialog";
 import { ToastProvider } from "./components/ui/ToastProvider";
@@ -144,7 +145,7 @@ function AppRoutes() {
 
   return (
     <RouteErrorBoundary resetKeys={[location.pathname, location.search]}>
-      <Suspense fallback={<RouteLoadingFallback />}>
+      <Suspense fallback={<RouteLoadingFallback overlay />}>
         <Routes>
         <Route path="/" element={<HomePage />} />
         <Route element={<AuthRoute />}>
@@ -217,12 +218,12 @@ function AppShell() {
   const hideAssistant = location.pathname.startsWith("/meet/");
 
   return (
-    <>
+    <NavigationProgressProvider>
       <RouteNavigationEffects />
       <SummaryNavigationBridge />
       <AppRoutes />
       {!hideAssistant && <GreAssistant />}
-    </>
+    </NavigationProgressProvider>
   );
 }
 

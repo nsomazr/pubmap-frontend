@@ -69,7 +69,7 @@ export function buildPublicationPopupHtml(
       </div>
       <div class="gre-popup-actions">
         <a href="${publicationChatPath}" class="gre-popup-summary-btn" data-pub-id="${pub.id}">
-          Get summary
+          Ask about paper
         </a>
         ${viewLink}
       </div>

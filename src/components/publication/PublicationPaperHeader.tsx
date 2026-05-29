@@ -1,3 +1,4 @@
+import { metaCountValue } from "../../lib/formatMetaCount";
 import { formatGrePaperTitle, grePaperCode } from "../../lib/grePaperTitle";
 import { assets } from "../../lib/brand";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
@@ -20,7 +21,6 @@ export interface PublicationPaperHeaderProps {
   downloadsCount?: number;
   discussionsCount?: number;
   responsesCount?: number;
-  teamSize?: number;
   greDoi?: string | null;
   accessType?: "open" | "closed";
   draft?: boolean;
@@ -98,7 +98,6 @@ function buildMetaRows({
   downloadsCount,
   discussionsCount,
   responsesCount,
-  teamSize,
   greDoi,
   greNumber,
 }: Pick<
@@ -110,7 +109,6 @@ function buildMetaRows({
   | "downloadsCount"
   | "discussionsCount"
   | "responsesCount"
-  | "teamSize"
   | "greDoi"
   | "greNumber"
 >) {
@@ -118,10 +116,10 @@ function buildMetaRows({
   const paperCode = grePaperCode(greNumber);
 
   if (paperCode) {
-    rows.push({ label: "Paper number", value: paperCode });
+    rows.push({ label: "Paper ID", value: paperCode });
   }
   if (publishedLabel) {
-    rows.push({ label: "Published Online", value: publishedLabel });
+    rows.push({ label: "Published On:", value: publishedLabel });
   }
   if (location) {
     rows.push({ label: "Area", value: location });
@@ -129,23 +127,10 @@ function buildMetaRows({
   if (funder?.trim()) {
     rows.push({ label: "Funder", value: funder.trim() });
   }
-  rows.push({
-    label: "Readers",
-    value: `${viewsCount ?? 0} views · ${downloadsCount ?? 0} downloads`,
-  });
-  const discussionTotal = discussionsCount ?? 0;
-  rows.push({
-    label: discussionTotal === 1 ? "Discussion" : "Discussions",
-    value: String(discussionTotal),
-  });
-  if (typeof responsesCount === "number" || typeof teamSize === "number") {
-    const responses = responsesCount ?? 0;
-    const authors = teamSize ?? 1;
-    rows.push({
-      label: responses === 1 ? "Response" : "Responses",
-      value: `${responses} ${responses === 1 ? "response" : "responses"} · ${authors} author${authors === 1 ? "" : "s"}`,
-    });
-  }
+  rows.push({ label: "Views", value: metaCountValue(viewsCount) });
+  rows.push({ label: "Downloads", value: metaCountValue(downloadsCount) });
+  rows.push({ label: "Discussions", value: metaCountValue(discussionsCount) });
+  rows.push({ label: "Responses", value: metaCountValue(responsesCount) });
   if (greDoi?.trim()) {
     rows.push({
       label: "DOI",
@@ -171,8 +156,7 @@ export function PublicationPaperHeader({
   viewsCount = 0,
   downloadsCount = 0,
   discussionsCount = 0,
-  responsesCount,
-  teamSize,
+  responsesCount = 0,
   greDoi,
   draft,
 }: PublicationPaperHeaderProps) {
@@ -185,7 +169,6 @@ export function PublicationPaperHeader({
     downloadsCount,
     discussionsCount,
     responsesCount,
-    teamSize,
     greDoi,
     greNumber,
   });

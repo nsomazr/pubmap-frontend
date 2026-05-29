@@ -7,8 +7,7 @@ import api from "../lib/api";
 import { institutionMapUrl } from "../lib/institutionLinks";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { CollaborationNetwork } from "../components/publication/CollaborationNetwork";
-import { ResearcherBadges } from "../components/rankings/ResearcherBadges";
-import { StarRating } from "../components/rankings/StarRating";
+import { RankedNameLabel } from "../components/rankings/RankedNameLabel";
 import { GreHeroBanner } from "../components/ui/GreHeroBanner";
 import type { PublicResearcherProfile } from "../types";
 
@@ -78,23 +77,25 @@ export function ResearcherProfilePage() {
         className="mb-6"
         photoUrl={user.photo}
         initials={initials}
-        title={name}
+        title={
+          <RankedNameLabel
+            name={name}
+            nameClassName="text-2xl font-bold tracking-tight text-ink sm:text-3xl"
+            ranking={ranking}
+          />
+        }
         subtitle={
-          <>
-            {user.affiliation && (
-              <Link
-                to={institutionLink}
-                className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-brand-700"
-              >
-                <Building2 className="h-4 w-4" />
-                {user.affiliation}
-              </Link>
-            )}
-            <span className="mt-2 block">
-              <StarRating stars={ranking.stars} size="sm" />
-              <ResearcherBadges badges={ranking.badges} />
-            </span>
-          </>
+          user.affiliation ? (
+            <Link
+              to={institutionLink}
+              className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-brand-700"
+            >
+              <Building2 className="h-4 w-4" />
+              {user.affiliation}
+            </Link>
+          ) : (
+            user.area_of_study || "Global Research Exchange contributor"
+          )
         }
         meta={
           <p className="text-sm text-slate-600">

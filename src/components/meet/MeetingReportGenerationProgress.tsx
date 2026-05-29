@@ -14,7 +14,7 @@ type Props = {
 const STEPS = [
   { id: "close", label: "Finalizing meeting" },
   { id: "transcript", label: "Processing transcript" },
-  { id: "summary", label: "Generating summary" },
+  { id: "summary", label: "Thinking — generating summary" },
   { id: "report", label: "Preparing host report" },
 ] as const;
 
@@ -89,11 +89,17 @@ export function MeetingReportGenerationProgress({
         ) : null}
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-ink">
-            {status === "pending" ? "Generating meeting report…" : "Report generation failed"}
+            {status === "pending"
+              ? activeStep >= 2
+                ? "Thinking…"
+                : "Generating meeting report…"
+              : "Report generation failed"}
           </p>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
             {status === "pending"
-              ? "GRE is building the archive summary from your transcript and assistant notes. This usually takes under a minute."
+              ? activeStep >= 2
+                ? "GRE is writing the archive summary from your transcript and assistant notes. This usually takes under a minute."
+                : "GRE is preparing your transcript and report. This usually takes under a minute."
               : errorMessage ||
                 "Something went wrong while creating the report. You can retry or write the report manually."}
           </p>

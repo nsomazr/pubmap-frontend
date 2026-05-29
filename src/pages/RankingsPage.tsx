@@ -7,8 +7,7 @@ import { greAccentBadge, greIconBrand, greIconTeal } from "../lib/greTheme";
 import { institutionMapUrl } from "../lib/institutionLinks";
 import { INSTITUTION_SORT_OPTIONS, RESEARCHER_SORT_OPTIONS } from "../lib/rankings";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
-import { ResearcherBadges } from "../components/rankings/ResearcherBadges";
-import { StarRating } from "../components/rankings/StarRating";
+import { RankedNameLabel } from "../components/rankings/RankedNameLabel";
 import { UserAvatar } from "../components/ui/UserAvatar";
 import type {
   InstitutionRanking,
@@ -157,12 +156,14 @@ export function RankingsPage() {
                         to={inst.map_url || institutionMapUrl(inst.name)}
                         className="hover:underline"
                       >
-                        {inst.name}
+                        <RankedNameLabel
+                          name={inst.name}
+                          stars={inst.stars}
+                          nameClassName="text-lg font-semibold text-ink group-hover:text-brand-700"
+                          showBadges={false}
+                        />
                       </Link>
                     </h2>
-                    <div className="mt-2">
-                      <StarRating stars={inst.stars} size="lg" />
-                    </div>
                     <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-600">
                       <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 font-semibold">
                         <Building2 className="h-3.5 w-3.5 text-brand-600" />
@@ -226,16 +227,16 @@ export function RankingsPage() {
                       to={`/researcher/${person.user_id}`}
                       className="transition hover:text-brand-700"
                     >
-                      {person.name}
+                      <RankedNameLabel
+                        name={person.name}
+                        ranking={person}
+                        nameClassName="font-semibold text-ink transition group-hover:text-brand-700"
+                      />
                     </Link>
                   </h2>
                   {person.affiliation && (
                     <p className="mt-0.5 truncate text-sm text-slate-500">{person.affiliation}</p>
                   )}
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <StarRating stars={person.stars} />
-                    <ResearcherBadges badges={person.badges} />
-                  </div>
                   <p className="mt-2 text-xs text-slate-500">
                     {person.published_count} published · {person.discussion_count}{" "}
                     {person.discussion_count === 1 ? "discussion" : "discussions"}

@@ -1,4 +1,5 @@
-import { lazy, type ComponentType, type LazyExoticComponent } from "react";
+import { Fragment, createElement, lazy, type ComponentType, type LazyExoticComponent } from "react";
+import { RouteNavigationComplete } from "../components/navigation/navigationProgress";
 
 const CHUNK_RETRY_DELAY_MS = 400;
 
@@ -38,7 +39,16 @@ export function lazyPage<M extends Record<string, ComponentType<unknown>>>(
       if (!component) {
         throw new Error(`lazyPage: export "${String(exportName)}" was not found on the module.`);
       }
-      return { default: component };
+      const Page = component as ComponentType<unknown>;
+      function PageWithNavigationReady(props: Record<string, unknown>) {
+        return createElement(
+          Fragment,
+          null,
+          createElement(RouteNavigationComplete),
+          createElement(Page, props)
+        );
+      }
+      return { default: PageWithNavigationReady as ComponentType<unknown> };
     })
   );
 }

@@ -14,7 +14,6 @@ export type ManuscriptFields = {
   abstract: string;
   introduction: string;
   methods: string;
-  results: string;
   findings: string;
   conclusion: string;
   funder: string;
@@ -133,7 +132,7 @@ export function ManuscriptSectionsEditor({
 
       <ManuscriptGroup title="Discussion & closing">
         <RichTextEditor
-          label="Findings — discussion"
+          label="Findings"
           value={fields.findings}
           onChange={(v) => onChange("findings", v)}
           placeholder="Interpret results and relate them to the literature…"

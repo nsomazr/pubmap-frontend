@@ -35,7 +35,7 @@ export const EXTRACTION_STEPS: ExtractionStep[] = [
   {
     id: "sections",
     title: "Fill GRE sections",
-    detail: "Summaries for introduction, methods, results, and more",
+    detail: "Summaries for introduction, methods, findings, and more",
   },
   {
     id: "extras",

@@ -18,7 +18,6 @@ const FIELD_CHIPS = [
   "Abstract",
   "Introduction",
   "Methods",
-  "Results",
   "Findings",
   "Funders",
   "References",

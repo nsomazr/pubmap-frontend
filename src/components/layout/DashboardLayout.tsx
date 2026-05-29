@@ -70,10 +70,9 @@ export function DashboardLayout() {
   }, [isMobile]);
 
   useEffect(() => {
-    void import("../../pages/dashboard/PublicationManagePage");
-    void import("../../pages/dashboard/MeetManagePage");
-    void import("../../pages/dashboard/MeetingsPage");
-    void import("../../pages/dashboard/PublicationsPage");
+    import("../../lib/routePrefetch").then(({ prefetchLikelyDashboardRoutes }) => {
+      prefetchLikelyDashboardRoutes();
+    });
   }, []);
 
   const handleLogout = () => {

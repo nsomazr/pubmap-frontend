@@ -50,8 +50,8 @@ function hasManuscriptSections(pub: Publication) {
   return Boolean(
     pub.introduction?.trim() ||
       pub.methods?.trim() ||
-      pub.results?.trim() ||
       pub.findings?.trim() ||
+      pub.results?.trim() ||
       pub.conclusion?.trim()
   );
 }
@@ -241,10 +241,11 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
               </h4>
               <PublicationManuscriptSection title="Introduction" body={reviewPub.introduction} />
               <PublicationManuscriptSection title="Methods" body={reviewPub.methods} />
-              <PublicationManuscriptSection title="Results" body={reviewPub.results} />
               <PublicationManuscriptSection
-                title="Findings — discussion"
-                body={reviewPub.findings}
+                title="Findings"
+                body={
+                  reviewPub.findings?.trim() ? reviewPub.findings : reviewPub.results
+                }
               />
               <PublicationManuscriptSection title="Conclusion" body={reviewPub.conclusion} />
             </div>

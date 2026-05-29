@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
-import { ResearcherRankInline } from "../rankings/ResearcherRankInline";
+import { RankedNameLabel } from "../rankings/RankedNameLabel";
 import { UserAvatar } from "../ui/UserAvatar";
 import type { CoAuthorPerson, PublicationCoAuthors, PublicationConversation } from "../../types";
 
@@ -123,11 +123,14 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
                   <UserAvatar user={thread.user} size="sm" className="border-2" />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-ink">{authorName(thread.user)}</p>
+                      <RankedNameLabel
+                        name={authorName(thread.user)}
+                        nameClassName="text-sm font-semibold text-ink"
+                        ranking={thread.user?.ranking}
+                        compact
+                        showBadges={false}
+                      />
                       <AuthorRoleBadge role={threadRole} />
-                    </div>
-                    <div className="mt-1">
-                      <ResearcherRankInline ranking={thread.user?.ranking} compact showBadges={false} />
                     </div>
                     {thread.created_at && (
                       <p className="text-xs text-slate-400">{formatWhen(thread.created_at)}</p>
@@ -147,10 +150,15 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
                           <UserAvatar user={r.user} size="sm" className="h-8 w-8 border text-[10px]" />
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="text-xs font-semibold text-slate-600">{authorName(r.user)}</p>
+                              <RankedNameLabel
+                                name={authorName(r.user)}
+                                nameClassName="text-xs font-semibold text-slate-600"
+                                ranking={r.user?.ranking}
+                                compact
+                                showBadges={false}
+                              />
                               <AuthorRoleBadge role={replyRole} />
                             </div>
-                            <ResearcherRankInline ranking={r.user?.ranking} compact showBadges={false} />
                             <p className="mt-1 text-sm text-slate-600">{r.reply}</p>
                           </div>
                         </li>
