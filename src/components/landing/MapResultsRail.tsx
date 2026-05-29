@@ -605,13 +605,6 @@ function ResearcherIdentityCard({
         <InsightStat icon={Reply} label="Responses" value={person.responses_count} tone="brand" />
       </div>
 
-      {leadingSubfield.name && !compact && (
-        <p className="mt-2 rounded-lg bg-brand-50/80 px-2.5 py-2 text-xs text-brand-900">
-          <span className="font-semibold">Leading subfield:</span> {leadingSubfield.name}
-          <span className="text-brand-700"> · {leadingSubfield.publication_count} paper{leadingSubfield.publication_count === 1 ? "" : "s"}</span>
-        </p>
-      )}
-
       {yearData.length > 0 && (
         <MapPublicationYearChart data={yearData} className="mt-3 border-t border-slate-100 pt-3" />
       )}
