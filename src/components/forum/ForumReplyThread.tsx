@@ -61,7 +61,6 @@ function ReplyComposer({
         rows={3}
         placeholder={placeholder}
         loading={posting}
-        submitLabel="Post"
         submitAriaLabel="Post reply"
         footer={
           <button
@@ -335,7 +334,6 @@ export function ForumReplyThread({
             rows={4}
             placeholder="Share your perspective, ask a question, or build on this thread…"
             loading={posting}
-            submitLabel="Post"
             submitAriaLabel="Post reply"
             footer={
               <p className="mt-2 text-xs text-slate-500">

@@ -1,4 +1,4 @@
-import { Loader2, Send, type LucideIcon } from "lucide-react";
+import { ArrowRight, Loader2, type LucideIcon } from "lucide-react";
 import type { FormEvent, KeyboardEvent, ReactNode } from "react";
 
 type Variant = "light" | "dark";
@@ -10,7 +10,6 @@ type BaseProps = {
   placeholder?: string;
   disabled?: boolean;
   loading?: boolean;
-  submitLabel?: string;
   submitAriaLabel?: string;
   icon?: LucideIcon;
   className?: string;
@@ -26,8 +25,7 @@ const shellClass: Record<Variant, string> = {
 };
 
 const fieldClass: Record<Variant, string> = {
-  light:
-    "text-ink placeholder:text-slate-400 disabled:text-slate-400",
+  light: "text-ink placeholder:text-slate-400 disabled:text-slate-400",
   dark: "text-slate-100 placeholder:text-slate-500 disabled:text-slate-500",
 };
 
@@ -42,8 +40,7 @@ const hintClass: Record<Variant, string> = {
 };
 
 const submitBtnClass: Record<Variant, string> = {
-  light:
-    "bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-45",
+  light: "bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-45",
   dark: "bg-brand-600 text-white hover:bg-brand-500 disabled:opacity-45",
 };
 
@@ -51,17 +48,13 @@ function SubmitButton({
   loading,
   disabled,
   submitAriaLabel,
-  submitLabel,
   Icon,
-  compact,
   variant,
 }: {
   loading: boolean;
   disabled: boolean;
   submitAriaLabel: string;
-  submitLabel?: string;
   Icon: LucideIcon;
-  compact?: boolean;
   variant: Variant;
 }) {
   return (
@@ -69,22 +62,9 @@ function SubmitButton({
       type="submit"
       disabled={disabled}
       aria-label={submitAriaLabel}
-      className={`inline-flex shrink-0 items-center justify-center gap-1.5 font-semibold transition disabled:cursor-not-allowed ${
-        compact
-          ? submitLabel
-            ? "h-8 rounded-lg px-2.5 text-xs"
-            : "h-8 w-8 rounded-lg p-0"
-          : "h-9 rounded-xl px-3 text-sm"
-      } ${submitBtnClass[variant]}`}
+      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg p-0 font-semibold transition disabled:cursor-not-allowed ${submitBtnClass[variant]}`}
     >
-      {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <>
-          <Icon className="h-4 w-4 shrink-0" />
-          {submitLabel ? <span className={compact ? "hidden min-[380px]:inline" : ""}>{submitLabel}</span> : null}
-        </>
-      )}
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4 shrink-0" />}
     </button>
   );
 }
@@ -96,9 +76,8 @@ export function InputWithSendAddon({
   placeholder,
   disabled = false,
   loading = false,
-  submitLabel,
   submitAriaLabel = "Send",
-  icon: Icon = Send,
+  icon: Icon = ArrowRight,
   className = "",
   enterToSubmit = true,
   variant = "light",
@@ -134,9 +113,7 @@ export function InputWithSendAddon({
         loading={loading}
         disabled={disabled || loading || !value.trim()}
         submitAriaLabel={submitAriaLabel}
-        submitLabel={submitLabel}
         Icon={Icon}
-        compact
         variant={variant}
       />
     </form>
@@ -155,9 +132,8 @@ export function TextareaWithSendAddon({
   placeholder,
   disabled = false,
   loading = false,
-  submitLabel,
   submitAriaLabel = "Send",
-  icon: Icon = Send,
+  icon: Icon = ArrowRight,
   className = "",
   enterToSubmit = true,
   rows = 2,
@@ -202,9 +178,7 @@ export function TextareaWithSendAddon({
             loading={loading}
             disabled={disabled || loading || !value.trim()}
             submitAriaLabel={submitAriaLabel}
-            submitLabel={submitLabel}
             Icon={Icon}
-            compact
             variant={variant}
           />
         </div>

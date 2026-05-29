@@ -23,12 +23,15 @@ export const meetDrawer = {
   waitingCard: "rounded-xl border border-amber-900/50 bg-amber-950/40 p-3",
   waitingItem: "flex flex-col gap-2 rounded-lg border border-amber-900/40 bg-slate-900/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between",
   copilotOutput: "rounded-xl border border-slate-700/80 bg-slate-900/70 p-3 shadow-sm shadow-black/15",
-  /** Float below the bubble on hover — bubble layout stays fixed. */
+  /** Tucked under the bubble; overlaps slightly so hover does not drop between bubble and pill. */
   messageActions:
-    "absolute z-10 top-full mt-1 flex items-center gap-0.5 rounded-full border border-slate-700/90 bg-slate-900/95 px-1.5 py-0.5 shadow-md opacity-0 pointer-events-none transition-opacity duration-150 [@media(hover:hover)]:group-hover/msg:opacity-100 [@media(hover:hover)]:group-hover/msg:pointer-events-auto [@media(hover:none)]:relative [@media(hover:none)]:mt-1.5 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto",
-  messageActionsEnd: "right-0",
-  messageActionsStart: "left-0",
-  messageActionBtn: "rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-300 transition hover:bg-slate-700",
-  messageActionBtnAccent: "rounded-full px-2 py-0.5 text-[11px] font-semibold text-brand-400 transition hover:bg-slate-700",
-  messageActionBtnOwn: "rounded-full px-2 py-0.5 text-[11px] font-semibold text-white/90 transition hover:bg-white/15",
+    "absolute z-10 top-[calc(100%-5px)] flex items-center gap-0.5 rounded-full border border-slate-600/90 bg-slate-900 px-1.5 py-0.5 shadow-lg ring-1 ring-slate-700/50 opacity-0 pointer-events-none transition-opacity duration-100 [@media(hover:hover)]:group-hover/msg:opacity-100 [@media(hover:hover)]:group-hover/msg:pointer-events-auto [@media(hover:none)]:relative [@media(hover:none)]:top-auto [@media(hover:none)]:mt-1 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto",
+  messageActionsEnd: "right-2",
+  messageActionsStart: "left-2",
+  messageActionBtn:
+    "rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-200 hover:bg-slate-700 hover:text-white",
+  messageActionBtnAccent:
+    "rounded-full px-2 py-0.5 text-[11px] font-semibold text-brand-300 hover:bg-slate-700 hover:text-brand-200",
+  messageActionBtnOwn:
+    "rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-200 hover:bg-slate-700 hover:text-white",
 } as const;

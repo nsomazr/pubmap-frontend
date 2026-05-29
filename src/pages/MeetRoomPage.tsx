@@ -9,7 +9,6 @@ import {
   PictureInPicture2,
   Radio,
   RefreshCcw,
-  Send,
   Sparkles,
   Video,
 } from "lucide-react";
@@ -1331,10 +1330,10 @@ export function MeetRoomPage() {
                       const isOwn = message.sender_id === user?.id;
                       const parsedMessage = parseReplyPayload(message.message || "");
                       return (
-                        <div key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
+                        <div key={message.id} className={`mb-4 flex last:mb-0 ${isOwn ? "justify-end" : "justify-start"}`}>
                           <div className={`flex w-full max-w-[96%] items-end gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
                             <UserAvatar user={message.sender} name={senderName} size="sm" className="shrink-0" />
-                            <div className="group/msg relative w-full max-w-[92%] pb-6">
+                            <div className="group/msg relative w-full max-w-[92%]">
                               <div
                                 className={`rounded-2xl px-3 py-2.5 shadow-sm ${
                                   isOwn
@@ -1484,9 +1483,7 @@ export function MeetRoomPage() {
                       placeholder="Message…"
                       loading={sendChat.isPending}
                       disabled={!meetingId || sendChat.isPending}
-                      submitLabel="Send"
                       submitAriaLabel="Send message"
-                      icon={Send}
                       variant="dark"
                       rows={2}
                       className="!space-y-0"

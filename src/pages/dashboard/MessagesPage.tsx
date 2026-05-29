@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  ArrowRight,
   Copy,
   Loader2,
   MessageSquare,
   MoreVertical,
   Search,
-  Send,
   Sparkles,
   Trash2,
   X,
@@ -799,7 +799,7 @@ export function MessagesPage() {
                       {sendMutation.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <Send className="h-4 w-4" />
+                        <ArrowRight className="h-4 w-4" />
                       )}
                     </button>
                   </div>

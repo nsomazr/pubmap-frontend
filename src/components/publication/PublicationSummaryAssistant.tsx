@@ -248,7 +248,6 @@ export function PublicationSummaryAssistant({
       placeholder="Ask about authors, methods, findings…"
       disabled={!canAskFollowUp}
       loading={followUpLoading}
-      submitLabel="Ask"
       submitAriaLabel="Ask follow-up question"
     />
   );

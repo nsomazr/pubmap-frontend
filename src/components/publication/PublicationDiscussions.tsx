@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Reply } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { InputWithSendAddon, TextareaWithSendAddon } from "../ui/FieldSendAddon";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -172,7 +172,6 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
                     }}
                     placeholder="Write a response…"
                     loading={postReply.isPending}
-                    icon={Reply}
                     submitAriaLabel="Post response"
                   />
                 ) : null}
@@ -194,7 +193,6 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
             rows={3}
             placeholder="What would you like to discuss about this study?"
             loading={postThread.isPending}
-            submitLabel="Post"
             submitAriaLabel="Post discussion"
           />
         </div>

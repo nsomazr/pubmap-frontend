@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { ArrowRight, Bot, Loader2, Sparkles } from "lucide-react";
+import { Bot, Loader2, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { InputWithSendAddon, TextareaWithSendAddon } from "../ui/FieldSendAddon";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
@@ -99,18 +99,16 @@ export function MeetingGreAssistantPanel({
   };
 
   const messageActionsShell = isDark
-    ? "absolute z-10 top-full mt-1 flex items-center gap-0.5 rounded-full border border-slate-700/90 bg-slate-900/95 px-1.5 py-0.5 shadow-md opacity-0 pointer-events-none transition-opacity duration-150 [@media(hover:hover)]:group-hover/msg:opacity-100 [@media(hover:hover)]:group-hover/msg:pointer-events-auto [@media(hover:none)]:relative [@media(hover:none)]:mt-1.5 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto"
-    : "absolute z-10 top-full mt-1 flex items-center gap-0.5 rounded-full border border-slate-200/90 bg-white/95 px-1.5 py-0.5 shadow-md opacity-0 pointer-events-none transition-opacity duration-150 [@media(hover:hover)]:group-hover/msg:opacity-100 [@media(hover:hover)]:group-hover/msg:pointer-events-auto [@media(hover:none)]:relative [@media(hover:none)]:mt-1.5 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto";
+    ? "absolute z-10 top-[calc(100%-5px)] flex items-center gap-0.5 rounded-full border border-slate-600/90 bg-slate-900 px-1.5 py-0.5 shadow-lg ring-1 ring-slate-700/50 opacity-0 pointer-events-none transition-opacity duration-100 [@media(hover:hover)]:group-hover/msg:opacity-100 [@media(hover:hover)]:group-hover/msg:pointer-events-auto [@media(hover:none)]:relative [@media(hover:none)]:top-auto [@media(hover:none)]:mt-1 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto"
+    : "absolute z-10 top-[calc(100%-5px)] flex items-center gap-0.5 rounded-full border border-slate-200/90 bg-white px-1.5 py-0.5 shadow-md ring-1 ring-slate-200/80 opacity-0 pointer-events-none transition-opacity duration-100 [@media(hover:hover)]:group-hover/msg:opacity-100 [@media(hover:hover)]:group-hover/msg:pointer-events-auto [@media(hover:none)]:relative [@media(hover:none)]:top-auto [@media(hover:none)]:mt-1 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto";
 
   const messageActionBtn = (kind: "user" | "assistant") => {
     if (isDark) {
-      return kind === "user"
-        ? "rounded-full px-2 py-0.5 text-[11px] font-semibold text-white/90 transition hover:bg-white/15"
-        : "rounded-full px-2 py-0.5 text-[11px] font-semibold text-brand-400 transition hover:bg-slate-700";
+      return "rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-200 hover:bg-slate-700 hover:text-white";
     }
     return kind === "user"
-      ? "rounded-full px-2 py-0.5 text-[11px] font-semibold text-white/90 transition hover:bg-white/20"
-      : "rounded-full px-2 py-0.5 text-[11px] font-semibold text-brand-700 transition hover:bg-slate-100";
+      ? "rounded-full px-2 py-0.5 text-[11px] font-semibold text-brand-700 hover:bg-brand-50 hover:text-brand-800"
+      : "rounded-full px-2 py-0.5 text-[11px] font-semibold text-brand-700 hover:bg-slate-100 hover:text-brand-800";
   };
 
   if (!enabled) {
@@ -137,8 +135,8 @@ export function MeetingGreAssistantPanel({
     const isUser = turn.role === "user";
     if (isUser) {
       return (
-        <div key={`${turn.role}-${index}`} className="flex justify-end">
-          <div className="group/msg relative max-w-[92%] pb-6">
+        <div key={`${turn.role}-${index}`} className="mb-4 flex justify-end last:mb-0">
+          <div className="group/msg relative max-w-[92%]">
             <div
               className={`rounded-2xl rounded-br-md px-3.5 py-2.5 text-sm leading-relaxed ${
                 isDark ? "bg-brand-900/40 text-slate-100" : "bg-brand-600 text-white"
@@ -146,7 +144,7 @@ export function MeetingGreAssistantPanel({
             >
               <p className="whitespace-pre-wrap">{turn.content}</p>
             </div>
-            <div className={`${messageActionsShell} right-0`}>
+            <div className={`${messageActionsShell} right-2`}>
               <button
                 type="button"
                 className={messageActionBtn("user")}
@@ -168,7 +166,7 @@ export function MeetingGreAssistantPanel({
     }
 
     return (
-      <div key={`${turn.role}-${index}`} className="flex gap-2.5">
+      <div key={`${turn.role}-${index}`} className="mb-4 flex gap-2.5 last:mb-0">
         <span
           className={`mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
             isDark ? "bg-slate-800 text-brand-300" : "bg-brand-100 text-brand-700"
@@ -176,7 +174,7 @@ export function MeetingGreAssistantPanel({
         >
           <Sparkles className="h-3.5 w-3.5" />
         </span>
-        <div className="group/msg relative min-w-0 max-w-[88%] flex-1 pb-6">
+        <div className="group/msg relative min-w-0 max-w-[88%] flex-1">
           <div
             className={`rounded-2xl rounded-tl-md px-3.5 py-2.5 text-sm leading-relaxed ${
               isDark
@@ -186,7 +184,7 @@ export function MeetingGreAssistantPanel({
           >
             <FormattedAssistantText content={turn.content} />
           </div>
-          <div className={`${messageActionsShell} left-0`}>
+          <div className={`${messageActionsShell} left-2`}>
             <button
               type="button"
               className={messageActionBtn("assistant")}
@@ -285,7 +283,6 @@ export function MeetingGreAssistantPanel({
           disabled={askMutation.isPending}
           rows={compact ? 2 : 2}
           submitAriaLabel="Send question"
-          icon={ArrowRight}
           variant={isDark ? "dark" : "light"}
         />
         {error && (
