@@ -4,7 +4,11 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { abstractListingSnippet } from "../../lib/abstractText";
 import { formatGrePaperTitle, grePaperCode } from "../../lib/grePaperTitle";
-import { buildPublicationChatPath } from "../../lib/publicationChat";
+import {
+  GET_PUBLICATION_SUMMARY_LABEL,
+  buildPublicationChatPath,
+} from "../../lib/publicationChat";
+import { requestPublicationSummary } from "./publicationPopupSummary";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
@@ -79,10 +83,14 @@ function StudyLocationInfoPanel({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Link
             to={chatPath}
+            onClick={(event) => {
+              event.preventDefault();
+              requestPublicationSummary(publication.id, publication.encoded_id);
+            }}
             className="gre-interactive inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-800 sm:shrink-0"
           >
             <Sparkles className="h-4 w-4 text-brand-600" />
-            Ask about paper
+            {GET_PUBLICATION_SUMMARY_LABEL}
           </Link>
           <Link
             to={buildPublicationPath(publication.id, publication.encoded_id)}

@@ -68,8 +68,8 @@ export function buildPublicationPopupHtml(
         </span>
       </div>
       <div class="gre-popup-actions">
-        <a href="${publicationChatPath}" class="gre-popup-summary-btn" data-pub-id="${pub.id}">
-          Ask about paper
+        <a href="${publicationChatPath}" class="gre-popup-summary-btn" data-pub-id="${pub.id}" data-pub-encoded="${escapeAttr(pub.encoded_id || "")}">
+          Get Summary
         </a>
         ${viewLink}
       </div>

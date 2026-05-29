@@ -12,9 +12,9 @@ export function SummaryNavigationBridge() {
 
   useEffect(() => {
     const onSummary = (event: Event) => {
-      const { publicationId } = (event as CustomEvent<GreSummaryRequestDetail>).detail;
+      const { publicationId, encodedId } = (event as CustomEvent<GreSummaryRequestDetail>).detail;
       if (!publicationId) return;
-      navigate(buildPublicationChatPath(publicationId));
+      navigate(buildPublicationChatPath(publicationId, encodedId));
     };
     window.addEventListener(GRE_SUMMARY_REQUEST, onSummary);
     return () => window.removeEventListener(GRE_SUMMARY_REQUEST, onSummary);

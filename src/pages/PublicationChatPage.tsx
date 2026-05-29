@@ -70,7 +70,7 @@ export function PublicationChatPage() {
       accent="blue"
       badge="GRE Assistant"
       title="Research assistant"
-      subtitle="Ask questions about this paper's manuscript — answers use the uploaded PDF and GRE sections for this study only."
+      subtitle="Summaries and chat use this paper's uploaded manuscript (when available), GRE registry metadata, and structured sections for this study only."
       crumbs={[
         { label: "Home", to: "/" },
         {

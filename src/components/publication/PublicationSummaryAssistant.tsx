@@ -1,4 +1,4 @@
-import { MessageCircle, Sparkles } from "lucide-react";
+import { ExternalLink, FileText, MessageCircle, Sparkles } from "lucide-react";
 import { AssistantThinkingIndicator } from "../assistant/AssistantThinkingIndicator";
 import { InputWithSendAddon } from "../ui/FieldSendAddon";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
@@ -10,6 +10,11 @@ import {
 } from "../../lib/assistant";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
+import {
+  manuscriptFileLabel,
+  primaryManuscriptDocument,
+  publicationManuscriptUrl,
+} from "../../lib/publicationManuscript";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { buildPublicationFollowUpSuggestions } from "../../lib/publicationFollowUpSuggestions";
 import type { Publication } from "../../types";
@@ -205,11 +210,50 @@ export function PublicationSummaryAssistant({
   const isDock = layout === "dock";
   const isPage = layout === "page";
 
+  const manuscriptDoc = primaryManuscriptDocument(publication?.documents);
+  const manuscriptUrl = publicationManuscriptUrl(publication);
+  const manuscriptLabel = manuscriptFileLabel(manuscriptDoc);
+
   const manuscriptNotice = (
-    <p className="rounded-xl border border-brand-100 bg-brand-50/60 px-3.5 py-2.5 text-xs leading-relaxed text-slate-600 sm:text-sm">
-      Chat about this paper&apos;s manuscript — methods, findings, authors, and claims. Answers use
-      the uploaded PDF or GRE sections for this publication only.
-    </p>
+    <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-3.5 py-2.5 text-xs leading-relaxed text-slate-600 sm:text-sm">
+      <p>
+        This conversation is grounded in this paper&apos;s GRE registry entry
+        {manuscriptLabel ? (
+          <>
+            {" "}
+            and uploaded manuscript{" "}
+            <span className="font-semibold text-ink">{manuscriptLabel}</span>
+          </>
+        ) : (
+          " and structured manuscript sections"
+        )}
+        . Summaries and follow-up answers use that material only.
+      </p>
+      {(manuscriptUrl || publication) && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {manuscriptUrl && (
+            <a
+              href={manuscriptUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-semibold text-brand-700 ring-1 ring-brand-200/80 transition hover:bg-brand-50"
+            >
+              <FileText className="h-3.5 w-3.5 shrink-0" />
+              Open uploaded manuscript
+              <ExternalLink className="h-3 w-3 shrink-0 opacity-70" />
+            </a>
+          )}
+          {publication && (
+            <a
+              href={buildPublicationPath(publicationId, publication.encoded_id)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/80 transition hover:bg-slate-50"
+            >
+              View publication page
+            </a>
+          )}
+        </div>
+      )}
+    </div>
   );
 
   const publicationHref = useMemo(() => {

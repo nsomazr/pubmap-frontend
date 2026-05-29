@@ -3,13 +3,19 @@ import { safeMapOff, safeMapOp } from "../../lib/safeLeaflet";
 
 export const GRE_SUMMARY_REQUEST = "gre:summary-request";
 
-export type GreSummaryRequestDetail = { publicationId: number };
+export type GreSummaryRequestDetail = {
+  publicationId: number;
+  encodedId?: string | null;
+};
 
-/** Opens the dedicated research chat page for this publication. */
-export function requestPublicationSummary(publicationId: number) {
+/** Opens the research assistant page for this publication (summary auto-generates on load). */
+export function requestPublicationSummary(
+  publicationId: number,
+  encodedId?: string | null
+) {
   window.dispatchEvent(
     new CustomEvent<GreSummaryRequestDetail>(GRE_SUMMARY_REQUEST, {
-      detail: { publicationId },
+      detail: { publicationId, encodedId },
     })
   );
 }
@@ -26,8 +32,9 @@ export function attachPublicationPopupSummary(map: L.Map): () => void {
       event.preventDefault();
       const pubId = Number(btn.dataset.pubId);
       if (!pubId) return;
+      const encodedId = btn.dataset.pubEncoded?.trim() || null;
 
-      requestPublicationSummary(pubId);
+      requestPublicationSummary(pubId, encodedId);
       safeMapOp(map, (m) => m.closePopup());
     };
 

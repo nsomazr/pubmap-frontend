@@ -23,7 +23,11 @@ import {
   sumDiscussions,
   sumResponses,
 } from "../../lib/mapSearchInsights";
-import { buildPublicationChatPath } from "../../lib/publicationChat";
+import {
+  GET_PUBLICATION_SUMMARY_LABEL,
+  buildPublicationChatPath,
+} from "../../lib/publicationChat";
+import { requestPublicationSummary } from "../map/publicationPopupSummary";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { MapPublicationYearChart } from "./MapPublicationYearChart";
 import { useIsMobile } from "../../hooks/useMediaQuery";
@@ -1162,10 +1166,14 @@ export function MapResultsRail({
                           <div className="flex flex-col gap-2 border-t border-slate-100 p-3 sm:flex-row">
                             <Link
                               to={buildPublicationChatPath(pub.id, pub.encoded_id)}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                requestPublicationSummary(pub.id, pub.encoded_id);
+                              }}
                               className="gre-interactive flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-ink transition hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-800"
                             >
                               <Sparkles className="h-3.5 w-3.5 text-brand-600" />
-                              Ask about paper
+                              {GET_PUBLICATION_SUMMARY_LABEL}
                             </Link>
                             <Link
                               to={buildPublicationPath(pub.id, pub.encoded_id)}
