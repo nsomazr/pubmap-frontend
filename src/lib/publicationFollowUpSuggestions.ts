@@ -9,7 +9,6 @@ type PublicationSuggestionContext = Pick<
   | "coordinates"
   | "introduction"
   | "methods"
-  | "results"
   | "findings"
   | "conclusion"
   | "funder"
@@ -56,7 +55,7 @@ export function buildPublicationFollowUpSuggestions(
     push("What methods were used in this study?");
   }
 
-  if (hasText(pub.results) || hasText(pub.findings)) {
+  if (hasText(pub.findings)) {
     push("What were the key findings?");
   }
 

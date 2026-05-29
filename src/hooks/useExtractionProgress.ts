@@ -39,8 +39,8 @@ export const EXTRACTION_STEPS: ExtractionStep[] = [
   },
   {
     id: "extras",
-    title: "Funders & references",
-    detail: "Funder names and five key bibliography entries",
+    title: "Funders",
+    detail: "Extract funder organization names from acknowledgements",
   },
 ];
 

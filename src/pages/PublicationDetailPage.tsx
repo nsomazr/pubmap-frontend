@@ -87,7 +87,7 @@ export function PublicationDetailPage() {
     { title: "Methods", body: pub.methods },
     {
       title: "Findings",
-      body: pub.findings?.trim() ? pub.findings : pub.results,
+      body: pub.findings,
     },
     { title: "Conclusion", body: pub.conclusion },
   ].filter((section) => Boolean(section.body?.trim()));

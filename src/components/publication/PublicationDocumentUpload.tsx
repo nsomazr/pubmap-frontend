@@ -12,7 +12,6 @@ export interface ExtractedDocumentPayload {
   abstract?: string;
   introduction?: string;
   methods?: string;
-  results?: string;
   findings?: string;
   conclusion?: string;
   funder?: string;

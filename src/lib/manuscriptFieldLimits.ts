@@ -5,7 +5,6 @@ export const MANUSCRIPT_FIELD_WORD_LIMITS = {
   abstract: 200,
   introduction: 300,
   methods: 300,
-  results: 250,
   findings: 300,
   conclusion: 200,
   funder: 100,
@@ -93,57 +92,9 @@ function splitReferenceItems(text: string): string[] {
     .filter(Boolean);
 }
 
-const NARRATIVE_FUNDER =
-  /\b(?:despite|although|however|demonstrat|promising|our study|this work|we thank|the authors?|findings?|results?|conclusion)\b/i;
-const ORG_SUFFIX =
-  /\b(?:foundation|university|institute|institution|agency|council|commission|ministry|laborator(?:y|ies)|organisation|organization|programme|program|academy|society|trust|fund|bank|hospital|centre|center|college)\b/i;
-const KNOWN_FUNDER_ACRONYM = /\b(?:NSF|NIH|USAID|DFID|ERC|EU|NASA|DARPA|WHO|UNICEF|Gates Foundation)\b/i;
-const SLASH_FUNDER_TOKEN = /^[A-Z][A-Za-z0-9]{1,24}(?:\/[A-Z][A-Za-z0-9]{1,24})+$/;
-
-/** Keep organization names only — mirrors backend clean_funder_text. */
-export function cleanFunderNames(value: string): string {
-  const text = value.replace(/\s+/g, " ").trim();
-  if (!text) return "";
-
-  const candidates: string[] = [];
-  const add = (raw: string, fromClause = false) => {
-    const name = raw.replace(/\s+/g, " ").trim().replace(/^[,;.\s]+|[,;.\s]+$/g, "");
-    if (name.length < 2 || name.length > 120) return;
-    if (NARRATIVE_FUNDER.test(name)) return;
-    if (!/[A-Za-z]/.test(name)) return;
-    if (candidates.some((c) => c.toLowerCase() === name.toLowerCase())) return;
-    const isOrg = ORG_SUFFIX.test(name) || KNOWN_FUNDER_ACRONYM.test(name);
-    const isSlash = SLASH_FUNDER_TOKEN.test(name);
-    const isAcronym = /^[A-Z][A-Z0-9]{1,11}$/.test(name);
-    const isClauseName = fromClause && /^[A-Z][A-Za-z0-9&./-]{1,40}$/.test(name);
-    if (isOrg || isSlash || isAcronym || isClauseName) {
-      candidates.push(name);
-    }
-  };
-
-  const fromClause =
-    /(?:funded|supported|financed|sponsored)\s+by|(?:financial\s+)?support\s+from|without\s+financial\s+support\s+from|funding\s+from|grant\s+from)\s+([^.;]+)/gi;
-  for (const match of text.matchAll(fromClause)) {
-    for (const part of match[1].split(/,|\band\b|\//i)) add(part, true);
-  }
-
-  const orgMatches = [
-    ...text.matchAll(
-      /[A-Z][A-Za-z0-9&\s,'.-]{2,80}(?:Foundation|University|Institute|Institution|Agency|Council|Commission|Ministry|Laborator(?:y|ies)|Organisation|Organization|Programme|Program|Academy|Society|Trust|Fund|Bank|Hospital|Centre|Center|College)/g
-    ),
-  ];
-  for (const match of orgMatches) add(match[0]);
-
-  if (!candidates.length) {
-    for (const part of text.split(/[,;\n]/)) {
-      const trimmed = part
-        .trim()
-        .replace(/^(?:we thank|thanks to|acknowledg(?:e)?ments?|funding from|grant from)\s*/i, "");
-      for (const sub of trimmed.split("/")) add(sub);
-    }
-  }
-
-  return candidates.slice(0, 12).join(", ");
+/** Trim funder text for the form; name extraction runs on the backend via LLM. */
+export function normalizeFunderField(value: string): string {
+  return stripContinuationMarkers(value.replace(/\s+/g, " ").trim());
 }
 
 /** Up to five key references, always including this paper when a title is set. */

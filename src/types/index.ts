@@ -120,7 +120,6 @@ export interface Publication {
   documents?: GreDocument[];
   introduction?: string;
   methods?: string;
-  results?: string;
   conclusion?: string;
   findings?: string;
   funder?: string;

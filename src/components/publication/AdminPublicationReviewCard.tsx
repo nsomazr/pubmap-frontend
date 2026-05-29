@@ -12,7 +12,6 @@ import { StatusBadge } from "../dashboard/StatusBadge";
 import { Button } from "../ui/Button";
 import { Textarea } from "../ui/Textarea";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
-import { cleanFunderNames } from "../../lib/manuscriptFieldLimits";
 import api from "../../lib/api";
 import { publicationApiSegment } from "../../lib/publicationPaths";
 import { abstractPlainText } from "../../lib/abstractText";
@@ -52,7 +51,6 @@ function hasManuscriptSections(pub: Publication) {
     pub.introduction?.trim() ||
       pub.methods?.trim() ||
       pub.findings?.trim() ||
-      pub.results?.trim() ||
       pub.conclusion?.trim()
   );
 }
@@ -84,10 +82,6 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
     if (!raw?.length) return [];
     return raw.map((k) => k.trim()).filter(Boolean);
   }, [reviewPub.keywords]);
-  const funderNames = useMemo(
-    () => cleanFunderNames(reviewPub.funder ?? ""),
-    [reviewPub.funder]
-  );
 
   const acceptMutation = useMutation({
     mutationFn: () =>
@@ -183,12 +177,12 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
               </div>
             )}
 
-            {funderNames ? (
+            {reviewPub.funder?.trim() ? (
               <div>
                 <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
                   Funder
                 </h4>
-                <p className="mt-1 text-sm text-slate-700">{funderNames}</p>
+                <p className="mt-1 text-sm text-slate-700">{reviewPub.funder.trim()}</p>
               </div>
             ) : null}
 
@@ -249,7 +243,7 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
               <PublicationManuscriptSection
                 title="Findings"
                 body={
-                  reviewPub.findings?.trim() ? reviewPub.findings : reviewPub.results
+                  reviewPub.findings
                 }
               />
               <PublicationManuscriptSection title="Conclusion" body={reviewPub.conclusion} />

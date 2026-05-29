@@ -4,7 +4,7 @@ import { RichTextEditor } from "../editor/RichTextEditor";
 import { Input } from "../ui/Input";
 import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
-  cleanFunderNames,
+  normalizeFunderField,
   formatWordLimitHint,
   truncateToWordLimit,
 } from "../../lib/manuscriptFieldLimits";
@@ -157,16 +157,7 @@ export function ManuscriptSectionsEditor({
             onChange(
               "funder",
               truncateToWordLimit(
-                cleanFunderNames(e.target.value),
-                MANUSCRIPT_FIELD_WORD_LIMITS.funder
-              )
-            )
-          }
-          onBlur={(e) =>
-            onChange(
-              "funder",
-              truncateToWordLimit(
-                cleanFunderNames(e.target.value),
+                normalizeFunderField(e.target.value),
                 MANUSCRIPT_FIELD_WORD_LIMITS.funder
               )
             )
@@ -175,7 +166,11 @@ export function ManuscriptSectionsEditor({
           hint="Organization names only, comma-separated"
         />
         <FieldExtractionNote note={sectionNotes.funder} />
-        <ReferencesFromResearch value={fields.references} paperTitle={title} />
+        <ReferencesFromResearch
+          value={fields.references}
+          paperTitle={title}
+          onChange={(v) => onChange("references", v)}
+        />
         <FieldExtractionNote note={sectionNotes.references} />
       </ManuscriptGroup>
     </div>

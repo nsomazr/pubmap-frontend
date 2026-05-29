@@ -54,7 +54,7 @@ import { PublicationSupplementaryUpload } from "../../components/publication/Pub
 import { renderManuscriptHtml } from "../../lib/renderManuscriptHtml";
 import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
-  cleanFunderNames,
+  normalizeFunderField,
   limitReferences,
   truncateHtmlToWordLimit,
   truncateToWordLimit,
@@ -222,19 +222,12 @@ export function PublicationManagePage() {
       if (nextIntroduction) setIntroduction(nextIntroduction);
       const nextMethods = applyExtractedSection(payload.methods, limits.methods);
       if (nextMethods) setMethods(nextMethods);
-      const findingsSource = payload.findings?.trim()
-        ? payload.findings
-        : payload.results;
-      const nextFindings = applyExtractedSection(findingsSource, limits.findings);
+      const nextFindings = applyExtractedSection(payload.findings, limits.findings);
       if (nextFindings) setFindings(nextFindings);
       const nextConclusion = applyExtractedSection(payload.conclusion, limits.conclusion);
       if (nextConclusion) setConclusion(nextConclusion);
-      const refRaw = (payload.references || "").trim();
-      if (refRaw) {
-        setReferences(limitReferences(refRaw, nextTitle || title));
-      }
       const nextFunder = truncateToWordLimit(
-        cleanFunderNames((payload.funder || "").trim()),
+        normalizeFunderField((payload.funder || "").trim()),
         limits.funder
       );
       if (nextFunder) setFunder(nextFunder);
@@ -277,9 +270,9 @@ export function PublicationManagePage() {
     setAbstract(pub.abstract ?? "");
     setIntroduction(pub.introduction ?? "");
     setMethods(pub.methods ?? "");
-    setFindings(pub.findings?.trim() ? pub.findings : (pub.results ?? ""));
+    setFindings(pub.findings ?? "");
     setConclusion(pub.conclusion ?? "");
-    setFunder(cleanFunderNames(pub.funder ?? ""));
+    setFunder(normalizeFunderField(pub.funder ?? ""));
     setReferences(limitReferences(pub.references ?? "", pub.title ?? ""));
     setKeywords(formatKeywords(pub.keywords));
     setSubCategoryId(pub.sub_category_id ? String(pub.sub_category_id) : "");
@@ -442,7 +435,6 @@ export function PublicationManagePage() {
         abstract,
         introduction,
         methods,
-        results: "",
         findings,
         conclusion,
         funder,
