@@ -28,48 +28,31 @@ interface Props {
 
 export function PublicFooter({ variant = "full", publicationCount }: Props) {
   if (variant === "compact") {
+    const year = new Date().getFullYear();
+    const showCount =
+      publicationCount !== undefined && publicationCount > 0;
+
     return (
-      <footer className="safe-bottom relative z-[1002] shrink-0 bg-slate-900/90 px-3 py-3 text-white backdrop-blur-md sm:px-5 sm:py-2.5">
-        <div className="gre-content-wide mx-auto">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 text-xs sm:hidden">
-            <Link to="/" className="flex min-w-0 items-center gap-2.5 font-semibold text-white/90">
-              <BrandMark symbol="full" variant="dark" size="sm" />
-              <span className="truncate">GRE Map</span>
-            </Link>
+      <footer className="safe-bottom relative z-[1002] shrink-0 bg-slate-900/90 px-3 py-2.5 text-white backdrop-blur-md sm:px-5">
+        <div
+          className={`gre-content-wide mx-auto flex flex-wrap items-center gap-x-4 gap-y-2 text-xs ${
+            showCount ? "justify-between" : "justify-end"
+          }`}
+        >
+          {showCount && (
+            <p className="min-w-0 text-white/55">
+              {publicationCount} publication{publicationCount !== 1 ? "s" : ""} on map
+            </p>
+          )}
+          <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+            <span className="text-white/35">© {year}</span>
             <Link
               to="/register"
-              className="inline-flex items-center justify-center gap-1 rounded-full bg-white/10 px-3 py-1.5 font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20"
+              className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20 sm:py-1"
             >
               Join
               <ArrowUpRight className="h-3 w-3" />
             </Link>
-            {publicationCount !== undefined && publicationCount > 0 && (
-              <span className="col-span-2 text-center text-white/55">
-                {publicationCount} publication{publicationCount !== 1 ? "s" : ""} on map
-              </span>
-            )}
-          </div>
-
-          <div className="hidden items-center justify-between gap-3 text-xs sm:flex">
-            <Link to="/" className="flex items-center gap-2.5 font-semibold text-white/90">
-              <BrandMark symbol="full" variant="dark" size="sm" />
-              <span>GRE</span>
-            </Link>
-            {publicationCount !== undefined && publicationCount > 0 && (
-              <span className="text-white/50">
-                {publicationCount} publication{publicationCount !== 1 ? "s" : ""} on map
-              </span>
-            )}
-            <div className="flex items-center gap-3">
-              <span className="text-white/35">© {new Date().getFullYear()}</span>
-              <Link
-                to="/register"
-                className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20"
-              >
-                Join
-                <ArrowUpRight className="h-3 w-3" />
-              </Link>
-            </div>
           </div>
         </div>
       </footer>
