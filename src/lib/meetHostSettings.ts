@@ -85,6 +85,9 @@ export function buildJitsiConfigOverwrite(
     prejoinPageEnabled: false,
     disableDeepLinking: true,
     disableInviteFunctions: true,
+    pip: {
+      disabled: false,
+    },
     startAudioOnly: false,
     startWithAudioMuted: settings.mute_audio_on_join,
     startWithVideoMuted: settings.video_off_on_join,

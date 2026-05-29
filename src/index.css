@@ -2381,6 +2381,10 @@ body {
   text-align: justify;
 }
 
+.gre-meet-report-ckeditor .ck-editor__editable {
+  min-height: var(--gre-editor-min-height, 320px);
+}
+
 .gre-manuscript-ckeditor .ck-placeholder::before {
   color: #94a3b8 !important;
   font-style: normal !important;

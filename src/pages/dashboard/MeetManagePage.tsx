@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CalendarClock, FileText, Link2, Search, Shield, UserPlus, Users } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useCanonicalMeetingUrl } from "../../hooks/useCanonicalMeetingUrl";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { UserAvatar } from "../../components/ui/UserAvatar";
 import { Button } from "../../components/ui/Button";
@@ -98,6 +99,8 @@ export function MeetManagePage() {
     queryFn: () => fetchMeeting(id!),
     enabled: !!id,
   });
+
+  useCanonicalMeetingUrl(meeting, "edit");
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-admin"],

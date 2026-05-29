@@ -11,6 +11,41 @@ export interface GeocodeResult {
   lat: string;
   lon: string;
   place_id: number;
+  type?: string;
+  class?: string;
+  importance?: number;
+}
+
+/** Region-scale label for study context (state / district / country), not street-level. */
+export function formatStudyRegionLabel(displayName: string): string {
+  const parts = displayName
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length <= 3) return parts.join(", ");
+  return parts.slice(-3).join(", ");
+}
+
+const REGION_SEARCH_TYPES = new Set([
+  "administrative",
+  "state",
+  "county",
+  "region",
+  "city",
+  "town",
+  "village",
+  "municipality",
+  "district",
+]);
+
+function rankPlaceResult(result: GeocodeResult): number {
+  const type = (result.type || "").toLowerCase();
+  const klass = (result.class || "").toLowerCase();
+  let score = result.importance ?? 0;
+  if (REGION_SEARCH_TYPES.has(type)) score += 2;
+  if (klass === "boundary" || klass === "place") score += 1;
+  if (type === "house" || type === "building" || type === "road") score -= 3;
+  return score;
 }
 
 export async function searchPlaces(query: string): Promise<GeocodeResult[]> {
@@ -20,13 +55,15 @@ export async function searchPlaces(query: string): Promise<GeocodeResult[]> {
   const params = new URLSearchParams({
     q,
     format: "json",
-    limit: "8",
+    limit: "12",
     addressdetails: "1",
+    dedupe: "1",
   });
 
   const res = await fetch(`${NOMINATIM}/search?${params}`, { headers: HEADERS });
   if (!res.ok) throw new Error("Place search failed");
-  return res.json();
+  const rows = (await res.json()) as GeocodeResult[];
+  return [...rows].sort((a, b) => rankPlaceResult(b) - rankPlaceResult(a)).slice(0, 8);
 }
 
 export async function reverseGeocode(

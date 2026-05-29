@@ -4,6 +4,8 @@ interface CkEditorInstance {
   getData: () => string;
   setData: (data: string) => void;
   destroy: () => Promise<void>;
+  enableReadOnlyMode: (lockId: string) => void;
+  disableReadOnlyMode: (lockId: string) => void;
   model: {
     document: {
       on: (event: string, cb: () => void) => void;

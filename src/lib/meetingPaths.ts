@@ -24,12 +24,21 @@ export function buildMeetingPath(
   return base;
 }
 
+/** True when a route/API segment is a bare database primary key. */
+export function isNumericMeetingRef(ref: string | number | undefined | null): boolean {
+  if (ref == null) return false;
+  return /^\d+$/.test(String(ref).trim());
+}
+
 /**
- * API path segment for meeting detail actions.
- * Prefer numeric id when we have a meeting record (reliable); accept encoded or integer strings otherwise.
+ * API path segment for meeting detail actions (encoded id preferred; backend accepts both).
  */
 export function meetingApiSegment(meeting: MeetingLike): string {
-  if (typeof meeting === "object") return String(meeting.id);
+  if (typeof meeting === "object") {
+    const encoded = (meeting.encoded_id || "").trim();
+    if (encoded) return encoded;
+    return String(meeting.id);
+  }
   const text = String(meeting).trim();
   return text;
 }

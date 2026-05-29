@@ -53,6 +53,12 @@ import { meetDrawer } from "../lib/meetDrawerTheme";
 import { buildMeetingPath, meetingApiSegment } from "../lib/meetingPaths";
 import { composeMeetChatMessage, parseMeetChatReply } from "../lib/meetChatMessage";
 import {
+  closeMeetDocumentPictureInPicture,
+  isMeetDocumentPipActive,
+  isMeetDocumentPipSupported,
+  openMeetDocumentPictureInPicture,
+} from "../lib/meetPictureInPicture";
+import {
   applyJitsiJoinMediaPolicy,
   buildJitsiConfigOverwrite,
   meetHostSettingsFromSession,
@@ -260,6 +266,8 @@ export function MeetRoomPage() {
     lastError: "",
   });
   const [pipOpening, setPipOpening] = useState(false);
+  const [pipActive, setPipActive] = useState(false);
+  const leaveMeetingRef = useRef<() => void>(() => {});
   const [replyTarget, setReplyTarget] = useState<MeetChatMessage | null>(null);
   const [tagTarget, setTagTarget] = useState<MeetChatMessage | null>(null);
   const assistantCaptureUnavailableRef = useRef(false);
@@ -319,7 +327,9 @@ export function MeetRoomPage() {
         replyToName: replyTarget ? replyName || "participant" : undefined,
         replyToMessage: replyTarget?.message,
       });
-      const { data } = await api.post<MeetChatMessage[]>(`/meetings/${meetingApiSegment(activeMeeting ?? meetingId!)}/chat/`, {
+      const chatMeeting = activeMeeting ?? meeting;
+      if (!chatMeeting) throw new Error("Meeting is not ready.");
+      const { data } = await api.post<MeetChatMessage[]>(`/meetings/${meetingApiSegment(chatMeeting)}/chat/`, {
         message: composedMessage,
         message_type: "text",
       });
@@ -358,11 +368,13 @@ export function MeetRoomPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
       queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      queryClient.invalidateQueries({ queryKey: ["meeting-archive", meetingId] });
       toast.success({
         title: "Meeting ended",
-        description: "The archive is being prepared now.",
+        description: "The archive report is generating now. You can edit it on the archive page.",
       });
-      if (meetingId) navigate(buildMeetingPath(meetingId, "archive"));
+      if (activeMeeting) navigate(buildMeetingPath(activeMeeting, "archive"));
+      else if (meetingId) navigate(buildMeetingPath(meetingId, "archive"));
     },
     onError: (error) => {
       toast.error({
@@ -512,7 +524,8 @@ export function MeetRoomPage() {
         queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
         queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
         if (canManage && meetingId) {
-          navigate(buildMeetingPath(meetingId, "archive"));
+          if (activeMeeting) navigate(buildMeetingPath(activeMeeting, "archive"));
+          else if (meetingId) navigate(buildMeetingPath(meetingId, "archive"));
         }
       };
 
@@ -575,50 +588,66 @@ export function MeetRoomPage() {
     }
   };
 
+  const openMeetingPopoutFallback = async () => {
+    const joinData = await prepareRoom();
+    const directUrl = buildExternalRoomUrl(joinData);
+    if (!directUrl) {
+      throw new Error("Could not prepare a direct Jitsi room link.");
+    }
+    const popup = window.open(directUrl, "gre-meet-pip", "popup=yes,width=400,height=520,noopener,noreferrer");
+    if (!popup) {
+      throw new Error("Popup blocked. Allow popups for this site to open the meeting window.");
+    }
+    toast.success({
+      title: "Meeting pop-out opened",
+      description: "Your browser does not support floating picture-in-picture. The room opened in a separate window.",
+    });
+  };
+
   const openMeetingPictureInPicture = async () => {
+    if (!jitsiReady || !jitsiApiRef.current || !roomContainerRef.current) {
+      toast.error({
+        title: "Join the room first",
+        description: "Enter the live meeting before using picture-in-picture.",
+      });
+      return;
+    }
+
+    if (isMeetDocumentPipActive()) {
+      closeMeetDocumentPictureInPicture();
+      setPipActive(false);
+      toast.success({
+        title: "Picture-in-picture closed",
+        description: "The meeting is back in this tab.",
+      });
+      return;
+    }
+
     setPipOpening(true);
     try {
-      const joinData = await prepareRoom();
-      const directUrl = buildExternalRoomUrl(joinData);
-      if (!directUrl) {
-        throw new Error("Could not prepare a direct Jitsi room link for picture-in-picture.");
-      }
-
-      const popupFeatures = "popup=yes,width=960,height=640,noopener,noreferrer";
-      const docPiP = (window as Window & { documentPictureInPicture?: { requestWindow?: (opts: { width: number; height: number }) => Promise<Window> } }).documentPictureInPicture;
-      if (docPiP?.requestWindow) {
-        try {
-          const pipWindow = await docPiP.requestWindow({
-            width: 960,
-            height: 640,
-          });
-          pipWindow.location.href = directUrl;
+      if (isMeetDocumentPipSupported()) {
+        const opened = await openMeetDocumentPictureInPicture({
+          container: roomContainerRef.current,
+          api: jitsiApiRef.current,
+          title: "GRE Meet",
+          onHangup: () => leaveMeetingRef.current(),
+          onRestore: () => setPipActive(false),
+        });
+        if (opened) {
+          setPipActive(true);
           toast.success({
-            title: "Picture-in-picture opened",
-            description: "Meeting opened in a floating Jitsi window.",
+            title: "Picture-in-picture",
+            description: "Your call is in a floating window. Use the arrow to return to this tab.",
           });
           return;
-        } catch {
-          // Fall through to popup if browser blocks document PiP navigation.
         }
       }
 
-      const popup = window.open(directUrl, "gre-meet-pip", popupFeatures);
-      if (!popup) {
-        toast.error({
-          title: "Popup blocked",
-          description: "Allow popups for this site to open the meeting pop-out window.",
-        });
-        return;
-      }
-      toast.success({
-        title: "Meeting pop-out opened",
-        description: "The Jitsi room opened in a separate window.",
-      });
+      await openMeetingPopoutFallback();
     } catch (error) {
       toast.error({
         title: "Could not open picture-in-picture",
-        description: parseApiError(error, "Could not open the meeting pop-out window."),
+        description: parseApiError(error, "Could not open picture-in-picture."),
       });
     } finally {
       setPipOpening(false);
@@ -792,6 +821,8 @@ export function MeetRoomPage() {
   };
 
   const handleLeaveMeeting = () => {
+    closeMeetDocumentPictureInPicture();
+    setPipActive(false);
     const apiInstance = jitsiApiRef.current;
     if (apiInstance) {
       try {
@@ -815,6 +846,8 @@ export function MeetRoomPage() {
         : "You can rejoin from this page while the meeting is live.",
     });
   };
+
+  leaveMeetingRef.current = handleLeaveMeeting;
 
   const handleEndConference = () => {
     if (!canManage) return;
@@ -1116,7 +1149,13 @@ export function MeetRoomPage() {
             info: (
               <div className="flex min-h-0 flex-1 flex-col gap-4">
                 <Link
-                  to={meetingId ? buildMeetingPath(meetingId) : "/dashboard/meetings"}
+                  to={
+                    activeMeeting
+                      ? buildMeetingPath(activeMeeting)
+                      : meetingId
+                        ? buildMeetingPath(meetingId)
+                        : "/dashboard/meetings"
+                  }
                   className={meetDrawer.link}
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -1142,10 +1181,11 @@ export function MeetRoomPage() {
                       variant="secondary"
                       className={meetDrawer.btn}
                       loading={pipOpening}
+                      disabled={!jitsiReady}
                       onClick={() => void openMeetingPictureInPicture()}
                     >
                       <PictureInPicture2 className="h-4 w-4" />
-                      Picture in picture
+                      {pipActive ? "Exit picture in picture" : "Picture in picture"}
                     </Button>
                   </div>
                 </div>

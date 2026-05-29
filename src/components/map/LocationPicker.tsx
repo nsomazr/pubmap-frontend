@@ -14,6 +14,7 @@ import {
 import { assets } from "../../lib/brand";
 import {
   formatCoords,
+  formatStudyRegionLabel,
   hasValidCoords,
   reverseGeocodeRegion,
   searchPlaces,
@@ -94,9 +95,8 @@ function LocationMapInner({
   onDragEnd,
   instanceKey,
 }: LocationMapInnerProps) {
-  const safeCenter: [number, number] = Number.isFinite(center[0]) && Number.isFinite(center[1])
-    ? center
-    : DEFAULT_CENTER;
+  const safeCenter: [number, number] =
+    Number.isFinite(center[0]) && Number.isFinite(center[1]) ? center : DEFAULT_CENTER;
 
   return (
     <MapContainer
@@ -145,7 +145,6 @@ function LocationMapInner({
   );
 }
 
-/** Defer Leaflet mount until the panel is visible and sized (avoids blank map / crash). */
 function DeferredLocationMap(props: LocationMapInnerProps & { active: boolean }) {
   const { active, ...mapProps } = props;
   const [ready, setReady] = useState(false);
@@ -192,7 +191,7 @@ interface Props {
 export function LocationPicker({ value, onChange, institutionDefault }: Props) {
   const [mode, setMode] = useState<Mode>("search");
   const [expanded, setExpanded] = useState(false);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => value.location?.trim() || "");
   const [results, setResults] = useState<GeocodeResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
@@ -206,6 +205,10 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
   const lng = parseFloat(value.longitude);
   const hasPin = hasValidCoords(value.latitude, value.longitude);
 
+  const bumpInlineMap = useCallback(() => {
+    setInlineMapEpoch((n) => n + 1);
+  }, []);
+
   useEffect(() => {
     const defaultInst = institutionDefault?.trim();
     if (!defaultInst || appliedInstitutionDefaultRef.current) return;
@@ -218,18 +221,27 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only seed institution once from profile
   }, [institutionDefault, value.institution]);
 
+  useEffect(() => {
+    if (value.location?.trim() && !query.trim()) {
+      setQuery(value.location.trim());
+    }
+  }, [value.location, query]);
+
   const applyCoords = useCallback(
     async (latitude: number, longitude: number, locationName?: string) => {
-      let resolvedName = locationName;
+      let resolvedName = locationName?.trim();
       if (!resolvedName) {
         setReverseLoading(true);
         try {
-          resolvedName = (await reverseGeocodeRegion(latitude, longitude)) ?? undefined;
+          const reversed = await reverseGeocodeRegion(latitude, longitude);
+          resolvedName = reversed ? formatStudyRegionLabel(reversed) : undefined;
         } catch {
           /* keep existing label */
         } finally {
           setReverseLoading(false);
         }
+      } else {
+        resolvedName = formatStudyRegionLabel(resolvedName);
       }
       onChange((prev) => ({
         ...prev,
@@ -238,31 +250,22 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
         longitude: String(longitude),
         institution: prev.institution || institutionDefault || "",
       }));
+      if (resolvedName) {
+        setQuery(resolvedName);
+      }
+      bumpInlineMap();
     },
-    [onChange, institutionDefault]
+    [onChange, institutionDefault, bumpInlineMap]
   );
 
-  const regionLabelFromResult = (displayName: string) => {
-    const parts = displayName.split(",").map((s) => s.trim()).filter(Boolean);
-    if (parts.length <= 3) return parts.join(", ");
-    return parts.slice(-3).join(", ");
-  };
-
   const selectResult = (r: GeocodeResult) => {
-    const label = regionLabelFromResult(r.display_name);
+    const label = formatStudyRegionLabel(r.display_name);
     setQuery(label);
     setResults([]);
     void applyCoords(parseFloat(r.lat), parseFloat(r.lon), label);
-    openMapMode();
-  };
-
-  const openMapMode = () => {
-    setMode("map");
-    setInlineMapEpoch((n) => n + 1);
   };
 
   const openExpandedMap = () => {
-    openMapMode();
     setExpanded(true);
     setExpandMapEpoch((n) => n + 1);
   };
@@ -296,9 +299,9 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
       try {
         const data = await searchPlaces(q);
         setResults(data);
-        if (data.length === 0) setSearchError("No places found. Try a city, region, or landmark.");
+        if (data.length === 0) setSearchError("No places found. Try a city, region, or country name.");
       } catch {
-        setSearchError("Search unavailable. Pick a point on the map instead.");
+        setSearchError("Search unavailable. Click the map below to place your study region.");
         setResults([]);
       } finally {
         setSearching(false);
@@ -308,6 +311,12 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query, mode]);
+
+  useEffect(() => {
+    if (!expanded) {
+      bumpInlineMap();
+    }
+  }, [expanded, mode, bumpInlineMap]);
 
   const mapCenter: [number, number] =
     hasPin && Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : DEFAULT_CENTER;
@@ -357,9 +366,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
             <div className="shrink-0 border-t border-slate-100 px-4 py-2 text-xs text-slate-600 sm:px-5">
               <span className="font-medium text-slate-700">Coordinates: </span>
               {formatCoords(value.latitude, value.longitude)}
-              {value.location && (
-                <span className="text-slate-400"> · {value.location}</span>
-              )}
+              {value.location && <span className="text-slate-400"> · {value.location}</span>}
             </div>
           )}
         </div>
@@ -372,7 +379,10 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
       <div className="inline-flex rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200/80">
         <button
           type="button"
-          onClick={() => setMode("search")}
+          onClick={() => {
+            setMode("search");
+            bumpInlineMap();
+          }}
           className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
             mode === "search"
               ? "bg-white text-brand-700 shadow-sm"
@@ -384,7 +394,10 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
         </button>
         <button
           type="button"
-          onClick={openMapMode}
+          onClick={() => {
+            setMode("map");
+            bumpInlineMap();
+          }}
           className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
             mode === "map"
               ? "bg-white text-brand-700 shadow-sm"
@@ -397,93 +410,73 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
       </div>
 
       {mode === "search" && (
-        <>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Find a location</label>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="e.g. Dar es Salaam, University of Nairobi, Cape Town…"
-                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
-              />
-              {searching && (
-                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-brand-600" />
-              )}
-            </div>
-            {searchError && <p className="text-sm text-amber-700">{searchError}</p>}
-            {results.length > 0 && (
-              <ul className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
-                {results.map((r) => (
-                  <li key={r.place_id}>
-                    <button
-                      type="button"
-                      onClick={() => selectResult(r)}
-                      className="w-full px-4 py-3 text-left text-sm transition hover:bg-brand-50"
-                    >
-                      <span className="font-medium text-ink">
-                        {r.display_name.split(",").slice(0, 2).join(",")}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-slate-500 line-clamp-1">
-                        {r.display_name}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-slate-700">Find a location</label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="e.g. Dar es Salaam, University of Nairobi, Cape Town…"
+              className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            />
+            {searching && (
+              <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-brand-600" />
             )}
           </div>
-
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-8 text-center">
-            <MapPin className="mx-auto h-8 w-8 text-brand-600/80" aria-hidden />
-            <p className="mt-3 text-sm font-medium text-ink">Need to click the map?</p>
-            <p className="mt-1 text-sm text-slate-600">
-              Switch to <span className="font-semibold">Pick on map</span> or open the expanded map to place
-              your study region.
-            </p>
-            <button
-              type="button"
-              onClick={openExpandedMap}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-300 hover:text-brand-700"
-            >
-              <Maximize2 className="h-4 w-4" />
-              Open map
-            </button>
-          </div>
-        </>
-      )}
-
-      {mode === "map" && !expanded && (
-        <div>
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-slate-600">
-              Click the map or drag the pin to set the study region. The shaded circle ({regionHint}) is
-              the area shown on the research map.
-            </p>
-            <button
-              type="button"
-              onClick={openExpandedMap}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-brand-300 hover:text-brand-700"
-            >
-              <Maximize2 className="h-3.5 w-3.5" />
-              Expand map
-            </button>
-          </div>
-          <div className="location-picker-frame relative isolate overflow-hidden rounded-xl border border-slate-200 shadow-inner">
-            <DeferredLocationMap
-              active={mode === "map" && !expanded}
-              {...sharedMapProps}
-              heightPx={INLINE_MAP_HEIGHT_PX}
-              instanceKey={`inline-${inlineMapEpoch}`}
-            />
-          </div>
-          {reverseLoading && (
-            <p className="mt-2 text-xs text-slate-500">Looking up place name…</p>
+          {searchError && <p className="text-sm text-amber-700">{searchError}</p>}
+          {results.length > 0 && (
+            <ul className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+              {results.map((r) => (
+                <li key={r.place_id}>
+                  <button
+                    type="button"
+                    onClick={() => selectResult(r)}
+                    className="w-full px-4 py-3 text-left text-sm transition hover:bg-brand-50"
+                  >
+                    <span className="font-medium text-ink">
+                      {formatStudyRegionLabel(r.display_name)}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-slate-500 line-clamp-1">
+                      {r.display_name}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       )}
+
+      <div>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-slate-600">
+            {mode === "search"
+              ? "Search above or click the map to set your study region. The shaded circle shows the area on the research map."
+              : `Click the map or drag the pin. The shaded circle (${regionHint}) is the study area on the research map.`}
+          </p>
+          <button
+            type="button"
+            onClick={openExpandedMap}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-brand-300 hover:text-brand-700"
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+            Expand map
+          </button>
+        </div>
+        <div className="location-picker-frame relative isolate overflow-hidden rounded-xl border border-slate-200 shadow-inner">
+          <DeferredLocationMap
+            active={!expanded}
+            {...sharedMapProps}
+            heightPx={INLINE_MAP_HEIGHT_PX}
+            instanceKey={`inline-${inlineMapEpoch}`}
+          />
+        </div>
+        {reverseLoading && (
+          <p className="mt-2 text-xs text-slate-500">Looking up place name…</p>
+        )}
+      </div>
 
       {expandOverlay}
 
@@ -531,7 +524,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
         </p>
       ) : (
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-100">
-          Search for a place or pick on the map, then enter the location of study and your institution.
+          Search for a place or click the map, then confirm the location of study and your institution.
         </p>
       )}
     </div>

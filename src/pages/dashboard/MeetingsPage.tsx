@@ -5,6 +5,8 @@ import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { Pagination } from "../../components/ui/Pagination";
 import { useAuth } from "../../context/AuthContext";
+import { MeetingQuickActions } from "../../components/meet/MeetingQuickActions";
+import { isPlatformAdmin } from "../../lib/userAccess";
 import { usePageParam } from "../../hooks/usePageParam";
 import { buildMeetingPath } from "../../lib/meetingPaths";
 import {
@@ -30,6 +32,12 @@ const SCOPE_HINTS: Record<MeetScope, string> = {
   live: "Sessions broadcasting right now — join from here.",
   mine: "Active meetings you host or manage.",
   archived: "Ended sessions you hosted or attended — open reports and recordings here.",
+};
+
+const ADMIN_SCOPE_HINTS: Partial<Record<MeetScope, string>> = {
+  live: "Every live meeting on GRE. As admin you can join any room, end sessions, and open archives/reports.",
+  archived: "All ended meetings on GRE — open any archive, edit reports, and share minutes.",
+  upcoming: "All scheduled and live sessions across the platform.",
 };
 
 function meetingDescription(text?: string | null) {
@@ -65,7 +73,13 @@ function MeetingStatusBadge({ meeting }: { meeting: MeetSession }) {
   );
 }
 
-function MeetingRow({ meeting }: { meeting: MeetSession }) {
+function MeetingRow({
+  meeting,
+  adminMode,
+}: {
+  meeting: MeetSession;
+  adminMode?: boolean;
+}) {
   const isArchived = meeting.status === "ended";
   const isCancelled = meeting.status === "cancelled";
   const description = meetingDescription(meeting.description);
@@ -175,49 +189,54 @@ function MeetingRow({ meeting }: { meeting: MeetSession }) {
         </div>
       </div>
 
-      <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
-        {!isArchived && !isCancelled && meeting.can_join && (
-          <Link to={`/meet/${meeting.join_slug}`}>
-            <Button className="!px-3 !py-2 text-xs">{roomLabel}</Button>
-          </Link>
-        )}
-        <Link to={buildMeetingPath(meeting)}>
-          <Button variant="secondary" className="!px-3 !py-2 text-xs">
-            Details
-          </Button>
-        </Link>
-        {isArchived && (
-          <Link to={buildMeetingPath(meeting, "archive")}>
-            <Button
-              variant={hasReport ? "primary" : "secondary"}
-              className="!px-3 !py-2 text-xs"
-            >
-              {hasReport ? (
-                <>
-                  <FileText className="h-3.5 w-3.5" />
-                  Open report
-                </>
-              ) : (
-                "Archive"
-              )}
+      {adminMode && meeting.can_manage ? (
+        <MeetingQuickActions meeting={meeting} showAdminBadge compact />
+      ) : (
+        <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
+          {!isArchived && !isCancelled && meeting.can_join && (
+            <Link to={`/meet/${meeting.join_slug}`}>
+              <Button className="!px-3 !py-2 text-xs">{roomLabel}</Button>
+            </Link>
+          )}
+          <Link to={buildMeetingPath(meeting)}>
+            <Button variant="secondary" className="!px-3 !py-2 text-xs">
+              Details
             </Button>
           </Link>
-        )}
-        {meeting.can_manage && !isArchived && !isCancelled && (
-          <Link
-            to={buildMeetingPath(meeting, "edit")}
-            className="rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-brand-700"
-          >
-            Edit
-          </Link>
-        )}
-      </div>
+          {isArchived && (
+            <Link to={buildMeetingPath(meeting, "archive")}>
+              <Button
+                variant={hasReport ? "primary" : "secondary"}
+                className="!px-3 !py-2 text-xs"
+              >
+                {hasReport ? (
+                  <>
+                    <FileText className="h-3.5 w-3.5" />
+                    Open report
+                  </>
+                ) : (
+                  "Archive"
+                )}
+              </Button>
+            </Link>
+          )}
+          {meeting.can_manage && !isArchived && !isCancelled && (
+            <Link
+              to={buildMeetingPath(meeting, "edit")}
+              className="rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-brand-700"
+            >
+              Edit
+            </Link>
+          )}
+        </div>
+      )}
     </article>
   );
 }
 
 export function MeetingsPage() {
   const { user } = useAuth();
+  const isAdmin = isPlatformAdmin(user);
   const [searchParams, setSearchParams] = useSearchParams();
   const scope = (searchParams.get("scope") || "upcoming") as MeetScope;
   const { page, setPage } = usePageParam([scope]);
@@ -277,7 +296,19 @@ export function MeetingsPage() {
         })}
       </div>
 
-      <p className="text-sm text-slate-500">{SCOPE_HINTS[scope]}</p>
+      {isAdmin && (
+        <div className="rounded-xl border border-violet-200 bg-violet-50/80 px-4 py-3 text-sm text-violet-900">
+          <p className="font-semibold">Administrator access</p>
+          <p className="mt-1 text-violet-800/90">
+            You can see and control all GRE Meet sessions. Use the <strong>Live</strong> tab for ongoing
+            meetings — join, end, or open reports from there.
+          </p>
+        </div>
+      )}
+
+      <p className="text-sm text-slate-500">
+        {(isAdmin && ADMIN_SCOPE_HINTS[scope]) || SCOPE_HINTS[scope]}
+      </p>
 
       <section>
         {isLoading ? (
@@ -308,7 +339,7 @@ export function MeetingsPage() {
               <ul className="divide-y divide-slate-100">
                 {meetings.map((meeting) => (
                   <li key={meeting.id}>
-                    <MeetingRow meeting={meeting} />
+                    <MeetingRow meeting={meeting} adminMode={isAdmin} />
                   </li>
                 ))}
               </ul>

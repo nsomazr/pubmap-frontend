@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Download,
@@ -13,12 +13,16 @@ import {
   Video,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useCanonicalMeetingUrl } from "../../hooks/useCanonicalMeetingUrl";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { StatDisplayTile } from "../../components/dashboard/StatDisplayTile";
 import { Button } from "../../components/ui/Button";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { Textarea } from "../../components/ui/Textarea";
 import { useToast } from "../../components/ui/ToastProvider";
+import { sanitizeManuscriptHtml } from "../../lib/sanitizeHtml";
+import { MeetingReportEditor } from "../../components/meet/MeetingReportEditor";
+import { MeetingReportGenerationProgress } from "../../components/meet/MeetingReportGenerationProgress";
 import api, { parseApiError } from "../../lib/api";
 import { MeetingArchiveParticipants } from "../../components/meet/MeetingArchiveParticipants";
 import { MeetingArchiveTranscript } from "../../components/meet/MeetingArchiveTranscript";
@@ -26,11 +30,14 @@ import { MeetingGreAssistantPanel } from "../../components/meet/MeetingGreAssist
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
 import { buildMeetingPath, meetingApiSegment } from "../../lib/meetingPaths";
 import { buildForumTopicPath } from "../../lib/forumPaths";
+import { meetReportToEditorHtml, pickMeetReportSource } from "../../lib/meetReportContent";
 import {
   fetchMeeting,
   formatMeetingDate,
   formatMeetingId,
   formatMeetingDateInTimezone,
+  generateMeetingReport,
+  saveMeetingReport,
   shareMeetingMinutes,
 } from "../../lib/meetings";
 import { buildPublicationPath } from "../../lib/publicationPaths";
@@ -75,13 +82,63 @@ export function MeetingArchivePage() {
   const toast = useToast();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [reportDraft, setReportDraft] = useState("");
+  const [reportSeeded, setReportSeeded] = useState(false);
   const [shareToAttendees, setShareToAttendees] = useState(true);
   const [extraEmails, setExtraEmails] = useState("");
+  const lastReportSourceRef = useRef("");
+  const autoGenerateTriedRef = useRef(false);
 
   const { data: meeting, isLoading } = useQuery({
     queryKey: ["meeting-archive", id],
     queryFn: () => fetchMeeting(id!),
     enabled: !!id,
+    refetchInterval: (query) => {
+      const status = query.state.data?.summary_status;
+      if (status === "pending") return 2000;
+      return false;
+    },
+  });
+
+  useCanonicalMeetingUrl(meeting, "archive");
+
+  const reportGenerating =
+    meeting?.status === "ended" &&
+    (meeting.summary_status === "pending" || meeting.summary_status === "none");
+
+  const regenerateReport = useMutation({
+    mutationFn: () => generateMeetingReport(meeting!.id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["meeting-archive", id] });
+      await queryClient.invalidateQueries({ queryKey: ["meeting", id] });
+      toast.success({
+        title: "Generating report",
+        description: "GRE is rebuilding the meeting report from the archive.",
+      });
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not start report generation",
+        description: parseApiError(error, "Could not generate the meeting report."),
+      });
+    },
+  });
+
+  const saveReportDraft = useMutation({
+    mutationFn: () => saveMeetingReport(meeting!.id, reportDraft.trim()),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["meeting-archive", id] });
+      await queryClient.invalidateQueries({ queryKey: ["meeting", id] });
+      toast.success({
+        title: "Report saved",
+        description: "Your edits were saved to the archive.",
+      });
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not save report",
+        description: parseApiError(error, "Could not save the meeting report."),
+      });
+    },
   });
 
   const shareReport = useMutation({
@@ -123,7 +180,8 @@ export function MeetingArchivePage() {
 
   const deleteMeeting = useMutation({
     mutationFn: async () => {
-      await api.delete(`/meetings/${meetingApiSegment(id!)}/`);
+      if (!meeting) throw new Error("Meeting is not loaded.");
+      await api.delete(`/meetings/${meetingApiSegment(meeting)}/`);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["meetings"] });
@@ -144,9 +202,31 @@ export function MeetingArchivePage() {
   });
 
   useEffect(() => {
+    if (!meeting?.can_manage || meeting.status !== "ended" || meeting.summary_status !== "none") {
+      return;
+    }
+    if (autoGenerateTriedRef.current) return;
+    autoGenerateTriedRef.current = true;
+    regenerateReport.mutate();
+  }, [meeting?.can_manage, meeting?.id, meeting?.status, meeting?.summary_status]);
+
+  useEffect(() => {
     if (!meeting) return;
-    setReportDraft(meeting.meeting_minutes || meeting.summary || "");
-  }, [meeting?.id, meeting?.meeting_minutes, meeting?.summary]);
+    const source = pickMeetReportSource(meeting);
+    const sourceKey = `${meeting.id}:${source}:${meeting.summary_status}`;
+    if (!source) {
+      if (meeting.summary_status !== "pending") {
+        setReportDraft("");
+        setReportSeeded(false);
+      }
+      return;
+    }
+    if (!reportSeeded || lastReportSourceRef.current !== sourceKey) {
+      setReportDraft(meetReportToEditorHtml(source));
+      setReportSeeded(true);
+      lastReportSourceRef.current = sourceKey;
+    }
+  }, [meeting, reportSeeded]);
 
   if (isLoading || !meeting) {
     return (
@@ -162,8 +242,10 @@ export function MeetingArchivePage() {
     );
   }
 
-  const effectiveReport = reportDraft || meeting.meeting_minutes || meeting.summary || "";
-  const hasDraft = effectiveReport.trim().length > 0;
+  const effectiveReport = reportDraft || meetReportToEditorHtml(pickMeetReportSource(meeting));
+  const hasDraft = effectiveReport.replace(/<[^>]+>/g, " ").trim().length > 0;
+  const reportReady = meeting.summary_status === "ready";
+  const reportFailed = meeting.summary_status === "failed";
 
   const archiveId = formatMeetingId(meeting);
   const messageCount = meeting.chat_messages?.length ?? 0;
@@ -268,15 +350,49 @@ export function MeetingArchivePage() {
 
             {meeting.can_manage ? (
               <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Assistant report (host edit before sharing)
-                </p>
-                <Textarea
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Assistant report (host edit before sharing)
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Status:{" "}
+                      <span className="font-semibold capitalize text-ink">
+                        {meeting.summary_status === "pending"
+                          ? "generating"
+                          : meeting.summary_status}
+                      </span>
+                    </p>
+                  </div>
+                  {meeting.status === "live" && (
+                    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">
+                      End the meeting to generate the report
+                    </span>
+                  )}
+                </div>
+
+                {(reportGenerating || reportFailed) && (
+                  <MeetingReportGenerationProgress
+                    status={meeting.summary_status}
+                    ended={meeting.status === "ended"}
+                    messageCount={messageCount}
+                    errorMessage={meeting.recording_error}
+                    onRetry={() => regenerateReport.mutate()}
+                    retrying={regenerateReport.isPending}
+                  />
+                )}
+
+                <MeetingReportEditor
                   value={reportDraft}
-                  onChange={(event) => setReportDraft(event.target.value)}
-                  rows={10}
-                  placeholder={meeting.meeting_minutes || meeting.summary || "Report will appear here after meeting ends."}
+                  onChange={setReportDraft}
+                  disabled={reportGenerating}
+                  placeholder={
+                    reportGenerating
+                      ? "Report will load here when generation completes…"
+                      : "Write or edit the meeting report before sharing."
+                  }
                 />
+
                 <label className="inline-flex items-center gap-2 text-sm text-slate-700">
                   <input
                     type="checkbox"
@@ -294,20 +410,47 @@ export function MeetingArchivePage() {
                 />
                 <div className="flex flex-wrap gap-2">
                   <Button
+                    variant="secondary"
+                    loading={saveReportDraft.isPending}
+                    disabled={!hasDraft || reportGenerating}
+                    onClick={() => saveReportDraft.mutate()}
+                  >
+                    Save draft
+                  </Button>
+                  <Button
                     loading={shareReport.isPending}
-                    disabled={!hasDraft || (!shareToAttendees && !extraEmails.trim())}
+                    disabled={
+                      !hasDraft ||
+                      reportGenerating ||
+                      (!shareToAttendees && !extraEmails.trim())
+                    }
                     onClick={() => shareReport.mutate()}
                   >
                     <Send className="h-4 w-4" />
                     Share report now
                   </Button>
+                  {meeting.status === "ended" && !reportGenerating && (
+                    <Button
+                      variant="ghost"
+                      loading={regenerateReport.isPending}
+                      onClick={() => regenerateReport.mutate()}
+                    >
+                      Regenerate
+                    </Button>
+                  )}
                   <p className="self-center text-xs text-slate-500">
                     Report is never sent automatically.
                   </p>
                 </div>
-                {hasDraft && (
-                  <div className="rounded-xl bg-white p-4 text-sm leading-relaxed text-slate-700">
-                    <FormattedAssistantText content={effectiveReport} />
+                {hasDraft && reportReady && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-4">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Preview
+                    </p>
+                    <div
+                      className="gre-rich text-sm leading-relaxed text-slate-700"
+                      dangerouslySetInnerHTML={{ __html: sanitizeManuscriptHtml(effectiveReport) }}
+                    />
                   </div>
                 )}
               </div>

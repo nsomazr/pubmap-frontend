@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useCanonicalMeetingUrl } from "../../hooks/useCanonicalMeetingUrl";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
@@ -40,6 +41,7 @@ import { MeetingGreAssistantPanel } from "../../components/meet/MeetingGreAssist
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
 import { userFullName } from "../../lib/userDisplay";
 import { buildMeetingPath, meetingApiSegment } from "../../lib/meetingPaths";
+import { isPlatformAdmin } from "../../lib/userAccess";
 import { buildForumTopicPath } from "../../lib/forumPaths";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import type { MeetSession } from "../../types";
@@ -115,15 +117,26 @@ export function MeetDetailPage() {
     enabled: !!id,
   });
 
+  useCanonicalMeetingUrl(meeting);
+
   const endMeeting = useMutation({
-    mutationFn: () => api.post(`/meetings/${meetingApiSegment(id!)}/end/`),
+    mutationFn: async () => {
+      if (!meeting) throw new Error("Meeting is not loaded.");
+      const { data } = await api.post(`/meetings/${meetingApiSegment(meeting)}/end/`);
+      return data;
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["meeting", id] });
+      await queryClient.invalidateQueries({ queryKey: ["meeting-archive", id] });
+      if (meeting?.encoded_id) {
+        await queryClient.invalidateQueries({ queryKey: ["meeting", meeting.encoded_id] });
+        await queryClient.invalidateQueries({ queryKey: ["meeting-archive", meeting.encoded_id] });
+      }
       toast.success({
         title: "Meeting ended",
-        description: "The archive is now available for review.",
+        description: "The archive report is generating. Open the archive to review and edit it.",
       });
-      navigate(buildMeetingPath(meeting ?? id!, "archive"));
+      navigate(buildMeetingPath(meeting!, "archive"));
     },
     onError: (error) => {
       toast.error({
@@ -152,7 +165,10 @@ export function MeetDetailPage() {
   });
 
   const deleteMeeting = useMutation({
-    mutationFn: () => api.delete(`/meetings/${meetingApiSegment(id!)}/`),
+    mutationFn: async () => {
+      if (!meeting) throw new Error("Meeting is not loaded.");
+      await api.delete(`/meetings/${meetingApiSegment(meeting)}/`);
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["meetings"] });
       queryClient.removeQueries({ queryKey: ["meeting", id] });
@@ -172,6 +188,7 @@ export function MeetDetailPage() {
 
   const canManage = !!meeting?.can_manage;
   const isHost = meeting?.host_id === user?.id;
+  const isAdminViewer = isPlatformAdmin(user) && !isHost;
 
   const copyLink = async () => {
     if (!meeting?.meeting_link) return;
@@ -244,6 +261,11 @@ export function MeetDetailPage() {
       <div className="gre-dashboard-card space-y-5 p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
           <MeetStatusBadge meeting={meeting} />
+          {isAdminViewer && (
+            <span className="inline-flex items-center rounded-full bg-violet-100 px-2.5 py-1 text-[11px] font-semibold text-violet-800 ring-1 ring-violet-200/80">
+              Admin control · host {hostName}
+            </span>
+          )}
           <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold capitalize text-slate-700 ring-1 ring-slate-200/80">
             {MEETING_VISIBILITY_LABELS[meeting.visibility]}
           </span>

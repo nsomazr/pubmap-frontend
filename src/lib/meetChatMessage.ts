@@ -29,6 +29,46 @@ export function formatMeetChatTime(value?: string | null, style: "time" | "full"
 
 export const MEET_CHAT_REPLY_PREFIX = "[[GRE_REPLY]]";
 
+/** Strip nested reply metadata and duplicate text from stored snippets (legacy messages). */
+export function formatMeetChatReplySnippet(snippet: string): string {
+  let text = (snippet || "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+
+  let guard = 0;
+  while (text.includes(MEET_CHAT_REPLY_PREFIX) && guard < 6) {
+    guard += 1;
+    const prefixAt = text.indexOf(MEET_CHAT_REPLY_PREFIX);
+    const payload = text.slice(prefixAt + MEET_CHAT_REPLY_PREFIX.length);
+    const sep = payload.indexOf("|||");
+    if (sep < 0) {
+      text = payload.trim();
+      break;
+    }
+    text = payload.slice(sep + 3).trim();
+  }
+
+  text = text.replace(/\[\[GRE_REPLY\]\]/g, "").replace(/\|\|\|/g, " ").replace(/\s+/g, " ").trim();
+
+  const half = Math.floor(text.length / 2);
+  if (half > 2) {
+    const left = text.slice(0, half).trim();
+    const right = text.slice(half).trim();
+    if (left === right) {
+      text = left;
+    }
+  }
+
+  const words = text.split(" ");
+  if (words.length >= 2 && words.length % 2 === 0) {
+    const mid = words.length / 2;
+    if (words.slice(0, mid).join(" ") === words.slice(mid).join(" ")) {
+      text = words.slice(0, mid).join(" ");
+    }
+  }
+
+  return text.trim();
+}
+
 export function parseMeetChatReply(rawMessage: string): {
   replyToName?: string;
   replySnippet?: string;
@@ -45,19 +85,21 @@ export function parseMeetChatReply(rawMessage: string): {
     const payload = firstLine.slice(MEET_CHAT_REPLY_PREFIX.length);
     const sep = payload.indexOf("|||");
     const name = (sep >= 0 ? payload.slice(0, sep) : payload).trim() || "Participant";
-    const snippet = sep >= 0 ? payload.slice(sep + 3).trim() : "";
+    const rawSnippet = sep >= 0 ? payload.slice(sep + 3).trim() : "";
+    const replySnippet = formatMeetChatReplySnippet(rawSnippet);
     return {
       replyToName: name,
-      replySnippet: snippet,
+      ...(replySnippet ? { replySnippet } : {}),
       body: rest,
     };
   }
 
   const legacy = firstLine.match(/^↪\s*Reply to\s+(.+?):\s*"(.*)"$/);
   if (legacy) {
+    const replySnippet = formatMeetChatReplySnippet((legacy[2] || "").trim());
     return {
       replyToName: (legacy[1] || "").trim() || "Participant",
-      replySnippet: (legacy[2] || "").trim(),
+      ...(replySnippet ? { replySnippet } : {}),
       body: rest,
     };
   }

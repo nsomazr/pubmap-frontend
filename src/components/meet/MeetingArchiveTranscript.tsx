@@ -98,10 +98,12 @@ function MessageBubble({ message, isLastInGroup }: { message: MeetChatMessage; i
           {meta.label}
         </span>
       )}
-      {parsed.replySnippet && (
+      {parsed.replyToName && (
         <div className="mb-2 rounded-xl border border-slate-200/80 bg-slate-50/90 px-2.5 py-2">
           <p className="text-[11px] font-semibold text-brand-700">{parsed.replyToName}</p>
-          <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">{parsed.replySnippet}</p>
+          {parsed.replySnippet ? (
+            <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">{parsed.replySnippet}</p>
+          ) : null}
         </div>
       )}
       <p className="whitespace-pre-wrap text-slate-800">{parsed.body || message.message}</p>

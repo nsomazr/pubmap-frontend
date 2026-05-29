@@ -101,6 +101,11 @@ export async function fetchMeeting(id: string | number) {
   return data;
 }
 
+export async function endMeetingSession(meeting: Pick<MeetSession, "id" | "encoded_id">) {
+  const { data } = await api.post<MeetSession>(`/meetings/${meetingApiSegment(meeting)}/end/`);
+  return data;
+}
+
 export async function fetchMeetingBySlug(slug: string) {
   const { data } = await api.get<MeetSession>(`/meetings/by-slug/${slug}/`);
   return data;
@@ -182,6 +187,21 @@ export function meetingCalendarDownloadUrl(meetingId: string | number) {
 
 export async function fetchMeetingChat(id: string | number) {
   const { data } = await api.get<MeetChatMessage[]>(`/meetings/${meetingApiSegment(id)}/chat/`);
+  return data;
+}
+
+export async function generateMeetingReport(meetingId: string | number) {
+  const { data } = await api.post<MeetSession>(
+    `/meetings/${meetingApiSegment(meetingId)}/generate-report/`
+  );
+  return data;
+}
+
+export async function saveMeetingReport(meetingId: string | number, report: string) {
+  const { data } = await api.post<{ detail: string; meeting_minutes: string }>(
+    `/meetings/${meetingApiSegment(meetingId)}/save-report/`,
+    { report }
+  );
   return data;
 }
 
