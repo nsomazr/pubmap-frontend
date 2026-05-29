@@ -1,6 +1,7 @@
 import { Bot, FileText, Info, LayoutGrid, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../ui/Button";
+import { meetDrawer } from "../../lib/meetDrawerTheme";
 
 export type MeetRoomDrawerTab = "info" | "assistant" | "chat" | "host";
 
@@ -88,7 +89,7 @@ export function MeetRoomToolsDrawer({
         }`}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-slate-800 px-4 py-3.5 sm:px-5">
-          <div className="min-w-0 border-l-[3px] border-brand-500 pl-3">
+          <div className={`min-w-0 border-l-[3px] pl-3 ${meetDrawer.headerAccent}`}>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               Meeting controls
             </p>
@@ -116,9 +117,7 @@ export function MeetRoomToolsDrawer({
                 type="button"
                 onClick={() => onTabChange(item.id)}
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 ease-out ${
-                  active
-                    ? "bg-brand-600 text-white shadow-sm shadow-brand-600/30"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-slate-100"
+                  active ? meetDrawer.tabActive : meetDrawer.tabInactive
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -129,8 +128,8 @@ export function MeetRoomToolsDrawer({
         </div>
 
         <div
-          className={`meet-drawer-panel meet-drawer-panel--dark flex min-h-0 flex-1 flex-col overscroll-contain p-4 sm:p-5 ${
-            tab === "assistant" || tab === "chat" ? "overflow-hidden" : "overflow-y-auto"
+          className={`meet-drawer-panel meet-drawer-panel--dark flex min-h-0 flex-1 flex-col overscroll-contain ${
+            tab === "assistant" || tab === "chat" ? "overflow-hidden p-0" : "overflow-y-auto p-4 sm:p-5"
           }`}
         >
           {panels[tab]}
@@ -260,11 +259,11 @@ export function MeetRoomControlsFab({
           }}
           className={`pointer-events-auto inline-flex h-10 min-h-11 items-center gap-2 rounded-full border border-slate-600/90 bg-slate-900/95 px-3 text-sm font-semibold text-slate-100 shadow-[0_8px_28px_-6px_rgba(0,0,0,0.45)] backdrop-blur-sm select-none touch-none sm:px-4 ${
             isDragging
-              ? "cursor-grabbing scale-[0.98] ring-2 ring-brand-500/50"
-              : "cursor-grab transition-all duration-200 ease-out hover:border-brand-500/60 hover:bg-slate-800 hover:text-white hover:shadow-[0_10px_32px_-6px_rgba(59,91,219,0.35)]"
+              ? `cursor-grabbing scale-[0.98] ${meetDrawer.fabDragRing}`
+              : `cursor-grab transition-all duration-200 ease-out ${meetDrawer.fabHover}`
           }`}
         >
-          <LayoutGrid className="h-4 w-4 shrink-0 text-brand-400" />
+          <LayoutGrid className={`h-4 w-4 shrink-0 ${meetDrawer.fabIcon}`} />
           <span className="sm:hidden">Menu</span>
           <span className="hidden sm:inline">{label}</span>
         </button>

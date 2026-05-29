@@ -21,7 +21,7 @@ type BaseProps = {
 const shellClass: Record<Variant, string> = {
   light:
     "border-slate-200/90 bg-white shadow-sm focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100/80",
-  dark: "border-slate-600/80 bg-slate-950/90 shadow-sm shadow-black/20 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-900/40",
+  dark: "border-slate-600/80 bg-slate-950/90 shadow-sm shadow-black/20 focus-within:border-cyan-800/80 focus-within:ring-2 focus-within:ring-cyan-950/35",
 };
 
 const fieldClass: Record<Variant, string> = {
@@ -41,7 +41,7 @@ const hintClass: Record<Variant, string> = {
 
 const submitBtnClass: Record<Variant, string> = {
   light: "bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-45",
-  dark: "bg-brand-600 text-white hover:bg-brand-500 disabled:opacity-45",
+  dark: "bg-slate-600 text-slate-100 ring-1 ring-cyan-900/25 hover:bg-slate-500 disabled:opacity-45",
 };
 
 function SubmitButton({

@@ -1,11 +1,25 @@
 import { useMutation } from "@tanstack/react-query";
-import { Bot, Loader2, Sparkles } from "lucide-react";
+import { Bot, Loader2, MessageSquare, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { InputWithSendAddon, TextareaWithSendAddon } from "../ui/FieldSendAddon";
+import { TextareaWithSendAddon } from "../ui/FieldSendAddon";
 import { FormattedAssistantText } from "../../lib/formatAssistantText";
 import { askMeetingAssistant, type MeetingAssistantTurn } from "../../lib/meetAssistant";
 import { parseApiError } from "../../lib/api";
+import { meetDrawer } from "../../lib/meetDrawerTheme";
+import { MeetDrawerComposer } from "./drawer/MeetDrawerComposer";
+import { MeetDrawerEmptyState } from "./drawer/MeetDrawerEmptyState";
+import {
+  MeetDrawerActionButton,
+  MeetDrawerMessageActions,
+} from "./drawer/MeetDrawerMessageActions";
+import { MeetDrawerThreadLayout } from "./drawer/MeetDrawerThreadLayout";
 import type { MeetSession } from "../../types";
+
+const ASSISTANT_STARTERS = [
+  "Summarize this meeting",
+  "What were the key decisions?",
+  "List action items",
+] as const;
 
 type Props = {
   meeting: Pick<
@@ -19,9 +33,7 @@ type Props = {
     | "gre_assistant_enabled"
   >;
   compact?: boolean;
-  /** Light cards (archive, dashboard); dark drawer in live meet room. */
   variant?: "light" | "dark";
-  /** Meet drawer: thread scrolls, input stays pinned at the bottom. */
   drawerLayout?: boolean;
 };
 
@@ -58,7 +70,7 @@ export function MeetingGreAssistantPanel({
     try {
       sessionStorage.setItem(historyStorageKey, JSON.stringify(history));
     } catch {
-      // Ignore storage failures (private mode/quota), keep in-memory behavior.
+      // Ignore storage failures.
     }
   }, [history, historyStorageKey]);
 
@@ -98,19 +110,6 @@ export function MeetingGreAssistantPanel({
     void (navigator.clipboard?.writeText?.(content) ?? Promise.reject()).catch(() => {});
   };
 
-  const messageActionsShell = isDark
-    ? "absolute z-10 top-[calc(100%-5px)] flex items-center gap-0.5 rounded-full border border-slate-600/90 bg-slate-900 px-1.5 py-0.5 shadow-lg ring-1 ring-slate-700/50 opacity-0 pointer-events-none transition-opacity duration-100 [@media(hover:hover)]:group-hover/msg:opacity-100 [@media(hover:hover)]:group-hover/msg:pointer-events-auto [@media(hover:none)]:relative [@media(hover:none)]:top-auto [@media(hover:none)]:mt-1 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto"
-    : "absolute z-10 top-[calc(100%-5px)] flex items-center gap-0.5 rounded-full border border-slate-200/90 bg-white px-1.5 py-0.5 shadow-md ring-1 ring-slate-200/80 opacity-0 pointer-events-none transition-opacity duration-100 [@media(hover:hover)]:group-hover/msg:opacity-100 [@media(hover:hover)]:group-hover/msg:pointer-events-auto [@media(hover:none)]:relative [@media(hover:none)]:top-auto [@media(hover:none)]:mt-1 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto";
-
-  const messageActionBtn = (kind: "user" | "assistant") => {
-    if (isDark) {
-      return "rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-200 hover:bg-slate-700 hover:text-white";
-    }
-    return kind === "user"
-      ? "rounded-full px-2 py-0.5 text-[11px] font-semibold text-brand-700 hover:bg-brand-50 hover:text-brand-800"
-      : "rounded-full px-2 py-0.5 text-[11px] font-semibold text-brand-700 hover:bg-slate-100 hover:text-brand-800";
-  };
-
   if (!enabled) {
     return (
       <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
@@ -119,80 +118,161 @@ export function MeetingGreAssistantPanel({
     );
   }
 
-  const threadShell = useDrawerChrome
-    ? "min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain rounded-2xl border border-slate-800 bg-slate-900/70 p-3"
-    : isDark
-      ? "min-h-0 flex-1 space-y-2 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900/70 p-3"
-      : `min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50/80 p-3 ${
-          compact ? "max-h-64" : "max-h-80"
-        }`;
-
-  const emptyHint = isDark
-    ? "text-sm text-slate-400"
-    : "text-sm text-slate-600";
-
-  const renderTurn = (turn: MeetingAssistantTurn, index: number) => {
+  const renderDrawerTurn = (turn: MeetingAssistantTurn, index: number) => {
     const isUser = turn.role === "user";
     if (isUser) {
       return (
-        <div key={`${turn.role}-${index}`} className="mb-4 flex justify-end last:mb-0">
-          <div className="group/msg relative max-w-[92%]">
-            <div
-              className={`rounded-2xl rounded-br-md px-3.5 py-2.5 text-sm leading-relaxed ${
-                isDark ? "bg-brand-900/40 text-slate-100" : "bg-brand-600 text-white"
-              }`}
-            >
+        <div key={`${turn.role}-${index}`} className="mb-5 flex flex-col items-end last:mb-0">
+          <div className="group/msg relative max-w-[88%]">
+            <div className={meetDrawer.chatBubbleOwn}>
               <p className="whitespace-pre-wrap">{turn.content}</p>
             </div>
-            <div className={`${messageActionsShell} right-2`}>
-              <button
-                type="button"
-                className={messageActionBtn("user")}
-                onClick={() => setQuestion(turn.content)}
-              >
+            <MeetDrawerMessageActions align="end">
+              <MeetDrawerActionButton variant="own" onClick={() => setQuestion(turn.content)}>
                 Reuse
-              </button>
-              <button
-                type="button"
-                className={messageActionBtn("user")}
-                onClick={() => copyTurnContent(turn.content)}
-              >
+              </MeetDrawerActionButton>
+              <MeetDrawerActionButton variant="own" onClick={() => copyTurnContent(turn.content)}>
                 Copy
-              </button>
-            </div>
+              </MeetDrawerActionButton>
+            </MeetDrawerMessageActions>
           </div>
         </div>
       );
     }
 
     return (
-      <div key={`${turn.role}-${index}`} className="mb-4 flex gap-2.5 last:mb-0">
+      <div key={`${turn.role}-${index}`} className="mb-5 flex gap-2.5 last:mb-0">
+        <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-800/90 ring-1 ring-slate-700/50">
+          <Sparkles className="h-4 w-4 text-cyan-500/75" />
+        </span>
+        <div className="group/msg relative min-w-0 max-w-[calc(100%-2.5rem)] flex-1">
+          <p className="mb-1 text-[11px] font-medium text-slate-500">GRE Assistant</p>
+          <div className={meetDrawer.chatBubbleOther}>
+            <FormattedAssistantText content={turn.content} className="!text-slate-100" />
+          </div>
+          <MeetDrawerMessageActions align="start">
+            <MeetDrawerActionButton variant="accent" onClick={() => copyTurnContent(turn.content)}>
+              Copy
+            </MeetDrawerActionButton>
+          </MeetDrawerMessageActions>
+        </div>
+      </div>
+    );
+  };
+
+  const thinkingRow = (
+    <div className="mb-4 flex gap-2.5">
+      <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-800/90 ring-1 ring-slate-700/50">
+        <Sparkles className="h-4 w-4 text-cyan-500/75" />
+      </span>
+      <div className={`${meetDrawer.chatBubbleOther} inline-flex items-center gap-2 text-slate-400`}>
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="text-sm">Thinking…</span>
+      </div>
+    </div>
+  );
+
+  if (useDrawerChrome) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <MeetDrawerThreadLayout
+          threadRef={threadRef}
+          notice={
+            <div className={meetDrawer.chatNotice}>
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-cyan-500/60" />
+              <p>
+                Private to you — answers use this meeting&apos;s transcript, minutes, and notes when
+                available.
+              </p>
+            </div>
+          }
+          footer={
+            <>
+              <MeetDrawerComposer
+                value={question}
+                onChange={setQuestion}
+                onSubmit={() => handleAsk()}
+                placeholder="Ask a question…"
+                loading={askMutation.isPending}
+                disabled={askMutation.isPending}
+                submitAriaLabel="Send question"
+              />
+            </>
+          }
+          footerError={error || undefined}
+        >
+          <>
+            {history.length === 0 && !askMutation.isPending ? (
+              <>
+                <MeetDrawerEmptyState
+                  icon={MessageSquare}
+                  title="No questions yet"
+                  description="Ask about decisions, action items, or what was discussed in this meeting."
+                />
+                <div className="flex flex-wrap justify-center gap-2 px-2">
+                  {ASSISTANT_STARTERS.map((starter) => (
+                    <button
+                      key={starter}
+                      type="button"
+                      onClick={() => handleAsk(starter)}
+                      className="rounded-full border border-slate-700/80 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-cyan-900/50 hover:bg-slate-800 hover:text-slate-100"
+                    >
+                      {starter}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="space-y-1">
+                {history.map(renderDrawerTurn)}
+                {askMutation.isPending && thinkingRow}
+              </div>
+            )}
+          </>
+        </MeetDrawerThreadLayout>
+      </div>
+    );
+  }
+
+  const threadShell = isDark
+    ? "min-h-0 flex-1 space-y-2 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900/70 p-3"
+    : `min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50/80 p-3 ${
+        compact ? "max-h-64" : "max-h-80"
+      }`;
+
+  const emptyHint = isDark ? "text-sm text-slate-400" : "text-sm text-slate-600";
+
+  const renderTurn = (turn: MeetingAssistantTurn, index: number) => {
+    const isUser = turn.role === "user";
+    if (isUser) {
+      return (
+        <div key={`${turn.role}-${index}`} className="flex justify-end">
+          <p
+            className={`max-w-[92%] rounded-2xl rounded-br-md px-3.5 py-2.5 text-sm leading-relaxed ${
+              isDark ? "bg-slate-700/95 text-slate-100" : "bg-brand-600 text-white"
+            }`}
+          >
+            {turn.content}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div key={`${turn.role}-${index}`} className="flex gap-2.5">
         <span
           className={`mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-            isDark ? "bg-slate-800 text-brand-300" : "bg-brand-100 text-brand-700"
+            isDark ? "bg-slate-800 text-cyan-500/85" : "bg-brand-100 text-brand-700"
           }`}
         >
           <Sparkles className="h-3.5 w-3.5" />
         </span>
-        <div className="group/msg relative min-w-0 max-w-[88%] flex-1">
-          <div
-            className={`rounded-2xl rounded-tl-md px-3.5 py-2.5 text-sm leading-relaxed ${
-              isDark
-                ? "bg-slate-800 text-slate-100"
-                : "bg-white text-slate-800 ring-1 ring-slate-200/80"
-            }`}
-          >
-            <FormattedAssistantText content={turn.content} />
-          </div>
-          <div className={`${messageActionsShell} left-2`}>
-            <button
-              type="button"
-              className={messageActionBtn("assistant")}
-              onClick={() => copyTurnContent(turn.content)}
-            >
-              Copy
-            </button>
-          </div>
+        <div
+          className={`min-w-0 max-w-[88%] flex-1 rounded-2xl rounded-tl-md px-3.5 py-2.5 text-sm leading-relaxed ${
+            isDark ? "bg-slate-800 text-slate-100" : "bg-white text-slate-800 ring-1 ring-slate-200/80"
+          }`}
+        >
+          <FormattedAssistantText content={turn.content} />
         </div>
       </div>
     );
@@ -202,7 +282,7 @@ export function MeetingGreAssistantPanel({
     <div className="flex gap-2.5">
       <span
         className={`mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-          isDark ? "bg-slate-800 text-brand-300" : "bg-brand-100 text-brand-700"
+          isDark ? "bg-slate-800 text-cyan-500/85" : "bg-brand-100 text-brand-700"
         }`}
       >
         <Sparkles className="h-3.5 w-3.5" />
@@ -221,12 +301,10 @@ export function MeetingGreAssistantPanel({
   );
 
   return (
-    <div
-      className={`flex min-h-0 flex-col ${useDrawerChrome ? "h-full gap-3" : compact ? "h-full gap-3" : "gap-4"}`}
-    >
+    <div className={`flex min-h-0 flex-col ${compact ? "h-full gap-3" : "gap-4"}`}>
       {isDark && (
         <div className="flex shrink-0 items-center gap-2">
-          <Bot className="h-4 w-4 text-brand-400" />
+          <Bot className="h-4 w-4 text-cyan-500/85" />
           <p className="text-sm font-semibold text-slate-100">GRE Assistant</p>
           {isLive && (
             <span className="rounded-full bg-emerald-900/40 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
@@ -263,11 +341,9 @@ export function MeetingGreAssistantPanel({
 
       <div
         className={
-          useDrawerChrome
-            ? "shrink-0 space-y-2 border-t border-slate-800 bg-slate-900/95 p-3"
-            : isDark
-              ? "mt-auto shrink-0 space-y-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-3"
-              : "shrink-0 space-y-2"
+          isDark
+            ? "mt-auto shrink-0 space-y-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-3"
+            : "shrink-0 space-y-2"
         }
       >
         <TextareaWithSendAddon

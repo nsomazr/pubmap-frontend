@@ -6,6 +6,7 @@ import {
   ExternalLink,
   Loader2,
   LogOut,
+  MessageSquare,
   PictureInPicture2,
   Radio,
   RefreshCcw,
@@ -15,7 +16,13 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
-import { TextareaWithSendAddon } from "../components/ui/FieldSendAddon";
+import { MeetDrawerComposer } from "../components/meet/drawer/MeetDrawerComposer";
+import { MeetDrawerEmptyState } from "../components/meet/drawer/MeetDrawerEmptyState";
+import {
+  MeetDrawerActionButton,
+  MeetDrawerMessageActions,
+} from "../components/meet/drawer/MeetDrawerMessageActions";
+import { MeetDrawerThreadLayout } from "../components/meet/drawer/MeetDrawerThreadLayout";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { useToast } from "../components/ui/ToastProvider";
@@ -961,7 +968,7 @@ export function MeetRoomPage() {
       <div className="relative h-full w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-2xl">
       {!isConnected ? (
         <div className="flex h-full flex-col items-center justify-center gap-5 p-6 text-center text-white">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-brand-500/20 text-brand-300">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-cyan-950/40 text-cyan-400/90">
             {isPreparingRoom && !showManualJoin ? (
               <Loader2 className="h-8 w-8 animate-spin" />
             ) : (
@@ -1020,7 +1027,7 @@ export function MeetRoomPage() {
                 setDrawerTab("info");
                 setDrawerOpen(true);
               }}
-              className="text-sm font-semibold text-brand-200 underline-offset-2 hover:text-white hover:underline"
+              className="text-sm font-semibold text-cyan-400/90 underline-offset-2 hover:text-cyan-300 hover:underline"
             >
               Open meeting details
             </button>
@@ -1239,9 +1246,9 @@ export function MeetRoomPage() {
               </div>
             ),
             assistant: (
-              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 {canManage && (
-                  <div className={`shrink-0 space-y-2 ${meetDrawer.card}`}>
+                  <div className={`mx-3 mt-3 shrink-0 space-y-2 ${meetDrawer.card}`}>
                     <p className={meetDrawer.label}>Assistant tools</p>
                     <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
                       <Button
@@ -1308,7 +1315,7 @@ export function MeetRoomPage() {
                     )}
                   </div>
                 )}
-                <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                   <MeetingGreAssistantPanel
                     meeting={activeMeeting}
                     compact
@@ -1319,171 +1326,199 @@ export function MeetRoomPage() {
               </div>
             ),
               chat: (
-                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
-                  <div className={meetDrawer.chatShell}>
-                    {chat.map((message) => {
-                      const senderName =
-                        message.sender?.full_name ||
-                        `${message.sender?.firstname ?? ""} ${message.sender?.lastname ?? ""}`.trim() ||
-                        message.sender?.email ||
-                        "Participant";
-                      const isOwn = message.sender_id === user?.id;
-                      const parsedMessage = parseReplyPayload(message.message || "");
-                      return (
-                        <div key={message.id} className={`mb-4 flex last:mb-0 ${isOwn ? "justify-end" : "justify-start"}`}>
-                          <div className={`flex w-full max-w-[96%] items-end gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
-                            <UserAvatar user={message.sender} name={senderName} size="sm" className="shrink-0" />
-                            <div className="group/msg relative w-full max-w-[92%]">
-                              <div
-                                className={`rounded-2xl px-3 py-2.5 shadow-sm ${
-                                  isOwn
-                                    ? "bg-brand-600 text-white"
-                                    : "bg-slate-800 text-slate-100 ring-1 ring-slate-600/80"
-                                }`}
-                              >
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <p
-                                    className={`text-[11px] font-semibold uppercase tracking-wide ${
-                                      isOwn ? "text-white/80" : "text-slate-400"
-                                    }`}
-                                  >
-                                    {senderName}
-                                    {isOwn ? " · You" : ""}
-                                  </p>
-                                  <span className={`text-[11px] ${isOwn ? "text-white/70" : "text-slate-400"}`}>
-                                    {formatChatTimestamp(message.created_at)}
-                                  </span>
+                <MeetDrawerThreadLayout
+                  notice={
+                    <div className={meetDrawer.chatNotice}>
+                      <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-cyan-500/60" />
+                      <p>Messages are shared with everyone in this meeting while the call is live.</p>
+                    </div>
+                  }
+                  footer={
+                    <>
+                      {(replyTarget || tagTarget) && (
+                        <div className={meetDrawer.chatReplyBanner}>
+                          {replyTarget && (
+                            <p>
+                              Replying to{" "}
+                              <span className="font-semibold text-slate-100">
+                                {replyTarget.sender?.full_name ||
+                                  `${replyTarget.sender?.firstname ?? ""} ${replyTarget.sender?.lastname ?? ""}`.trim() ||
+                                  replyTarget.sender?.email ||
+                                  "Participant"}
+                              </span>
+                            </p>
+                          )}
+                          {tagTarget && (
+                            <p>
+                              Tagging{" "}
+                              <span className="font-semibold text-slate-100">
+                                {tagTarget.sender?.full_name ||
+                                  `${tagTarget.sender?.firstname ?? ""} ${tagTarget.sender?.lastname ?? ""}`.trim() ||
+                                  tagTarget.sender?.email ||
+                                  "Participant"}
+                              </span>
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            className="mt-1 text-[11px] font-semibold text-cyan-400/80 hover:text-cyan-300"
+                            onClick={() => {
+                              setReplyTarget(null);
+                              setTagTarget(null);
+                            }}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      )}
+                      <MeetDrawerComposer
+                        value={text}
+                        onChange={setText}
+                        onSubmit={() => {
+                          if (!text.trim() || !meetingId || sendChat.isPending) return;
+                          sendChat.mutate();
+                        }}
+                        placeholder="Send a message"
+                        loading={sendChat.isPending}
+                        disabled={!meetingId || sendChat.isPending}
+                        submitAriaLabel="Send message"
+                      />
+                    </>
+                  }
+                  footerError={chatError || undefined}
+                >
+                  {chat.length === 0 ? (
+                    <MeetDrawerEmptyState
+                      icon={MessageSquare}
+                      title="No chat messages yet"
+                      description="Say hello or share a link — everyone in the room will see it."
+                    />
+                  ) : (
+                    <div className="space-y-1">
+                      {chat.map((message) => {
+                        const senderName =
+                          message.sender?.full_name ||
+                          `${message.sender?.firstname ?? ""} ${message.sender?.lastname ?? ""}`.trim() ||
+                          message.sender?.email ||
+                          "Participant";
+                        const isOwn = message.sender_id === user?.id;
+                        const parsedMessage = parseReplyPayload(message.message || "");
+                        const timeLabel = formatChatTimestamp(message.created_at);
+
+                        if (isOwn) {
+                          return (
+                            <div key={message.id} className="mb-5 flex flex-col items-end last:mb-0">
+                              {timeLabel && (
+                                <span className="mb-1 px-1 text-[10px] text-slate-500">{timeLabel}</span>
+                              )}
+                              <div className="group/msg relative max-w-[88%]">
+                                <div className={meetDrawer.chatBubbleOwn}>
+                                  {parsedMessage.replySnippet && (
+                                    <div className={`mb-2 rounded-xl px-2.5 py-2 ${meetDrawer.chatReplyOwn}`}>
+                                      <p className="text-[11px] font-medium text-slate-300">
+                                        {parsedMessage.replyToName}
+                                      </p>
+                                      <p className="mt-0.5 line-clamp-2 text-xs text-slate-400">
+                                        {parsedMessage.replySnippet}
+                                      </p>
+                                    </div>
+                                  )}
+                                  <p className="whitespace-pre-wrap">{parsedMessage.body}</p>
                                 </div>
-                                {parsedMessage.replySnippet && (
-                                  <div
-                                    className={`mt-1.5 rounded-xl px-2.5 py-2 ${
-                                      isOwn
-                                        ? "bg-white/15"
-                                        : "border border-slate-600/80 bg-slate-900/60"
-                                    }`}
+                                <MeetDrawerMessageActions align="end">
+                                  <MeetDrawerActionButton
+                                    variant="own"
+                                    onClick={() => setReplyTarget(message)}
                                   >
-                                    <p className={`text-[11px] font-semibold ${isOwn ? "text-white" : "text-brand-400"}`}>
-                                      {parsedMessage.replyToName}
-                                    </p>
-                                    <p className={`mt-0.5 line-clamp-2 text-xs ${isOwn ? "text-white/85" : "text-slate-300"}`}>
-                                      {parsedMessage.replySnippet}
-                                    </p>
-                                  </div>
-                                )}
-                                <p
-                                  className={`mt-1 text-sm whitespace-pre-wrap leading-relaxed ${
-                                    isOwn ? "text-white" : "text-slate-100"
-                                  }`}
-                                >
-                                  {parsedMessage.body}
-                                </p>
+                                    Reply
+                                  </MeetDrawerActionButton>
+                                  <MeetDrawerActionButton
+                                    variant="own"
+                                    onClick={() => {
+                                      void (
+                                        navigator.clipboard?.writeText?.(message.message) ??
+                                        Promise.reject()
+                                      ).catch(() => {});
+                                    }}
+                                  >
+                                    Copy
+                                  </MeetDrawerActionButton>
+                                </MeetDrawerMessageActions>
                               </div>
-                              <div
-                                className={`${meetDrawer.messageActions} ${
-                                  isOwn ? meetDrawer.messageActionsEnd : meetDrawer.messageActionsStart
-                                }`}
-                              >
-                                <button
-                                  type="button"
-                                  className={isOwn ? meetDrawer.messageActionBtnOwn : meetDrawer.messageActionBtnAccent}
-                                  onClick={() => setReplyTarget(message)}
-                                >
-                                  Reply
-                                </button>
-                                {!isOwn && (
-                                  <button
-                                    type="button"
-                                    className={meetDrawer.messageActionBtn}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div key={message.id} className="mb-5 flex gap-2.5 last:mb-0">
+                            <UserAvatar
+                              user={message.sender}
+                              name={senderName}
+                              size="sm"
+                              className="mt-1 shrink-0"
+                            />
+                            <div className="min-w-0 max-w-[calc(100%-2.5rem)] flex-1">
+                              <div className="mb-1 flex items-baseline gap-2">
+                                <p className="truncate text-[11px] font-medium text-slate-400">{senderName}</p>
+                                {timeLabel && (
+                                  <span className="shrink-0 text-[10px] text-slate-500">{timeLabel}</span>
+                                )}
+                              </div>
+                              <div className="group/msg relative">
+                                <div className={meetDrawer.chatBubbleOther}>
+                                  {parsedMessage.replySnippet && (
+                                    <div className="mb-2 rounded-xl border border-slate-600/60 bg-slate-900/50 px-2.5 py-2">
+                                      <p className={`text-[11px] font-medium ${meetDrawer.chatReplyLabel}`}>
+                                        {parsedMessage.replyToName}
+                                      </p>
+                                      <p className="mt-0.5 line-clamp-2 text-xs text-slate-400">
+                                        {parsedMessage.replySnippet}
+                                      </p>
+                                    </div>
+                                  )}
+                                  <p className="whitespace-pre-wrap">{parsedMessage.body}</p>
+                                </div>
+                                <MeetDrawerMessageActions align="start">
+                                  <MeetDrawerActionButton
+                                    variant="accent"
+                                    onClick={() => setReplyTarget(message)}
+                                  >
+                                    Reply
+                                  </MeetDrawerActionButton>
+                                  <MeetDrawerActionButton
+                                    variant="default"
                                     onClick={() => {
                                       setTagTarget(message);
                                       const mentionToken = `@${senderName}`;
                                       setText((prev) => {
-                                        if (prev.toLowerCase().includes(mentionToken.toLowerCase())) return prev;
+                                        if (prev.toLowerCase().includes(mentionToken.toLowerCase()))
+                                          return prev;
                                         return `${mentionToken} ${prev}`.trimStart();
                                       });
                                     }}
                                   >
                                     Tag
-                                  </button>
-                                )}
-                                <button
-                                  type="button"
-                                  className={isOwn ? meetDrawer.messageActionBtnOwn : meetDrawer.messageActionBtn}
-                                  onClick={() => {
-                                    void (navigator.clipboard?.writeText?.(message.message) ?? Promise.reject()).catch(
-                                      () => {}
-                                    );
-                                  }}
-                                >
-                                  Copy
-                                </button>
+                                  </MeetDrawerActionButton>
+                                  <MeetDrawerActionButton
+                                    variant="default"
+                                    onClick={() => {
+                                      void (
+                                        navigator.clipboard?.writeText?.(message.message) ??
+                                        Promise.reject()
+                                      ).catch(() => {});
+                                    }}
+                                  >
+                                    Copy
+                                  </MeetDrawerActionButton>
+                                </MeetDrawerMessageActions>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                    {chat.length === 0 && (
-                      <p className="px-3 py-6 text-center text-sm text-slate-400">
-                        No messages yet. Start the conversation below.
-                      </p>
-                    )}
-                  </div>
-                  <div className={meetDrawer.chatForm}>
-                    {(replyTarget || tagTarget) && (
-                      <div className={meetDrawer.chatReplyBanner}>
-                        {replyTarget && (
-                          <p>
-                            Replying to{" "}
-                            <span className="font-semibold text-slate-100">
-                              {replyTarget.sender?.full_name ||
-                                `${replyTarget.sender?.firstname ?? ""} ${replyTarget.sender?.lastname ?? ""}`.trim() ||
-                                replyTarget.sender?.email ||
-                                "Participant"}
-                            </span>
-                          </p>
-                        )}
-                        {tagTarget && (
-                          <p>
-                            Tagging{" "}
-                            <span className="font-semibold text-slate-100">
-                              {tagTarget.sender?.full_name ||
-                                `${tagTarget.sender?.firstname ?? ""} ${tagTarget.sender?.lastname ?? ""}`.trim() ||
-                                tagTarget.sender?.email ||
-                                "Participant"}
-                            </span>
-                          </p>
-                        )}
-                        <button
-                          type="button"
-                          className="mt-1 text-[11px] font-semibold text-slate-400 hover:text-brand-400"
-                          onClick={() => {
-                            setReplyTarget(null);
-                            setTagTarget(null);
-                          }}
-                        >
-                          Clear
-                        </button>
-                      </div>
-                    )}
-                    <TextareaWithSendAddon
-                      value={text}
-                      onChange={setText}
-                      onSubmit={() => {
-                        if (!text.trim() || !meetingId || sendChat.isPending) return;
-                        sendChat.mutate();
-                      }}
-                      placeholder="Message…"
-                      loading={sendChat.isPending}
-                      disabled={!meetingId || sendChat.isPending}
-                      submitAriaLabel="Send message"
-                      variant="dark"
-                      rows={2}
-                      className="!space-y-0"
-                    />
-                    {chatError && <p className="text-sm text-red-400">{chatError}</p>}
-                  </div>
-                </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </MeetDrawerThreadLayout>
               ),
               host: (
                 <div className={meetDrawer.hostHint}>Host controls are available in the Meeting tab.</div>

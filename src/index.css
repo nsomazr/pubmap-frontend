@@ -992,7 +992,21 @@ body {
 }
 
 .meet-drawer-panel--dark ::selection {
-  background: color-mix(in srgb, var(--color-brand-600) 45%, transparent);
+  background: color-mix(in srgb, rgb(14 116 144) 40%, transparent);
+}
+
+.meet-drawer-thread {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.meet-drawer-thread::-webkit-scrollbar {
+  width: 6px;
+}
+
+.meet-drawer-thread::-webkit-scrollbar-thumb {
+  background: rgb(51 65 85 / 0.55);
+  border-radius: 999px;
 }
 
 .gre-dashboard-card {
