@@ -1429,14 +1429,7 @@ export function MeetRoomPage() {
                       </p>
                     )}
                   </div>
-                  <form
-                    className={meetDrawer.chatForm}
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      if (!text.trim()) return;
-                      sendChat.mutate();
-                    }}
-                  >
+                  <div className={meetDrawer.chatForm}>
                     {(replyTarget || tagTarget) && (
                       <div className={meetDrawer.chatReplyBanner}>
                         {replyTarget && (
@@ -1489,7 +1482,7 @@ export function MeetRoomPage() {
                       className="!space-y-0"
                     />
                     {chatError && <p className="text-sm text-red-400">{chatError}</p>}
-                  </form>
+                  </div>
                 </div>
               ),
               host: (

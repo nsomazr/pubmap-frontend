@@ -261,7 +261,7 @@ export function MeetingGreAssistantPanel({
         )}
       </div>
 
-      <form
+      <div
         className={
           useDrawerChrome
             ? "shrink-0 space-y-2 border-t border-slate-800 bg-slate-900/95 p-3"
@@ -269,10 +269,6 @@ export function MeetingGreAssistantPanel({
               ? "mt-auto shrink-0 space-y-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-3"
               : "shrink-0 space-y-2"
         }
-        onSubmit={(event) => {
-          event.preventDefault();
-          handleAsk();
-        }}
       >
         <TextareaWithSendAddon
           value={question}
@@ -288,7 +284,7 @@ export function MeetingGreAssistantPanel({
         {error && (
           <p className={`text-sm ${isDark ? "text-red-400" : "text-red-600"}`}>{error}</p>
         )}
-      </form>
+      </div>
     </div>
   );
 }
