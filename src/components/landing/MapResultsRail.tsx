@@ -32,6 +32,10 @@ import { SubcategoryBadge } from "../taxonomy/SubcategoryBadge";
 import { UserAvatar } from "../ui/UserAvatar";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { authorDisplayName } from "../../lib/userDisplay";
+import {
+  collectAuthorMatchedResearchers,
+  normalizeAuthorSearchQuery,
+} from "../../lib/mapAuthorSearch";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type {
   AuthorResearchResponse,
@@ -154,13 +158,6 @@ function institutionNameMatchesQuery(label: string, query: string): boolean {
   const tokens = normalizeNameQuery(query).split(" ").filter((token) => token.length > 1);
   if (!tokens.length) return true;
   return tokens.every((token) => normalizedLabel.includes(token));
-}
-
-function researcherNameMatchesQuery(name: string, query: string): boolean {
-  const normalizedName = normalizeNameQuery(name);
-  const tokens = normalizeNameQuery(query).split(" ").filter((token) => token.length > 1);
-  if (!tokens.length) return true;
-  return tokens.every((token) => normalizedName.includes(token));
 }
 
 function collectResearcherResults(publications: Publication[]): ResearcherResult[] {
@@ -708,11 +705,41 @@ export function MapResultsRail({
       ? collectResearcherResults(publications).slice(0, 6)
       : [];
 
-  const paperMatchedResearchers =
+  const paperMatchedResearchers: ResearcherResult[] =
     authorSearchActive && !exactResearcher && fuzzyResearchers.length === 0
-      ? collectResearcherResults(publications)
-          .filter((person) => researcherNameMatchesQuery(person.name, authorQuery))
+      ? collectAuthorMatchedResearchers(
+          publications,
+          normalizeAuthorSearchQuery(authorQuery)
+        )
           .slice(0, 6)
+          .map((person) => {
+            const pubs = person.publications;
+            const lead = pubs[0];
+            return {
+              key: person.key,
+              userId: person.userId,
+              name: person.name,
+              affiliation: person.affiliation,
+              photo: person.photo,
+              ranking: lead?.author?.ranking,
+              leadSubfield: topValues(
+                pubs.map((pub) => pub.subfield_name || pub.sub_category_name || "")
+              )[0],
+              interests: [
+                ...new Set(
+                  pubs.flatMap((pub) =>
+                    (pub.author?.interests ?? []).map((interest) => interest.label)
+                  )
+                ),
+              ].slice(0, 4),
+              totalPublications: pubs.length,
+              totalDiscussions: pubs.reduce(
+                (sum, pub) => sum + (pub.discussions_count ?? 0),
+                0
+              ),
+              publications: pubs,
+            };
+          })
       : [];
 
   const exactInstitution =

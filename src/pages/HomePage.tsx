@@ -17,6 +17,10 @@ import { assets } from "../lib/brand";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { formatMapRegionLabel, reverseGeocodeRegion } from "../lib/geocode";
 import { MAP_REGION_RADIUS_KM } from "../lib/mapRegion";
+import {
+  filterPublicationsByAuthorQuery,
+  normalizeAuthorSearchQuery,
+} from "../lib/mapAuthorSearch";
 import type {
   AuthorResearchResponse,
   Category,
@@ -115,9 +119,10 @@ export function HomePage() {
       };
       setSearching(true);
       setSearchError(null);
-      const authorQuery = active.author.trim();
+      const authorQuery = normalizeAuthorSearchQuery(active.author);
       const affiliationQuery = active.affiliation.trim();
       const authorSearch = authorQuery.length >= 2;
+      const mapBaseline = data?.publications ?? [];
       const institutionSearch = affiliationQuery.length >= 2 && !authorSearch;
       try {
         const pubsRequest = api.get<Publication[]>("/map/search/", {
@@ -151,7 +156,11 @@ export function HomePage() {
           researcherRequest,
           institutionRequest,
         ]);
-        setResults(pubsResponse.data);
+        let pubs = pubsResponse.data;
+        if (authorSearch && pubs.length === 0 && mapBaseline.length > 0) {
+          pubs = filterPublicationsByAuthorQuery(mapBaseline, authorQuery);
+        }
+        setResults(pubs);
         setAuthorResearch(researcherResponse ? researcherResponse.data : null);
         setInstitutionResearch(
           institutionResponse ? institutionResponse.data : null
@@ -181,6 +190,7 @@ export function HomePage() {
       mapRegion,
       categoryId,
       subCategoryId,
+      data?.publications,
     ]
   );
 

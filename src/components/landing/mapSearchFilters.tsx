@@ -149,6 +149,7 @@ export function buildSearchSuggestions(
       full_name?: string;
       affiliation?: string;
     };
+    collaborators?: { fullname?: string }[];
   }[]
 ) {
   const titles = new Set<string>();
@@ -160,6 +161,10 @@ export function buildSearchSuggestions(
     if (t && t.length > 2) titles.add(t);
     const a = userFullName(pub.author);
     if (a && a !== "Researcher") authors.add(a);
+    for (const collab of pub.collaborators ?? []) {
+      const name = collab.fullname?.trim();
+      if (name) authors.add(name);
+    }
     const aff = pub.author?.affiliation?.trim();
     if (aff) institutions.add(aff);
   }
