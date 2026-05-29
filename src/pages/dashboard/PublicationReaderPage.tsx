@@ -155,6 +155,7 @@ export function PublicationReaderPage() {
             responsesCount={pub.responses_count ?? 0}
             greDoi={pub.gre?.gre_doi}
             accessType={pub.gre?.access_type}
+            authorsComment={isClosed ? pub.gre?.authors_comment : undefined}
           />
 
           <PublicationDownloadPanel

@@ -643,6 +643,7 @@ export function PublicationManagePage() {
       subCategoryName,
       location: coordinates.location,
       accessType: gre.access_type,
+      authorsComment: gre.authors_comment,
       greDoi: gre.gre_doi ?? pub?.gre?.gre_doi ?? null,
       viewsCount: pub?.views_count ?? 0,
       downloadsCount: pub?.downloads_count ?? 0,
@@ -668,6 +669,7 @@ export function PublicationManagePage() {
       subVisual,
       subCategoryName,
       gre.access_type,
+      gre.authors_comment,
       gre.gre_doi,
       pub?.gre?.gre_doi,
     ]

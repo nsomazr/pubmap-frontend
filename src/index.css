@@ -2502,12 +2502,14 @@ body {
 }
 
 .publication-paper-category {
-  width: min(100%, 7.5rem);
+  width: auto;
+  max-width: 5.25rem;
+  justify-self: end;
 }
 
 @media (min-width: 640px) {
   .publication-paper-category {
-    width: 8.5rem;
+    max-width: 8.5rem;
   }
 }
 

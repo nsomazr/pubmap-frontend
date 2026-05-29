@@ -4,6 +4,7 @@ import { assets } from "../../lib/brand";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import type { AuthorByline } from "../../lib/publicationAuthors";
 import { PublicationAuthorByline } from "./PublicationAuthorByline";
+import { ManuscriptContent } from "./ManuscriptContent";
 import type { SubcategoryVisual as Visual } from "../../types";
 
 export interface PublicationPaperHeaderProps {
@@ -23,16 +24,17 @@ export interface PublicationPaperHeaderProps {
   responsesCount?: number;
   greDoi?: string | null;
   accessType?: "open" | "closed";
+  authorsComment?: string | null;
   draft?: boolean;
 }
 
 function GreBrandBlock({ draft }: Pick<PublicationPaperHeaderProps, "draft">) {
   return (
-    <div className="flex w-[4.25rem] shrink-0 flex-col items-center gap-1.5 sm:w-[6.5rem] sm:gap-2">
+    <div className="flex shrink-0 flex-col items-start gap-1 sm:items-center sm:gap-2">
       <img
         src={assets.logo}
         alt="Global Research Exchange"
-        className="h-12 w-12 shrink-0 object-contain sm:h-[4.5rem] sm:w-[4.5rem]"
+        className="h-10 w-10 shrink-0 object-contain sm:h-[4.5rem] sm:w-[4.5rem]"
       />
       {draft && (
         <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
@@ -45,8 +47,8 @@ function GreBrandBlock({ draft }: Pick<PublicationPaperHeaderProps, "draft">) {
 
 function PlatformNameBadge() {
   return (
-    <div className="flex w-full flex-col items-center bg-slate-400 px-3 py-2.5 text-center text-white shadow-sm sm:px-8 sm:py-3.5">
-      <span className="text-[11px] font-bold uppercase leading-tight tracking-[0.12em] sm:text-[15px] sm:tracking-[0.14em]">
+    <div className="flex min-w-0 w-full flex-col items-center bg-slate-400 px-2 py-2 text-center text-white shadow-sm sm:px-8 sm:py-3.5">
+      <span className="text-[9px] font-bold uppercase leading-tight tracking-[0.1em] sm:text-[15px] sm:tracking-[0.14em]">
         Global Research Exchange
       </span>
       <span className="mt-1.5 hidden min-[400px]:grid w-full grid-cols-[minmax(1.75rem,1fr)_auto_minmax(1.75rem,1fr)] items-center gap-2 text-[9px] font-medium leading-tight tracking-[0.02em] text-slate-50 sm:mt-2 sm:gap-3 sm:text-[11px] sm:tracking-[0.03em]">
@@ -70,7 +72,7 @@ function CategoryTopBadge({
 
   return (
     <aside className="publication-paper-category shrink-0" aria-label={label}>
-      <div className="flex items-center justify-center">
+      <div className="flex items-center justify-end">
         {visual ? (
           <SubcategoryVisual
             visual={visual}
@@ -78,10 +80,10 @@ function CategoryTopBadge({
             fit="contain"
             clip={false}
             shadow={false}
-            className="!h-12 !w-12 !rounded-none sm:!h-[5.25rem] sm:!w-[5.25rem]"
+            className="!h-10 !w-10 !rounded-none sm:!h-[5.25rem] sm:!w-[5.25rem]"
           />
         ) : (
-          <span className="flex h-12 w-12 items-center justify-center border border-slate-200 bg-white text-sm font-bold text-slate-600 sm:h-20 sm:w-20 sm:text-xl">
+          <span className="flex h-10 w-10 items-center justify-center border border-slate-200 bg-white text-xs font-bold text-slate-600 sm:h-20 sm:w-20 sm:text-xl">
             {label.slice(0, 2).toUpperCase()}
           </span>
         )}
@@ -158,6 +160,7 @@ export function PublicationPaperHeader({
   discussionsCount = 0,
   responsesCount = 0,
   greDoi,
+  authorsComment,
   draft,
 }: PublicationPaperHeaderProps) {
   const displayTitle = formatGrePaperTitle(title, greNumber);
@@ -177,16 +180,12 @@ export function PublicationPaperHeader({
 
   return (
     <header className="publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="flex flex-col items-center gap-4 border-b border-slate-100 bg-white px-3 py-4 sm:grid sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] sm:items-center sm:gap-3 sm:px-7">
-        <div className="sm:justify-self-start">
-          <GreBrandBlock draft={draft} />
-        </div>
-        <div className="flex w-full min-w-0 items-center justify-center sm:w-auto">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5 border-b border-slate-100 bg-white px-2 py-2.5 sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] sm:gap-3 sm:px-7 sm:py-4">
+        <GreBrandBlock draft={draft} />
+        <div className="min-w-0 justify-self-stretch">
           <PlatformNameBadge />
         </div>
-        <div className="sm:justify-self-end">
-          <CategoryTopBadge visual={subVisual} name={subCategoryName || subVisual?.name} />
-        </div>
+        <CategoryTopBadge visual={subVisual} name={subCategoryName || subVisual?.name} />
       </div>
 
       <div className="px-5 py-4 sm:px-7 sm:py-5">
@@ -239,6 +238,18 @@ export function PublicationPaperHeader({
               ))}
             </dl>
           </div>
+        </div>
+      )}
+
+      {authorsComment?.trim() && (
+        <div className="border-t border-slate-100 px-5 py-4 sm:px-7">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
+            Author&apos;s Comment
+          </h2>
+          <ManuscriptContent
+            value={authorsComment.trim()}
+            className="mt-3 min-w-0 text-sm leading-relaxed text-slate-700"
+          />
         </div>
       )}
     </header>

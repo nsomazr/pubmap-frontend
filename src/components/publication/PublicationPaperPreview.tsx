@@ -28,6 +28,7 @@ export interface PublicationPaperPreviewData {
   responsesCount?: number;
   greDoi?: string | null;
   accessType?: "open" | "closed";
+  authorsComment?: string | null;
 }
 
 interface Props {
@@ -68,6 +69,9 @@ export function PublicationPaperPreview({
         responsesCount={data.responsesCount}
         greDoi={data.greDoi}
         accessType={data.accessType}
+        authorsComment={
+          data.accessType === "closed" ? data.authorsComment : undefined
+        }
         draft={draft}
       />
 
