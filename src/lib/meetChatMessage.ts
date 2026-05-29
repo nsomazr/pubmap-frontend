@@ -27,6 +27,8 @@ export function formatMeetChatTime(value?: string | null, style: "time" | "full"
   }
 }
 
+export const MEET_CHAT_REPLY_PREFIX = "[[GRE_REPLY]]";
+
 export function parseMeetChatReply(rawMessage: string): {
   replyToName?: string;
   replySnippet?: string;
@@ -39,12 +41,14 @@ export function parseMeetChatReply(rawMessage: string): {
   const firstLine = lines[0] || "";
   const rest = lines.slice(1).join("\n").trim();
 
-  if (firstLine.startsWith("[[GRE_REPLY]]")) {
-    const payload = firstLine.replace("[[GRE_REPLY]]", "");
-    const [name = "", snippet = ""] = payload.split("|||");
+  if (firstLine.startsWith(MEET_CHAT_REPLY_PREFIX)) {
+    const payload = firstLine.slice(MEET_CHAT_REPLY_PREFIX.length);
+    const sep = payload.indexOf("|||");
+    const name = (sep >= 0 ? payload.slice(0, sep) : payload).trim() || "Participant";
+    const snippet = sep >= 0 ? payload.slice(sep + 3).trim() : "";
     return {
-      replyToName: name.trim() || "Participant",
-      replySnippet: snippet.trim(),
+      replyToName: name,
+      replySnippet: snippet,
       body: rest,
     };
   }
@@ -59,6 +63,30 @@ export function parseMeetChatReply(rawMessage: string): {
   }
 
   return { body: text };
+}
+
+/** Visible text to quote when replying (never includes reply metadata). */
+export function getMeetChatReplyQuoteSnippet(rawMessage: string, maxLen = 160): string {
+  const { body } = parseMeetChatReply(rawMessage);
+  const quote = (body || rawMessage || "").replace(/\s+/g, " ").trim();
+  return quote.slice(0, maxLen);
+}
+
+export function composeMeetChatMessage(opts: {
+  body: string;
+  replyToName?: string;
+  replyToMessage?: string;
+  tagName?: string;
+}): string {
+  const lines: string[] = [];
+  if (opts.tagName?.trim()) lines.push(`@${opts.tagName.trim()}`);
+  if (opts.replyToName?.trim() && opts.replyToMessage != null) {
+    const snippet = getMeetChatReplyQuoteSnippet(opts.replyToMessage);
+    lines.push(`${MEET_CHAT_REPLY_PREFIX}${opts.replyToName.trim()}|||${snippet}`);
+  }
+  const body = opts.body.trim();
+  if (body) lines.push(body);
+  return lines.join("\n").trim();
 }
 
 const SENDER_ACCENT = [

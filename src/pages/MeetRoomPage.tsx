@@ -43,9 +43,15 @@ import {
 } from "../components/meet/MeetRoomToolsDrawer";
 import { BrandMark } from "../components/brand/BrandMark";
 import { MeetingGreAssistantPanel } from "../components/meet/MeetingGreAssistantPanel";
+import {
+  MEET_LONELY_AUTO_LEAVE_SEC,
+  MEET_LONELY_PROMPT_AFTER_MS,
+  MeetLonelyRoomDialog,
+} from "../components/meet/MeetLonelyRoomDialog";
 import { captureMeetingAssistantNotes } from "../lib/meetAssistant";
 import { meetDrawer } from "../lib/meetDrawerTheme";
 import { buildMeetingPath, meetingApiSegment } from "../lib/meetingPaths";
+import { composeMeetChatMessage, parseMeetChatReply } from "../lib/meetChatMessage";
 import {
   applyJitsiJoinMediaPolicy,
   buildJitsiConfigOverwrite,
@@ -123,42 +129,6 @@ function formatChatTimestamp(value?: string | null) {
   } catch {
     return value;
   }
-}
-
-function parseReplyPayload(rawMessage: string): {
-  replyToName?: string;
-  replySnippet?: string;
-  body: string;
-} {
-  const text = (rawMessage || "").trim();
-  if (!text) return { body: "" };
-
-  const lines = text.split("\n");
-  const firstLine = lines[0] || "";
-  const rest = lines.slice(1).join("\n").trim();
-
-  // New structured format used by this client.
-  if (firstLine.startsWith("[[GRE_REPLY]]")) {
-    const payload = firstLine.replace("[[GRE_REPLY]]", "");
-    const [name = "", snippet = ""] = payload.split("|||");
-    return {
-      replyToName: name.trim() || "Participant",
-      replySnippet: snippet.trim(),
-      body: rest,
-    };
-  }
-
-  // Backward compatibility with old inline text format.
-  const legacy = firstLine.match(/^↪\s*Reply to\s+(.+?):\s*"(.*)"$/);
-  if (legacy) {
-    return {
-      replyToName: (legacy[1] || "").trim() || "Participant",
-      replySnippet: (legacy[2] || "").trim(),
-      body: rest,
-    };
-  }
-
-  return { body: text };
 }
 
 function normalizeRoomErrorMessage(raw: string): string {
@@ -269,6 +239,10 @@ export function MeetRoomPage() {
   const [copilotError, setCopilotError] = useState("");
   const [copilotLoading, setCopilotLoading] = useState(false);
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
+  const [lonelyPromptOpen, setLonelyPromptOpen] = useState(false);
+  const [lonelyCountdown, setLonelyCountdown] = useState(MEET_LONELY_AUTO_LEAVE_SEC);
+  const soloSinceRef = useRef<number | null>(null);
+  const lonelySnoozeUntilRef = useRef<number | null>(null);
   const roomContainerRef = useRef<HTMLDivElement | null>(null);
   const jitsiApiRef = useRef<JitsiMeetExternalAPIInstance | null>(null);
   const [jitsiReady, setJitsiReady] = useState(false);
@@ -339,15 +313,12 @@ export function MeetRoomPage() {
         replyTarget?.sender?.email ||
         "";
       const messageText = text.trim();
-      const prefixParts: string[] = [];
-      if (taggedName) prefixParts.push(`@${taggedName}`);
-      if (replyTarget) {
-        const snippet = (replyTarget.message || "").replace(/\s+/g, " ").trim().slice(0, 160);
-        prefixParts.push(
-          `[[GRE_REPLY]]${replyName || "participant"}|||${snippet}`
-        );
-      }
-      const composedMessage = [...prefixParts, messageText].join("\n").trim();
+      const composedMessage = composeMeetChatMessage({
+        body: messageText,
+        tagName: taggedName || undefined,
+        replyToName: replyTarget ? replyName || "participant" : undefined,
+        replyToMessage: replyTarget?.message,
+      });
       const { data } = await api.post<MeetChatMessage[]>(`/meetings/${meetingApiSegment(activeMeeting ?? meetingId!)}/chat/`, {
         message: composedMessage,
         message_type: "text",
@@ -769,6 +740,55 @@ export function MeetRoomPage() {
         description: message,
       });
     }
+  };
+
+  const isSoloInLiveRoom = jitsiReady && roomParticipants.length <= 1;
+
+  useEffect(() => {
+    if (!isSoloInLiveRoom) {
+      soloSinceRef.current = null;
+      lonelySnoozeUntilRef.current = null;
+      setLonelyPromptOpen(false);
+      setLonelyCountdown(MEET_LONELY_AUTO_LEAVE_SEC);
+      return;
+    }
+
+    if (soloSinceRef.current == null) {
+      soloSinceRef.current = Date.now();
+    }
+
+    const tick = () => {
+      if (lonelyPromptOpen) return;
+      const snoozedUntil = lonelySnoozeUntilRef.current;
+      if (snoozedUntil != null && Date.now() < snoozedUntil) return;
+      const since = soloSinceRef.current;
+      if (since != null && Date.now() - since >= MEET_LONELY_PROMPT_AFTER_MS) {
+        setLonelyPromptOpen(true);
+        setLonelyCountdown(MEET_LONELY_AUTO_LEAVE_SEC);
+      }
+    };
+
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [isSoloInLiveRoom, lonelyPromptOpen]);
+
+  useEffect(() => {
+    if (!lonelyPromptOpen) return;
+    if (lonelyCountdown <= 0) {
+      setLonelyPromptOpen(false);
+      handleLeaveMeeting();
+      return;
+    }
+    const id = window.setTimeout(() => setLonelyCountdown((value) => value - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [lonelyPromptOpen, lonelyCountdown]);
+
+  const handleStayInLonelyCall = () => {
+    lonelySnoozeUntilRef.current = Date.now() + MEET_LONELY_PROMPT_AFTER_MS;
+    soloSinceRef.current = Date.now();
+    setLonelyPromptOpen(false);
+    setLonelyCountdown(MEET_LONELY_AUTO_LEAVE_SEC);
   };
 
   const handleLeaveMeeting = () => {
@@ -1402,7 +1422,7 @@ export function MeetRoomPage() {
                           message.sender?.email ||
                           "Participant";
                         const isOwn = message.sender_id === user?.id;
-                        const parsedMessage = parseReplyPayload(message.message || "");
+                        const parsedMessage = parseMeetChatReply(message.message || "");
                         const timeLabel = formatChatTimestamp(message.created_at);
 
                         if (isOwn) {
@@ -1527,6 +1547,16 @@ export function MeetRoomPage() {
           />
       )}
       </div>
+
+      <MeetLonelyRoomDialog
+        open={lonelyPromptOpen}
+        secondsLeft={lonelyCountdown}
+        onStay={handleStayInLonelyCall}
+        onLeave={() => {
+          setLonelyPromptOpen(false);
+          handleLeaveMeeting();
+        }}
+      />
 
       {canManage && (
         <ConfirmDialog
