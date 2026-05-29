@@ -14,6 +14,8 @@ const COLLAPSED_W = "5.25rem";
 
 function breadcrumbLabel(pathname: string): string {
   if (pathname.includes("/publications/new")) return "New publication";
+  if (pathname.includes("/meetings/new")) return "New meeting";
+  if (pathname.includes("/meetings")) return "Meetings";
   if (pathname.includes("/publications")) return "Publications";
   if (pathname.includes("/messages")) return "Messages";
   if (pathname.includes("/account")) return "Account";
@@ -132,8 +134,8 @@ export function DashboardLayout() {
           </Link>
         </header>
 
-        <div className="flex-1 overflow-x-hidden p-3 sm:p-6 lg:p-8">
-          <div className="gre-dashboard-shell gre-page-shell mx-auto min-h-[calc(100vh-8rem)] w-full">
+        <div className="flex-1 overflow-x-hidden px-3 py-4 sm:p-6 lg:p-8">
+          <div className="gre-dashboard-shell gre-page-shell gre-page-with-fab mx-auto min-h-[calc(100vh-8rem)] w-full max-w-full">
             <Suspense fallback={<RouteLoadingFallback label="Loading…" />}>
               <Outlet />
             </Suspense>

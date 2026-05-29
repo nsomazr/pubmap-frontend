@@ -14,7 +14,7 @@ export function Input({ label, error, hint, className = "", id, ...props }: Prop
     <div className="space-y-1.5">
       {label && (
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-          <label htmlFor={inputId} className="block text-sm font-medium text-ink">
+          <label htmlFor={inputId} className="block text-sm font-semibold text-ink">
             {label}
             {props.required ? <RequiredMark /> : null}
           </label>

@@ -68,6 +68,7 @@ import {
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { resolveSubcategoryFromModel } from "../../lib/taxonomyVisuals";
 import { canReviewPublication, isPlatformAdmin } from "../../lib/userAccess";
+import { greFormActionsClass, greFormGridClass, greFormPrimaryButtonClass } from "../../lib/formStyles";
 import type { Category, Collaborator, Coordinate, Publication, PublicationFigure } from "../../types";
 
 const emptyCoord = (): Coordinate => ({
@@ -118,7 +119,7 @@ function ComposerStage({
   children: ReactNode;
 }) {
   return (
-    <section className="gre-card overflow-visible p-6 sm:p-8">
+    <section className="gre-card overflow-visible p-4 sm:p-8">
       <div className="border-b border-slate-100 pb-5">
         <div className="flex flex-wrap items-center gap-3">
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white shadow-sm">
@@ -1129,7 +1130,10 @@ export function PublicationManagePage() {
             </button>
           </div>
           {collaborators.map((c, i) => (
-            <div key={i} className="grid gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div
+              key={i}
+              className="grid grid-cols-1 gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 lg:grid-cols-2 xl:grid-cols-4"
+            >
               <Input
                 label="Name"
                 value={c.fullname}
@@ -1209,10 +1213,13 @@ export function PublicationManagePage() {
           </div>
         </ComposerStage>
 
-        <div className="publication-submit-bar sticky bottom-4 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-lg backdrop-blur-md">
+        <div
+          className={`publication-submit-bar ${greFormActionsClass} !shadow-lg`}
+        >
           <Button
             type="submit"
             variant="secondary"
+            className={greFormPrimaryButtonClass}
             disabled={extractionUi.status === "extracting" || (saveMutation.isPending && !submitReviewOpen)}
           >
             {saveMutation.isPending && !submitReviewOpen ? (
@@ -1225,6 +1232,7 @@ export function PublicationManagePage() {
           {(isNew || canSubmit) && (
             <Button
               type="button"
+              className={greFormPrimaryButtonClass}
               disabled={
                 extractionUi.status === "extracting" ||
                 !readyToSubmit ||

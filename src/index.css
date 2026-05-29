@@ -1016,6 +1016,38 @@ body {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
+/* Dashboard forms on phones — readable fields, room for FAB + sticky actions */
+@media (max-width: 639px) {
+  .gre-page-with-fab {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  }
+
+  .gre-dashboard-form-actions {
+    position: sticky;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 4.5rem);
+    z-index: 35;
+    border-color: rgb(203 213 225);
+    background: rgb(255 255 255 / 0.97);
+    box-shadow:
+      0 -10px 28px -12px rgba(15, 23, 42, 0.14),
+      0 1px 2px rgba(15, 23, 42, 0.04);
+    backdrop-filter: blur(10px);
+  }
+
+  .publication-submit-bar.gre-dashboard-form-actions {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 4.5rem);
+  }
+
+  .gre-field {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  .gre-form-section-heading {
+    font-size: 1rem;
+  }
+}
+
 /* Public page hero — light header (Statistics, Forum, About, etc.) */
 .gre-public-hero {
   background: linear-gradient(

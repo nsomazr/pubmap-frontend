@@ -86,7 +86,7 @@ function MessageBubble({ message, isLastInGroup }: { message: MeetChatMessage; i
 
   return (
     <div
-      className={`relative max-w-[min(100%,28rem)] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ring-1 ${meta.bubble} ${
+      className={`relative w-full max-w-2xl rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ring-1 ${meta.bubble} ${
         isLastInGroup ? "rounded-bl-md" : "rounded-bl-2xl"
       }`}
     >
@@ -298,7 +298,7 @@ export function MeetingArchiveTranscript({ messages }: Props) {
             className="pointer-events-none absolute left-8 top-4 bottom-4 w-px bg-gradient-to-b from-brand-200/60 via-slate-200/50 to-transparent sm:left-10"
             aria-hidden
           />
-          <div className="relative space-y-6">{renderTimeline()}</div>
+          <div className="relative mx-auto w-full max-w-3xl space-y-6">{renderTimeline()}</div>
         </div>
       )}
     </div>

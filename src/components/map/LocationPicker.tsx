@@ -37,13 +37,27 @@ const pinIcon = L.icon({
   iconAnchor: [18, 36],
 });
 
-function MapFitRegion({ lat, lng, radiusKm }: { lat: number; lng: number; radiusKm: number }) {
+function MapViewSync({
+  lat,
+  lng,
+  hasPin,
+  radiusKm,
+}: {
+  lat: number;
+  lng: number;
+  hasPin: boolean;
+  radiusKm: number;
+}) {
   const map = useMap();
   useEffect(() => {
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    const bounds = L.circle([lat, lng], { radius: radiusKm * 1000 }).getBounds();
-    map.fitBounds(bounds, { padding: [32, 32], maxZoom: 11 });
-  }, [lat, lng, radiusKm, map]);
+    if (!hasPin || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    try {
+      const bounds = L.circle([lat, lng], { radius: radiusKm * 1000 }).getBounds();
+      map.fitBounds(bounds, { padding: [32, 32], maxZoom: 11 });
+    } catch {
+      map.setView([lat, lng], REGION_CENTER_ZOOM);
+    }
+  }, [lat, lng, hasPin, radiusKm, map]);
   return null;
 }
 
@@ -64,9 +78,14 @@ function MapInvalidateSize() {
 }
 
 function MapClickPick({ onPick }: { onPick: (lat: number, lng: number) => void }) {
+  const onPickRef = useRef(onPick);
+  onPickRef.current = onPick;
   useMapEvents({
     click(e) {
-      onPick(e.latlng.lat, e.latlng.lng);
+      const lat = e.latlng.lat;
+      const lng = e.latlng.lng;
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      window.setTimeout(() => onPickRef.current(lat, lng), 0);
     },
   });
   return null;
@@ -81,7 +100,6 @@ type LocationMapInnerProps = {
   lng: number;
   onPick: (lat: number, lng: number) => void;
   onDragEnd: (lat: number, lng: number) => void;
-  instanceKey: string;
 };
 
 function LocationMapInner({
@@ -93,14 +111,12 @@ function LocationMapInner({
   lng,
   onPick,
   onDragEnd,
-  instanceKey,
 }: LocationMapInnerProps) {
   const safeCenter: [number, number] =
     Number.isFinite(center[0]) && Number.isFinite(center[1]) ? center : DEFAULT_CENTER;
 
   return (
     <MapContainer
-      key={instanceKey}
       center={safeCenter}
       zoom={zoom}
       className="location-picker-map w-full cursor-crosshair"
@@ -114,9 +130,9 @@ function LocationMapInner({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <MapInvalidateSize />
+      <MapViewSync lat={lat} lng={lng} hasPin={hasPin} radiusKm={MAP_REGION_RADIUS_KM} />
       {hasPin && Number.isFinite(lat) && Number.isFinite(lng) && (
         <>
-          <MapFitRegion lat={lat} lng={lng} radiusKm={MAP_REGION_RADIUS_KM} />
           <Circle
             center={[lat, lng]}
             radius={MAP_REGION_RADIUS_KM * 1000}
@@ -134,7 +150,8 @@ function LocationMapInner({
             eventHandlers={{
               dragend: (e) => {
                 const p = e.target.getLatLng();
-                onDragEnd(p.lat, p.lng);
+                if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) return;
+                window.setTimeout(() => onDragEnd(p.lat, p.lng), 0);
               },
             }}
           />
@@ -161,7 +178,7 @@ function DeferredLocationMap(props: LocationMapInnerProps & { active: boolean })
       window.cancelAnimationFrame(id);
       setReady(false);
     };
-  }, [active, mapProps.instanceKey]);
+  }, [active]);
 
   if (!active) return null;
 
@@ -196,18 +213,12 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [reverseLoading, setReverseLoading] = useState(false);
-  const [inlineMapEpoch, setInlineMapEpoch] = useState(0);
-  const [expandMapEpoch, setExpandMapEpoch] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const appliedInstitutionDefaultRef = useRef(false);
 
   const lat = parseFloat(value.latitude);
   const lng = parseFloat(value.longitude);
   const hasPin = hasValidCoords(value.latitude, value.longitude);
-
-  const bumpInlineMap = useCallback(() => {
-    setInlineMapEpoch((n) => n + 1);
-  }, []);
 
   useEffect(() => {
     const defaultInst = institutionDefault?.trim();
@@ -253,10 +264,22 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
       if (resolvedName) {
         setQuery(resolvedName);
       }
-      bumpInlineMap();
     },
-    [onChange, institutionDefault, bumpInlineMap]
+    [onChange, institutionDefault]
   );
+
+  const applyCoordsRef = useRef(applyCoords);
+  applyCoordsRef.current = applyCoords;
+
+  const handleMapPick = useCallback((latitude: number, longitude: number) => {
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+    void applyCoordsRef.current(latitude, longitude);
+  }, []);
+
+  const handleMapDragEnd = useCallback((latitude: number, longitude: number) => {
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+    void applyCoordsRef.current(latitude, longitude);
+  }, []);
 
   const selectResult = (r: GeocodeResult) => {
     const label = formatStudyRegionLabel(r.display_name);
@@ -267,7 +290,6 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
 
   const openExpandedMap = () => {
     setExpanded(true);
-    setExpandMapEpoch((n) => n + 1);
   };
 
   useEffect(() => {
@@ -312,12 +334,6 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
     };
   }, [query, mode]);
 
-  useEffect(() => {
-    if (!expanded) {
-      bumpInlineMap();
-    }
-  }, [expanded, mode, bumpInlineMap]);
-
   const mapCenter: [number, number] =
     hasPin && Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : DEFAULT_CENTER;
   const mapZoom = hasPin ? REGION_CENTER_ZOOM : DEFAULT_ZOOM;
@@ -329,8 +345,8 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
     hasPin,
     lat,
     lng,
-    onPick: applyCoords,
-    onDragEnd: applyCoords,
+    onPick: handleMapPick,
+    onDragEnd: handleMapDragEnd,
   };
 
   const expandOverlay =
@@ -359,7 +375,6 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
               active={expanded}
               {...sharedMapProps}
               heightPx={480}
-              instanceKey={`expand-${expandMapEpoch}`}
             />
           </div>
           {hasPin && (
@@ -379,10 +394,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
       <div className="inline-flex rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200/80">
         <button
           type="button"
-          onClick={() => {
-            setMode("search");
-            bumpInlineMap();
-          }}
+          onClick={() => setMode("search")}
           className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
             mode === "search"
               ? "bg-white text-brand-700 shadow-sm"
@@ -394,10 +406,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
         </button>
         <button
           type="button"
-          onClick={() => {
-            setMode("map");
-            bumpInlineMap();
-          }}
+          onClick={() => setMode("map")}
           className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
             mode === "map"
               ? "bg-white text-brand-700 shadow-sm"
@@ -470,7 +479,6 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
             active={!expanded}
             {...sharedMapProps}
             heightPx={INLINE_MAP_HEIGHT_PX}
-            instanceKey={`inline-${inlineMapEpoch}`}
           />
         </div>
         {reverseLoading && (

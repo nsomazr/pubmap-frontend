@@ -27,10 +27,14 @@ import api, { parseApiError } from "../../lib/api";
 import { MeetingArchiveParticipants } from "../../components/meet/MeetingArchiveParticipants";
 import { MeetingArchiveTranscript } from "../../components/meet/MeetingArchiveTranscript";
 import { MeetingGreAssistantPanel } from "../../components/meet/MeetingGreAssistantPanel";
-import { FormattedAssistantText } from "../../lib/formatAssistantText";
+import { MeetingReportPreview } from "../../components/meet/MeetingReportPreview";
 import { buildMeetingPath, meetingApiSegment } from "../../lib/meetingPaths";
 import { buildForumTopicPath } from "../../lib/forumPaths";
-import { meetReportToEditorHtml, pickMeetReportSource } from "../../lib/meetReportContent";
+import {
+  formatIsoTimestampsInText,
+  meetReportToEditorHtml,
+  pickMeetReportSource,
+} from "../../lib/meetReportContent";
 import {
   fetchMeeting,
   formatMeetingDate,
@@ -325,10 +329,9 @@ export function MeetingArchivePage() {
         <StatDisplayTile label="Participants" value={participantCount} />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-6">
+      <div className="space-y-6">
           <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
-            <ArchiveSectionTitle icon={FileText} title="Archive summary" />
+            <ArchiveSectionTitle icon={FileText} title="Meeting report" />
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -449,25 +452,18 @@ export function MeetingArchivePage() {
                     </p>
                     <div
                       className="gre-rich text-sm leading-relaxed text-slate-700"
-                      dangerouslySetInnerHTML={{ __html: sanitizeManuscriptHtml(effectiveReport) }}
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeManuscriptHtml(formatIsoTimestampsInText(effectiveReport)),
+                      }}
                     />
                   </div>
                 )}
               </div>
-            ) : meeting.meeting_minutes ? (
+            ) : meeting.meeting_minutes || meeting.summary ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Full meeting minutes
-                </p>
-                <div className="mt-3 text-sm leading-relaxed text-slate-700">
-                  <FormattedAssistantText content={meeting.meeting_minutes} />
-                </div>
-              </div>
-            ) : meeting.summary ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
-                <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
-                  {meeting.summary}
-                </p>
+                <MeetingReportPreview
+                  content={meeting.meeting_minutes || meeting.summary || ""}
+                />
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-500 sm:p-5">
@@ -478,102 +474,107 @@ export function MeetingArchivePage() {
             )}
           </div>
 
-          <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
-            <ArchiveSectionTitle
-              icon={MessageCircle}
-              title="Meeting transcript"
-              description="Chronological conversation from the live room — grouped by speaker, not a flat list."
-            />
-            <MeetingArchiveTranscript messages={meeting.chat_messages ?? []} />
-          </div>
-        </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
+              <ArchiveSectionTitle icon={Video} title="Recording" />
+              {meeting.recording_url ? (
+                <>
+                  <video controls className="w-full rounded-2xl bg-black">
+                    <source src={meeting.recording_url} />
+                  </video>
+                  <a href={meeting.recording_url} target="_blank" rel="noreferrer">
+                    <Button className="w-full" variant="secondary">
+                      <ExternalLink className="h-4 w-4" />
+                      Open recording
+                    </Button>
+                  </a>
+                </>
+              ) : (
+                <p className="text-sm text-slate-500">
+                  {meeting.recording_status === "ready"
+                    ? "Recording is marked ready, but no URL is available yet."
+                    : "No recording is attached to this archive yet."}
+                </p>
+              )}
+            </div>
 
-        <aside className="space-y-6">
-          <div className="gre-dashboard-card flex flex-col gap-4 p-5 sm:p-6">
-            <ArchiveSectionTitle
-              icon={Sparkles}
-              title="Chat with GRE Assistant"
-              description="Ask follow-up questions about the minutes, decisions, and transcript from this meeting."
-            />
-            <MeetingGreAssistantPanel meeting={meeting} variant="light" />
-          </div>
+            <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
+              <ArchiveSectionTitle
+                icon={Users}
+                title="Participants"
+                description="Everyone who joined or was invited."
+              />
+              <MeetingArchiveParticipants participants={meeting.participants ?? []} />
+            </div>
 
-          <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
-            <ArchiveSectionTitle icon={Video} title="Recording" />
-            {meeting.recording_url ? (
-              <>
-                <video controls className="w-full rounded-2xl bg-black">
-                  <source src={meeting.recording_url} />
-                </video>
-                <a href={meeting.recording_url} target="_blank" rel="noreferrer">
-                  <Button className="w-full" variant="secondary">
-                    <ExternalLink className="h-4 w-4" />
-                    Open recording
-                  </Button>
-                </a>
-              </>
-            ) : (
-              <p className="text-sm text-slate-500">
-                {meeting.recording_status === "ready"
-                  ? "Recording is marked ready, but no URL is available yet."
-                  : "No recording is attached to this archive yet."}
-              </p>
+            {(meeting.publication || meeting.forum_topic) && (
+              <div className="gre-dashboard-card space-y-4 p-5 sm:p-6 md:col-span-2 xl:col-span-1">
+                <ArchiveSectionTitle icon={FileText} title="Related context" />
+                <div className="space-y-3">
+                  {meeting.publication && (
+                    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Paper
+                      </p>
+                      <p className="mt-1 font-semibold text-ink">{meeting.publication.title}</p>
+                      <Button
+                        className="mt-3"
+                        variant="ghost"
+                        onClick={() =>
+                          navigate(
+                            buildPublicationPath(
+                              meeting.publication?.id,
+                              meeting.publication?.encoded_id
+                            )
+                          )
+                        }
+                      >
+                        Open publication
+                      </Button>
+                    </div>
+                  )}
+                  {meeting.forum_topic && (
+                    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Discussion
+                      </p>
+                      <p className="mt-1 font-semibold text-ink">{meeting.forum_topic.topic}</p>
+                      <Button
+                        className="mt-3"
+                        variant="ghost"
+                        onClick={() =>
+                          meeting.forum_topic && navigate(buildForumTopicPath(meeting.forum_topic))
+                        }
+                      >
+                        Open discussion
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
-          <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
-            <ArchiveSectionTitle
-              icon={Users}
-              title="Participants"
-              description="Compact roster with search and grouped sections when the list grows."
-            />
-            <MeetingArchiveParticipants participants={meeting.participants ?? []} />
-          </div>
-
-          {(meeting.publication || meeting.forum_topic) && (
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] xl:items-start">
             <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
-              <ArchiveSectionTitle icon={FileText} title="Related context" />
-              {meeting.publication && (
-                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Paper</p>
-                  <p className="mt-1 font-semibold text-ink">{meeting.publication.title}</p>
-                  <Button
-                    className="mt-3"
-                    variant="ghost"
-                    onClick={() =>
-                      navigate(
-                        buildPublicationPath(
-                          meeting.publication?.id,
-                          meeting.publication?.encoded_id
-                        )
-                      )
-                    }
-                  >
-                    Open publication
-                  </Button>
-                </div>
-              )}
-              {meeting.forum_topic && (
-                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Discussion
-                  </p>
-                  <p className="mt-1 font-semibold text-ink">{meeting.forum_topic.topic}</p>
-                  <Button
-                    className="mt-3"
-                    variant="ghost"
-                    onClick={() =>
-                      meeting.forum_topic && navigate(buildForumTopicPath(meeting.forum_topic))
-                    }
-                  >
-                    Open discussion
-                  </Button>
-                </div>
-              )}
+              <ArchiveSectionTitle
+                icon={MessageCircle}
+                title="Meeting transcript"
+                description="Chronological conversation from the live room — grouped by speaker, not a flat list."
+              />
+              <MeetingArchiveTranscript messages={meeting.chat_messages ?? []} />
             </div>
-          )}
-        </aside>
-      </section>
+
+            <div className="gre-dashboard-card flex flex-col gap-4 p-5 sm:p-6 xl:sticky xl:top-4">
+              <ArchiveSectionTitle
+                icon={Sparkles}
+                title="Chat with GRE Assistant"
+                description="Ask follow-up questions about the minutes, decisions, and transcript from this meeting."
+              />
+              <MeetingGreAssistantPanel meeting={meeting} variant="light" />
+            </div>
+          </div>
+      </div>
 
       <ConfirmDialog
         open={confirmDeleteOpen}

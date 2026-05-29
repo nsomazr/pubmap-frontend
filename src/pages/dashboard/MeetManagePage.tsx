@@ -30,6 +30,14 @@ import {
   utcToWallInputValue,
   wallTimeToUtcIso,
 } from "../../lib/meetTimezones";
+import {
+  greDashboardCardClass,
+  greFormActionsClass,
+  greFormGridClass,
+  greFormGridMdClass,
+  greFieldClass,
+  greFormPrimaryButtonClass,
+} from "../../lib/formStyles";
 import { userFullName } from "../../lib/userDisplay";
 import type { Category, MeetParticipant, MeetParticipantRole, MeetSession, Publication, Topic, User } from "../../types";
 
@@ -58,15 +66,21 @@ function MeetFormSection({
   children: ReactNode;
 }) {
   return (
-    <section className="gre-dashboard-card space-y-4 overflow-visible p-5 sm:p-6">
+    <section className={`${greDashboardCardClass} space-y-4`}>
       <div className="border-b border-slate-100 pb-3">
         <div className="flex items-start gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700 sm:h-8 sm:w-8">
             <Icon className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-ink">{title}</h2>
-            {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
+            <h2 className="gre-form-section-heading text-base font-semibold text-ink sm:text-base">
+              {title}
+            </h2>
+            {description && (
+              <p className="mt-1 text-sm leading-relaxed text-slate-600 sm:mt-0.5 sm:text-slate-500">
+                {description}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -336,7 +350,7 @@ export function MeetManagePage() {
   });
 
   return (
-    <div className="animate-fade-up space-y-6">
+    <div className="animate-fade-up space-y-4 sm:space-y-6">
       <PageHeader
         variant="clean"
         title={isNew ? "Create GRE Meet session" : "Edit GRE Meet session"}
@@ -359,7 +373,7 @@ export function MeetManagePage() {
       <RequiredFieldsLegend />
 
       <form
-        className="space-y-5"
+        className="space-y-4 sm:space-y-5"
         onSubmit={(e) => {
           e.preventDefault();
           setError("");
@@ -374,7 +388,7 @@ export function MeetManagePage() {
             required
             placeholder="e.g. GRE methods review — cohort A"
           />
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className={greFormGridMdClass}>
             <Input
               label="Date and time"
               type="datetime-local"
@@ -399,7 +413,7 @@ export function MeetManagePage() {
         </MeetFormSection>
 
         <MeetFormSection icon={Shield} title="Access and format">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className={greFormGridClass}>
             <Select
               label="Meeting type"
               value={form.meeting_type}
@@ -426,7 +440,7 @@ export function MeetManagePage() {
         </MeetFormSection>
 
         <MeetFormSection icon={Link2} title="GRE research context">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className={greFormGridClass}>
             <Select
               label="Category"
               value={form.category_id}
@@ -517,7 +531,7 @@ export function MeetManagePage() {
               rows={4}
               placeholder={"Paste emails separated by commas or new lines\nexample1@email.com\nexample2@email.com"}
             />
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className={greFormGridClass}>
               <Select
                 label="Guest role"
                 value={guestInviteRole}
@@ -534,10 +548,10 @@ export function MeetManagePage() {
               rows={2}
               placeholder="Included in the invite email."
             />
-            <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm leading-relaxed text-slate-700">
               <input
                 type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
                 checked={inviteMatchingMembers}
                 onChange={(e) => setInviteMatchingMembers(e.target.checked)}
               />
@@ -548,16 +562,17 @@ export function MeetManagePage() {
 
         {error && <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
-        <div className="gre-dashboard-card flex flex-wrap items-center gap-3 p-5">
+        <div className={greFormActionsClass}>
           <Button
             type="submit"
+            className={greFormPrimaryButtonClass}
             loading={saveMutation.isPending}
             disabled={!form.title || !form.sub_category_id || !form.scheduled_at || !form.scheduled_timezone}
           >
             {isNew ? "Create meeting" : "Save changes"}
           </Button>
           {!isNew && meeting && (
-            <p className="text-sm text-slate-500">
+            <p className="text-center text-sm text-slate-500 sm:text-left">
               Saved schedule:{" "}
               <span className="font-medium text-ink">
                 {formatMeetingDateInTimezone(meeting.scheduled_at, meeting.scheduled_timezone)}
@@ -568,6 +583,7 @@ export function MeetManagePage() {
             <Button
               type="button"
               variant="secondary"
+              className={greFormPrimaryButtonClass}
               loading={inviteGuestsNow.isPending}
               onClick={() => inviteGuestsNow.mutate()}
             >
@@ -578,14 +594,14 @@ export function MeetManagePage() {
       </form>
 
       {!isNew && meeting && (
-        <section className="gre-dashboard-card space-y-4 p-5 sm:p-6">
+        <section className={`${greDashboardCardClass} space-y-4`}>
           <div className="border-b border-slate-100 pb-3">
             <div className="flex items-start gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700 sm:h-8 sm:w-8">
                 <Shield className="h-4 w-4" />
               </span>
               <div>
-                <h2 className="text-base font-semibold text-ink">Host tools</h2>
+                <h2 className="gre-form-section-heading text-base font-semibold text-ink">Host tools</h2>
                 <p className="mt-0.5 text-sm text-slate-500">Recording, room controls, and session options.</p>
               </div>
             </div>
@@ -595,14 +611,16 @@ export function MeetManagePage() {
       )}
 
       {!isNew && meeting && (
-        <section className="gre-dashboard-card space-y-5 p-5 sm:p-6">
+        <section className={`${greDashboardCardClass} space-y-5`}>
           <div className="border-b border-slate-100 pb-3">
             <div className="flex items-start gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700 sm:h-8 sm:w-8">
                 <Users className="h-4 w-4" />
               </span>
               <div>
-                <h2 className="text-base font-semibold text-ink">Participants and speakers</h2>
+                <h2 className="gre-form-section-heading text-base font-semibold text-ink">
+                  Participants and speakers
+                </h2>
                 <p className="mt-0.5 text-sm text-slate-500">
                   Search GRE members to add; invite status updates when they open the room link.
                 </p>
@@ -610,7 +628,7 @@ export function MeetManagePage() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1fr)_auto_auto]">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -618,16 +636,17 @@ export function MeetManagePage() {
                 value={peopleSearch}
                 onChange={(e) => setPeopleSearch(e.target.value)}
                 placeholder="Search researchers by name, email, or affiliation"
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                className={`${greFieldClass} pl-10`}
               />
             </div>
-            <Select value={participantRole} onChange={(e) => setParticipantRole(e.target.value as MeetParticipantRole)}>
+            <Select
+              label="Role when adding"
+              value={participantRole}
+              onChange={(e) => setParticipantRole(e.target.value as MeetParticipantRole)}
+            >
               <option value="participant">Participant</option>
               <option value="speaker">Speaker</option>
             </Select>
-            <div className="flex items-center text-sm text-slate-500">
-              Invite status updates when they open the room link.
-            </div>
           </div>
 
           {peopleSearch.trim().length >= 2 && (
