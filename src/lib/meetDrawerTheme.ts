@@ -9,8 +9,6 @@ export const meetDrawer = {
   badgeAccent: "rounded-full bg-brand-950/60 px-2.5 py-1 font-semibold text-brand-300 ring-1 ring-brand-800/80",
   input:
     "min-w-0 flex-1 rounded-xl border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-900/50",
-  textarea:
-    "max-h-28 min-h-11 w-full resize-y rounded-3xl border border-slate-600 bg-slate-900 py-3 pl-4 pr-14 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-900/50 sm:pr-28",
   muted: "text-sm text-slate-400",
   hostHint: "text-sm text-slate-400",
   btn: "h-9 w-full !border-slate-600 !bg-slate-800 !text-slate-100 hover:!bg-slate-700",

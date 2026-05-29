@@ -94,6 +94,24 @@ export function MeetingGreAssistantPanel({
     askMutation.mutate(value);
   };
 
+  const copyTurnContent = (content: string) => {
+    void (navigator.clipboard?.writeText?.(content) ?? Promise.reject()).catch(() => {});
+  };
+
+  const messageActionBarClass =
+    "mt-2 flex items-center gap-1.5 [@media(hover:hover)]:hidden [@media(hover:hover)]:group-hover/msg:flex";
+
+  const messageActionBtn = (kind: "user" | "assistant") => {
+    if (isDark) {
+      return kind === "user"
+        ? "rounded-full px-2 py-0.5 text-[11px] font-semibold text-white/90 transition hover:bg-white/15"
+        : "rounded-full px-2 py-0.5 text-[11px] font-semibold text-brand-400 transition hover:bg-slate-700";
+    }
+    return kind === "user"
+      ? "rounded-full px-2 py-0.5 text-[11px] font-semibold text-white/90 transition hover:bg-white/20"
+      : "rounded-full px-2 py-0.5 text-[11px] font-semibold text-brand-700 transition hover:bg-slate-100";
+  };
+
   if (!enabled) {
     return (
       <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
@@ -119,13 +137,29 @@ export function MeetingGreAssistantPanel({
     if (isUser) {
       return (
         <div key={`${turn.role}-${index}`} className="flex justify-end">
-          <p
-            className={`max-w-[92%] rounded-2xl rounded-br-md px-3.5 py-2.5 text-sm leading-relaxed ${
+          <div
+            className={`group/msg max-w-[92%] rounded-2xl rounded-br-md px-3.5 py-2.5 text-sm leading-relaxed ${
               isDark ? "bg-brand-900/40 text-slate-100" : "bg-brand-600 text-white"
             }`}
           >
-            {turn.content}
-          </p>
+            <p className="whitespace-pre-wrap">{turn.content}</p>
+            <div className={messageActionBarClass}>
+              <button
+                type="button"
+                className={messageActionBtn("user")}
+                onClick={() => setQuestion(turn.content)}
+              >
+                Reuse
+              </button>
+              <button
+                type="button"
+                className={messageActionBtn("user")}
+                onClick={() => copyTurnContent(turn.content)}
+              >
+                Copy
+              </button>
+            </div>
+          </div>
         </div>
       );
     }
@@ -140,13 +174,22 @@ export function MeetingGreAssistantPanel({
           <Sparkles className="h-3.5 w-3.5" />
         </span>
         <div
-          className={`min-w-0 max-w-[88%] flex-1 rounded-2xl rounded-tl-md px-3.5 py-2.5 text-sm leading-relaxed ${
+          className={`group/msg min-w-0 max-w-[88%] flex-1 rounded-2xl rounded-tl-md px-3.5 py-2.5 text-sm leading-relaxed ${
             isDark
               ? "bg-slate-800 text-slate-100"
               : "bg-white text-slate-800 ring-1 ring-slate-200/80"
           }`}
         >
           <FormattedAssistantText content={turn.content} />
+          <div className={messageActionBarClass}>
+            <button
+              type="button"
+              className={messageActionBtn("assistant")}
+              onClick={() => copyTurnContent(turn.content)}
+            >
+              Copy
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -228,49 +271,19 @@ export function MeetingGreAssistantPanel({
           handleAsk();
         }}
       >
-        {isDark ? (
-          <div className="relative">
-            <textarea
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter") return;
-                if (event.shiftKey) return;
-                event.preventDefault();
-                handleAsk();
-              }}
-              placeholder="Ask a question…"
-              rows={1}
-              className="max-h-28 min-h-11 w-full resize-y rounded-3xl border border-slate-700 bg-slate-950 py-3 pl-4 pr-24 text-sm text-slate-100 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-900/40"
-            />
-            <button
-              type="submit"
-              disabled={!question.trim() || askMutation.isPending}
-              className="absolute right-1.5 top-1/2 inline-flex h-8 min-w-[4.5rem] -translate-y-1/2 items-center justify-center gap-1 rounded-full bg-brand-600 px-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {askMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Ask
-                </>
-              )}
-            </button>
-          </div>
-        ) : (
-          <TextareaWithSendAddon
-            value={question}
-            onChange={setQuestion}
-            onSubmit={() => handleAsk()}
-            placeholder="Ask a question…"
-            loading={askMutation.isPending}
-            rows={compact ? 2 : 2}
-            submitLabel="Ask"
-            submitAriaLabel="Ask GRE Assistant"
-            icon={Sparkles}
-          />
-        )}
+        <TextareaWithSendAddon
+          value={question}
+          onChange={setQuestion}
+          onSubmit={() => handleAsk()}
+          placeholder="Ask a question…"
+          loading={askMutation.isPending}
+          disabled={askMutation.isPending}
+          rows={compact ? 2 : 2}
+          submitLabel="Ask"
+          submitAriaLabel="Ask GRE Assistant"
+          icon={Sparkles}
+          variant={isDark ? "dark" : "light"}
+        />
         {error && (
           <p className={`text-sm ${isDark ? "text-red-400" : "text-red-600"}`}>{error}</p>
         )}

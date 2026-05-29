@@ -76,7 +76,7 @@ export function MeetRoomToolsDrawer({
     >
       <button
         type="button"
-        className={`absolute inset-0 bg-slate-950/55 backdrop-blur-sm transition-opacity duration-300 ease-out ${
+        className={`absolute inset-y-0 left-0 right-[min(100%,28rem)] bg-transparent transition-opacity duration-300 ease-out sm:right-[32rem] ${
           animating ? "opacity-100" : "opacity-0"
         }`}
         aria-label="Close meeting controls"
@@ -206,7 +206,7 @@ export function MeetRoomControlsFab({
 
   return (
     <div
-      className={`fixed z-[2147483645] w-auto ${position ? "pointer-events-auto" : "pointer-events-none bottom-7 left-3 sm:bottom-8 sm:left-4"}`}
+      className={`fixed z-[2147483645] w-auto ${position ? "pointer-events-auto" : "pointer-events-none bottom-7 left-5 sm:bottom-8 sm:left-6"}`}
       style={
         position
           ? { zIndex: 2147483647, left: `${position.x}px`, top: `${position.y}px` }
@@ -219,7 +219,7 @@ export function MeetRoomControlsFab({
           type="button"
           onPointerDown={(event) => {
             const rect = buttonRef.current?.getBoundingClientRect();
-            const current = position ?? clampToViewport(rect?.left ?? 16, rect?.top ?? window.innerHeight - 84);
+            const current = position ?? clampToViewport(rect?.left ?? 24, rect?.top ?? window.innerHeight - 84);
             dragStateRef.current = {
               pointerId: event.pointerId,
               startX: event.clientX,

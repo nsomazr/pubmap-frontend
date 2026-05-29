@@ -16,6 +16,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
+import { TextareaWithSendAddon } from "../components/ui/FieldSendAddon";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { useToast } from "../components/ui/ToastProvider";
@@ -158,7 +159,14 @@ function normalizeRoomErrorMessage(raw: string): string {
   const message = (raw || "").trim();
   const lower = message.toLowerCase();
   if (lower.includes("recording is not configured") || lower.includes("enable jibri")) {
-    return "Recording is not available on this meeting server yet. Please ask the GRE admin to enable recording.";
+    return "Recording is not enabled on GRE yet. Ask your admin to configure Jitsi recording (Jibri).";
+  }
+  if (
+    lower.includes("recording service is currently unavailable") ||
+    lower.includes("recording service is unavailable") ||
+    lower.includes("recording unavailable")
+  ) {
+    return "The Jitsi recording service (Jibri) is not running on your meeting server. Ask your admin to start Jibri or enable recording on JaaS.";
   }
   return message;
 }
@@ -274,9 +282,7 @@ export function MeetRoomPage() {
   const [pipOpening, setPipOpening] = useState(false);
   const [replyTarget, setReplyTarget] = useState<MeetChatMessage | null>(null);
   const [tagTarget, setTagTarget] = useState<MeetChatMessage | null>(null);
-  const [activeMessageActionId, setActiveMessageActionId] = useState<number | null>(null);
   const assistantCaptureUnavailableRef = useRef(false);
-  const messageHoldTimeoutRef = useRef<number | null>(null);
 
   const { data: meeting, isLoading } = useQuery({
     queryKey: ["meeting-by-slug", slug],
@@ -397,10 +403,6 @@ export function MeetRoomPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
       await queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
-      toast.success({
-        title: "Recording requested",
-        description: "GRE asked Jitsi to start recording this meeting.",
-      });
     },
   });
 
@@ -412,10 +414,6 @@ export function MeetRoomPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
       await queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
-      toast.success({
-        title: "Recording stop requested",
-        description: "GRE asked Jitsi to stop recording this meeting.",
-      });
     },
   });
   const syncRecordingMutation = syncRecordingState.mutate;
@@ -423,13 +421,7 @@ export function MeetRoomPage() {
   const canManage = !!activeMeeting?.can_manage;
   const isLive = activeMeeting?.status === "live";
   const isHostUser = !!activeMeeting?.host_id && activeMeeting.host_id === user?.id;
-
-  const clearMessageHoldTimer = () => {
-    if (messageHoldTimeoutRef.current !== null) {
-      window.clearTimeout(messageHoldTimeoutRef.current);
-      messageHoldTimeoutRef.current = null;
-    }
-  };
+  const recordingAvailable = activeMeeting?.recording_available !== false;
 
   useEffect(() => {
     const joinData = joinMutation.data;
@@ -459,8 +451,10 @@ export function MeetRoomPage() {
       if (cancelled || !roomContainerRef.current || !window.JitsiMeetExternalAPI) return;
 
       const domain = new URL(joinData.server_url).host;
-      const joinHostSettings = meetHostSettingsFromSession(joinData.meeting ?? activeMeeting);
+      const joinSession = joinData.meeting ?? activeMeeting;
+      const joinHostSettings = meetHostSettingsFromSession(joinSession);
       const isGreModerator = canManage;
+      const recordingEnabled = joinSession?.recording_available !== false;
       apiInstance = new window.JitsiMeetExternalAPI(domain, {
         roomName: joinData.room_name,
         parentNode: roomContainerRef.current,
@@ -474,7 +468,7 @@ export function MeetRoomPage() {
             user?.email,
           email: user?.email,
         },
-        configOverwrite: buildJitsiConfigOverwrite(joinHostSettings, isGreModerator),
+        configOverwrite: buildJitsiConfigOverwrite(joinHostSettings, isGreModerator, recordingEnabled),
       });
       setRoomDebug((prev) => ({ ...prev, apiConstructed: true }));
       jitsiApiRef.current = apiInstance;
@@ -515,6 +509,27 @@ export function MeetRoomPage() {
           state: payload?.error ? "failed" : payload?.on ? "recording" : "ready",
           error: payload?.error || "",
         });
+        if (payload?.error) {
+          const message = normalizeRoomErrorMessage(payload.error);
+          setRoomError(message);
+          if (canManage) {
+            toast.error({
+              title: "Recording unavailable",
+              description: message,
+            });
+          }
+          void queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+          void queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
+          return;
+        }
+        if (payload?.on && canManage) {
+          toast.success({
+            title: "Recording started",
+            description: "This meeting is being recorded.",
+          });
+          void queryClient.invalidateQueries({ queryKey: ["meeting", meetingId] });
+          void queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
+        }
       };
       const onReadyToClose = () => {
         queryClient.invalidateQueries({ queryKey: ["meeting-by-slug", slug] });
@@ -701,15 +716,18 @@ export function MeetRoomPage() {
       });
       return;
     }
+    if (!recordingAvailable) {
+      toast.error({
+        title: "Recording not configured",
+        description:
+          "GRE recording is disabled. Set JITSI_ENABLE_RECORDING and run Jibri on your Jitsi server.",
+      });
+      return;
+    }
     try {
       const updated = await startRecording.mutateAsync();
       const mode = updated?.recording_egress_id || "file";
-      if (!runJitsiRecordingCommand("start", mode)) {
-        toast.error({
-          title: "Recording unavailable",
-          description: roomError || "Could not start recording in the meeting room.",
-        });
-      }
+      runJitsiRecordingCommand("start", mode);
     } catch (error) {
       const message = normalizeRoomErrorMessage(parseApiError(error, "Could not request recording."));
       setRoomError(message);
@@ -1137,7 +1155,7 @@ export function MeetRoomPage() {
                         Start on GRE
                       </Button>
                     )}
-                    {canManage && isLive && activeMeeting.recording_status !== "recording" && (
+                    {canManage && isLive && recordingAvailable && activeMeeting.recording_status !== "recording" && (
                       <Button
                         variant="secondary"
                         className={meetDrawer.btn}
@@ -1147,7 +1165,7 @@ export function MeetRoomPage() {
                         Start recording
                       </Button>
                     )}
-                    {canManage && isLive && activeMeeting.recording_status === "recording" && (
+                    {canManage && isLive && recordingAvailable && activeMeeting.recording_status === "recording" && (
                       <Button
                         variant="secondary"
                         className={meetDrawer.btn}
@@ -1156,6 +1174,18 @@ export function MeetRoomPage() {
                       >
                         Stop recording
                       </Button>
+                    )}
+                    {canManage && isLive && !recordingAvailable && (
+                      <p className="text-xs leading-relaxed text-slate-400">
+                        Recording is not enabled on this GRE server. Your admin must configure Jitsi with Jibri
+                        (or JaaS recording) and set{" "}
+                        <span className="font-mono text-slate-300">JITSI_ENABLE_RECORDING=true</span>.
+                      </p>
+                    )}
+                    {canManage && isLive && recordingAvailable && activeMeeting.recording_error && (
+                      <p className="text-xs leading-relaxed text-red-400">
+                        {normalizeRoomErrorMessage(activeMeeting.recording_error)}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -1300,26 +1330,12 @@ export function MeetRoomPage() {
                         "Participant";
                       const isOwn = message.sender_id === user?.id;
                       const parsedMessage = parseReplyPayload(message.message || "");
-                      const isActionOpen = activeMessageActionId === message.id;
                       return (
                         <div key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
                           <div className={`flex w-full max-w-[96%] items-end gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
                             <UserAvatar user={message.sender} name={senderName} size="sm" className="shrink-0" />
                             <div
-                              onPointerDown={() => {
-                                clearMessageHoldTimer();
-                                messageHoldTimeoutRef.current = window.setTimeout(() => {
-                                  setActiveMessageActionId(message.id);
-                                }, 420);
-                              }}
-                              onPointerUp={clearMessageHoldTimer}
-                              onPointerLeave={clearMessageHoldTimer}
-                              onPointerCancel={clearMessageHoldTimer}
-                              onContextMenu={(event) => {
-                                event.preventDefault();
-                                setActiveMessageActionId(message.id);
-                              }}
-                              className={`w-full max-w-[92%] rounded-2xl px-3 py-2.5 shadow-sm transition ${
+                              className={`group/msg w-full max-w-[92%] rounded-2xl px-3 py-2.5 shadow-sm transition ${
                                 isOwn
                                   ? "bg-brand-600 text-white"
                                   : "bg-slate-800 text-slate-100 ring-1 ring-slate-600/80"
@@ -1361,68 +1377,50 @@ export function MeetRoomPage() {
                               >
                                 {parsedMessage.body}
                               </p>
-                              {isActionOpen ? (
-                                <div className="mt-2 flex items-center gap-1.5">
-                                  <button
-                                    type="button"
-                                    className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
-                                      isOwn
-                                        ? "text-white/90 hover:bg-white/15"
-                                        : "text-brand-400 hover:bg-slate-700"
-                                    }`}
-                                    onClick={() => {
-                                      setReplyTarget(message);
-                                      setActiveMessageActionId(null);
-                                    }}
-                                  >
-                                    Reply
-                                  </button>
-                                  {!isOwn && (
-                                    <button
-                                      type="button"
-                                      className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-300 transition hover:bg-slate-700"
-                                      onClick={() => {
-                                        setTagTarget(message);
-                                        const mentionToken = `@${senderName}`;
-                                        setText((prev) => {
-                                          if (prev.toLowerCase().includes(mentionToken.toLowerCase())) return prev;
-                                          return `${mentionToken} ${prev}`.trimStart();
-                                        });
-                                        setActiveMessageActionId(null);
-                                      }}
-                                    >
-                                      Tag
-                                    </button>
-                                  )}
+                              <div className="mt-2 flex items-center gap-1.5 [@media(hover:hover)]:hidden [@media(hover:hover)]:group-hover/msg:flex">
+                                <button
+                                  type="button"
+                                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
+                                    isOwn
+                                      ? "text-white/90 hover:bg-white/15"
+                                      : "text-brand-400 hover:bg-slate-700"
+                                  }`}
+                                  onClick={() => setReplyTarget(message)}
+                                >
+                                  Reply
+                                </button>
+                                {!isOwn && (
                                   <button
                                     type="button"
                                     className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-300 transition hover:bg-slate-700"
                                     onClick={() => {
-                                      void (navigator.clipboard?.writeText?.(message.message) ?? Promise.reject()).catch(
-                                        () => {}
-                                      );
-                                      setActiveMessageActionId(null);
+                                      setTagTarget(message);
+                                      const mentionToken = `@${senderName}`;
+                                      setText((prev) => {
+                                        if (prev.toLowerCase().includes(mentionToken.toLowerCase())) return prev;
+                                        return `${mentionToken} ${prev}`.trimStart();
+                                      });
                                     }}
                                   >
-                                    Copy
+                                    Tag
                                   </button>
-                                  <button
-                                    type="button"
-                                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-400 transition hover:bg-slate-700"
-                                    onClick={() => setActiveMessageActionId(null)}
-                                  >
-                                    Close
-                                  </button>
-                                </div>
-                              ) : (
+                                )}
                                 <button
                                   type="button"
-                                  className={`mt-2 text-[11px] font-semibold ${isOwn ? "text-white/70" : "text-slate-400"}`}
-                                  onClick={() => setActiveMessageActionId(message.id)}
+                                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition ${
+                                    isOwn
+                                      ? "text-white/90 hover:bg-white/15"
+                                      : "text-slate-300 hover:bg-slate-700"
+                                  }`}
+                                  onClick={() => {
+                                    void (navigator.clipboard?.writeText?.(message.message) ?? Promise.reject()).catch(
+                                      () => {}
+                                    );
+                                  }}
                                 >
-                                  Hold for actions
+                                  Copy
                                 </button>
-                              )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1439,7 +1437,6 @@ export function MeetRoomPage() {
                     onSubmit={(event) => {
                       event.preventDefault();
                       if (!text.trim()) return;
-                      setActiveMessageActionId(null);
                       sendChat.mutate();
                     }}
                   >
@@ -1479,32 +1476,23 @@ export function MeetRoomPage() {
                         </button>
                       </div>
                     )}
-                    <div className="relative">
-                      <textarea
-                        value={text}
-                        onChange={(event) => setText(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key !== "Enter") return;
-                          if (event.shiftKey) return;
-                          event.preventDefault();
-                          if (!text.trim() || !meetingId || sendChat.isPending) return;
-                          sendChat.mutate();
-                        }}
-                        placeholder="Message..."
-                        rows={1}
-                        className={meetDrawer.textarea}
-                      />
-                      <Button
-                        type="submit"
-                        loading={sendChat.isPending}
-                        disabled={!text.trim() || !meetingId}
-                        className="absolute right-1.5 top-1/2 h-8 -translate-y-1/2 rounded-full px-2.5 text-sm sm:px-3"
-                        aria-label="Send message"
-                      >
-                        <Send className="h-4 w-4" />
-                        <span className="hidden sm:inline">Send</span>
-                      </Button>
-                    </div>
+                    <TextareaWithSendAddon
+                      value={text}
+                      onChange={setText}
+                      onSubmit={() => {
+                        if (!text.trim() || !meetingId || sendChat.isPending) return;
+                        sendChat.mutate();
+                      }}
+                      placeholder="Message…"
+                      loading={sendChat.isPending}
+                      disabled={!meetingId || sendChat.isPending}
+                      submitLabel="Send"
+                      submitAriaLabel="Send message"
+                      icon={Send}
+                      variant="dark"
+                      rows={2}
+                      className="!space-y-0"
+                    />
                     {chatError && <p className="text-sm text-red-400">{chatError}</p>}
                   </form>
                 </div>

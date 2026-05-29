@@ -518,6 +518,8 @@ export interface MeetSession {
   provider_room_name?: string;
   recording_url?: string | null;
   recording_status: MeetRecordingStatus;
+  /** GRE backend allows recording requests (Jibri must still run on the Jitsi server). */
+  recording_available?: boolean;
   recording_egress_id?: string | null;
   recording_error?: string | null;
   summary?: string | null;

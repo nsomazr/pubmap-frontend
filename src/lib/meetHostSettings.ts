@@ -75,8 +75,12 @@ const JITSI_TOOLBAR_MODERATOR = [
 
 export function buildJitsiConfigOverwrite(
   settings: MeetHostRoomSettings,
-  isMeetingModerator = false
+  isMeetingModerator = false,
+  recordingEnabled = false
 ) {
+  const moderatorToolbar = recordingEnabled
+    ? [...JITSI_TOOLBAR_MODERATOR]
+    : JITSI_TOOLBAR_MODERATOR.filter((btn) => btn !== "recording");
   return {
     prejoinPageEnabled: false,
     disableDeepLinking: true,
@@ -84,8 +88,8 @@ export function buildJitsiConfigOverwrite(
     startWithAudioMuted: settings.mute_audio_on_join,
     startWithVideoMuted: settings.video_off_on_join,
     disableRemoteMute: !isMeetingModerator,
-    toolbarButtons: isMeetingModerator
-      ? [...JITSI_TOOLBAR_MODERATOR]
-      : [...JITSI_TOOLBAR_ATTENDEE],
+    fileRecordingsEnabled: recordingEnabled,
+    liveStreamingEnabled: false,
+    toolbarButtons: isMeetingModerator ? moderatorToolbar : [...JITSI_TOOLBAR_ATTENDEE],
   };
 }
