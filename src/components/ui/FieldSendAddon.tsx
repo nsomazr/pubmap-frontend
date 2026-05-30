@@ -61,7 +61,7 @@ function SubmitButton({
       type="submit"
       disabled={disabled}
       aria-label={submitAriaLabel}
-      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg p-0 font-semibold transition disabled:cursor-not-allowed ${submitBtnClass[variant]}`}
+      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg p-0 font-semibold transition disabled:cursor-not-allowed sm:h-8 sm:w-8 ${submitBtnClass[variant]}`}
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4 shrink-0" />}
     </button>
@@ -97,7 +97,7 @@ export function InputWithSendAddon({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`flex items-center gap-2 rounded-2xl border p-1.5 pl-3 pr-1.5 transition ${shellClass[variant]} ${className}`}
+      className={`flex touch-manipulation items-center gap-2 rounded-2xl border p-1.5 pl-3 pr-1.5 transition ${shellClass[variant]} ${className}`}
     >
       <input
         type="text"
@@ -106,7 +106,7 @@ export function InputWithSendAddon({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled || loading}
-        className={`min-h-9 min-w-0 flex-1 border-0 bg-transparent py-1.5 text-sm outline-none ${fieldClass[variant]}`}
+        className={`min-h-11 min-w-0 flex-1 border-0 bg-transparent py-2 text-base outline-none sm:min-h-9 sm:py-1.5 sm:text-sm ${fieldClass[variant]}`}
       />
       <SubmitButton
         loading={loading}

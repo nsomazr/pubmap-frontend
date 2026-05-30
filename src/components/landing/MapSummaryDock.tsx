@@ -138,7 +138,7 @@ export function MapSummaryDock({ publication, onClose }: Props) {
           </div>
         </header>
 
-        <div ref={scrollRef} className="map-summary-dock-body">
+        <div className="map-summary-dock-body map-summary-dock-body--chat">
           <PublicationSummaryAssistant
             key={publication.id}
             publicationId={publication.id}
@@ -146,6 +146,7 @@ export function MapSummaryDock({ publication, onClose }: Props) {
             autoGenerate
             layout="dock"
             scrollContainerRef={scrollRef}
+            className="min-h-0 flex-1"
           />
         </div>
 

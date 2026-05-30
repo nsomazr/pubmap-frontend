@@ -1,4 +1,4 @@
-import { ExternalLink, FileText, MessageCircle, Sparkles } from "lucide-react";
+import { ExternalLink, FileText, Sparkles } from "lucide-react";
 import { AssistantThinkingIndicator } from "../assistant/AssistantThinkingIndicator";
 import { InputWithSendAddon } from "../ui/FieldSendAddon";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
@@ -18,6 +18,7 @@ import {
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { buildPublicationFollowUpSuggestions } from "../../lib/publicationFollowUpSuggestions";
 import type { Publication } from "../../types";
+import { ChatComposerSection } from "../chat/ChatComposerSection";
 import { PublicationSummaryActions } from "./PublicationSummaryActions";
 
 type FollowUpItem = {
@@ -207,7 +208,6 @@ export function PublicationSummaryAssistant({
 
   const canAskManuscript = !followUpLoading;
   const showComposer = !followUpLoading;
-  const isDock = layout === "dock";
   const isPage = layout === "page";
 
   const manuscriptDoc = primaryManuscriptDocument(publication?.documents);
@@ -283,7 +283,7 @@ export function PublicationSummaryAssistant({
 
   const suggestionChips =
     visibleSuggestions.length > 0 ? (
-      <div className="flex flex-wrap gap-1.5 sm:gap-2">
+      <div className="gre-chat-suggestions">
         {visibleSuggestions.map((suggestion) => (
           <button
             key={suggestion}
@@ -352,15 +352,7 @@ export function PublicationSummaryAssistant({
     </div>
   ));
 
-  if (isPage) {
-    return (
-      <div className={`publication-chat flex min-h-0 flex-1 flex-col ${className}`}>
-        <div
-          ref={scrollContainerRef}
-          className="publication-chat__thread min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1 sm:space-y-4"
-        >
-          {manuscriptNotice}
-          {summaryError ? (
+  const summaryBlock = summaryError ? (
             <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3.5 shadow-sm">
               <p className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
                 Summary
@@ -391,63 +383,43 @@ export function PublicationSummaryAssistant({
               </div>
               {summaryActions}
             </div>
-          ) : null}
+          ) : null;
 
+  if (isPage) {
+    return (
+      <div className={`gre-chat-shell publication-chat ${className}`}>
+        <div
+          ref={scrollContainerRef}
+          className="gre-chat-thread publication-chat__thread space-y-3 pr-0.5 sm:space-y-4"
+        >
+          {summaryBlock}
           {followUpThread}
         </div>
 
-        <div className="publication-chat__composer mt-3 shrink-0 border-t border-slate-100 bg-white pt-3">
-          {showComposer && (
-            <div className="space-y-2.5">
-              <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-600">
-                <MessageCircle className="h-3.5 w-3.5" />
-                Chat about this manuscript
-              </p>
-              {suggestionChips && (
-                <div className="space-y-2">
-                  <p className="text-xs text-slate-500">Suggested questions</p>
-                  {suggestionChips}
-                </div>
-              )}
-              {followUpForm}
-            </div>
-          )}
-        </div>
+        {showComposer && (
+          <ChatComposerSection suggestions={suggestionChips}>
+            {followUpForm}
+          </ChatComposerSection>
+        )}
       </div>
     );
   }
 
   return (
-    <div className={`space-y-3 ${className}`}>
-      {manuscriptNotice}
-      <div>
-        {summaryError ? (
-          <p className="text-sm text-amber-800">{summaryError}</p>
-        ) : summaryLoading && !summary.trim() ? (
-          <AssistantThinkingIndicator variant="compact" />
-        ) : (
-          <>
-            <FormattedAssistantText content={summary} streaming={summaryLoading} />
-            {summaryActions}
-          </>
-        )}
+    <div className={`gre-chat-shell gre-chat-shell--dock min-h-0 flex-1 ${className}`}>
+      <div
+        ref={scrollContainerRef}
+        className="gre-chat-thread space-y-3 sm:space-y-4"
+      >
+        {manuscriptNotice}
+        {summaryBlock}
+        {followUpThread}
       </div>
 
       {showComposer && (
-        <div className={`space-y-3 ${isDock ? "border-t border-slate-100 pt-3" : "border-t border-brand-100 pt-4"}`}>
-          <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-600">
-            <MessageCircle className="h-3.5 w-3.5" />
-            Chat about this manuscript
-          </p>
-          {suggestionChips && (
-            <div className="space-y-2">
-              <p className="text-xs text-slate-500">Suggested questions</p>
-              {suggestionChips}
-            </div>
-          )}
-          {followUpThread}
+        <ChatComposerSection suggestions={suggestionChips}>
           {followUpForm}
-        </div>
+        </ChatComposerSection>
       )}
     </div>
   );

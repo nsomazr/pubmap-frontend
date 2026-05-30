@@ -1576,6 +1576,56 @@ body {
   text-decoration: none !important;
 }
 
+/* Shared mobile-friendly chat column: scrollable thread + pinned composer */
+.gre-chat-shell {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+}
+
+.gre-chat-thread {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.gre-chat-composer {
+  flex-shrink: 0;
+  border-top: 1px solid #f1f5f9;
+  background: #fff;
+  padding-top: 0.75rem;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
+.gre-chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+@media (max-width: 639px) {
+  .gre-chat-suggestions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.125rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .gre-chat-suggestions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gre-chat-suggestions > * {
+    flex-shrink: 0;
+    max-width: min(18rem, 85vw);
+  }
+}
+
 .publication-chat-page {
   flex: 1 1 0%;
   min-height: 0;
@@ -1583,8 +1633,15 @@ body {
 }
 
 .publication-chat-page__body {
+  display: flex;
   min-height: 0;
   flex: 1 1 0%;
+  flex-direction: column;
+}
+
+.publication-chat-page__header--compact {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 .publication-chat__thread {
@@ -1592,8 +1649,34 @@ body {
   scrollbar-gutter: stable;
 }
 
-.publication-chat__composer {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+.map-summary-dock-body--chat {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0.625rem 0.875rem 0.5rem;
+}
+
+.gre-assistant-panel {
+  display: flex;
+  max-height: min(72dvh, 520px);
+  min-height: 0;
+  flex-direction: column;
+}
+
+.gre-assistant-panel__thread {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 640px) {
+  .gre-assistant-panel {
+    max-height: min(55vh, 400px);
+  }
 }
 
 .gre-map--embedded .leaflet-bottom.leaflet-right {
@@ -2616,7 +2699,11 @@ body {
   }
 
   .map-summary-dock-card {
-    max-height: min(52dvh, 360px);
+    max-height: min(62dvh, 420px);
+  }
+
+  .map-summary-dock-header {
+    padding: 0.5rem 0.75rem;
   }
 
   .landing-page .leaflet-bottom.leaflet-right {

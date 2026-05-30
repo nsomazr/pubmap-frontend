@@ -544,7 +544,7 @@ export function MessagesPage() {
 
         {/* Thread panel */}
         <div
-          className={`flex min-w-0 flex-1 flex-col bg-[#f8fafc] ${
+          className={`gre-chat-shell min-w-0 flex-1 bg-[#f8fafc] ${
             partnerId ? "flex" : "hidden md:flex"
           }`}
         >
@@ -618,7 +618,7 @@ export function MessagesPage() {
                 </div>
               </header>
 
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-3 py-4 sm:px-6 sm:py-5">
+              <div className="gre-chat-thread flex-1 px-3 py-4 sm:px-6 sm:py-5">
                 {threadLoading ? (
                   <div className="flex flex-1 items-center justify-center">
                     <Loader2 className="h-6 w-6 animate-spin text-slate-300" />
@@ -665,7 +665,7 @@ export function MessagesPage() {
 
               <form
                 onSubmit={handleSend}
-                className="shrink-0 border-t border-slate-200/60 bg-white/80 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:px-5 sm:py-4"
+                className="gre-chat-composer border-slate-200/60 bg-white/80 px-3 backdrop-blur-sm sm:px-5 sm:py-4"
               >
                 {(sendError || draftError) && (
                   <p className="mb-2 text-sm text-red-600">{sendError || draftError}</p>

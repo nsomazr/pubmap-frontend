@@ -172,7 +172,7 @@ export function GreAssistant() {
 
       {open && (
         <div
-          className={`gre-assistant-panel gre-dashboard-card fixed z-[1400] mx-auto flex w-auto max-w-[380px] flex-col overflow-hidden shadow-[0_12px_40px_-12px_rgba(15,23,42,0.2)] ${panelPositionClass}`}
+          className={`gre-assistant-panel gre-dashboard-card fixed z-[1400] mx-auto w-auto max-w-[380px] overflow-hidden shadow-[0_12px_40px_-12px_rgba(15,23,42,0.2)] ${panelPositionClass}`}
           role="dialog"
           aria-label="GRE Assistant"
         >
@@ -205,7 +205,7 @@ export function GreAssistant() {
             </div>
           </header>
 
-          <div ref={scrollRef} className="min-h-0 max-h-[min(50vh,320px)] flex-1 space-y-3 overflow-y-auto overscroll-contain p-3 sm:max-h-[min(55vh,360px)]">
+          <div ref={scrollRef} className="gre-assistant-panel__thread space-y-3 p-3">
             {messages.map((m, i) => (
               <div
                 key={i}
@@ -239,13 +239,13 @@ export function GreAssistant() {
           </div>
 
           {messages.length <= 1 && !loading && (
-            <div className="flex flex-wrap gap-1.5 border-t border-slate-100 px-3 py-2">
+            <div className="gre-chat-suggestions shrink-0 border-t border-slate-100 px-3 py-2">
               {STARTERS.map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => send(s)}
-                  className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-brand-50 hover:text-brand-700"
+                  className="rounded-full bg-slate-100 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-brand-50 hover:text-brand-700"
                 >
                   {s}
                 </button>

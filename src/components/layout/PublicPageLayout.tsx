@@ -39,6 +39,8 @@ interface Props {
   heroVisual?: React.ReactNode;
   /** Fill the viewport; main content scrolls inside children (e.g. research assistant). */
   fillViewport?: boolean;
+  /** Less hero chrome on small screens when fillViewport (more room for chat). */
+  denseMobileHero?: boolean;
 }
 
 const premiumAccent: Record<
@@ -77,12 +79,16 @@ export function PublicPageLayout({
   back,
   heroVisual,
   fillViewport = false,
+  denseMobileHero = false,
 }: Props) {
   const contentShell = wide ? "gre-content-wide" : "gre-page-shell";
   const isClean = heroVariant === "clean";
-  const padY = compactHero
-    ? "pb-5 pt-5 sm:pb-6 sm:pt-6"
-    : "pb-10 pt-8 sm:pb-12 sm:pt-10";
+  const padY =
+    compactHero && fillViewport && denseMobileHero
+      ? "pb-3 pt-3 sm:pb-6 sm:pt-6"
+      : compactHero
+        ? "pb-5 pt-5 sm:pb-6 sm:pt-6"
+        : "pb-10 pt-8 sm:pb-12 sm:pt-10";
 
   const crumbMargin = compactHero ? "mb-3" : "mb-5";
   const titleSize = compactHero
@@ -154,7 +160,9 @@ export function PublicPageLayout({
             <p
               className={`gre-readable max-w-2xl ${
                 isClean ? "text-slate-600" : "text-white/80"
-              } ${subtitleSize}`}
+              } ${subtitleSize} ${
+                denseMobileHero && fillViewport ? "hidden md:block" : ""
+              }`}
             >
               {subtitle}
             </p>
@@ -232,7 +240,13 @@ export function PublicPageLayout({
             <PageBackLink
               to={back.to}
               label={back.label}
-              className={fillViewport ? "mb-3 shrink-0" : "mb-6"}
+              className={
+                fillViewport
+                  ? denseMobileHero
+                    ? "mb-2 shrink-0"
+                    : "mb-3 shrink-0"
+                  : "mb-6"
+              }
             />
           )}
           {children}
