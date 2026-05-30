@@ -34,6 +34,8 @@ interface Props {
   publication?: Publication | null;
   autoGenerate?: boolean;
   layout?: "page" | "dock";
+  /** Tighter composer for full-page manuscript chat on mobile. */
+  composerVariant?: "default" | "workspace";
   className?: string;
   scrollContainerRef?: RefObject<HTMLDivElement | null>;
 }
@@ -43,6 +45,7 @@ export function PublicationSummaryAssistant({
   publication = null,
   autoGenerate = false,
   layout = "page",
+  composerVariant = "default",
   className = "",
   scrollContainerRef,
 }: Props) {
@@ -109,8 +112,14 @@ export function PublicationSummaryAssistant({
   useEffect(() => {
     const container = scrollContainerRef?.current;
     if (!container) return;
-    container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
-  }, [summary, followUps, scrollContainerRef]);
+    if (followUps.length > 0) {
+      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+      return;
+    }
+    if (summary.trim() && !summaryLoading) {
+      container.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [summary, summaryLoading, followUps.length, scrollContainerRef]);
 
   const suggestedQuestions = useMemo(
     () => buildPublicationFollowUpSuggestions(publication),
@@ -367,14 +376,15 @@ export function PublicationSummaryAssistant({
               </button>
             </div>
           ) : summaryLoading && !summary.trim() ? (
-            <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm">
+            <div className="rounded-2xl border border-brand-100 bg-white px-4 py-4 shadow-sm ring-1 ring-brand-50">
               <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-brand-600">
                 Overview
               </p>
+              <p className="mb-3 text-xs text-slate-500">Generating a summary of this manuscript…</p>
               <AssistantThinkingIndicator />
             </div>
           ) : summary ? (
-            <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm">
+            <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm ring-1 ring-brand-50/80">
               <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-600">
                 Overview
               </p>
@@ -397,7 +407,10 @@ export function PublicationSummaryAssistant({
         </div>
 
         {showComposer && (
-          <ChatComposerSection suggestions={suggestionChips}>
+          <ChatComposerSection
+            variant={composerVariant}
+            suggestions={suggestionChips}
+          >
             {followUpForm}
           </ChatComposerSection>
         )}

@@ -20,7 +20,7 @@ const INITIAL_MESSAGE: Msg = {
 
 export function GreAssistant() {
   const location = useLocation();
-  const hideOnPublicationChat = /\/publication\/\d+\/chat\/?$/.test(location.pathname);
+  const hideOnPublicationChat = /\/publication\/[^/]+\/chat\/?$/.test(location.pathname);
   const isMapLanding = location.pathname === "/";
   const [open, setOpen] = useState(false);
   const [health, setHealth] = useState<{
@@ -126,12 +126,12 @@ export function GreAssistant() {
   const canClear = messages.length > 1 || loading;
   const isDashboard = location.pathname.startsWith("/dashboard");
   const fabBottomClass = isMapLanding
-    ? "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 left-auto sm:bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] sm:right-6"
+    ? "gre-assistant-fab--on-map"
     : isDashboard
       ? "bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 sm:bottom-8 sm:right-8"
       : "bottom-6 right-4 sm:bottom-8 sm:right-8";
   const panelPositionClass = isMapLanding
-    ? "bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] left-4 right-4 sm:left-auto sm:right-6 sm:w-[min(100vw-2rem,380px)] sm:max-w-[380px]"
+    ? "gre-assistant-panel--on-map"
     : "bottom-4 left-4 right-4 sm:bottom-6 sm:left-auto sm:right-6 sm:w-[min(100vw-2rem,380px)]";
 
   useEffect(() => {

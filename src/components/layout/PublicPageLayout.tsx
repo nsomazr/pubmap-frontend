@@ -41,6 +41,8 @@ interface Props {
   fillViewport?: boolean;
   /** Less hero chrome on small screens when fillViewport (more room for chat). */
   denseMobileHero?: boolean;
+  /** Full-height manuscript assistant: minimal hero on mobile, chat fills viewport. */
+  workspaceMode?: "chat";
 }
 
 const premiumAccent: Record<
@@ -80,7 +82,9 @@ export function PublicPageLayout({
   heroVisual,
   fillViewport = false,
   denseMobileHero = false,
+  workspaceMode,
 }: Props) {
+  const isChatWorkspace = workspaceMode === "chat";
   const contentShell = wide ? "gre-content-wide" : "gre-page-shell";
   const isClean = heroVariant === "clean";
   const padY =
@@ -101,7 +105,11 @@ export function PublicPageLayout({
       className={`relative mx-auto ${contentShell} px-4 sm:px-6 ${padY}`}
     >
       {crumbs && crumbs.length > 0 && (
-        <nav className={`flex flex-wrap items-center gap-1.5 ${crumbMargin}`}>
+        <nav
+          className={`flex flex-wrap items-center gap-1.5 ${crumbMargin} ${
+            isChatWorkspace ? "hidden md:flex" : ""
+          }`}
+        >
           {crumbs.map((c, i) => (
             <span key={i} className="inline-flex items-center gap-1.5 text-sm">
               {i > 0 && (
@@ -144,7 +152,7 @@ export function PublicPageLayout({
             <span
               className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ring-1 ${
                 isClean ? cleanBadge[accent] : premiumAccent[accent].badge
-              } ${compactHero ? "mb-2" : "mb-3"}`}
+              } ${compactHero ? "mb-2" : "mb-3"} ${isChatWorkspace ? "hidden md:inline-flex" : ""}`}
             >
               {badge}
             </span>
@@ -152,7 +160,7 @@ export function PublicPageLayout({
           <h1
             className={`gre-display max-w-4xl font-bold tracking-tight ${
               isClean ? "text-ink" : "text-white"
-            } ${titleSize}`}
+            } ${titleSize} ${isChatWorkspace ? "hidden md:block" : ""}`}
           >
             {title}
           </h1>
@@ -178,12 +186,16 @@ export function PublicPageLayout({
         fillViewport
           ? "h-[100dvh] max-h-[100dvh] overflow-hidden"
           : "min-h-screen min-h-[100dvh]"
-      }`}
+      }${isChatWorkspace ? " public-site--chat-workspace" : ""}`}
     >
       <PublicNav />
 
       {isClean ? (
-        <section className="gre-public-hero relative border-b border-slate-200/90 bg-white">
+        <section
+          className={`gre-public-hero relative border-b border-slate-200/90 bg-white ${
+            isChatWorkspace ? "hidden md:block" : ""
+          }`}
+        >
           <div className="gre-public-hero__accent" aria-hidden />
           {heroContent}
         </section>
@@ -227,8 +239,12 @@ export function PublicPageLayout({
       )}
 
       <main
-        className={`relative z-10 mx-auto flex w-full flex-1 flex-col px-4 sm:px-6 ${contentShell} ${
-          fillViewport ? "min-h-0 overflow-hidden pb-3 pt-4 sm:pb-4 sm:pt-5" : "pb-16 pt-6 sm:pt-8"
+        className={`relative z-10 mx-auto flex w-full flex-1 flex-col ${contentShell} ${
+          isChatWorkspace
+            ? "min-h-0 overflow-hidden px-0 pb-0 pt-0 sm:px-6 sm:pb-4 sm:pt-5"
+            : fillViewport
+              ? "min-h-0 overflow-hidden px-4 pb-3 pt-4 sm:px-6 sm:pb-4 sm:pt-5"
+              : "px-4 pb-16 pt-6 sm:px-6 sm:pt-8"
         }`}
       >
         <div
@@ -241,11 +257,13 @@ export function PublicPageLayout({
               to={back.to}
               label={back.label}
               className={
-                fillViewport
-                  ? denseMobileHero
-                    ? "mb-2 shrink-0"
-                    : "mb-3 shrink-0"
-                  : "mb-6"
+                isChatWorkspace
+                  ? "mb-3 hidden shrink-0 sm:inline-flex"
+                  : fillViewport
+                    ? denseMobileHero
+                      ? "mb-2 shrink-0"
+                      : "mb-3 shrink-0"
+                    : "mb-6"
               }
             />
           )}
