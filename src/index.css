@@ -1230,6 +1230,15 @@ body {
   min-height: 100dvh;
   /* Clearance for floating PublicNav (logo + actions row) */
   --gre-map-nav-clearance: 4.75rem;
+  --gre-map-footer-clearance: 3.25rem;
+  --gre-map-fab-size: 3rem;
+  --gre-map-fab-gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .landing-page {
+    --gre-map-footer-clearance: 4.25rem;
+  }
 }
 
 .landing-page--map-expanded {
@@ -1280,32 +1289,33 @@ body {
   pointer-events: none;
 }
 
-/* Landing map: GRE Assistant bottom-left on phones; zoom stays bottom-right */
+/* Landing map: GRE Assistant sits below zoom (+/−), above the footer */
 .landing-page .gre-assistant-fab--on-map {
-  bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px));
-  left: max(1rem, env(safe-area-inset-left, 0px));
-  right: auto;
+  bottom: calc(var(--gre-map-footer-clearance) + env(safe-area-inset-bottom, 0px));
+  right: max(0.5rem, env(safe-area-inset-right, 0px));
+  left: auto;
+  z-index: 1260;
 }
 
 .landing-page .gre-assistant-panel--on-map {
-  bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(
+    var(--gre-map-footer-clearance) + var(--gre-map-fab-size) + var(--gre-map-fab-gap) +
+      env(safe-area-inset-bottom, 0px)
+  );
+  right: max(0.5rem, env(safe-area-inset-right, 0px));
   left: max(0.75rem, env(safe-area-inset-left, 0px));
-  right: max(0.75rem, env(safe-area-inset-right, 0px));
   width: auto;
   max-width: none;
 }
 
 @media (min-width: 640px) {
   .landing-page .gre-assistant-fab--on-map {
-    bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
-    left: auto;
     right: 1.5rem;
   }
 
   .landing-page .gre-assistant-panel--on-map {
-    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
-    left: auto;
     right: 1.5rem;
+    left: auto;
     width: min(100vw - 2rem, 380px);
     max-width: 380px;
   }
@@ -1794,7 +1804,10 @@ body {
 }
 
 .landing-page .leaflet-bottom.leaflet-right {
-  bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(
+    var(--gre-map-footer-clearance) + var(--gre-map-fab-size) + var(--gre-map-fab-gap) +
+      env(safe-area-inset-bottom, 0px)
+  );
   right: max(0.5rem, env(safe-area-inset-right, 0px));
   z-index: 1250 !important;
   pointer-events: none;
@@ -2826,13 +2839,16 @@ body {
   }
 
   .landing-page .leaflet-bottom.leaflet-right {
-    bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(
+      var(--gre-map-footer-clearance) + var(--gre-map-fab-size) + var(--gre-map-fab-gap) +
+        env(safe-area-inset-bottom, 0px)
+    );
   }
 
   .landing-page .gre-assistant-fab--on-map {
-    bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px)) !important;
-    left: max(1rem, env(safe-area-inset-left, 0px)) !important;
-    right: auto !important;
+    bottom: calc(var(--gre-map-footer-clearance) + env(safe-area-inset-bottom, 0px)) !important;
+    right: max(0.5rem, env(safe-area-inset-right, 0px)) !important;
+    left: auto !important;
   }
 
   /* Hide FAB while mobile results sheet is open  -  avoids covering action buttons */
@@ -2853,11 +2869,17 @@ body {
   }
 
   .landing-page .gre-assistant-panel--on-map {
-    bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(
+      var(--gre-map-footer-clearance) + var(--gre-map-fab-size) + var(--gre-map-fab-gap) +
+        env(safe-area-inset-bottom, 0px)
+    ) !important;
   }
 
   .landing-page--assistant-open .gre-assistant-panel--on-map {
-    bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(
+      var(--gre-map-footer-clearance) + var(--gre-map-fab-size) + var(--gre-map-fab-gap) +
+        env(safe-area-inset-bottom, 0px)
+    ) !important;
   }
 
   .landing-page--results-open footer.safe-bottom {
