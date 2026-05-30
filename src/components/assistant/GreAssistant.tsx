@@ -129,14 +129,14 @@ export function GreAssistant() {
 
   const isStreaming = messages.some((m) => m.streaming);
   const canClear = messages.length > 1 || loading;
-  const fabBottomClass = isMapLanding
+  const fabPlacementClass = isMapLanding
     ? "gre-assistant-fab--on-map"
     : isDashboard
       ? "gre-assistant-fab--on-dashboard"
-      : "bottom-6 right-4 sm:bottom-8 sm:right-8";
+      : "gre-assistant-fab--default";
   const panelPositionClass = isMapLanding
     ? "gre-assistant-panel--on-map"
-    : "bottom-4 left-4 right-4 sm:bottom-6 sm:left-auto sm:right-6 sm:w-[min(100vw-2rem,380px)]";
+    : "gre-assistant-panel--default bottom-4 left-4 right-4 sm:bottom-6 sm:left-auto sm:right-6 sm:w-[min(100vw-2rem,380px)]";
 
   useEffect(() => {
     if (!isMapLanding) return;
@@ -166,7 +166,7 @@ export function GreAssistant() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className={`gre-assistant-fab fixed z-[1400] flex h-12 w-12 items-center justify-center rounded-full border border-brand-500/30 bg-brand-600 text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 hover:shadow-xl ${fabBottomClass} sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:font-bold`}
+          className={`gre-assistant-fab ${fabPlacementClass} fixed flex h-12 w-12 items-center justify-center rounded-full border border-brand-500/30 bg-brand-600 text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 hover:shadow-xl sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:font-bold`}
           aria-label="Open GRE Assistant"
         >
           <Sparkles className="h-5 w-5" />
@@ -176,7 +176,7 @@ export function GreAssistant() {
 
       {open && (
         <div
-          className={`gre-assistant-panel gre-dashboard-card fixed z-[1400] mx-auto w-auto max-w-[380px] overflow-hidden shadow-[0_12px_40px_-12px_rgba(15,23,42,0.2)] ${panelPositionClass}`}
+          className={`gre-assistant-panel gre-dashboard-card fixed mx-auto w-auto max-w-[380px] overflow-hidden shadow-[0_12px_40px_-12px_rgba(15,23,42,0.2)] ${panelPositionClass}`}
           role="dialog"
           aria-label="GRE Assistant"
         >

@@ -1289,35 +1289,85 @@ body {
   pointer-events: none;
 }
 
-/* Landing map: GRE Assistant sits below zoom (+/−), above the footer */
-.landing-page .gre-assistant-fab--on-map {
-  bottom: calc(var(--gre-map-footer-clearance) + env(safe-area-inset-bottom, 0px));
-  right: max(0.5rem, env(safe-area-inset-right, 0px));
-  left: auto;
-  z-index: 1260;
+/*
+ * GRE Assistant FAB is mounted at app root (not inside .landing-page), so position
+ * with standalone modifier classes — not .landing-page .gre-assistant-fab.
+ */
+.gre-assistant-fab--on-map {
+  --gre-map-footer-clearance: 3.25rem;
+  --gre-map-fab-size: 3rem;
+  --gre-map-fab-gap: 0.5rem;
+  bottom: calc(var(--gre-map-footer-clearance) + env(safe-area-inset-bottom, 0px)) !important;
+  right: max(0.5rem, env(safe-area-inset-right, 0px)) !important;
+  left: auto !important;
+  z-index: 1500 !important;
 }
 
-.landing-page .gre-assistant-panel--on-map {
+.gre-assistant-panel--on-map {
+  --gre-map-footer-clearance: 3.25rem;
+  --gre-map-fab-size: 3rem;
+  --gre-map-fab-gap: 0.5rem;
   bottom: calc(
     var(--gre-map-footer-clearance) + var(--gre-map-fab-size) + var(--gre-map-fab-gap) +
       env(safe-area-inset-bottom, 0px)
-  );
-  right: max(0.5rem, env(safe-area-inset-right, 0px));
-  left: max(0.75rem, env(safe-area-inset-left, 0px));
+  ) !important;
+  right: max(0.5rem, env(safe-area-inset-right, 0px)) !important;
+  left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
   width: auto;
   max-width: none;
+  z-index: 1500 !important;
+}
+
+body:has(.landing-page--results-open) .gre-assistant-fab--on-map,
+body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
+  display: none !important;
 }
 
 @media (min-width: 640px) {
-  .landing-page .gre-assistant-fab--on-map {
-    right: 1.5rem;
+  .gre-assistant-fab--on-map,
+  .gre-assistant-panel--on-map {
+    --gre-map-footer-clearance: 4.25rem;
   }
 
-  .landing-page .gre-assistant-panel--on-map {
-    right: 1.5rem;
-    left: auto;
+  .gre-assistant-fab--on-map {
+    right: 1.5rem !important;
+  }
+
+  .gre-assistant-panel--on-map {
+    right: 1.5rem !important;
+    left: auto !important;
     width: min(100vw - 2rem, 380px);
     max-width: 380px;
+  }
+}
+
+/* Dashboard & other app pages: bottom-right */
+.gre-assistant-fab--on-dashboard,
+.gre-assistant-fab--default {
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)) !important;
+  right: max(1rem, env(safe-area-inset-right, 0px)) !important;
+  left: auto !important;
+  z-index: 1500 !important;
+}
+
+.gre-assistant-panel--default {
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)) !important;
+  right: max(1rem, env(safe-area-inset-right, 0px)) !important;
+  left: auto !important;
+  z-index: 1500 !important;
+}
+
+@media (min-width: 640px) {
+  .gre-assistant-fab--on-dashboard,
+  .gre-assistant-fab--default {
+    bottom: calc(2rem + env(safe-area-inset-bottom, 0px)) !important;
+    right: 2rem !important;
+  }
+
+  .gre-assistant-panel--default {
+    bottom: calc(2rem + env(safe-area-inset-bottom, 0px)) !important;
+    right: 2rem !important;
+    left: auto !important;
   }
 }
 
@@ -1676,15 +1726,6 @@ body {
 .public-site--chat-workspace .gre-assistant-fab,
 .public-site--chat-workspace .gre-assistant-panel {
   display: none !important;
-}
-
-/* Dashboard: keep FAB off the message composer on mobile */
-@media (max-width: 639px) {
-  .gre-assistant-fab--on-dashboard {
-    bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
-    left: max(1rem, env(safe-area-inset-left, 0px)) !important;
-    right: auto !important;
-  }
 }
 
 .messages-page__composer textarea {
@@ -2845,41 +2886,12 @@ body {
     );
   }
 
-  .landing-page .gre-assistant-fab--on-map {
-    bottom: calc(var(--gre-map-footer-clearance) + env(safe-area-inset-bottom, 0px)) !important;
-    right: max(0.5rem, env(safe-area-inset-right, 0px)) !important;
-    left: auto !important;
-  }
-
-  /* Hide FAB while mobile results sheet is open  -  avoids covering action buttons */
-  .landing-page--results-open .gre-assistant-fab {
-    display: none;
-  }
-
-  .landing-page--summary-open .gre-assistant-fab {
-    display: none;
-  }
-
   .landing-page--summary-open .leaflet-bottom.leaflet-right {
     bottom: calc(18rem + env(safe-area-inset-bottom, 0px));
   }
 
   .landing-page--summary-open footer.safe-bottom {
     z-index: 999;
-  }
-
-  .landing-page .gre-assistant-panel--on-map {
-    bottom: calc(
-      var(--gre-map-footer-clearance) + var(--gre-map-fab-size) + var(--gre-map-fab-gap) +
-        env(safe-area-inset-bottom, 0px)
-    ) !important;
-  }
-
-  .landing-page--assistant-open .gre-assistant-panel--on-map {
-    bottom: calc(
-      var(--gre-map-footer-clearance) + var(--gre-map-fab-size) + var(--gre-map-fab-gap) +
-        env(safe-area-inset-bottom, 0px)
-    ) !important;
   }
 
   .landing-page--results-open footer.safe-bottom {
