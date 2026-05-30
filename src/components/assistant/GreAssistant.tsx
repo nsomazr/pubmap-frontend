@@ -21,7 +21,12 @@ const INITIAL_MESSAGE: Msg = {
 export function GreAssistant() {
   const location = useLocation();
   const hideOnPublicationChat = /\/publication\/[^/]+\/chat\/?$/.test(location.pathname);
+  const messagesThreadOpen =
+    location.pathname.startsWith("/dashboard/messages") &&
+    Boolean(new URLSearchParams(location.search).get("partner"));
+  const hideFab = hideOnPublicationChat || messagesThreadOpen;
   const isMapLanding = location.pathname === "/";
+  const isDashboard = location.pathname.startsWith("/dashboard");
   const [open, setOpen] = useState(false);
   const [health, setHealth] = useState<{
     available: boolean;
@@ -124,11 +129,10 @@ export function GreAssistant() {
 
   const isStreaming = messages.some((m) => m.streaming);
   const canClear = messages.length > 1 || loading;
-  const isDashboard = location.pathname.startsWith("/dashboard");
   const fabBottomClass = isMapLanding
     ? "gre-assistant-fab--on-map"
     : isDashboard
-      ? "bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 sm:bottom-8 sm:right-8"
+      ? "gre-assistant-fab--on-dashboard"
       : "bottom-6 right-4 sm:bottom-8 sm:right-8";
   const panelPositionClass = isMapLanding
     ? "gre-assistant-panel--on-map"
@@ -152,7 +156,7 @@ export function GreAssistant() {
     setMessages([INITIAL_MESSAGE]);
   };
 
-  if (hideOnPublicationChat) {
+  if (hideFab) {
     return null;
   }
 

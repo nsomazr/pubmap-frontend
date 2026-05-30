@@ -37,15 +37,15 @@ export const meetDrawer = {
   fabHover:
     "hover:border-cyan-800/50 hover:bg-slate-800 hover:text-white hover:shadow-[0_10px_32px_-6px_rgba(8,51,68,0.35)]",
   fabDragRing: "ring-2 ring-cyan-800/45",
-  /** Tucked under the bubble; overlaps slightly so hover does not drop between bubble and pill. */
+  /** Row of actions below each bubble (touch-friendly; no overlap with message body). */
   messageActions:
-    "absolute z-10 top-[calc(100%-5px)] flex items-center gap-0.5 rounded-full border border-slate-600/90 bg-slate-900 px-1.5 py-0.5 shadow-lg ring-1 ring-slate-700/50 opacity-0 pointer-events-none transition-opacity duration-100 [@media(hover:hover)]:group-hover/msg:opacity-100 [@media(hover:hover)]:group-hover/msg:pointer-events-auto [@media(hover:none)]:relative [@media(hover:none)]:top-auto [@media(hover:none)]:mt-1 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto",
-  messageActionsEnd: "right-2",
-  messageActionsStart: "left-2",
+    "mt-1.5 flex max-w-full flex-wrap items-center gap-1",
+  messageActionsEnd: "justify-end",
+  messageActionsStart: "justify-start",
   messageActionBtn:
-    "rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-200 hover:bg-slate-700 hover:text-white",
+    "rounded-full border border-slate-600/80 bg-slate-900/90 px-2.5 py-1 text-[11px] font-semibold text-slate-200 hover:bg-slate-700 hover:text-white",
   messageActionBtnAccent:
-    "rounded-full px-2 py-0.5 text-[11px] font-semibold text-cyan-400/90 hover:bg-slate-700 hover:text-cyan-300",
+    "rounded-full border border-cyan-900/50 bg-slate-900/90 px-2.5 py-1 text-[11px] font-semibold text-cyan-400/90 hover:bg-slate-700 hover:text-cyan-300",
   messageActionBtnOwn:
-    "rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-200 hover:bg-slate-600 hover:text-white",
+    "rounded-full border border-slate-600/70 bg-slate-800/90 px-2.5 py-1 text-[11px] font-semibold text-slate-200 hover:bg-slate-600 hover:text-white",
 } as const;

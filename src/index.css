@@ -1668,6 +1668,23 @@ body {
   display: none !important;
 }
 
+/* Dashboard: keep FAB off the message composer on mobile */
+@media (max-width: 639px) {
+  .gre-assistant-fab--on-dashboard {
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
+    left: max(1rem, env(safe-area-inset-left, 0px)) !important;
+    right: auto !important;
+  }
+}
+
+.messages-page__composer textarea {
+  padding-right: 3.75rem;
+}
+
+.messages-page__composer [type="submit"] {
+  z-index: 2;
+}
+
 .publication-chat-workspace {
   flex: 1 1 0%;
   min-height: 0;

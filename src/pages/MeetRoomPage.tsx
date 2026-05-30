@@ -1492,7 +1492,7 @@ export function MeetRoomPage() {
                               {timeLabel && (
                                 <span className="mb-1 px-1 text-[10px] text-slate-500">{timeLabel}</span>
                               )}
-                              <div className="group/msg relative max-w-[88%]">
+                              <div className="group/msg max-w-[88%]">
                                 <div className={meetDrawer.chatBubbleOwn}>
                                   {parsedMessage.replySnippet && (
                                     <div className={`mb-2 rounded-xl px-2.5 py-2 ${meetDrawer.chatReplyOwn}`}>
@@ -1545,7 +1545,7 @@ export function MeetRoomPage() {
                                   <span className="shrink-0 text-[10px] text-slate-500">{timeLabel}</span>
                                 )}
                               </div>
-                              <div className="group/msg relative">
+                              <div className="group/msg">
                                 <div className={meetDrawer.chatBubbleOther}>
                                   {parsedMessage.replySnippet && (
                                     <div className="mb-2 rounded-xl border border-slate-600/60 bg-slate-900/50 px-2.5 py-2">

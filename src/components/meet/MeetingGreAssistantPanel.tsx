@@ -123,7 +123,7 @@ export function MeetingGreAssistantPanel({
     if (isUser) {
       return (
         <div key={`${turn.role}-${index}`} className="mb-5 flex flex-col items-end last:mb-0">
-          <div className="group/msg relative max-w-[88%]">
+          <div className="group/msg max-w-[88%]">
             <div className={meetDrawer.chatBubbleOwn}>
               <p className="whitespace-pre-wrap">{turn.content}</p>
             </div>
@@ -145,7 +145,7 @@ export function MeetingGreAssistantPanel({
         <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-800/90 ring-1 ring-slate-700/50">
           <Sparkles className="h-4 w-4 text-cyan-500/75" />
         </span>
-        <div className="group/msg relative min-w-0 max-w-[calc(100%-2.5rem)] flex-1">
+        <div className="group/msg min-w-0 max-w-[calc(100%-2.5rem)] flex-1">
           <p className="mb-1 text-[11px] font-medium text-slate-500">GRE Assistant</p>
           <div className={meetDrawer.chatBubbleOther}>
             <FormattedAssistantText content={turn.content} className="!text-slate-100" />

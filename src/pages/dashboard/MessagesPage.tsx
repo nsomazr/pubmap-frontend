@@ -665,7 +665,7 @@ export function MessagesPage() {
 
               <form
                 onSubmit={handleSend}
-                className="gre-chat-composer border-slate-200/60 bg-white/80 px-3 backdrop-blur-sm sm:px-5 sm:py-4"
+                className="messages-page__composer gre-chat-composer border-slate-200/60 bg-white/80 px-3 backdrop-blur-sm sm:px-5 sm:py-4"
               >
                 {(sendError || draftError) && (
                   <p className="mb-2 text-sm text-red-600">{sendError || draftError}</p>
