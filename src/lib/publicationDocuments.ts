@@ -6,10 +6,11 @@ export function primaryManuscriptDocument(
 ): GreDocument | null {
   const docs = pub?.documents ?? [];
   if (!docs.length) return null;
+  const sorted = [...docs].sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
   const manuscript =
-    docs.find((doc) => !doc.kind || doc.kind === "manuscript") ??
-    docs.find((doc) => (doc.document || "").toLowerCase().endsWith(".pdf")) ??
-    docs[0];
+    sorted.find((doc) => !doc.kind || doc.kind === "manuscript") ??
+    sorted.find((doc) => (doc.document || "").toLowerCase().endsWith(".pdf")) ??
+    sorted[0];
   return manuscript ?? null;
 }
 

@@ -23,6 +23,7 @@ import { StudyLocationSection } from "../../components/map/StudyLocationSection"
 import { ManuscriptContent } from "../../components/publication/ManuscriptContent";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { authorBylineFromPublication } from "../../lib/publicationAuthors";
+import { primaryManuscriptDocument } from "../../lib/publicationDocuments";
 import { publicationMapLocationLabel } from "../../lib/publicationMapLocation";
 import type { Publication } from "../../types";
 
@@ -68,7 +69,7 @@ export function PublicationReaderPage() {
     );
   }
 
-  const manuscript = pub.documents?.find((doc) => !doc.kind || doc.kind === "manuscript") ?? null;
+  const manuscript = primaryManuscriptDocument(pub);
   const docPath = manuscript?.document ?? null;
   const isClosed = pub.gre?.access_type === "closed";
   const showManuscriptContent = Boolean(docPath?.trim()) && !isClosed;

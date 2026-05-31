@@ -21,6 +21,7 @@ import { ManuscriptContent } from "../components/publication/ManuscriptContent";
 import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
 import { authorBylineFromPublication } from "../lib/publicationAuthors";
 import { publicationMapLocationLabel } from "../lib/publicationMapLocation";
+import { primaryManuscriptDocument } from "../lib/publicationDocuments";
 import { publicationPublicApiPath } from "../lib/publicationPaths";
 import type { Publication } from "../types";
 
@@ -50,7 +51,7 @@ export function PublicationDetailPage() {
     }
   }, [pub?.id]);
 
-  const manuscript = pub?.documents?.find((doc) => !doc.kind || doc.kind === "manuscript") ?? null;
+  const manuscript = primaryManuscriptDocument(pub);
   const docPath = manuscript?.document ?? null;
   const isClosed = pub?.gre?.access_type === "closed";
   const showManuscriptContent = Boolean(docPath?.trim()) && !isClosed;
