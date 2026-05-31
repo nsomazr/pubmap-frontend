@@ -469,7 +469,7 @@ export function HomePage() {
           {isLoading ? (
             <div className="flex h-full items-center justify-center bg-slate-100">
               <div className="animate-pulse opacity-40">
-                <BrandMark symbol="full" variant="light" size="xl" />
+                <BrandMark symbol="full" variant="light" size="md" />
               </div>
             </div>
           ) : (

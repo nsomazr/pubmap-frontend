@@ -29,7 +29,7 @@ export function AuthMobileBrand({ variant }: Props) {
       <div className="auth-mobile-brand-bg" />
       <div className="relative px-5 pb-8 pt-6">
         <Link to="/" className="mx-auto flex w-fit flex-col items-center gap-3 text-center">
-          <BrandMark symbol="full" variant="float" size="lg" />
+          <BrandMark symbol="full" variant="float" size="md" />
           <p className="text-xs font-medium text-white/60">Research worldwide</p>
         </Link>
 

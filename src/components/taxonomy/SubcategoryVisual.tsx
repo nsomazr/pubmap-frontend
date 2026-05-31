@@ -10,7 +10,7 @@ const tileSizes: Record<Size, string> = {
   xs: "h-7 w-7 rounded-lg",
   sm: "h-9 w-9 rounded-xl",
   md: "h-12 w-12 rounded-xl",
-  lg: "h-16 w-16 rounded-2xl sm:h-[4.5rem] sm:w-[4.5rem]",
+  lg: "h-14 w-14 rounded-2xl",
 };
 
 const iconSizes: Record<Size, string> = {

@@ -58,7 +58,7 @@ export function AuthHeroScene({ variant }: Props) {
           />
         ))}
         <div className="auth-visual-core">
-          <img src={assets.mapLogo} alt="" className="h-9 w-9 object-contain" />
+          <img src={assets.mapLogo} alt="" className="h-7 w-7 object-contain" />
         </div>
       </div>
 

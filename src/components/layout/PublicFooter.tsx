@@ -90,7 +90,7 @@ export function PublicFooter({ variant = "full", publicationCount }: Props) {
           <div className="lg:col-span-5">
             <Link to="/" className="group inline-flex items-center gap-4">
               <span className="rounded-2xl ring-1 ring-white/10 transition group-hover:ring-teal-400/40">
-                <BrandMark symbol="full" variant="gradient" size="xl" />
+                <BrandMark symbol="full" variant="gradient" size="md" />
               </span>
               <div>
                 <p className="text-xl font-bold tracking-tight">Global Research Exchange</p>

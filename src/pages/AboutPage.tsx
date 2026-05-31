@@ -268,7 +268,7 @@ export function AboutPage() {
           <section className="gre-card overflow-hidden p-0">
             <div className="border-b border-slate-100 bg-gradient-to-r from-brand-50 to-teal-50/80 px-6 py-5 sm:px-8">
               <div className="flex flex-wrap items-center gap-4">
-                <BrandMark symbol="icon" variant="gradient" size="lg" />
+                <BrandMark symbol="icon" variant="gradient" size="md" />
                 <div>
                   <h2 className="text-lg font-bold text-ink sm:text-xl">{INTRO.lead}</h2>
                   <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">

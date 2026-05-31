@@ -59,7 +59,7 @@ export function AuthLayout({
 
         <div className="relative z-10 flex min-h-full flex-col px-10 py-10 xl:px-12 xl:py-12">
           <Link to="/" className="inline-flex w-fit items-center gap-3 text-white transition hover:opacity-90">
-            <BrandMark symbol="full" variant="float" size="lg" />
+            <BrandMark symbol="full" variant="float" size="md" />
             <div>
               <p className="text-sm font-semibold leading-tight">Global Research Exchange</p>
               <p className="text-[11px] text-white/55">Research worldwide</p>

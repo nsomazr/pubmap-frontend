@@ -31,8 +31,8 @@ export interface PublicationPaperHeaderProps {
 
 function GreBrandBlock({ draft }: Pick<PublicationPaperHeaderProps, "draft">) {
   return (
-    <div className="flex shrink-0 flex-col items-start gap-1 sm:items-center sm:gap-2">
-      <BrandMark symbol="full" variant="light" size="lg" className="sm:!h-[5rem] sm:!w-[5rem]" />
+    <div className="flex shrink-0 flex-col items-center justify-center gap-1 sm:gap-1.5">
+      <BrandMark symbol="full" variant="light" size="md" />
       {draft && (
         <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
           Draft preview
@@ -69,18 +69,18 @@ function CategoryTopBadge({
 
   return (
     <aside className="publication-paper-category shrink-0" aria-label={label}>
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-center">
         {visual ? (
           <SubcategoryVisual
             visual={visual}
-            size="lg"
+            size="md"
             fit="contain"
             clip={false}
             shadow={false}
-            className="!h-10 !w-10 !rounded-none sm:!h-[5.25rem] sm:!w-[5.25rem]"
+            className="!rounded-lg sm:!h-12 sm:!w-12"
           />
         ) : (
-          <span className="flex h-10 w-10 items-center justify-center border border-slate-200 bg-white text-xs font-bold text-slate-600 sm:h-20 sm:w-20 sm:text-xl">
+          <span className="flex h-11 w-11 items-center justify-center border border-slate-200 bg-white text-xs font-bold text-slate-600 sm:h-12 sm:w-12 sm:text-sm">
             {label.slice(0, 2).toUpperCase()}
           </span>
         )}
@@ -181,7 +181,7 @@ export function PublicationPaperHeader({
 
   return (
     <header className="publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5 border-b border-slate-100 bg-white px-2 py-2.5 sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] sm:gap-3 sm:px-7 sm:py-4">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-100 bg-white px-2 py-2.5 sm:grid-cols-[3.75rem_minmax(0,1fr)_3.75rem] sm:items-center sm:gap-3 sm:px-6 sm:py-3">
         <GreBrandBlock draft={draft} />
         <div className="min-w-0 justify-self-stretch">
           <PlatformNameBadge />

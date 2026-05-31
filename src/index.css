@@ -2087,9 +2087,9 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
-  padding: 0.4rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0.3rem;
   border-radius: 50%;
   background: #fff;
   border: 2px solid rgba(226, 232, 240, 0.95);
@@ -2761,13 +2761,13 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
 
 .publication-paper-category {
   width: auto;
-  max-width: 5.25rem;
-  justify-self: end;
+  max-width: 3.25rem;
+  justify-self: center;
 }
 
 @media (min-width: 640px) {
   .publication-paper-category {
-    max-width: 8.5rem;
+    max-width: 3.75rem;
   }
 }
 

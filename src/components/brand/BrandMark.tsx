@@ -8,17 +8,17 @@ type Size = "sm" | "md" | "lg" | "xl";
 
 /** Square circle shells — same for full logo and map icon. */
 const circleSizes: Record<Size, string> = {
-  sm: "h-12 w-12",
-  md: "h-16 w-16",
-  lg: "h-[4.5rem] w-[4.5rem]",
-  xl: "h-20 w-20",
+  sm: "h-9 w-9",
+  md: "h-11 w-11",
+  lg: "h-14 w-14",
+  xl: "h-16 w-16",
 };
 
 const circlePadding: Record<Size, string> = {
-  sm: "p-1.5",
-  md: "p-2",
-  lg: "p-2.5",
-  xl: "p-3",
+  sm: "p-1",
+  md: "p-1.5",
+  lg: "p-2",
+  xl: "p-2",
 };
 
 const plateStyles: Record<Exclude<Variant, "plain">, string> = {
