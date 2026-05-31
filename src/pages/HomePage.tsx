@@ -13,7 +13,7 @@ import { EagerRouteComplete } from "../components/navigation/EagerRouteComplete"
 import { PublicNav } from "../components/layout/PublicNav";
 import { ResearchMap } from "../components/map/ResearchMap";
 import { MapPublicationSheet } from "../components/map/MapPublicationSheet";
-import { assets } from "../lib/brand";
+import { BrandMark } from "../components/brand/BrandMark";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { formatMapRegionLabel, reverseGeocodeRegion } from "../lib/geocode";
 import { MAP_REGION_RADIUS_KM } from "../lib/mapRegion";
@@ -468,11 +468,9 @@ export function HomePage() {
         <div className="absolute inset-0">
           {isLoading ? (
             <div className="flex h-full items-center justify-center bg-slate-100">
-              <img
-                src={assets.logo}
-                alt=""
-                className="h-16 max-w-[140px] animate-pulse object-contain opacity-40"
-              />
+              <div className="animate-pulse opacity-40">
+                <BrandMark symbol="full" variant="light" size="xl" />
+              </div>
             </div>
           ) : (
             <ResearchMap

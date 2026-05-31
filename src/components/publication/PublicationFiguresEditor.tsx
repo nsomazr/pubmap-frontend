@@ -12,10 +12,13 @@ import { Input } from "../ui/Input";
 
 interface Props {
   publicationId: number;
+  encodedPublicationId?: string | null;
   figures: PublicationFigure[];
   onChange: (figures: PublicationFigure[]) => void;
   readOnly?: boolean;
   variant?: "composer" | "public";
+  /** Creates a draft on the server when the user uploads before the first manual save. */
+  ensurePublicationId?: () => Promise<number | null>;
 }
 
 type PendingUpload = {
@@ -37,10 +40,12 @@ function shellClass(variant: "composer" | "public") {
 
 export function PublicationFiguresEditor({
   publicationId,
+  encodedPublicationId,
   figures,
   onChange,
   readOnly,
   variant = "composer",
+  ensurePublicationId,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -86,6 +91,12 @@ export function PublicationFiguresEditor({
     });
   };
 
+  const resolvePublicationId = async (): Promise<number | null> => {
+    if (publicationId > 0) return publicationId;
+    if (!ensurePublicationId) return null;
+    return ensurePublicationId();
+  };
+
   const uploadPending = async () => {
     if (!pending.length || readOnly) return;
     const missing = pending.filter((p) => !p.caption.trim());
@@ -97,10 +108,15 @@ export function PublicationFiguresEditor({
     setUploadError("");
     const uploaded: PublicationFigure[] = [];
     try {
+      const pubId = await resolvePublicationId();
+      if (!pubId) {
+        setUploadError("Add a title and abstract before uploading figures.");
+        return;
+      }
       for (const item of pending) {
-        const fig = (await uploadFigure(publicationId, item.file, {
+        const fig = (await uploadFigure(pubId, item.file, {
           caption: item.caption.trim(),
-        })) as PublicationFigure;
+        }, encodedPublicationId)) as PublicationFigure;
         uploaded.push(fig);
         URL.revokeObjectURL(item.previewUrl);
       }
@@ -119,7 +135,9 @@ export function PublicationFiguresEditor({
   };
 
   const remove = async (id: number) => {
-    await deleteFigure(publicationId, id);
+    const pubId = await resolvePublicationId();
+    if (!pubId) return;
+    await deleteFigure(pubId, id, encodedPublicationId);
     onChange(figures.filter((f) => f.id !== id));
   };
 
@@ -128,7 +146,9 @@ export function PublicationFiguresEditor({
     if (nextCaption === (fig.caption?.trim() || "")) return;
     setSavingCaptionId(fig.id);
     try {
-      const updated = await updateFigure(publicationId, fig.id, { caption: nextCaption });
+      const pubId = await resolvePublicationId();
+      if (!pubId) return;
+      const updated = await updateFigure(pubId, fig.id, { caption: nextCaption }, encodedPublicationId);
       onChange(figures.map((item) => (item.id === fig.id ? updated : item)));
     } finally {
       setSavingCaptionId(null);
@@ -140,8 +160,9 @@ export function PublicationFiguresEditor({
       <h3 className="text-sm font-bold uppercase tracking-wider text-brand-600">Research figures</h3>
       {!readOnly && (
         <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          Upload one or more images. Each figure needs its own caption. Figures appear after Findings
-          &amp; Conclusion in the paper preview, publication page, and PDF.
+          Choose images and add a caption for each. Upload saves your draft automatically if needed.
+          Figures appear after Findings &amp; Conclusion in the paper preview, publication page, and
+          PDF.
         </p>
       )}
 

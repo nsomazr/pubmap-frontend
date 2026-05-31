@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { assets } from "../../lib/brand";
+import { BrandMark } from "../brand/BrandMark";
 import type { AuthHeroVariant } from "../layout/AuthLayout";
 
 const LOCATIONS = ["Dar es Salaam", "Nairobi", "Accra", "Cape Town"];
@@ -28,9 +29,7 @@ export function AuthMobileBrand({ variant }: Props) {
       <div className="auth-mobile-brand-bg" />
       <div className="relative px-5 pb-8 pt-6">
         <Link to="/" className="mx-auto flex w-fit flex-col items-center gap-3 text-center">
-          <div className="auth-mobile-logo-wrap">
-            <img src={assets.logo} alt="Global Research Exchange" className="h-11 max-w-[150px] object-contain" />
-          </div>
+          <BrandMark symbol="full" variant="float" size="lg" />
           <p className="text-xs font-medium text-white/60">Research worldwide</p>
         </Link>
 

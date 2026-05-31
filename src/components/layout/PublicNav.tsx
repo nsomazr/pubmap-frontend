@@ -44,7 +44,7 @@ export function PublicNav({ variant = "default" }: Props) {
             to="/"
             symbol="full"
             variant="float"
-            size="md"
+            size="lg"
             className="pointer-events-auto shrink-0 transition hover:scale-[1.02]"
           />
 
@@ -98,7 +98,7 @@ export function PublicNav({ variant = "default" }: Props) {
             <BrandMark
               symbol="full"
               variant="gradient"
-              size="md"
+              size="lg"
               className="transition group-hover:scale-[1.02]"
             />
             <div className="hidden min-w-0 sm:block">

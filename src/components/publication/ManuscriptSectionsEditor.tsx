@@ -4,7 +4,6 @@ import { RichTextEditor } from "../editor/RichTextEditor";
 import { Input } from "../ui/Input";
 import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
-  MANUSCRIPT_FINDINGS_GROUP_DESCRIPTION,
   MANUSCRIPT_FINDINGS_GROUP_TITLE,
   normalizeFunderField,
   formatWordLimitHint,
@@ -135,10 +134,7 @@ export function ManuscriptSectionsEditor({
         <FieldExtractionNote note={sectionNotes.methods} />
       </ManuscriptGroup>
 
-      <ManuscriptGroup
-        title={MANUSCRIPT_FINDINGS_GROUP_TITLE}
-        description={MANUSCRIPT_FINDINGS_GROUP_DESCRIPTION}
-      >
+      <ManuscriptGroup title={MANUSCRIPT_FINDINGS_GROUP_TITLE}>
         <RichTextEditor
           label="Findings"
           value={fields.findings}

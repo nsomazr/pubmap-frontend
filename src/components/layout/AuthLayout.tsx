@@ -59,7 +59,7 @@ export function AuthLayout({
 
         <div className="relative z-10 flex min-h-full flex-col px-10 py-10 xl:px-12 xl:py-12">
           <Link to="/" className="inline-flex w-fit items-center gap-3 text-white transition hover:opacity-90">
-            <BrandMark symbol="full" variant="plain" size="md" className="!rounded-xl !bg-white/95 !p-1.5" />
+            <BrandMark symbol="full" variant="float" size="lg" />
             <div>
               <p className="text-sm font-semibold leading-tight">Global Research Exchange</p>
               <p className="text-[11px] text-white/55">Research worldwide</p>
@@ -90,7 +90,7 @@ export function AuthLayout({
         <div className="auth-panel-body relative z-10 flex flex-1 flex-col">
           <div className="hidden items-center justify-between border-b border-slate-200/80 bg-white/80 px-8 py-4 backdrop-blur-sm lg:flex">
             <Link to="/" className="inline-flex items-center gap-2.5 text-sm text-slate-600 hover:text-brand-600">
-              <BrandMark symbol="full" variant="light" size="sm" />
+              <BrandMark symbol="full" variant="light" size="md" />
               <span className="font-semibold text-ink">Global Research Exchange</span>
             </Link>
             {showBackToMap && (

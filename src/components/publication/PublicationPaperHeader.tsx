@@ -1,6 +1,6 @@
 import { metaCountValue } from "../../lib/formatMetaCount";
 import { formatGrePaperTitle, grePaperCode } from "../../lib/grePaperTitle";
-import { assets } from "../../lib/brand";
+import { BrandMark } from "../brand/BrandMark";
 import { AUTHORS_PERSONAL_FEELING_LABEL } from "../../lib/publicationGre";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import type { AuthorByline } from "../../lib/publicationAuthors";
@@ -32,11 +32,7 @@ export interface PublicationPaperHeaderProps {
 function GreBrandBlock({ draft }: Pick<PublicationPaperHeaderProps, "draft">) {
   return (
     <div className="flex shrink-0 flex-col items-start gap-1 sm:items-center sm:gap-2">
-      <img
-        src={assets.logo}
-        alt="Global Research Exchange"
-        className="h-10 w-10 shrink-0 object-contain sm:h-[4.5rem] sm:w-[4.5rem]"
-      />
+      <BrandMark symbol="full" variant="light" size="lg" className="sm:!h-[5rem] sm:!w-[5rem]" />
       {draft && (
         <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
           Draft preview

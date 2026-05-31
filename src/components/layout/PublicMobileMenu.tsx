@@ -70,7 +70,7 @@ export function PublicMobileMenu({
       />
       <div className="public-mobile-menu absolute inset-y-0 right-0 flex w-[min(100%,20rem)] flex-col bg-white shadow-2xl safe-top safe-bottom">
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5">
-          <BrandMark symbol="full" variant="gradient" size="sm" />
+          <BrandMark symbol="full" variant="gradient" size="md" />
           <button
             type="button"
             onClick={onClose}

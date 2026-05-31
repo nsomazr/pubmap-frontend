@@ -15,8 +15,6 @@ export const REFERENCE_ITEM_LIMIT = 5;
 
 /** Composer group for findings + conclusion (no separate Discussion section). */
 export const MANUSCRIPT_FINDINGS_GROUP_TITLE = "Findings & Conclusion";
-export const MANUSCRIPT_FINDINGS_GROUP_DESCRIPTION =
-  "There is no separate Discussion section. Results and Discussion from your manuscript are entered under Findings; use Conclusion for the closing synthesis.";
 
 export type ManuscriptLimitedField = keyof typeof MANUSCRIPT_FIELD_WORD_LIMITS;
 

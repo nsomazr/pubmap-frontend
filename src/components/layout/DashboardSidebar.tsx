@@ -213,7 +213,7 @@ export function DashboardSidebar({
           className={`flex min-w-0 items-center ${showLabels ? "gap-2.5" : ""}`}
           title="GRE home"
         >
-          <BrandMark symbol="full" variant="dark" size="sm" />
+          <BrandMark symbol="full" variant="dark" size="md" />
           {showLabels && (
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold leading-tight">GRE</p>

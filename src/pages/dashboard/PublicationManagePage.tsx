@@ -180,9 +180,15 @@ export function PublicationManagePage() {
     sectionNotes: {},
   });
   const [submitReviewOpen, setSubmitReviewOpen] = useState(false);
+  const [createdDraftId, setCreatedDraftId] = useState<number | null>(null);
+  const [createdDraftEncodedId, setCreatedDraftEncodedId] = useState<string | null>(null);
   const isClosedAccess = gre.access_type === "closed";
 
-  type SaveOptions = { thenSubmit?: boolean };
+  type SaveOptions = { thenSubmit?: boolean; quiet?: boolean };
+
+  const persistedPublicationId =
+    pub?.id ?? createdDraftId ?? (id && !isNew ? Number(id) : null);
+  const persistedEncodedId = pub?.encoded_id ?? createdDraftEncodedId ?? null;
 
   const manuscript: ManuscriptFields = {
     abstract,
@@ -473,12 +479,13 @@ export function PublicationManagePage() {
         coordinates,
         collaborators: buildCollaboratorsPayload(),
       };
-      if (isNew) {
+      if (isNew && !createdDraftId) {
         const { data } = await api.post<Publication>("/publications/", payload);
         return data;
       }
+      const targetId = createdDraftId ?? Number(id);
       const { data } = await api.patch<Publication>(
-        `/publications/${publicationApiSegment(id!)}/`,
+        `/publications/${publicationApiSegment(targetId, persistedEncodedId)}/`,
         payload
       );
       return data;
@@ -508,6 +515,12 @@ export function PublicationManagePage() {
       queryClient.invalidateQueries({ queryKey: ["publications"] });
       queryClient.invalidateQueries({ queryKey: editQueryKey });
       hydratedPublicationId.current = data.id;
+      setCreatedDraftId(data.id);
+      if (data.encoded_id) setCreatedDraftEncodedId(data.encoded_id);
+
+      if (options?.quiet) {
+        return;
+      }
 
       if (options?.thenSubmit) {
         try {
@@ -759,6 +772,21 @@ export function PublicationManagePage() {
       title: "Missing required field",
       description: message,
     });
+  };
+
+  const ensurePublicationForFigures = async (): Promise<number | null> => {
+    if (persistedPublicationId) return persistedPublicationId;
+    const err = getSaveValidationError();
+    if (err) {
+      reportValidationError(err);
+      return null;
+    }
+    try {
+      const data = await saveMutation.mutateAsync({ quiet: true });
+      return data.id;
+    } catch {
+      return null;
+    }
   };
 
   const validateAndSave = (e: React.FormEvent) => {
@@ -1096,18 +1124,13 @@ export function PublicationManagePage() {
                   onChange={setManuscript}
                   sectionNotes={extractionUi.sectionNotes}
                   afterFindings={
-                    !isNew && id ? (
-                      <PublicationFiguresEditor
-                        publicationId={Number(id)}
-                        figures={figures}
-                        onChange={setFigures}
-                      />
-                    ) : (
-                      <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-500">
-                        Save the publication once to upload research figures (below Findings &amp;
-                        Conclusion).
-                      </p>
-                    )
+                    <PublicationFiguresEditor
+                      publicationId={persistedPublicationId ?? 0}
+                      encodedPublicationId={persistedEncodedId}
+                      figures={figures}
+                      onChange={setFigures}
+                      ensurePublicationId={ensurePublicationForFigures}
+                    />
                   }
                 />
               </div>
@@ -1121,127 +1144,7 @@ export function PublicationManagePage() {
           />
         </ComposerStage>
 
-        <ComposerStage number="5" title="Contributors">
-        <section className="space-y-4">
-          <div>
-            <h2 className="font-semibold text-ink">Your role on this publication</h2>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {(
-              [
-                ["lead", "I am the lead author"],
-                ["coauthor", "I am a co-author"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                disabled={isReadOnly}
-                onClick={() => setSubmitterRole(value)}
-                className={`rounded-xl px-4 py-2.5 text-sm font-semibold ring-1 transition ${
-                  submitterRole === value
-                    ? "bg-brand-600 text-white ring-brand-600"
-                    : "bg-white text-slate-700 ring-slate-200 hover:ring-brand-200"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {submitterRole === "coauthor" && (
-            <div className="grid gap-3 rounded-xl border border-brand-100 bg-brand-50/40 p-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Input
-                label="Lead author name"
-                value={leadAuthorName}
-                onChange={(e) => setLeadAuthorName(e.target.value)}
-                disabled={isReadOnly}
-              />
-              <InstitutionPicker
-                value={leadAuthorAffiliation}
-                onChange={setLeadAuthorAffiliation}
-                label="Lead author affiliation"
-                hideHint
-              />
-              <Input
-                label="Lead author email"
-                value={leadAuthorEmail}
-                onChange={(e) => setLeadAuthorEmail(e.target.value)}
-                disabled={isReadOnly}
-              />
-            </div>
-          )}
-        </section>
-
-        <section className="mt-8 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-ink">Additional co-authors</h2>
-            <button
-              type="button"
-              onClick={addCollaborator}
-              className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
-            >
-              <Plus className="h-4 w-4" />
-              Add
-            </button>
-          </div>
-          {collaborators.map((c, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-1 gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 lg:grid-cols-2 xl:grid-cols-4"
-            >
-              <Input
-                label="Name"
-                value={c.fullname}
-                onChange={(e) => {
-                  const next = [...collaborators];
-                  next[i] = { ...c, fullname: e.target.value };
-                  setCollaborators(next);
-                }}
-              />
-              <InstitutionPicker
-                value={c.affiliation}
-                onChange={(affiliation) => {
-                  const next = [...collaborators];
-                  next[i] = { ...c, affiliation };
-                  setCollaborators(next);
-                }}
-                label="Affiliation"
-                hideHint
-              />
-              <Input
-                label="Contribution (optional)"
-                placeholder="e.g. Field lead, Data analysis"
-                value={c.role || ""}
-                onChange={(e) => {
-                  const next = [...collaborators];
-                  next[i] = { ...c, role: e.target.value };
-                  setCollaborators(next);
-                }}
-              />
-              <div className="flex items-end gap-2">
-                <Input
-                  label="Email"
-                  value={c.email || ""}
-                  onChange={(e) => {
-                    const next = [...collaborators];
-                    next[i] = { ...c, email: e.target.value };
-                    setCollaborators(next);
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setCollaborators(collaborators.filter((_, j) => j !== i))}
-                  className="mb-0.5 rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </section>
-        </ComposerStage>
-
-        <ComposerStage number="6" title="Access & submit">
+        <ComposerStage number="5" title="Access & submit">
           <div className="space-y-8">
             <PublicationAccessFields
               gre={gre}
@@ -1259,6 +1162,126 @@ export function PublicationManagePage() {
             )}
 
           </div>
+        </ComposerStage>
+
+        <ComposerStage number="6" title="Contributors">
+          <section className="space-y-4">
+            <div>
+              <h2 className="font-semibold text-ink">Your role on this publication</h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  ["lead", "I am the lead author"],
+                  ["coauthor", "I am a co-author"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  disabled={isReadOnly}
+                  onClick={() => setSubmitterRole(value)}
+                  className={`rounded-xl px-4 py-2.5 text-sm font-semibold ring-1 transition ${
+                    submitterRole === value
+                      ? "bg-brand-600 text-white ring-brand-600"
+                      : "bg-white text-slate-700 ring-slate-200 hover:ring-brand-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {submitterRole === "coauthor" && (
+              <div className="grid gap-3 rounded-xl border border-brand-100 bg-brand-50/40 p-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Input
+                  label="Lead author name"
+                  value={leadAuthorName}
+                  onChange={(e) => setLeadAuthorName(e.target.value)}
+                  disabled={isReadOnly}
+                />
+                <InstitutionPicker
+                  value={leadAuthorAffiliation}
+                  onChange={setLeadAuthorAffiliation}
+                  label="Lead author affiliation"
+                  hideHint
+                />
+                <Input
+                  label="Lead author email"
+                  value={leadAuthorEmail}
+                  onChange={(e) => setLeadAuthorEmail(e.target.value)}
+                  disabled={isReadOnly}
+                />
+              </div>
+            )}
+          </section>
+
+          <section className="mt-8 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-ink">Additional co-authors</h2>
+              <button
+                type="button"
+                onClick={addCollaborator}
+                className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
+              >
+                <Plus className="h-4 w-4" />
+                Add
+              </button>
+            </div>
+            {collaborators.map((c, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-1 gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 lg:grid-cols-2 xl:grid-cols-4"
+              >
+                <Input
+                  label="Name"
+                  value={c.fullname}
+                  onChange={(e) => {
+                    const next = [...collaborators];
+                    next[i] = { ...c, fullname: e.target.value };
+                    setCollaborators(next);
+                  }}
+                />
+                <InstitutionPicker
+                  value={c.affiliation}
+                  onChange={(affiliation) => {
+                    const next = [...collaborators];
+                    next[i] = { ...c, affiliation };
+                    setCollaborators(next);
+                  }}
+                  label="Affiliation"
+                  hideHint
+                />
+                <Input
+                  label="Contribution (optional)"
+                  placeholder="e.g. Field lead, Data analysis"
+                  value={c.role || ""}
+                  onChange={(e) => {
+                    const next = [...collaborators];
+                    next[i] = { ...c, role: e.target.value };
+                    setCollaborators(next);
+                  }}
+                />
+                <div className="flex items-end gap-2">
+                  <Input
+                    label="Email"
+                    value={c.email || ""}
+                    onChange={(e) => {
+                      const next = [...collaborators];
+                      next[i] = { ...c, email: e.target.value };
+                      setCollaborators(next);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCollaborators(collaborators.filter((_, j) => j !== i))}
+                    className="mb-0.5 rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </section>
         </ComposerStage>
 
         <ComposerStage number="7" title={AUTHORS_PERSONAL_FEELING_LABEL}>
