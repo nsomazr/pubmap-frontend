@@ -1,6 +1,7 @@
 import { metaCountValue } from "../../lib/formatMetaCount";
 import { formatGrePaperTitle, grePaperCode } from "../../lib/grePaperTitle";
 import { assets } from "../../lib/brand";
+import { AUTHORS_PERSONAL_FEELING_LABEL } from "../../lib/publicationGre";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import type { AuthorByline } from "../../lib/publicationAuthors";
 import { PublicationAuthorByline } from "./PublicationAuthorByline";
@@ -243,8 +244,8 @@ export function PublicationPaperHeader({
 
       {authorsComment?.trim() && (
         <div className="border-t border-slate-100 px-5 py-4 sm:px-7">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
-            Author&apos;s Comment
+          <h2 className="text-sm font-bold leading-snug text-brand-600">
+            {AUTHORS_PERSONAL_FEELING_LABEL}
           </h2>
           <ManuscriptContent
             value={authorsComment.trim()}

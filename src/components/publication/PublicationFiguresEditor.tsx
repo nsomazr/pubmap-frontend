@@ -1,4 +1,4 @@
-import { ImagePlus, Trash2, ZoomIn } from "lucide-react";
+import { ImagePlus, Trash2, Upload, X, ZoomIn } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   deleteFigure,
@@ -15,51 +15,106 @@ interface Props {
   figures: PublicationFigure[];
   onChange: (figures: PublicationFigure[]) => void;
   readOnly?: boolean;
+  variant?: "composer" | "public";
 }
+
+type PendingUpload = {
+  key: string;
+  file: File;
+  caption: string;
+  previewUrl: string;
+};
 
 function figureLabel(fig: PublicationFigure, index: number): string {
   return fig.figure_number?.trim() || `Figure ${index + 1}`;
 }
 
-export function PublicationFiguresEditor({ publicationId, figures, onChange, readOnly }: Props) {
+function shellClass(variant: "composer" | "public") {
+  return variant === "public"
+    ? "gre-public-card min-w-0 overflow-hidden p-6 sm:p-8"
+    : "rounded-2xl border border-slate-200 bg-white p-5 ring-1 ring-slate-200/80 sm:p-6";
+}
+
+export function PublicationFiguresEditor({
+  publicationId,
+  figures,
+  onChange,
+  readOnly,
+  variant = "composer",
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [preview, setPreview] = useState<PublicationFigure | null>(null);
-  const [draft, setDraft] = useState({ caption: "" });
+  const [pending, setPending] = useState<PendingUpload[]>([]);
+  const pendingRef = useRef(pending);
+  pendingRef.current = pending;
   const [captions, setCaptions] = useState<Record<number, string>>({});
   const [savingCaptionId, setSavingCaptionId] = useState<number | null>(null);
 
   useEffect(() => {
     setCaptions(
-      Object.fromEntries(
-        figures.map((fig) => [fig.id, fig.caption?.trim() || ""])
-      )
+      Object.fromEntries(figures.map((fig) => [fig.id, fig.caption?.trim() || ""]))
     );
   }, [figures]);
 
-  const onFiles = async (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file || readOnly) return;
-    const caption = draft.caption.trim();
-    if (!caption) {
-      setUploadError("Enter a figure caption before uploading.");
+  useEffect(
+    () => () => {
+      pendingRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+    },
+    []
+  );
+
+  const queueFiles = (files: FileList | null) => {
+    if (!files?.length || readOnly) return;
+    const next = Array.from(files).map((file) => ({
+      key: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
+      file,
+      caption: "",
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setPending((prev) => [...prev, ...next]);
+    setUploadError("");
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const removePending = (key: string) => {
+    setPending((prev) => {
+      const item = prev.find((p) => p.key === key);
+      if (item) URL.revokeObjectURL(item.previewUrl);
+      return prev.filter((p) => p.key !== key);
+    });
+  };
+
+  const uploadPending = async () => {
+    if (!pending.length || readOnly) return;
+    const missing = pending.filter((p) => !p.caption.trim());
+    if (missing.length) {
+      setUploadError("Add a caption for each figure before uploading.");
       return;
     }
     setUploading(true);
     setUploadError("");
+    const uploaded: PublicationFigure[] = [];
     try {
-      const fig = (await uploadFigure(publicationId, file, { caption })) as PublicationFigure;
-      onChange([...figures, fig]);
-      setDraft({ caption: "" });
+      for (const item of pending) {
+        const fig = (await uploadFigure(publicationId, item.file, {
+          caption: item.caption.trim(),
+        })) as PublicationFigure;
+        uploaded.push(fig);
+        URL.revokeObjectURL(item.previewUrl);
+      }
+      onChange([...figures, ...uploaded]);
+      setPending([]);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
       setUploadError(
-        e.response?.data?.detail || "Figure upload failed. Use JPG, PNG, GIF, WEBP, or SVG under 10 MB."
+        e.response?.data?.detail ||
+          "Figure upload failed. Use JPG, PNG, GIF, WEBP, or SVG under 10 MB."
       );
+      if (uploaded.length) onChange([...figures, ...uploaded]);
     } finally {
       setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
     }
   };
 
@@ -81,74 +136,121 @@ export function PublicationFiguresEditor({ publicationId, figures, onChange, rea
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 ring-1 ring-slate-200/80 sm:p-6">
+    <section className={shellClass(variant)}>
       <h3 className="text-sm font-bold uppercase tracking-wider text-brand-600">Research figures</h3>
-
       {!readOnly && (
-        <div className="mt-3">
-          <Input
-            label="Figure caption"
-            value={draft.caption}
-            onChange={(e) => setDraft((d) => ({ ...d, caption: e.target.value }))}
-            placeholder="Describe what this figure shows"
-          />
-        </div>
+        <p className="mt-1 text-xs leading-relaxed text-slate-500">
+          Upload one or more images. Each figure needs its own caption. Figures appear after Findings
+          &amp; Conclusion in the paper preview, publication page, and PDF.
+        </p>
       )}
 
       {!readOnly && (
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <input
             ref={inputRef}
             type="file"
             accept="image/*"
+            multiple
             className="hidden"
-            onChange={(e) => onFiles(e.target.files)}
+            onChange={(e) => queueFiles(e.target.files)}
           />
-          <Button
-            type="button"
-            variant="secondary"
-            loading={uploading}
-            onClick={() => inputRef.current?.click()}
-          >
+          <Button type="button" variant="secondary" onClick={() => inputRef.current?.click()}>
             <ImagePlus className="h-4 w-4" />
-            Add figure
+            Choose images
           </Button>
-          {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
+          {pending.length > 0 && (
+            <Button type="button" loading={uploading} onClick={uploadPending}>
+              <Upload className="h-4 w-4" />
+              Upload {pending.length} figure{pending.length === 1 ? "" : "s"}
+            </Button>
+          )}
         </div>
       )}
 
+      {!readOnly && pending.length > 0 && (
+        <ul className="mt-4 space-y-3">
+          {pending.map((item, index) => (
+            <li
+              key={item.key}
+              className="flex flex-col gap-3 rounded-xl border border-brand-100 bg-brand-50/30 p-3 sm:flex-row sm:items-start"
+            >
+              <img
+                src={item.previewUrl}
+                alt=""
+                className="h-28 w-full shrink-0 rounded-lg border border-slate-200 bg-white object-contain sm:h-24 sm:w-36"
+              />
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className="text-xs font-semibold text-slate-600">
+                  Pending figure {index + 1} · {item.file.name}
+                </p>
+                <Input
+                  label="Caption"
+                  value={item.caption}
+                  onChange={(e) =>
+                    setPending((prev) =>
+                      prev.map((p) =>
+                        p.key === item.key ? { ...p, caption: e.target.value } : p
+                      )
+                    )
+                  }
+                  placeholder="Describe what this figure shows"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => removePending(item.key)}
+                className="self-start rounded-lg p-2 text-slate-400 hover:bg-white hover:text-red-600"
+                aria-label="Remove pending figure"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
+
       {figures.length > 0 ? (
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {figures.map((fig, index) => {
             const src = mediaUrl(fig.photo);
             const captionText = (readOnly ? fig.caption : captions[fig.id])?.trim() || "";
             return (
-              <figure key={fig.id} className="group overflow-hidden rounded-xl ring-1 ring-slate-200">
-                <button type="button" className="relative block w-full" onClick={() => setPreview(fig)}>
+              <figure
+                key={fig.id}
+                className="flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50/50 shadow-sm"
+              >
+                <button
+                  type="button"
+                  className="group relative block w-full bg-white"
+                  onClick={() => setPreview(fig)}
+                >
                   {src ? (
                     <img
                       src={src}
                       alt={captionText || figureLabel(fig, index)}
                       loading="lazy"
                       decoding="async"
-                      className="aspect-[4/3] w-full object-cover transition group-hover:scale-[1.02]"
+                      className="max-h-64 min-h-[12rem] w-full object-contain p-3 transition group-hover:opacity-95"
                     />
                   ) : (
-                    <div className="flex aspect-[4/3] items-center justify-center bg-slate-100 text-slate-400">
+                    <div className="flex min-h-[12rem] items-center justify-center bg-slate-100 text-slate-400">
                       No preview
                     </div>
                   )}
-                  <span className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 shadow">
+                  <span className="absolute right-2 top-2 rounded-full bg-white/95 p-1.5 shadow ring-1 ring-slate-200/80">
                     <ZoomIn className="h-4 w-4 text-brand-600" />
                   </span>
                 </button>
-                <figcaption className="space-y-2 p-3 text-sm">
+                <figcaption className="space-y-2 border-t border-slate-100 bg-white p-3 text-sm">
                   <p className="text-xs font-bold uppercase tracking-wide text-brand-600">
                     {figureLabel(fig, index)}
                   </p>
                   {!readOnly ? (
                     <Input
-                      label="Figure caption"
+                      label="Caption"
                       value={captions[fig.id] ?? ""}
                       onChange={(e) =>
                         setCaptions((prev) => ({ ...prev, [fig.id]: e.target.value }))
@@ -157,7 +259,9 @@ export function PublicationFiguresEditor({ publicationId, figures, onChange, rea
                       placeholder="Describe what this figure shows"
                     />
                   ) : (
-                    <p className={`leading-relaxed ${captionText ? "text-slate-700" : "text-slate-400 italic"}`}>
+                    <p
+                      className={`leading-relaxed ${captionText ? "text-slate-700" : "italic text-slate-400"}`}
+                    >
                       {captionText || "No caption provided."}
                     </p>
                   )}
@@ -179,24 +283,46 @@ export function PublicationFiguresEditor({ publicationId, figures, onChange, rea
           })}
         </div>
       ) : (
-        <p className="mt-4 text-sm text-slate-500">No figures uploaded yet.</p>
+        !readOnly &&
+        !pending.length && (
+          <p className="mt-4 text-sm text-slate-500">No figures uploaded yet.</p>
+        )
       )}
 
       {preview && (
         <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/80 p-4"
+          className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/85 p-4 backdrop-blur-sm"
           onClick={() => setPreview(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Figure preview"
         >
-          <div className="max-w-4xl" onClick={(e) => e.stopPropagation()}>
+          <div className="max-h-full max-w-5xl w-full" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+              onClick={() => setPreview(null)}
+              aria-label="Close preview"
+            >
+              <X className="h-5 w-5" />
+            </button>
             <img
               src={mediaUrl(preview.photo) || ""}
               alt={preview.caption || "Figure preview"}
               loading="eager"
-              className="max-h-[80vh] max-w-full rounded-lg shadow-2xl"
+              className="mx-auto max-h-[min(82vh,900px)] w-auto max-w-full rounded-lg object-contain shadow-2xl"
             />
-            {(preview.caption || "").trim() && (
-              <p className="mt-3 text-center text-sm text-white/90">{preview.caption}</p>
-            )}
+            <div className="mt-3 text-center text-sm text-white/95">
+              <p className="font-semibold">
+                {figureLabel(
+                  preview,
+                  Math.max(0, figures.findIndex((f) => f.id === preview.id))
+                )}
+              </p>
+              {(preview.caption || "").trim() && (
+                <p className="mt-1 max-w-2xl mx-auto leading-relaxed">{preview.caption}</p>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -204,7 +330,21 @@ export function PublicationFiguresEditor({ publicationId, figures, onChange, rea
   );
 }
 
-export function PublicationFiguresGallery({ figures }: { figures: PublicationFigure[] }) {
+export function PublicationFiguresGallery({
+  figures,
+  variant = "public",
+}: {
+  figures: PublicationFigure[];
+  variant?: "composer" | "public";
+}) {
   if (!figures.length) return null;
-  return <PublicationFiguresEditor publicationId={0} figures={figures} onChange={() => {}} readOnly />;
+  return (
+    <PublicationFiguresEditor
+      publicationId={0}
+      figures={figures}
+      onChange={() => {}}
+      readOnly
+      variant={variant}
+    />
+  );
 }

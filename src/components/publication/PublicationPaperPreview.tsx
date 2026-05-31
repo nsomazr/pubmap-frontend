@@ -1,8 +1,10 @@
 import { PdfPreview } from "./PdfPreview";
 import { ManuscriptContent } from "./ManuscriptContent";
+import { PublicationFiguresGallery } from "./PublicationFiguresEditor";
 import { PublicationManuscriptSection } from "./PublicationManuscriptSection";
 import { PublicationPaperHeader } from "./PublicationPaperHeader";
 import type { AuthorByline } from "../../lib/publicationAuthors";
+import type { PublicationFigure } from "../../lib/publicationGre";
 import type { SubcategoryVisual } from "../../types";
 
 export interface PublicationPaperPreviewData {
@@ -29,6 +31,7 @@ export interface PublicationPaperPreviewData {
   greDoi?: string | null;
   accessType?: "open" | "closed";
   authorsComment?: string | null;
+  figures?: PublicationFigure[];
 }
 
 interface Props {
@@ -98,6 +101,8 @@ export function PublicationPaperPreview({
         <PublicationManuscriptSection title="Findings" body={data.findings} />
         <PublicationManuscriptSection title="Conclusion" body={data.conclusion} />
       </div>
+
+      <PublicationFiguresGallery figures={data.figures ?? []} />
 
       {canShowPdf && (
         <section className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white">

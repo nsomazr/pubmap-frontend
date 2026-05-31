@@ -20,6 +20,13 @@ const iconSizes: Record<Size, string> = {
   xl: "h-10 w-10",
 };
 
+const floatCircleSizes: Record<Size, string> = {
+  sm: "h-9 w-9 p-1",
+  md: "h-11 w-11 p-1.5",
+  lg: "h-12 w-12 p-1.5",
+  xl: "h-14 w-14 p-2",
+};
+
 const plateStyles: Record<Exclude<Variant, "plain">, string> = {
   light:
     "rounded-xl bg-white px-2 py-1.5 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.25)] ring-1 ring-slate-200/90",
@@ -27,7 +34,7 @@ const plateStyles: Record<Exclude<Variant, "plain">, string> = {
   gradient:
     "rounded-xl bg-white px-2.5 py-2 shadow-[0_6px_24px_-6px_rgba(59,91,219,0.35)] ring-1 ring-white/80",
   float:
-    "rounded-full bg-white px-2.5 py-1.5 shadow-[0_8px_28px_-6px_rgba(15,23,42,0.35)] ring-2 ring-white",
+    "rounded-full bg-white shadow-[0_8px_28px_-6px_rgba(15,23,42,0.35)] ring-2 ring-white",
 };
 
 interface Props {
@@ -49,15 +56,19 @@ export function BrandMark({
   title = "Global Research Exchange",
 }: Props) {
   const src = symbol === "full" ? assets.logo : assets.mapLogo;
-  const imgClass =
-    symbol === "full"
+  const isFloatCircle = variant === "float";
+  const imgClass = isFloatCircle
+    ? "h-full w-full object-contain"
+    : symbol === "full"
       ? `${logoSizes[size]} w-auto object-contain`
       : `${iconSizes[size]} object-contain`;
 
   const shellClass =
     variant === "plain"
       ? `inline-flex shrink-0 items-center ${className}`
-      : `inline-flex shrink-0 items-center justify-center ${plateStyles[variant]} ${className}`;
+      : isFloatCircle
+        ? `inline-flex shrink-0 items-center justify-center ${plateStyles.float} ${floatCircleSizes[size]} ${className}`
+        : `inline-flex shrink-0 items-center justify-center ${plateStyles[variant]} ${className}`;
 
   const image = (
     <img src={src} alt="Global Research Exchange" className={imgClass} draggable={false} />

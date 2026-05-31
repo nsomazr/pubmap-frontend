@@ -4,6 +4,8 @@ import { RichTextEditor } from "../editor/RichTextEditor";
 import { Input } from "../ui/Input";
 import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
+  MANUSCRIPT_FINDINGS_GROUP_DESCRIPTION,
+  MANUSCRIPT_FINDINGS_GROUP_TITLE,
   normalizeFunderField,
   formatWordLimitHint,
   truncateToWordLimit,
@@ -27,6 +29,8 @@ interface Props {
   fields: ManuscriptFields;
   onChange: (key: keyof ManuscriptFields, value: string) => void;
   sectionNotes?: Partial<Record<"title" | keyof ManuscriptFields, string>>;
+  /** Rendered after Findings & Conclusion, before Funding & references. */
+  afterFindings?: ReactNode;
 }
 
 function ManuscriptGroup({
@@ -67,6 +71,7 @@ export function ManuscriptSectionsEditor({
   fields,
   onChange,
   sectionNotes = {},
+  afterFindings,
 }: Props) {
   return (
     <div className="space-y-6">
@@ -130,24 +135,29 @@ export function ManuscriptSectionsEditor({
         <FieldExtractionNote note={sectionNotes.methods} />
       </ManuscriptGroup>
 
-      <ManuscriptGroup title="Discussion & closing">
+      <ManuscriptGroup
+        title={MANUSCRIPT_FINDINGS_GROUP_TITLE}
+        description={MANUSCRIPT_FINDINGS_GROUP_DESCRIPTION}
+      >
         <RichTextEditor
           label="Findings"
           value={fields.findings}
           onChange={(v) => onChange("findings", v)}
-          placeholder="Interpret results and relate them to the literature…"
+          placeholder="Results, interpretation, and discussion from your paper…"
           maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.findings}
         />
         <FieldExtractionNote note={sectionNotes.findings} />
         <RichTextEditor
-          label="Conclusion (optional)"
+          label="Conclusion"
           value={fields.conclusion}
           onChange={(v) => onChange("conclusion", v)}
-          placeholder="Summarise implications and future work…"
+          placeholder="Closing synthesis, implications, and future work…"
           maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.conclusion}
         />
         <FieldExtractionNote note={sectionNotes.conclusion} />
       </ManuscriptGroup>
+
+      {afterFindings}
 
       <ManuscriptGroup title="Funding & references">
         <Input

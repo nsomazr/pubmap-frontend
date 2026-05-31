@@ -11,7 +11,7 @@ import { PdfPreview } from "../components/publication/PdfPreview";
 import { PublicationDiscussions } from "../components/publication/PublicationDiscussions";
 import { CoAuthorsPanel } from "../components/publication/CoAuthorsPanel";
 import { PublicationDownloadPanel } from "../components/publication/PublicationDownloadPanel";
-import { PublicationFiguresEditor } from "../components/publication/PublicationFiguresEditor";
+import { PublicationFiguresGallery } from "../components/publication/PublicationFiguresEditor";
 import { PublicationManuscriptSection } from "../components/publication/PublicationManuscriptSection";
 import { PublicationPaperHeader } from "../components/publication/PublicationPaperHeader";
 import { UserAvatar } from "../components/ui/UserAvatar";
@@ -213,16 +213,8 @@ export function PublicationDetailPage() {
                   ))}
                 </div>
               )}
+              <PublicationFiguresGallery figures={pub.figures ?? []} />
             </>
-          )}
-
-          {(pub.figures?.length ?? 0) > 0 && (
-            <PublicationFiguresEditor
-              publicationId={pub.id}
-              figures={pub.figures ?? []}
-              onChange={() => {}}
-              readOnly
-            />
           )}
 
           {pub.coordinates && <StudyLocationSection publication={pub} />}

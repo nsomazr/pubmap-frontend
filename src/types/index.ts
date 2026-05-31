@@ -124,7 +124,7 @@ export interface Publication {
   findings?: string;
   funder?: string;
   references?: string;
-  admin_comments?: { id: number; comment: string }[];
+  admin_comments?: PublicationComment[];
   plagiarism_summary?: PublicationPlagiarismSummary | null;
   plagiarism_claims?: PublicationPlagiarismClaim[];
   score?: number;

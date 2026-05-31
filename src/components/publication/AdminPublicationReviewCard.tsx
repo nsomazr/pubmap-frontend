@@ -16,7 +16,7 @@ import api from "../../lib/api";
 import { publicationApiSegment } from "../../lib/publicationPaths";
 import { abstractPlainText } from "../../lib/abstractText";
 import { authorBylineFromPublication } from "../../lib/publicationAuthors";
-import { reviewManuscriptPdfUrl } from "../../lib/publicationGre";
+import { AUTHORS_PERSONAL_FEELING_LABEL, reviewManuscriptPdfUrl } from "../../lib/publicationGre";
 import { authorDisplayName } from "../../lib/userDisplay";
 import { PublicationAuthorByline } from "./PublicationAuthorByline";
 import { PublicationManuscriptSection } from "./PublicationManuscriptSection";
@@ -90,7 +90,9 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
       queryClient.invalidateQueries({ queryKey: ["admin-review"] });
       queryClient.invalidateQueries({ queryKey: ["publications"] });
       queryClient.invalidateQueries({ queryKey: ["publication-review", pub.id] });
-      queryClient.invalidateQueries({ queryKey: ["publication-edit", String(pub.id)] });
+      queryClient.invalidateQueries({
+        queryKey: ["publication-edit", publicationApiSegment(pub.id, pub.encoded_id)],
+      });
       onReviewed?.();
     },
   });
@@ -105,7 +107,9 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
       setCommentText("");
       queryClient.invalidateQueries({ queryKey: ["admin-review"] });
       queryClient.invalidateQueries({ queryKey: ["publication-review", pub.id] });
-      queryClient.invalidateQueries({ queryKey: ["publication-edit", String(pub.id)] });
+      queryClient.invalidateQueries({
+        queryKey: ["publication-edit", publicationApiSegment(pub.id, pub.encoded_id)],
+      });
       onReviewed?.();
     },
   });
@@ -270,7 +274,7 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
           {reviewPub.gre?.authors_comment?.trim() && (
             <div className="border-t border-slate-100 p-4 sm:p-5">
               <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                Authors&apos; comment
+                {AUTHORS_PERSONAL_FEELING_LABEL}
               </h4>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
                 {reviewPub.gre.authors_comment.trim()}

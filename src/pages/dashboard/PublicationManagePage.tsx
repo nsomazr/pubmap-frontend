@@ -10,7 +10,7 @@ import {
   Send,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { LocationPicker } from "../../components/map/LocationPicker";
 import { PageHeader } from "../../components/dashboard/PageHeader";
@@ -50,6 +50,8 @@ import { useAuth } from "../../context/AuthContext";
 import api, { parseApiError } from "../../lib/api";
 import { sanitizeExtractionWarnings } from "../../lib/extractionWarnings";
 import { PublicationFiguresEditor } from "../../components/publication/PublicationFiguresEditor";
+import { RevisionFeedbackBanner } from "../../components/publication/RevisionFeedbackBanner";
+import { primaryManuscriptPath } from "../../lib/publicationDocuments";
 import { PublicationSupplementaryUpload } from "../../components/publication/PublicationSupplementaryUpload";
 import { renderManuscriptHtml } from "../../lib/renderManuscriptHtml";
 import {
@@ -61,6 +63,7 @@ import {
 } from "../../lib/manuscriptFieldLimits";
 import { useToast } from "../../components/ui/ToastProvider";
 import {
+  AUTHORS_PERSONAL_FEELING_LABEL,
   updatePublicationGre,
   type GreDocument,
   type PublicationAccessType,
@@ -251,21 +254,37 @@ export function PublicationManagePage() {
     },
   });
 
-  const { data: pub, isLoading } = useQuery({
-    queryKey: ["publication-edit", id],
+  const editQueryKey = useMemo(() => ["publication-edit", id] as const, [id]);
+
+  const {
+    data: pub,
+    isLoading,
+    isError: pubLoadError,
+    refetch: refetchPublication,
+  } = useQuery({
+    queryKey: editQueryKey,
     enabled: !isNew && !!id,
     queryFn: async () => {
       const { data } = await api.get<Publication>(`/publications/${publicationApiSegment(id!)}/`);
       return data;
     },
+    staleTime: 30_000,
   });
+
+  const hydratedPublicationId = useRef<number | null>(null);
 
   const canReviewThis =
     Boolean(pub) &&
     canReviewPublication(user, { status: pub!.status, sub_category_id: pub!.sub_category_id });
 
   useEffect(() => {
-    if (!pub) return;
+    if (!pub) {
+      hydratedPublicationId.current = null;
+      return;
+    }
+    if (hydratedPublicationId.current === pub.id) return;
+    hydratedPublicationId.current = pub.id;
+
     setTitle(pub.title);
     setAbstract(pub.abstract ?? "");
     setIntroduction(pub.introduction ?? "");
@@ -276,20 +295,16 @@ export function PublicationManagePage() {
     setReferences(limitReferences(pub.references ?? "", pub.title ?? ""));
     setKeywords(formatKeywords(pub.keywords));
     setSubCategoryId(pub.sub_category_id ? String(pub.sub_category_id) : "");
-    if (pub.sub_category_id && categories.length) {
-      const cat = categories.find((c) =>
-        c.sub_categories?.some((s) => s.id === pub.sub_category_id)
-      );
-      if (cat) setCategoryId(String(cat.id));
-    }
     if (pub.coordinates) {
       setCoordinates({
         ...pub.coordinates,
         institution:
           pub.coordinates.institution?.trim() || user?.affiliation?.trim() || "",
       });
+    } else {
+      setCoordinates(emptyCoord());
     }
-    if (pub.collaborators) {
+    if (pub.collaborators?.length) {
       const lead = pub.collaborators.find((c) => /^lead author$/i.test((c.role || "").trim()));
       const submitterEmail = (pub.author?.email || user?.email || "").trim().toLowerCase();
       const leadEmail = (lead?.email || "").trim().toLowerCase();
@@ -310,11 +325,25 @@ export function PublicationManagePage() {
         setSubmitterRole("lead");
         setCollaborators(pub.collaborators);
       }
+    } else {
+      setSubmitterRole("lead");
+      setCollaborators([]);
     }
     setGre(pub.gre ?? { access_type: "open" });
     setFigures(pub.figures ?? pub.photos ?? []);
     setAccessTypeChosen(true);
-  }, [pub, categories, user?.affiliation]);
+    setPendingDocument(null);
+    setExtractionUi({ status: "idle", warnings: [], sectionNotes: {} });
+    if (pub.status === 2) setComposerTab("editor");
+  }, [pub, user?.affiliation, user?.email]);
+
+  useEffect(() => {
+    if (!pub?.sub_category_id || !categories.length) return;
+    const cat = categories.find((c) =>
+      c.sub_categories?.some((s) => s.id === pub.sub_category_id)
+    );
+    if (cat) setCategoryId(String(cat.id));
+  }, [pub?.sub_category_id, categories]);
 
   useEffect(() => {
     if (!isNew) return;
@@ -477,7 +506,8 @@ export function PublicationManagePage() {
         }
       }
       queryClient.invalidateQueries({ queryKey: ["publications"] });
-      queryClient.invalidateQueries({ queryKey: ["publication-edit", String(data.id)] });
+      queryClient.invalidateQueries({ queryKey: editQueryKey });
+      hydratedPublicationId.current = data.id;
 
       if (options?.thenSubmit) {
         try {
@@ -524,7 +554,7 @@ export function PublicationManagePage() {
     mutationFn: () =>
       api.post(`/publications/${publicationApiSegment(id!, pub?.encoded_id)}/accept/`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["publication-edit", id] });
+      queryClient.invalidateQueries({ queryKey: editQueryKey });
       queryClient.invalidateQueries({ queryKey: ["publications"] });
     },
   });
@@ -536,7 +566,7 @@ export function PublicationManagePage() {
       }),
     onSuccess: () => {
       setAdminNote("");
-      queryClient.invalidateQueries({ queryKey: ["publication-edit", id] });
+      queryClient.invalidateQueries({ queryKey: editQueryKey });
     },
   });
 
@@ -547,14 +577,17 @@ export function PublicationManagePage() {
   });
 
   const isOwner = Boolean(pub && pub.author?.id === user?.id);
-  const isReadOnly = Boolean(pub && (pub.status === 4 || pub.status === 6));
+  const canEditForm = isNew || isOwner || isAdmin;
+  const isReadOnly = Boolean(
+    pub && (pub.status === 4 || pub.status === 6 || (!canEditForm && !isNew))
+  );
   const canSubmit =
     pub && (pub.status === 0 || pub.status === 2) && isOwner && !isReadOnly;
 
   const addCollaborator = () =>
     setCollaborators([...collaborators, { fullname: "", affiliation: "", email: "", role: "" }]);
 
-  const existingDocPath = pub?.documents?.[0]?.document ?? null;
+  const existingDocPath = primaryManuscriptPath(pub);
   const hasDocument = Boolean(pendingDocument || existingDocPath);
   const showComposer = accessTypeChosen || !isNew;
 
@@ -644,6 +677,7 @@ export function PublicationManagePage() {
       location: coordinates.location,
       accessType: gre.access_type,
       authorsComment: gre.authors_comment,
+      figures,
       greDoi: gre.gre_doi ?? pub?.gre?.gre_doi ?? null,
       viewsCount: pub?.views_count ?? 0,
       downloadsCount: pub?.downloads_count ?? 0,
@@ -672,6 +706,7 @@ export function PublicationManagePage() {
       gre.authors_comment,
       gre.gre_doi,
       pub?.gre?.gre_doi,
+      figures,
     ]
   );
 
@@ -753,6 +788,28 @@ export function PublicationManagePage() {
 
   if (!isNew && isLoading) {
     return <p className="text-slate-500">Loading publication…</p>;
+  }
+
+  if (!isNew && !isLoading && (pubLoadError || !pub)) {
+    return (
+      <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-6">
+        <p className="font-semibold text-red-900">Could not load this publication</p>
+        <p className="mt-2 text-sm text-red-800/90">
+          Your draft or revision data could not be retrieved. Check your connection and try again.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Button type="button" variant="secondary" onClick={() => refetchPublication()}>
+            Retry
+          </Button>
+          <Link
+            to="/dashboard/publications?status=2"
+            className="inline-flex items-center text-sm font-semibold text-brand-600 hover:underline"
+          >
+            Back to revisions
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -847,22 +904,6 @@ export function PublicationManagePage() {
         </section>
       )}
 
-      {!isNew && pub?.status === 2 && (pub.admin_comments?.length ?? 0) > 0 && (
-        <section id="feedback" className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-amber-900">
-            <AlertCircle className="h-4 w-4" />
-            Admin revision notes
-          </h2>
-          <ul className="mt-3 space-y-3">
-            {pub.admin_comments!.map((c) => (
-              <li key={c.id} className="rounded-xl bg-white/80 px-4 py-3 text-sm text-amber-950">
-                {c.comment}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       {canReviewThis && !isNew && pub && pub.status === 1 && (
         <section id="review" className="mb-8 scroll-mt-6">
           <AdminPublicationReviewCard pub={pub} />
@@ -923,6 +964,15 @@ export function PublicationManagePage() {
         />
       )}
 
+      {showComposer && !isNew && pub?.status === 2 && isOwner && (
+        <div className="mb-6">
+          <RevisionFeedbackBanner
+            comments={pub.admin_comments ?? []}
+            revisionRequested
+          />
+        </div>
+      )}
+
       {showComposer && (
         <div className="mb-6 flex flex-wrap gap-2 rounded-2xl bg-slate-100/90 p-1.5 ring-1 ring-slate-200/70">
           <button
@@ -967,8 +1017,9 @@ export function PublicationManagePage() {
       <form className={`space-y-8${isReadOnly ? " pointer-events-none opacity-60" : ""}`} onSubmit={validateAndSave}>
         {isReadOnly && (
           <p className="pointer-events-auto rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
-            This publication is {pub?.status === 6 ? "deleted" : "archived"} and cannot be edited until
-            restored.
+            {pub?.status === 6 || pub?.status === 4
+              ? `This publication is ${pub?.status === 6 ? "deleted" : "archived"} and cannot be edited until restored.`
+              : "Only the publication author can edit this submission."}
           </p>
         )}
         {composerTab === "preview" && (
@@ -1044,6 +1095,20 @@ export function PublicationManagePage() {
                   fields={manuscript}
                   onChange={setManuscript}
                   sectionNotes={extractionUi.sectionNotes}
+                  afterFindings={
+                    !isNew && id ? (
+                      <PublicationFiguresEditor
+                        publicationId={Number(id)}
+                        figures={figures}
+                        onChange={setFigures}
+                      />
+                    ) : (
+                      <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-500">
+                        Save the publication once to upload research figures (below Findings &amp;
+                        Conclusion).
+                      </p>
+                    )
+                  }
                 />
               </div>
             </ComposerStage>
@@ -1193,17 +1258,10 @@ export function PublicationManagePage() {
               />
             )}
 
-            {!isNew && id && (
-              <PublicationFiguresEditor
-                publicationId={Number(id)}
-                figures={figures}
-                onChange={setFigures}
-              />
-            )}
           </div>
         </ComposerStage>
 
-        <ComposerStage number="7" title="Authors' comment">
+        <ComposerStage number="7" title={AUTHORS_PERSONAL_FEELING_LABEL}>
           <AuthorsCommentSection gre={gre} onChange={setGre} disabled={isReadOnly} />
         </ComposerStage>
 

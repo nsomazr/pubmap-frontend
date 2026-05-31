@@ -1,5 +1,5 @@
 import { MessageSquareText } from "lucide-react";
-import type { PublicationGre } from "../../lib/publicationGre";
+import { AUTHORS_PERSONAL_FEELING_LABEL, type PublicationGre } from "../../lib/publicationGre";
 import { Textarea } from "../ui/Textarea";
 
 interface Props {
@@ -16,16 +16,17 @@ export function AuthorsCommentSection({ gre, onChange, disabled }: Props) {
           <MessageSquareText className="h-5 w-5" />
         </span>
         <div>
-          <h3 className="text-sm font-bold text-ink">Authors&apos; comment</h3>
+          <h3 className="text-sm font-bold leading-snug text-ink">
+            {AUTHORS_PERSONAL_FEELING_LABEL}
+          </h3>
           <p className="mt-1 text-sm leading-relaxed text-slate-600">
-            Optional note for GRE reviewers. Use this for context that does not belong in the
-            manuscript sections — for example scope, authorship, or submission details. This is never
-            filled from manuscript extraction.
+            Optional personal note for GRE reviewers about how you feel about this paper. This is
+            never filled from manuscript extraction.
           </p>
         </div>
       </div>
       <Textarea
-        label="Authors' comment"
+        label={AUTHORS_PERSONAL_FEELING_LABEL}
         value={gre.authors_comment || ""}
         onChange={(e) => onChange({ ...gre, authors_comment: e.target.value })}
         rows={5}

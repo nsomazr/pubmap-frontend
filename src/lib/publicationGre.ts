@@ -5,6 +5,10 @@ import { publicationApiSegment } from "./publicationPaths";
 
 export type PublicationAccessType = "open" | "closed";
 
+/** Display label for GRE `authors_comment` (restricted-access / reviewer surfaces). */
+export const AUTHORS_PERSONAL_FEELING_LABEL =
+  "Author's Personal Feeling About the Paper";
+
 export interface PublicationGre {
   access_type: PublicationAccessType;
   external_url?: string;
