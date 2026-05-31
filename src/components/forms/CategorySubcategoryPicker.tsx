@@ -126,7 +126,7 @@ function PickerDropdown({
   const isMap = variant === "map";
   const labelClass = isMap
     ? "text-[11px] font-semibold uppercase tracking-wider text-slate-400"
-    : "text-sm font-medium text-slate-700";
+    : "text-sm font-semibold text-ink";
 
   const triggerClass = isMap
     ? `flex w-full items-center justify-between gap-2 rounded-xl border bg-white px-3.5 py-2.5 text-left text-sm shadow-sm transition focus:outline-none ${

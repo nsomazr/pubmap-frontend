@@ -1064,12 +1064,14 @@ export function PublicationManagePage() {
         {composerTab === "editor" && (
           <>
             <ComposerStage number="1" title="Research setup">
+              <RequiredFieldsLegend className="mb-4" />
               <CategorySubcategoryPicker
                 categories={categories}
                 categoryId={categoryId}
                 subCategoryId={subCategoryId}
                 onCategoryChange={setCategoryId}
                 onSubCategoryChange={setSubCategoryId}
+                required
               />
             </ComposerStage>
 
