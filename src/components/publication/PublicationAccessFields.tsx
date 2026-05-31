@@ -11,6 +11,8 @@ interface Props {
   onChangeAccess?: (type: PublicationAccessType) => void;
   /** Open access: optional manuscript upload UI */
   openUploadSlot?: React.ReactNode;
+  /** Restricted access: publisher link is required for submit. */
+  requirePublisherLink?: boolean;
 }
 
 export function PublicationAccessFields({
@@ -20,6 +22,7 @@ export function PublicationAccessFields({
   accessLocked = false,
   onChangeAccess,
   openUploadSlot,
+  requirePublisherLink = false,
 }: Props) {
   const isClosed = gre.access_type === "closed";
   const hasOpenUploadSlot = Boolean(openUploadSlot);
@@ -82,6 +85,7 @@ export function PublicationAccessFields({
           onChange={(e) => onChange({ ...gre, external_url: e.target.value })}
           placeholder="https://journal.example.org/full-text-article"
           disabled={disabled}
+          required={requirePublisherLink}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">

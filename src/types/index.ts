@@ -239,7 +239,6 @@ export interface Coordinate {
   latitude: string;
   longitude: string;
   institution?: string;
-  study_area?: string;
 }
 
 export interface Collaborator {

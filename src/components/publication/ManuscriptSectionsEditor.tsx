@@ -27,6 +27,8 @@ interface Props {
   fields: ManuscriptFields;
   onChange: (key: keyof ManuscriptFields, value: string) => void;
   sectionNotes?: Partial<Record<"title" | keyof ManuscriptFields, string>>;
+  /** Restricted access: introduction, methods, and findings are required for submit. */
+  requireNarrativeSections?: boolean;
   /** Rendered after Findings & Conclusion, before Funding & references. */
   afterFindings?: ReactNode;
 }
@@ -69,8 +71,10 @@ export function ManuscriptSectionsEditor({
   fields,
   onChange,
   sectionNotes = {},
+  requireNarrativeSections = false,
   afterFindings,
 }: Props) {
+  const narrativeRequired = requireNarrativeSections;
   return (
     <div className="space-y-6">
       <ManuscriptGroup title="Summary">
@@ -114,6 +118,7 @@ export function ManuscriptSectionsEditor({
           value={fields.introduction}
           onChange={(v) => onChange("introduction", v)}
           maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.introduction}
+          required={narrativeRequired}
         />
         <FieldExtractionNote note={sectionNotes.introduction} />
       </ManuscriptGroup>
@@ -124,6 +129,7 @@ export function ManuscriptSectionsEditor({
           value={fields.methods}
           onChange={(v) => onChange("methods", v)}
           maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.methods}
+          required={narrativeRequired}
         />
         <FieldExtractionNote note={sectionNotes.methods} />
       </ManuscriptGroup>
@@ -134,6 +140,7 @@ export function ManuscriptSectionsEditor({
           value={fields.findings}
           onChange={(v) => onChange("findings", v)}
           maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.findings}
+          required={narrativeRequired}
         />
         <FieldExtractionNote note={sectionNotes.findings} />
         <RichTextEditor

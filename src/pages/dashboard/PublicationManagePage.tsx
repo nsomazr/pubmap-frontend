@@ -72,6 +72,7 @@ import { buildPublicationPath } from "../../lib/publicationPaths";
 import { resolveSubcategoryFromModel } from "../../lib/taxonomyVisuals";
 import { canReviewPublication, isPlatformAdmin } from "../../lib/userAccess";
 import { greFormActionsClass, greFormGridClass, greFormPrimaryButtonClass } from "../../lib/formStyles";
+import { RequiredFieldsLegend } from "../../components/ui/RequiredField";
 import type { Category, Collaborator, Coordinate, Publication, PublicationFigure } from "../../types";
 
 const emptyCoord = (): Coordinate => ({
@@ -79,7 +80,6 @@ const emptyCoord = (): Coordinate => ({
   latitude: "",
   longitude: "",
   institution: "",
-  study_area: "",
 });
 
 function hasTextContent(value: string): boolean {
@@ -744,6 +744,7 @@ export function PublicationManagePage() {
   const getSubmitValidationError = (): string | null => {
     const saveErr = getSaveValidationError();
     if (saveErr) return saveErr;
+    if (!categoryId) return "Research field is required.";
     if (!subCategoryId) return "Research subfield is required.";
     if (!coordinates.location.trim()) return "Location of study is required.";
     if (!coordinates.institution?.trim()) return "Institution / affiliation is required.";
@@ -763,7 +764,9 @@ export function PublicationManagePage() {
     return null;
   };
 
-  const readyToSubmit = getSubmitValidationError() === null;
+  const submitValidationError = getSubmitValidationError();
+  const readyToSubmit = submitValidationError === null;
+  const showSubmitReview = isNew || canSubmit;
 
   const reportValidationError = (message: string) => {
     setError(message);
@@ -1119,6 +1122,7 @@ export function PublicationManagePage() {
                   onTitleChange={setTitle}
                   fields={manuscript}
                   onChange={setManuscript}
+                  requireNarrativeSections={isClosedAccess}
                   sectionNotes={extractionUi.sectionNotes}
                   afterFindings={
                     <PublicationFiguresEditor
@@ -1149,6 +1153,7 @@ export function PublicationManagePage() {
               accessLocked={isNew && accessTypeChosen}
               onChangeAccess={!isNew ? handleAccessTypeSelect : undefined}
               disabled={isReadOnly}
+              requirePublisherLink={isClosedAccess}
             />
 
             {!isClosedAccess && !isNew && id && (
@@ -1301,7 +1306,7 @@ export function PublicationManagePage() {
             )}
             {isNew ? "Save draft" : "Save changes"}
           </Button>
-          {(isNew || canSubmit) && (
+          {showSubmitReview && (
             <Button
               type="button"
               className={greFormPrimaryButtonClass}
@@ -1310,11 +1315,17 @@ export function PublicationManagePage() {
                 !readyToSubmit ||
                 (saveMutation.isPending && submitReviewOpen)
               }
+              title={!readyToSubmit && submitValidationError ? submitValidationError : undefined}
               onClick={openSubmitReview}
             >
               <Send className="h-4 w-4" />
               {pub?.status === 2 ? "Review & resubmit" : "Review & submit"}
             </Button>
+          )}
+          {showSubmitReview && !readyToSubmit && submitValidationError && (
+            <p className="w-full text-xs text-slate-500 sm:basis-full">
+              {submitValidationError}
+            </p>
           )}
           {!isNew && isAdmin && !isOwner && (pub?.status === 0 || pub?.status === 2) && (
             <p className="text-xs text-slate-500">

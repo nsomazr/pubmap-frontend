@@ -1,6 +1,6 @@
 import type { Publication } from "../types";
 
-/** Geographic study location only (map pin label; not institution or study area). */
+/** Geographic study location only (map pin label; not institution). */
 export function publicationMapLocationLabel(
   pub: Pick<Publication, "coordinates"> | null | undefined
 ): string | undefined {

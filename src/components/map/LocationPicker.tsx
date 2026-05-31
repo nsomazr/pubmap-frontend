@@ -515,23 +515,13 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
             className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm shadow-sm focus:border-brand-400 gre-field focus:outline-none focus:ring-0"
           />
         </div>
-        <div>
+        <div className="sm:col-span-2">
           <InstitutionPicker
             value={value.institution || ""}
             onChange={(institution) => onChange({ ...value, institution })}
             label="Institution / affiliation"
             placeholder="University, lab, organization, or affiliation…"
             required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Study area (optional)</label>
-          <input
-            type="text"
-            value={value.study_area || ""}
-            onChange={(e) => onChange({ ...value, study_area: e.target.value })}
-            placeholder="Region or study zone"
-            className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm shadow-sm focus:border-brand-400 gre-field focus:outline-none focus:ring-0"
           />
         </div>
       </div>
