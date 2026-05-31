@@ -186,10 +186,6 @@ export function PublicationManagePage() {
 
   type SaveOptions = { thenSubmit?: boolean; quiet?: boolean };
 
-  const persistedPublicationId =
-    pub?.id ?? createdDraftId ?? (id && !isNew ? Number(id) : null);
-  const persistedEncodedId = pub?.encoded_id ?? createdDraftEncodedId ?? null;
-
   const manuscript: ManuscriptFields = {
     abstract,
     introduction,
@@ -276,6 +272,10 @@ export function PublicationManagePage() {
     },
     staleTime: 30_000,
   });
+
+  const persistedPublicationId =
+    pub?.id ?? createdDraftId ?? (id && !isNew ? Number(id) : null);
+  const persistedEncodedId = pub?.encoded_id ?? createdDraftEncodedId ?? null;
 
   const hydratedPublicationId = useRef<number | null>(null);
 
