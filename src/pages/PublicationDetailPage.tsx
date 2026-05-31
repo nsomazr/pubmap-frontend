@@ -187,40 +187,43 @@ export function PublicationDetailPage() {
             )}
           </section>
 
+          {showManuscriptContent && manuscriptSections.length > 0 && (
+            <div className="space-y-4">
+              {manuscriptSections.map((section) => (
+                <PublicationManuscriptSection
+                  key={section.title}
+                  title={section.title}
+                  body={section.body}
+                />
+              ))}
+            </div>
+          )}
+
           {showManuscriptContent && (
-            <>
-              {showPdfPreview && docPath && (
-              <section className="gre-public-card overflow-hidden">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-7">
-                  <div>
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
-                      Manuscript PDF
-                    </h2>
-                    <p className="mt-1 text-xs text-slate-500">Full open-access paper</p>
-                  </div>
-                </div>
-                <PdfPreview documentPath={docPath} className="min-h-[min(50vh,420px)] rounded-none border-0 sm:min-h-[min(75vh,900px)]" />
-              </section>
-              )}
-              {manuscriptSections.length > 0 && (
-                <div className="space-y-4">
-                  {manuscriptSections.map((section) => (
-                    <PublicationManuscriptSection
-                      key={section.title}
-                      title={section.title}
-                      body={section.body}
-                    />
-                  ))}
-                </div>
-              )}
-              <PublicationFiguresGallery figures={pub.figures ?? []} />
-            </>
+            <PublicationFiguresGallery figures={pub.figures ?? []} />
           )}
 
           {pub.coordinates && <StudyLocationSection publication={pub} />}
 
           <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
           <CoAuthorsPanel publication={pub} />
+
+          {showPdfPreview && docPath && (
+            <section className="gre-public-card overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-7">
+                <div>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
+                    Manuscript PDF
+                  </h2>
+                  <p className="mt-1 text-xs text-slate-500">Full open-access paper</p>
+                </div>
+              </div>
+              <PdfPreview
+                documentPath={docPath}
+                className="min-h-[min(50vh,420px)] rounded-none border-0 sm:min-h-[min(75vh,900px)]"
+              />
+            </section>
+          )}
 
           <section className="gre-public-card border-amber-200 bg-amber-50/40 p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
