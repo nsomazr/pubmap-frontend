@@ -19,28 +19,28 @@ export type ExtractionStep = {
 export const EXTRACTION_STEPS: ExtractionStep[] = [
   {
     id: "open",
-    title: "Open your file",
-    detail: "Load PDF or Word and prepare the document",
+    title: "Opening your document",
+    detail: "Getting your PDF or Word file ready",
   },
   {
     id: "text",
-    title: "Read the manuscript",
-    detail: "Extract text from pages (OCR if the file is scanned)",
+    title: "Reading your paper",
+    detail: "Pulling text from every page, including scanned PDFs",
   },
   {
     id: "structure",
-    title: "Detect structure",
+    title: "Finding key details",
     detail: "Title, abstract, keywords, and section headings",
   },
   {
     id: "sections",
-    title: "Fill GRE sections",
-    detail: "Summaries for introduction, methods, findings, and more",
+    title: "Drafting form sections",
+    detail: "Introduction, methods, findings, conclusion, and more",
   },
   {
     id: "extras",
-    title: "Funders",
-    detail: "Extract funder organization names from acknowledgements",
+    title: "Checking for funders",
+    detail: "Organization names from funding and acknowledgements",
   },
 ];
 

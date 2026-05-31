@@ -16,11 +16,12 @@ import {
 const FIELD_CHIPS = [
   "Title",
   "Abstract",
+  "Keywords",
   "Introduction",
   "Methods",
   "Findings",
+  "Conclusion",
   "Funders",
-  "References",
 ] as const;
 
 type ExtractionLoadingPanelProps = {
@@ -73,7 +74,7 @@ export function ExtractionLoadingPanel({ compact = false, fileName }: Extraction
             <Sparkles className="h-5 w-5" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-base font-semibold text-ink">GRE is reading your paper</p>
+            <p className="text-base font-semibold text-ink">Preparing your draft from the paper</p>
             <p className="mt-1 text-sm text-slate-600">
               <span className="inline-flex max-w-full items-center gap-1.5">
                 <FileText className="h-3.5 w-3.5 shrink-0 text-brand-600" aria-hidden />
@@ -81,8 +82,8 @@ export function ExtractionLoadingPanel({ compact = false, fileName }: Extraction
               </span>
             </p>
             <p className="mt-2 text-xs leading-relaxed text-slate-500">
-              This usually takes 30 seconds to 2 minutes. You can review and edit every field when
-              it finishes.
+              This usually takes about half a minute to two minutes. You can review and change
+              anything before you submit.
             </p>
           </div>
         </div>
@@ -115,7 +116,7 @@ export function ExtractionLoadingPanel({ compact = false, fileName }: Extraction
                   >
                     {step.title}
                     {state === "active" && (
-                      <span className="ml-2 text-xs font-medium text-brand-600">In progress</span>
+                      <span className="ml-2 text-xs font-medium text-brand-600">Now</span>
                     )}
                   </p>
                   <p
@@ -145,7 +146,7 @@ export function ExtractionLoadingPanel({ compact = false, fileName }: Extraction
           <div className="mt-4 rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-3">
             <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               <BookOpen className="h-3.5 w-3.5" aria-hidden />
-              Fields we fill for you
+              What we&apos;ll add to your form
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {FIELD_CHIPS.map((chip, i) => {
@@ -169,7 +170,8 @@ export function ExtractionLoadingPanel({ compact = false, fileName }: Extraction
 
         {longWait && (
           <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900 ring-1 ring-amber-100">
-            Still working. Large or scanned PDFs can take a few minutes. Please keep this tab open.
+            This is taking a bit longer than usual. Big or scanned PDFs can need a few minutes.
+            Please keep this tab open.
           </p>
         )}
       </div>
