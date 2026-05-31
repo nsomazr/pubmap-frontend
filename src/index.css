@@ -2501,6 +2501,18 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
   hyphens: none;
 }
 
+.publication-author-byline {
+  font-family: "Times New Roman", Times, Georgia, serif;
+}
+
+.publication-author-byline a {
+  text-decoration: none;
+}
+
+.publication-author-byline a:hover {
+  text-decoration: underline;
+}
+
 /* Rich HTML (CKEditor / CMS output) */
 .gre-html-content p + p {
   margin-top: 1rem;

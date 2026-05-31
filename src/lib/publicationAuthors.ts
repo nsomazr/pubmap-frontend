@@ -86,7 +86,10 @@ export function publicationCoAuthorsFromPublication(publication: Publication): P
       author?.full_name ||
       `${author?.firstname ?? ""} ${author?.lastname ?? ""}`.trim() ||
       "Lead author",
-    affiliation: author?.affiliation || "",
+    affiliation:
+      author?.affiliation ||
+      publication.coordinates?.institution ||
+      "",
     email: author?.email,
     role: "Lead author",
     photo: author?.photo,
@@ -161,10 +164,20 @@ export function authorBylineFromPublication(publication: Publication): AuthorByl
   return buildAuthorByline(coAuthors.team);
 }
 
-/** Author names for public paper headers (no university / affiliation footnotes). */
-export function authorBylineWithoutAffiliations(byline: AuthorByline): AuthorByline {
-  return {
-    authors: byline.authors.map((author) => ({ ...author, affiliationIndices: [] })),
-    affiliations: [],
-  };
+/** Build a journal-style byline when only a single author name is available. */
+export function authorBylineFromNames(
+  authorName?: string,
+  affiliation?: string
+): AuthorByline | undefined {
+  const name = (authorName || "").trim();
+  if (!name) return undefined;
+  return buildAuthorByline([{ fullname: name, affiliation: affiliation || "" }]);
+}
+
+export function resolvePaperHeaderByline(
+  authorByline?: AuthorByline,
+  fallback?: { authorName?: string; affiliation?: string }
+): AuthorByline | undefined {
+  if (authorByline?.authors?.length) return authorByline;
+  return authorBylineFromNames(fallback?.authorName, fallback?.affiliation);
 }

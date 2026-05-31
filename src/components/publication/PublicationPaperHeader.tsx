@@ -3,7 +3,7 @@ import { formatGrePaperTitle, grePaperCode } from "../../lib/grePaperTitle";
 import { BrandMark } from "../brand/BrandMark";
 import { AUTHORS_PERSONAL_FEELING_LABEL } from "../../lib/publicationGre";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
-import type { AuthorByline } from "../../lib/publicationAuthors";
+import { resolvePaperHeaderByline, type AuthorByline } from "../../lib/publicationAuthors";
 import { PublicationAuthorByline } from "./PublicationAuthorByline";
 import { ManuscriptContent } from "./ManuscriptContent";
 import type { SubcategoryVisual as Visual } from "../../types";
@@ -174,6 +174,10 @@ export function PublicationPaperHeader({
   });
   const leftMetaRows = metaRows.filter((_, index) => index % 2 === 0);
   const rightMetaRows = metaRows.filter((_, index) => index % 2 === 1);
+  const resolvedByline = resolvePaperHeaderByline(authorByline, {
+    authorName,
+    affiliation,
+  });
 
   return (
     <header className="publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
@@ -189,16 +193,9 @@ export function PublicationPaperHeader({
         <h1 className="text-lg font-bold leading-snug text-ink sm:text-2xl lg:text-[1.65rem] lg:leading-tight">
           {displayTitle}
         </h1>
-        {authorByline && authorByline.authors.length > 0 ? (
-          <PublicationAuthorByline byline={authorByline} />
-        ) : (
-          <>
-            {authorName && (
-              <p className="mt-2.5 text-base font-semibold text-slate-800">{authorName}</p>
-            )}
-            {affiliation && <p className="mt-0.5 text-sm text-slate-600">{affiliation}</p>}
-          </>
-        )}
+        {resolvedByline ? (
+          <PublicationAuthorByline byline={resolvedByline} />
+        ) : null}
       </div>
 
       {metaRows.length > 0 && (

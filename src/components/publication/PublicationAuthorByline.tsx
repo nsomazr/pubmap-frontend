@@ -6,27 +6,35 @@ interface Props {
   className?: string;
 }
 
+function AuthorSeparator({ index, total }: { index: number; total: number }) {
+  if (index === 0) return null;
+  if (index === total - 1) return <span className="font-normal text-slate-600"> and </span>;
+  return <span className="font-normal text-slate-600">, </span>;
+}
+
 export function PublicationAuthorByline({ byline, className = "" }: Props) {
   if (!byline.authors.length) return null;
 
+  const total = byline.authors.length;
+
   return (
-    <div className={`publication-author-byline mt-3 font-serif ${className}`}>
-      <p className="text-base leading-relaxed text-slate-800">
+    <div className={`publication-author-byline mt-3 border-b border-slate-200 pb-4 ${className}`}>
+      <p className="font-serif text-[15px] font-bold leading-relaxed text-slate-900 sm:text-base">
         {byline.authors.map((author, index) => (
           <span key={`${author.name}-${index}`} className="inline">
-            {index > 0 && <span className="text-slate-600">, </span>}
+            <AuthorSeparator index={index} total={total} />
             {author.profileUrl ? (
               <Link
                 to={author.profileUrl}
-                className="font-semibold text-ink transition hover:text-brand-700"
+                className="text-slate-900 transition hover:text-brand-700"
               >
                 {author.name}
               </Link>
             ) : (
-              <span className="font-semibold text-ink">{author.name}</span>
+              <span>{author.name}</span>
             )}
             {author.affiliationIndices.length > 0 && (
-              <sup className="ml-px align-super text-[0.65em] font-normal leading-none text-slate-600">
+              <sup className="ml-0.5 align-super text-[0.62em] font-normal leading-none text-slate-700">
                 {author.affiliationIndices.join(",")}
               </sup>
             )}
@@ -35,10 +43,10 @@ export function PublicationAuthorByline({ byline, className = "" }: Props) {
       </p>
 
       {byline.affiliations.length > 0 && (
-        <div className="mt-3 space-y-1 pl-10 text-sm leading-snug text-slate-600 sm:pl-14">
+        <div className="mt-2.5 space-y-1 font-serif text-sm leading-snug text-slate-600">
           {byline.affiliations.map((aff) => (
-            <p key={aff.index} className="m-0">
-              <sup className="mr-1 align-super text-[0.65em] font-normal leading-none text-slate-600">
+            <p key={aff.index} className="m-0 pl-[1.35rem] indent-[-1.35rem]">
+              <sup className="mr-1 align-super text-[0.62em] font-normal leading-none text-slate-700">
                 {aff.index}
               </sup>
               <span>{aff.label}</span>
