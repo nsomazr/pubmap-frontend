@@ -97,11 +97,6 @@ export function PublicationAccessTypeGate({ selected, onSelect }: Props) {
         })}
       </div>
 
-      <p className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500 sm:px-5">
-        Not sure? If your paper is on a journal site that charges to download, pick{" "}
-        <span className="font-semibold text-slate-700">Restricted access</span>. You can change this
-        before you submit.
-      </p>
     </section>
   );
 }

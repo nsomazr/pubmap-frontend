@@ -6,7 +6,6 @@ import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
   MANUSCRIPT_FINDINGS_GROUP_TITLE,
   normalizeFunderField,
-  formatWordLimitHint,
   truncateToWordLimit,
 } from "../../lib/manuscriptFieldLimits";
 import { ReferencesFromResearch } from "./ReferencesFromResearch";
@@ -84,7 +83,6 @@ export function ManuscriptSectionsEditor({
             )
           }
           required
-          hint={formatWordLimitHint("title")}
         />
         <FieldExtractionNote note={sectionNotes.title} />
         <RichTextEditor
@@ -93,7 +91,6 @@ export function ManuscriptSectionsEditor({
           onChange={(v) => onChange("abstract", v)}
           minHeight={160}
           required
-          hint="Plain-language overview of the study."
           maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.abstract}
         />
         <FieldExtractionNote note={sectionNotes.abstract} />
@@ -106,8 +103,7 @@ export function ManuscriptSectionsEditor({
               truncateToWordLimit(e.target.value, MANUSCRIPT_FIELD_WORD_LIMITS.keywords)
             )
           }
-          placeholder="climate, remote sensing, East Africa (comma-separated)"
-          hint={formatWordLimitHint("keywords")}
+          placeholder="climate, remote sensing, East Africa"
         />
         <FieldExtractionNote note={sectionNotes.keywords} />
       </ManuscriptGroup>
@@ -117,7 +113,6 @@ export function ManuscriptSectionsEditor({
           label="Introduction"
           value={fields.introduction}
           onChange={(v) => onChange("introduction", v)}
-          placeholder="Set the research context and objectives…"
           maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.introduction}
         />
         <FieldExtractionNote note={sectionNotes.introduction} />
@@ -128,7 +123,6 @@ export function ManuscriptSectionsEditor({
           label="Methods"
           value={fields.methods}
           onChange={(v) => onChange("methods", v)}
-          placeholder="Design, data collection, and analysis…"
           maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.methods}
         />
         <FieldExtractionNote note={sectionNotes.methods} />
@@ -139,7 +133,6 @@ export function ManuscriptSectionsEditor({
           label="Findings"
           value={fields.findings}
           onChange={(v) => onChange("findings", v)}
-          placeholder="Results, interpretation, and discussion from your paper…"
           maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.findings}
         />
         <FieldExtractionNote note={sectionNotes.findings} />
@@ -147,7 +140,6 @@ export function ManuscriptSectionsEditor({
           label="Conclusion"
           value={fields.conclusion}
           onChange={(v) => onChange("conclusion", v)}
-          placeholder="Closing synthesis, implications, and future work…"
           maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.conclusion}
         />
         <FieldExtractionNote note={sectionNotes.conclusion} />
@@ -169,7 +161,6 @@ export function ManuscriptSectionsEditor({
             )
           }
           placeholder="NSF, University of Dar es Salaam"
-          hint="Organization names only, comma-separated"
         />
         <FieldExtractionNote note={sectionNotes.funder} />
         <ReferencesFromResearch

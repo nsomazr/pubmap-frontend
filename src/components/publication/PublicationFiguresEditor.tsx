@@ -158,11 +158,6 @@ export function PublicationFiguresEditor({
   return (
     <section className={shellClass(variant)}>
       <h3 className="text-sm font-bold uppercase tracking-wider text-brand-600">Research figures</h3>
-      {!readOnly && (
-        <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          Choose images and add a caption for each.
-        </p>
-      )}
 
       {!readOnly && (
         <div className="mt-4 flex flex-wrap items-center gap-3">

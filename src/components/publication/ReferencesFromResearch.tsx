@@ -23,18 +23,8 @@ export function ReferencesFromResearch({ value, paperTitle, onChange, disabled }
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <label className="text-sm font-medium text-slate-700">Key references</label>
-        <span className="text-[11px] font-medium text-slate-500">
-          Research · max {REFERENCE_ITEM_LIMIT}
-        </span>
-      </div>
-      <p className="text-xs leading-relaxed text-slate-500">
-        Enter up to {REFERENCE_ITEM_LIMIT} key citations yourself (including this paper). This field
-        is not filled from manuscript extraction.
-      </p>
       <Textarea
-        label="References"
+        label={`Key references (max ${REFERENCE_ITEM_LIMIT})`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={() => onChange(formatted)}
@@ -42,9 +32,6 @@ export function ReferencesFromResearch({ value, paperTitle, onChange, disabled }
         placeholder={`1. First key reference\n2. Second reference\n…\n${REFERENCE_ITEM_LIMIT}. ${paperTitle.trim() || "This paper"} (this paper)`}
         disabled={disabled}
       />
-      <p className="text-xs text-slate-500">
-        Numbered list, max {REFERENCE_ITEM_LIMIT} items. On blur, entries are trimmed to the limit.
-      </p>
       {items.length > 0 ? (
         <ol className="list-decimal space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm leading-relaxed text-slate-800">
           {items.map((item, index) => (
@@ -56,9 +43,7 @@ export function ReferencesFromResearch({ value, paperTitle, onChange, disabled }
       ) : (
         <div className="flex gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-5">
           <BookOpen className="h-5 w-5 shrink-0 text-slate-400" aria-hidden />
-          <p className="text-sm text-slate-600">
-            Add the {REFERENCE_ITEM_LIMIT} references most important to your study.
-          </p>
+          <p className="text-sm text-slate-600">No references added yet.</p>
         </div>
       )}
     </div>

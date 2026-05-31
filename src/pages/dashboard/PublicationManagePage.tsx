@@ -24,7 +24,6 @@ import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { Button } from "../../components/ui/Button";
 import { InstitutionPicker } from "../../components/institutions/InstitutionPicker";
 import { Input } from "../../components/ui/Input";
-import { RequiredFieldsLegend } from "../../components/ui/RequiredField";
 import { CategorySubcategoryPicker } from "../../components/forms/CategorySubcategoryPicker";
 import { PublicationLifecyclePanel } from "../../components/publication/PublicationLifecyclePanel";
 import { AdminPublicationReviewCard } from "../../components/publication/AdminPublicationReviewCard";
@@ -1039,8 +1038,6 @@ export function PublicationManagePage() {
         </div>
       )}
 
-      {showComposer && <RequiredFieldsLegend className="-mt-4 mb-6" />}
-
       {showComposer && (
       <form className={`space-y-8${isReadOnly ? " pointer-events-none opacity-60" : ""}`} onSubmit={validateAndSave}>
         {isReadOnly && (
@@ -1318,13 +1315,6 @@ export function PublicationManagePage() {
               <Send className="h-4 w-4" />
               {pub?.status === 2 ? "Review & resubmit" : "Review & submit"}
             </Button>
-          )}
-          {(isNew || canSubmit) && !readyToSubmit && (
-            <p className="text-xs text-slate-500">
-              {isClosedAccess
-                ? "Complete all required fields: title, abstract, subfield, study location, institution, manuscript sections, and publisher access link."
-                : "Complete all required fields: title, abstract, subfield, study location, institution, and uploaded paper or external link."}
-            </p>
           )}
           {!isNew && isAdmin && !isOwner && (pub?.status === 0 || pub?.status === 2) && (
             <p className="text-xs text-slate-500">

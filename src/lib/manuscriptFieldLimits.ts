@@ -59,10 +59,6 @@ export function truncateHtmlToWordLimit(html: string, maxWords: number): string 
   return `<p>${escaped}</p>`;
 }
 
-export function formatWordLimitHint(field: ManuscriptLimitedField): string {
-  return `Max ${MANUSCRIPT_FIELD_WORD_LIMITS[field]} words`;
-}
-
 function splitReferenceItems(text: string): string[] {
   const raw = (text || "").trim();
   if (!raw) return [];

@@ -122,12 +122,6 @@ export function PublicationAccessFields({
         </>
       )}
 
-      {!isClosed && (
-        <p className="text-xs text-slate-500">
-          Provide an uploaded PDF, an external link, or both before submitting for review.
-        </p>
-      )}
-
       {gre.gre_doi && (
         <p className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 ring-1 ring-slate-200">
           <ExternalLink className="h-3.5 w-3.5 text-brand-600" />

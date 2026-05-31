@@ -10,7 +10,6 @@ interface Props {
   placeholder?: string;
   minHeight?: number;
   required?: boolean;
-  hint?: string;
   maxWords?: number;
 }
 
@@ -21,7 +20,6 @@ export function RichTextEditor({
   placeholder,
   minHeight = 176,
   required,
-  hint,
   maxWords,
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -109,14 +107,13 @@ export function RichTextEditor({
           {label}
           {required ? <RequiredMark /> : null}
         </label>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-          {hint ? <p>{hint}</p> : null}
-          {maxWords ? (
+        {maxWords ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
             <p className={overLimit ? "font-medium text-amber-700" : undefined}>
               {wordCount}/{maxWords} words
             </p>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
       <div className="gre-manuscript-editor-shell overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition gre-field-composer focus-within:border-brand-400 focus-within:ring-0">
         <div

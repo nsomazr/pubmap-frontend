@@ -158,15 +158,10 @@ export function ManuscriptUploadField({
                 ? "Replace uploaded manuscript"
                 : "Upload original paper"}
           </p>
-          <p className="mt-1 text-xs text-slate-500">PDF, DOCX, DOC, TXT, or RTF · max 25 MB</p>
         </div>
       ) : (
         <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 sm:p-5">
           <label className="block text-sm font-medium text-slate-700">Link to PDF</label>
-          <p className="text-xs leading-relaxed text-slate-500">
-            Paste a direct link or publisher page that serves a PDF. GRE will download it, show a
-            preview, and extract manuscript fields.
-          </p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
               type="url"
