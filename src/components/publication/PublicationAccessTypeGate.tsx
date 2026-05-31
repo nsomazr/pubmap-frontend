@@ -89,7 +89,7 @@ export function PublicationAccessTypeGate({ selected, onSelect }: Props) {
                 </p>
               ) : (
                 <p className="mt-2 text-xs font-medium text-slate-600">
-                  GRE summary + sections — not the paid full text
+                  GRE summary + sections, not the paid full text
                 </p>
               )}
             </button>

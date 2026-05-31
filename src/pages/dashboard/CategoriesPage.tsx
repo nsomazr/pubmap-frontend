@@ -104,7 +104,7 @@ function CategoryCard({
       <div className="px-4 pb-3 sm:px-5">
         {subs.length === 0 ? (
           <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 px-3 py-3 text-center text-xs text-slate-500">
-            No subfields yet — add one below.
+            No subfields yet. Add one below.
           </p>
         ) : (
           <ul className="flex flex-wrap gap-2">

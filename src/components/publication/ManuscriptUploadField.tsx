@@ -203,7 +203,7 @@ export function ManuscriptUploadField({
           </div>
           {importedFromLink && file && (
             <p className="text-xs font-medium text-brand-700">
-              Imported: {file.name} — preview and extraction below.
+              Imported: {file.name}. Preview and extraction below.
             </p>
           )}
         </div>

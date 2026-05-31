@@ -14,7 +14,7 @@ type Props = {
 const STEPS = [
   { id: "close", label: "Finalizing meeting" },
   { id: "transcript", label: "Processing transcript" },
-  { id: "summary", label: "Thinking — generating summary" },
+  { id: "summary", label: "Thinking: generating summary" },
   { id: "report", label: "Preparing host report" },
 ] as const;
 

@@ -62,8 +62,8 @@ const NEXT_STEP: Record<number, string> = {
   1: "Waiting for admin approval.",
   2: "Address feedback and resubmit for review.",
   3: "Live on the research map.",
-  4: "Archived — restore to edit or republish.",
-  6: "Deleted — admin can restore.",
+  4: "Archived. Restore to edit or republish.",
+  6: "Deleted. An admin can restore.",
 };
 
 function publicationHref(

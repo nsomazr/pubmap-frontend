@@ -29,14 +29,14 @@ type MeetScope = (typeof tabs)[number]["id"];
 
 const SCOPE_HINTS: Record<MeetScope, string> = {
   upcoming: "Scheduled research sessions on GRE.",
-  live: "Sessions broadcasting right now — join from here.",
+  live: "Sessions broadcasting right now. Join from here.",
   mine: "Active meetings you host or manage.",
-  archived: "Ended sessions you hosted or attended — open reports and recordings here.",
+  archived: "Ended sessions you hosted or attended. Open reports and recordings here.",
 };
 
 const ADMIN_SCOPE_HINTS: Partial<Record<MeetScope, string>> = {
   live: "Every live meeting on GRE. As admin you can join any room, end sessions, and open archives/reports.",
-  archived: "All ended meetings on GRE — open any archive, edit reports, and share minutes.",
+  archived: "All ended meetings on GRE. Open any archive, edit reports, and share minutes.",
   upcoming: "All scheduled and live sessions across the platform.",
 };
 
@@ -136,7 +136,7 @@ function MeetingRow({
           )}
 
           {isCancelled && (
-            <p className="mt-1 text-xs text-amber-700">Cancelled — not available in archive.</p>
+            <p className="mt-1 text-xs text-amber-700">Cancelled. Not available in archive.</p>
           )}
 
           <div className="mt-2 flex flex-wrap gap-1.5 sm:hidden">
@@ -301,7 +301,7 @@ export function MeetingsPage() {
           <p className="font-semibold">Administrator access</p>
           <p className="mt-1 text-violet-800/90">
             You can see and control all GRE Meet sessions. Use the <strong>Live</strong> tab for ongoing
-            meetings — join, end, or open reports from there.
+            meetings: join, end, or open reports from there.
           </p>
         </div>
       )}

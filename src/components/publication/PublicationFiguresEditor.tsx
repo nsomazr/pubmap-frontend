@@ -160,9 +160,7 @@ export function PublicationFiguresEditor({
       <h3 className="text-sm font-bold uppercase tracking-wider text-brand-600">Research figures</h3>
       {!readOnly && (
         <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          Choose images and add a caption for each. Upload saves your draft automatically if needed.
-          Figures appear after Findings &amp; Conclusion in the paper preview, publication page, and
-          PDF.
+          Choose images and add a caption for each.
         </p>
       )}
 

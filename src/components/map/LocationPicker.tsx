@@ -370,7 +370,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
             <div>
               <p className="font-semibold text-ink">Pick study region</p>
               <p className="text-xs text-slate-500">
-                Click the map or drag the pin — circle shows the study area ({regionHint}) · Esc to close
+                Click the map or drag the pin. Circle shows the study area ({regionHint}). Esc to close
               </p>
             </div>
             <button

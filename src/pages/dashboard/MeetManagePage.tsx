@@ -386,7 +386,7 @@ export function MeetManagePage() {
             value={form.title}
             onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
             required
-            placeholder="e.g. GRE methods review — cohort A"
+            placeholder="e.g. GRE methods review, cohort A"
           />
           <div className={greFormGridMdClass}>
             <Input

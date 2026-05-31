@@ -41,10 +41,10 @@ export function PublicationModeSelector({ mode, onChange }: Props) {
         <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 text-white shadow-lg">
           <PenLine className="h-6 w-6" />
         </span>
-        <h3 className="mt-4 text-lg font-bold text-ink">Structured — restricted study</h3>
+        <h3 className="mt-4 text-lg font-bold text-ink">Structured, restricted study</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
           Fill abstract, methods, findings, keywords, and conclusions in the editor. Choose{" "}
-          <strong>Restricted — closed</strong> in the access panel to publish GRE summaries instead of the full PDF.
+          <strong>Restricted (closed)</strong> in the access panel to publish GRE summaries instead of the full PDF.
         </p>
       </button>
     </div>

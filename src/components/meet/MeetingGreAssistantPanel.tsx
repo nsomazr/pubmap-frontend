@@ -181,7 +181,7 @@ export function MeetingGreAssistantPanel({
             <div className={meetDrawer.chatNotice}>
               <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-cyan-500/60" />
               <p>
-                Private to you — answers use this meeting&apos;s transcript, minutes, and notes when
+                Private to you. Answers use this meeting&apos;s transcript, minutes, and notes when
                 available.
               </p>
             </div>
@@ -332,7 +332,7 @@ export function MeetingGreAssistantPanel({
         ) : (
           <>
             <p className={emptyHint}>
-              Ask anything about this meeting — minutes, decisions, or the transcript.
+              Ask anything about this meeting: minutes, decisions, or the transcript.
             </p>
             {askMutation.isPending && thinkingBubble}
           </>

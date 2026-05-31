@@ -560,7 +560,7 @@ export function MeetingArchivePage() {
               <ArchiveSectionTitle
                 icon={MessageCircle}
                 title="Meeting transcript"
-                description="Chronological conversation from the live room — grouped by speaker, not a flat list."
+                description="Chronological conversation from the live room, grouped by speaker, not a flat list."
               />
               <MeetingArchiveTranscript messages={meeting.chat_messages ?? []} />
             </div>

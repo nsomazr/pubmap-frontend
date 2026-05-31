@@ -1466,7 +1466,7 @@ export function MeetRoomPage() {
                     <MeetDrawerEmptyState
                       icon={MessageSquare}
                       title="No chat messages yet"
-                      description="Say hello or share a link — everyone in the room will see it."
+                      description="Say hello or share a link. Everyone in the room will see it."
                     />
                   ) : (
                     <div className="space-y-1">

@@ -169,7 +169,7 @@ export function ExtractionLoadingPanel({ compact = false, fileName }: Extraction
 
         {longWait && (
           <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900 ring-1 ring-amber-100">
-            Still working — large or scanned PDFs can take a few minutes. Please keep this tab open.
+            Still working. Large or scanned PDFs can take a few minutes. Please keep this tab open.
           </p>
         )}
       </div>

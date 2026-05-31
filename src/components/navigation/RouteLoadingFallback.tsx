@@ -22,7 +22,7 @@ export function RouteLoadingFallback({
           <Loader2 className="h-9 w-9 animate-spin text-brand-600" aria-hidden />
           <p className="text-sm font-semibold text-slate-700">{label}</p>
           <p className="max-w-xs text-center text-xs text-slate-500">
-            Fetching this section of GRE — usually just a moment.
+            Fetching this section of GRE. Usually just a moment.
           </p>
         </div>
       </div>

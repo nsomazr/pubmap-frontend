@@ -41,7 +41,7 @@ export function PublicationAccessFields({
           <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
             {isClosed ? (
               <>
-                <Lock className="h-3.5 w-3.5" /> Restricted — closed access
+                <Lock className="h-3.5 w-3.5" /> Restricted (closed access)
               </>
             ) : (
               <>
@@ -94,7 +94,7 @@ export function PublicationAccessFields({
             disabled={disabled}
           />
           <Input
-            label="Reference — DOI URL"
+            label="Reference: DOI URL"
             type="url"
             value={gre.reference_url || ""}
             onChange={(e) => onChange({ ...gre, reference_url: e.target.value })}

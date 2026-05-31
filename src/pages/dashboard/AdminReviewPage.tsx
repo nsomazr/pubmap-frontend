@@ -58,7 +58,7 @@ export function AdminReviewPage() {
     <div className="animate-fade-up space-y-5">
       <PageHeader
         title="Review queue"
-        description="Read the full submission—abstract, sections, and manuscript—before approving or requesting changes."
+        description="Read the full submission (abstract, sections, and manuscript) before approving or requesting changes."
       />
 
       <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100/90 p-1.5 ring-1 ring-slate-200/70">

@@ -464,7 +464,7 @@ export function MeetDetailPage() {
         ) : !hasArchiveContent ? (
           <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-4 text-sm text-slate-600">
             {meeting.status === "cancelled"
-              ? "This meeting was cancelled — no archive was created."
+              ? "This meeting was cancelled. No archive was created."
               : meeting.status === "ended"
                 ? "The meeting ended. Open the archive to check when the summary and recording are ready."
                 : "End the meeting to generate the transcript, summary, and recording in the archive."}

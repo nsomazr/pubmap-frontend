@@ -244,7 +244,7 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
             <p className="mt-1 text-sm text-slate-600">
               Shown on publications, discussions, the research map, and collaborator lists. Saves
               immediately when you click <span className="font-medium text-ink">Save photo</span> in
-              the crop dialog — not via Update profile.
+              the crop dialog, not via Update profile.
             </p>
           </div>
 

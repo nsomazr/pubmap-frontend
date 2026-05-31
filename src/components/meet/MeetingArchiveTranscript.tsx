@@ -40,7 +40,7 @@ function TranscriptEmptyState() {
       <p className="relative mt-4 text-base font-semibold text-ink">No messages in the archive yet</p>
       <p className="relative mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
         When participants chat during the meeting, the full transcript will appear here as a
-        conversation timeline — not a plain list.
+        conversation timeline, not a plain list.
       </p>
       <div className="relative mx-auto mt-8 flex max-w-xs justify-center gap-2 opacity-60" aria-hidden>
         <span className="h-9 w-24 rounded-2xl rounded-bl-md bg-white ring-1 ring-slate-200/80" />
