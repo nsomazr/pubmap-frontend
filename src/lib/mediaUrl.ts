@@ -1,11 +1,30 @@
 import { resolveApiBaseUrl } from "./apiBaseUrl";
 
+function isGreSiteHost(host: string): boolean {
+  return (
+    host === "gre.nileagi.com" ||
+    host === "www.gre.nileagi.com" ||
+    host.endsWith(".gre.nileagi.com")
+  );
+}
+
 /** Origin that serves uploaded files (/media, /storage). */
 function resolveMediaOrigin(): string {
+  const configured = (import.meta.env.VITE_MEDIA_ORIGIN as string | undefined)?.trim();
+  if (configured?.startsWith("http")) {
+    return configured.replace(/\/$/, "");
+  }
+
   const api = resolveApiBaseUrl();
   if (api.startsWith("http")) {
     return api.replace(/\/api\/?$/, "");
   }
+
+  if (typeof window !== "undefined" && isGreSiteHost(window.location.hostname)) {
+    // Figures and profiles are stored on the API host, not the SPA host.
+    return "https://api.gre.nileagi.com";
+  }
+
   if (typeof window !== "undefined") {
     return window.location.origin;
   }
