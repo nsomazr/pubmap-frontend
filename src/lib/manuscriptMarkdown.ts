@@ -237,7 +237,17 @@ function blockElementToMarkdown(el: Element): string {
     const level = Number(tag[1]);
     return `${"#".repeat(level)} ${getTextContent(el)}`;
   }
-  if (tag === "p") return serializeInlineHtml(el);
+  if (tag === "p") {
+    const children = [...el.children];
+    const onlyBold =
+      children.length === 1 &&
+      (children[0].tagName === "STRONG" || children[0].tagName === "B") &&
+      getTextContent(children[0]) === getTextContent(el);
+    if (onlyBold) {
+      return getTextContent(el);
+    }
+    return serializeInlineHtml(el);
+  }
   if (tag === "blockquote") {
     return getTextContent(el)
       .split("\n")
@@ -401,6 +411,22 @@ export function markdownishFromExtractedText(value: string): string {
     .join("\n\n");
 }
 
+/** Drop markdown bold markers from body text (section headers stay styled via h2/h3). */
+export function stripSpuriousBoldMarkdown(text: string): string {
+  if (!text) return "";
+  return text
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (/^#{1,6}\s/.test(trimmed)) return line;
+      if (/^\*\*[\s\S]+\*\*$/.test(trimmed)) {
+        return line.replace(/\*\*/g, "");
+      }
+      return line.replace(/\*\*([^*\n]+)\*\*/g, "$1");
+    })
+    .join("\n");
+}
+
 export function prepareManuscriptSource(raw: string): string {
   let text = (raw || "").trim();
   if (!text) return "";
@@ -409,6 +435,7 @@ export function prepareManuscriptSource(raw: string): string {
     text = htmlToManuscriptMarkdown(text);
   }
 
+  text = stripSpuriousBoldMarkdown(text);
   text = repairCollapsedWords(text);
   text = unwrapSpuriousMathDelimiters(text);
   text = wrapLatexDelimiters(text);

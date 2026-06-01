@@ -2408,6 +2408,8 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
   max-width: 100%;
   overflow-wrap: anywhere;
   word-break: break-word;
+  font-weight: 400;
+  color: #334155;
 }
 
 .gre-manuscript-body h1,
@@ -2485,10 +2487,30 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
   border-top: 1px solid #e2e8f0;
 }
 
-.gre-manuscript-body strong,
-.gre-manuscript-body b {
-  font-weight: 700;
-  color: #0f172a;
+.gre-manuscript-body p strong,
+.gre-manuscript-body p b,
+.gre-manuscript-body li strong,
+.gre-manuscript-body li b,
+.gre-manuscript-body blockquote strong,
+.gre-manuscript-body blockquote b {
+  font-weight: 400;
+  color: inherit;
+}
+
+.gre-manuscript-body h1 strong,
+.gre-manuscript-body h2 strong,
+.gre-manuscript-body h3 strong,
+.gre-manuscript-body h4 strong,
+.gre-manuscript-body h5 strong,
+.gre-manuscript-body h6 strong,
+.gre-manuscript-body h1 b,
+.gre-manuscript-body h2 b,
+.gre-manuscript-body h3 b,
+.gre-manuscript-body h4 b,
+.gre-manuscript-body h5 b,
+.gre-manuscript-body h6 b {
+  font-weight: inherit;
+  color: inherit;
 }
 
 .gre-manuscript-body em,
