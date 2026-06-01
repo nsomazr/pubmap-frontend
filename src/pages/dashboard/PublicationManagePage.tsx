@@ -175,8 +175,6 @@ export function PublicationManagePage() {
   const [leadAuthorEmail, setLeadAuthorEmail] = useState("");
   const [gre, setGre] = useState<PublicationGre>({ access_type: "open" });
   const [figures, setFigures] = useState<PublicationFigure[]>([]);
-  const [figuresUploading, setFiguresUploading] = useState(false);
-  const [figuresHasFailed, setFiguresHasFailed] = useState(false);
   const [error, setError] = useState("");
   const [pendingDocument, setPendingDocument] = useState<File | null>(null);
   const [extractionUi, setExtractionUi] = useState<ExtractionUiState>({
@@ -187,6 +185,13 @@ export function PublicationManagePage() {
   const [submitReviewOpen, setSubmitReviewOpen] = useState(false);
   const [createdDraftId, setCreatedDraftId] = useState<number | null>(null);
   const [createdDraftEncodedId, setCreatedDraftEncodedId] = useState<string | null>(null);
+  const [figuresUploadBusy, setFiguresUploadBusy] = useState(false);
+  const [figuresPendingCount, setFiguresPendingCount] = useState(0);
+  const createdDraftIdRef = useRef<number | null>(createdDraftId);
+  createdDraftIdRef.current = createdDraftId;
+  const createdDraftEncodedIdRef = useRef<string | null>(createdDraftEncodedId);
+  createdDraftEncodedIdRef.current = createdDraftEncodedId;
+  const saveDraftPromiseRef = useRef<Promise<Publication | null> | null>(null);
   const isClosedAccess = gre.access_type === "closed";
 
   type SaveOptions = { thenSubmit?: boolean; quiet?: boolean };
@@ -286,6 +291,8 @@ export function PublicationManagePage() {
   const persistedPublicationId =
     pub?.id ?? createdDraftId ?? (id && !isNew ? Number(id) : null);
   const persistedEncodedId = pub?.encoded_id ?? createdDraftEncodedId ?? null;
+  const existingDocPath = primaryManuscriptPath(pub);
+  const hasDocument = Boolean(pendingDocument || existingDocPath);
 
   const hydratedPublicationId = useRef<number | null>(null);
 
@@ -473,53 +480,149 @@ export function PublicationManagePage() {
     return collaborators;
   };
 
-  const buildSavePayload = useCallback(
-    () => ({
-      title,
-      abstract,
-      introduction,
-      methods,
-      findings,
-      conclusion,
-      funder,
-      references: limitReferences(references, title),
-      keywords: parseKeywords(keywords),
-      sub_category_id: subCategoryId ? Number(subCategoryId) : null,
-      coordinates,
-      collaborators: buildCollaboratorsPayload(),
-    }),
+  const reportValidationError = (message: string) => {
+    setError(message);
+    toast.error({
+      title: "Missing required field",
+      description: message,
+    });
+  };
+
+  const getSaveValidationError = (): string | null => {
+    if (extractionUi.status === "extracting") {
+      return "Please wait while GRE extracts manuscript sections from the uploaded paper.";
+    }
+    if (figuresUploadBusy) {
+      return "Please wait while figures finish uploading.";
+    }
+    if (figuresPendingCount > 0) {
+      return "Wait for figures to finish uploading, or remove pending images.";
+    }
+    if (!title.trim()) return "Title is required.";
+    if (!hasTextContent(abstract)) return "Abstract is required.";
+    if (submitterRole === "coauthor" && !leadAuthorName.trim()) {
+      return "Lead author name is required when submitting as a co-author.";
+    }
+    return null;
+  };
+
+  const getSubmitValidationError = (): string | null => {
+    const saveErr = getSaveValidationError();
+    if (saveErr) return saveErr;
+    if (!categoryId) return "Research field is required.";
+    if (!subCategoryId) return "Research subfield is required.";
+    if (!coordinates.location.trim()) return "Location of study is required.";
+    if (!coordinates.institution?.trim()) return "Institution / affiliation is required.";
+    if (!hasValidCoords(coordinates.latitude, coordinates.longitude)) {
+      return "Pick a study location on the map (valid coordinates).";
+    }
+    if (isClosedAccess) {
+      if (!hasTextContent(introduction)) return "Introduction is required for restricted access.";
+      if (!hasTextContent(methods)) return "Methods is required for restricted access.";
+      if (!hasTextContent(findings)) {
+        return "Findings is required for restricted access.";
+      }
+      if (!gre.external_url?.trim()) return "Publisher access link is required for restricted access.";
+    } else if (!hasDocument && !gre.external_url?.trim()) {
+      return "Upload a manuscript PDF or add an external access link.";
+    }
+    return null;
+  };
+
+  const persistPublicationDraft = useCallback(
+    async (options?: { quiet?: boolean }): Promise<Publication | null> => {
+      const err = getSaveValidationError();
+      if (err) {
+        if (!options?.quiet) reportValidationError(err);
+        return null;
+      }
+      if (saveDraftPromiseRef.current) {
+        return saveDraftPromiseRef.current;
+      }
+
+      const task = (async (): Promise<Publication | null> => {
+        try {
+          const payload = {
+            title,
+            abstract,
+            introduction,
+            methods,
+            findings,
+            conclusion,
+            funder,
+            references: limitReferences(references, title),
+            keywords: parseKeywords(keywords),
+            sub_category_id: subCategoryId ? Number(subCategoryId) : null,
+            coordinates,
+            collaborators: buildCollaboratorsPayload(),
+          };
+          let data: Publication;
+          if (isNew && !createdDraftIdRef.current) {
+            const res = await api.post<Publication>("/publications/", payload);
+            data = res.data;
+          } else {
+            const targetId = createdDraftIdRef.current ?? Number(id);
+            const res = await api.patch<Publication>(
+              `/publications/${publicationApiSegment(
+                targetId,
+                createdDraftEncodedIdRef.current ?? persistedEncodedId
+              )}/`,
+              payload
+            );
+            data = res.data;
+          }
+          createdDraftIdRef.current = data.id;
+          if (data.encoded_id) createdDraftEncodedIdRef.current = data.encoded_id;
+          hydratedPublicationId.current = data.id;
+          setCreatedDraftId(data.id);
+          if (data.encoded_id) setCreatedDraftEncodedId(data.encoded_id);
+          queryClient.invalidateQueries({ queryKey: ["publications"] });
+          queryClient.invalidateQueries({ queryKey: editQueryKey });
+          return data;
+        } catch {
+          return null;
+        }
+      })();
+
+      saveDraftPromiseRef.current = task;
+      try {
+        return await task;
+      } finally {
+        saveDraftPromiseRef.current = null;
+      }
+    },
     [
-      title,
       abstract,
-      introduction,
-      methods,
-      findings,
       conclusion,
-      funder,
-      references,
-      keywords,
-      subCategoryId,
       coordinates,
       collaborators,
-      submitterRole,
-      leadAuthorName,
+      createdDraftEncodedId,
+      editQueryKey,
+      extractionUi.status,
+      figuresPendingCount,
+      figuresUploadBusy,
+      findings,
+      funder,
+      id,
+      introduction,
+      isNew,
+      keywords,
       leadAuthorAffiliation,
       leadAuthorEmail,
+      leadAuthorName,
+      methods,
+      queryClient,
+      references,
+      subCategoryId,
+      submitterRole,
+      title,
     ]
   );
 
   const saveMutation = useMutation({
-    mutationFn: async (_options?: SaveOptions) => {
-      const payload = buildSavePayload();
-      if (isNew && !createdDraftId) {
-        const { data } = await api.post<Publication>("/publications/", payload);
-        return data;
-      }
-      const targetId = createdDraftId ?? Number(id);
-      const { data } = await api.patch<Publication>(
-        `/publications/${publicationApiSegment(targetId, persistedEncodedId)}/`,
-        payload
-      );
+    mutationFn: async (options?: SaveOptions) => {
+      const data = await persistPublicationDraft({ quiet: options?.quiet });
+      if (!data) throw new Error("SAVE_FAILED");
       return data;
     },
     onSuccess: async (data, options?: SaveOptions) => {
@@ -632,8 +735,6 @@ export function PublicationManagePage() {
   const addCollaborator = () =>
     setCollaborators([...collaborators, { fullname: "", affiliation: "", email: "", role: "" }]);
 
-  const existingDocPath = primaryManuscriptPath(pub);
-  const hasDocument = Boolean(pendingDocument || existingDocPath);
   const showComposer = accessTypeChosen || !isNew;
 
   const subVisual = useMemo(() => {
@@ -762,101 +863,15 @@ export function PublicationManagePage() {
   };
   const openHasSource = hasDocument || Boolean(gre.external_url?.trim());
 
-  const getDraftSaveValidationError = (): string | null => {
-    if (extractionUi.status === "extracting") {
-      return "Please wait while GRE extracts manuscript sections from the uploaded paper.";
-    }
-    if (!title.trim()) return "Title is required.";
-    if (!hasTextContent(abstract)) return "Abstract is required.";
-    if (submitterRole === "coauthor" && !leadAuthorName.trim()) {
-      return "Lead author name is required when submitting as a co-author.";
-    }
-    return null;
-  };
-
-  const getSaveValidationError = (): string | null => {
-    const base = getDraftSaveValidationError();
-    if (base) return base;
-    if (figuresUploading) {
-      return "Please wait while figures finish uploading.";
-    }
-    if (figuresHasFailed) {
-      return "Retry or remove failed figure uploads before submitting.";
-    }
-    return null;
-  };
-
-  const getSubmitValidationError = (): string | null => {
-    const saveErr = getSaveValidationError();
-    if (saveErr) return saveErr;
-    if (!categoryId) return "Research field is required.";
-    if (!subCategoryId) return "Research subfield is required.";
-    if (!coordinates.location.trim()) return "Location of study is required.";
-    if (!coordinates.institution?.trim()) return "Institution / affiliation is required.";
-    if (!hasValidCoords(coordinates.latitude, coordinates.longitude)) {
-      return "Pick a study location on the map (valid coordinates).";
-    }
-    if (isClosedAccess) {
-      if (!hasTextContent(introduction)) return "Introduction is required for restricted access.";
-      if (!hasTextContent(methods)) return "Methods is required for restricted access.";
-      if (!hasTextContent(findings)) {
-        return "Findings is required for restricted access.";
-      }
-      if (!gre.external_url?.trim()) return "Publisher access link is required for restricted access.";
-    } else if (!openHasSource) {
-      return "Upload a manuscript PDF or add an external access link.";
-    }
-    return null;
-  };
-
   const submitValidationError = getSubmitValidationError();
   const readyToSubmit = submitValidationError === null;
   const showSubmitReview = isNew || canSubmit;
 
-  const reportValidationError = (message: string) => {
-    setError(message);
-    toast.error({
-      title: "Missing required field",
-      description: message,
-    });
-  };
-
-  const persistDraftPublication = useCallback(async (): Promise<Publication | null> => {
-    const err = getDraftSaveValidationError();
-    if (err) {
-      reportValidationError(err);
-      return null;
-    }
-    try {
-      const payload = buildSavePayload();
-      if (isNew && !createdDraftId) {
-        const { data } = await api.post<Publication>("/publications/", payload);
-        setCreatedDraftId(data.id);
-        if (data.encoded_id) setCreatedDraftEncodedId(data.encoded_id);
-        hydratedPublicationId.current = data.id;
-        return data;
-      }
-      const targetId = createdDraftId ?? (id && !isNew ? Number(id) : null);
-      if (!targetId) return null;
-      const { data } = await api.patch<Publication>(
-        `/publications/${publicationApiSegment(targetId, persistedEncodedId)}/`,
-        payload
-      );
-      if (data.encoded_id) setCreatedDraftEncodedId(data.encoded_id);
-      hydratedPublicationId.current = data.id;
-      return data;
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string } } };
-      setError(e.response?.data?.detail || "Could not save draft for figure upload.");
-      return null;
-    }
-  }, [buildSavePayload, createdDraftId, id, isNew, persistedEncodedId]);
-
-  const ensurePublicationForFigures = useCallback(async (): Promise<number | null> => {
+  const ensurePublicationForFigures = async (): Promise<number | null> => {
     if (persistedPublicationId) return persistedPublicationId;
-    const data = await persistDraftPublication();
+    const data = await persistPublicationDraft({ quiet: true });
     return data?.id ?? null;
-  }, [persistDraftPublication, persistedPublicationId]);
+  };
 
   const validateAndSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1200,8 +1215,10 @@ export function PublicationManagePage() {
                       figures={figures}
                       onChange={setFigures}
                       ensurePublicationId={ensurePublicationForFigures}
-                      onUploadingChange={setFiguresUploading}
-                      onFailedPendingChange={setFiguresHasFailed}
+                      onActivityChange={({ uploading, pendingCount }) => {
+                        setFiguresUploadBusy(uploading);
+                        setFiguresPendingCount(pendingCount);
+                      }}
                     />
                   }
                 />
@@ -1370,7 +1387,7 @@ export function PublicationManagePage() {
             className={greFormPrimaryButtonClass}
             disabled={
               extractionUi.status === "extracting" ||
-              figuresUploading ||
+              figuresUploadBusy ||
               (saveMutation.isPending && !submitReviewOpen)
             }
           >
@@ -1387,7 +1404,8 @@ export function PublicationManagePage() {
               className={greFormPrimaryButtonClass}
               disabled={
                 extractionUi.status === "extracting" ||
-                figuresUploading ||
+                figuresUploadBusy ||
+                figuresPendingCount > 0 ||
                 !readyToSubmit ||
                 (saveMutation.isPending && submitReviewOpen)
               }
