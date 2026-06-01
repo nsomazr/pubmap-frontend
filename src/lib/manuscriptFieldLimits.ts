@@ -11,8 +11,11 @@ export const MANUSCRIPT_FIELD_WORD_LIMITS = {
   keywords: 30,
 } as const;
 
-/** Matches backend LLM_WORD_LIMIT_BUFFER — agents aim below the hard cap. */
+/** Matches backend — safety margin below hard cap. */
 export const LLM_WORD_LIMIT_BUFFER = 20;
+
+/** Matches backend LLM_WORD_TARGET_RATIO — preferred summary length. */
+export const LLM_WORD_TARGET_RATIO = 0.75;
 
 export const NARRATIVE_MANUSCRIPT_FIELDS = [
   "abstract",
@@ -30,7 +33,14 @@ export function externalWordLimit(field: ManuscriptLimitedField): number {
 
 export function llmWordTarget(field: ManuscriptLimitedField): number {
   const external = externalWordLimit(field);
-  return Math.max(12, external - LLM_WORD_LIMIT_BUFFER);
+  const desired = Math.max(12, Math.round(external * LLM_WORD_TARGET_RATIO));
+  const ceiling = Math.max(12, external - LLM_WORD_LIMIT_BUFFER);
+  return Math.min(desired, ceiling);
+}
+
+export function llmWordTargetFloor(field: ManuscriptLimitedField): number {
+  const external = externalWordLimit(field);
+  return Math.max(12, Math.round(external * 0.55));
 }
 
 /** Composer group for findings + conclusion (no separate Discussion section). */
