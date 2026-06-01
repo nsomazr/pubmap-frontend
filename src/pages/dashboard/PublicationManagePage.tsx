@@ -175,6 +175,8 @@ export function PublicationManagePage() {
   const [leadAuthorEmail, setLeadAuthorEmail] = useState("");
   const [gre, setGre] = useState<PublicationGre>({ access_type: "open" });
   const [figures, setFigures] = useState<PublicationFigure[]>([]);
+  const [figuresUploading, setFiguresUploading] = useState(false);
+  const [figuresHasFailed, setFiguresHasFailed] = useState(false);
   const [error, setError] = useState("");
   const [pendingDocument, setPendingDocument] = useState<File | null>(null);
   const [extractionUi, setExtractionUi] = useState<ExtractionUiState>({
@@ -471,22 +473,44 @@ export function PublicationManagePage() {
     return collaborators;
   };
 
+  const buildSavePayload = useCallback(
+    () => ({
+      title,
+      abstract,
+      introduction,
+      methods,
+      findings,
+      conclusion,
+      funder,
+      references: limitReferences(references, title),
+      keywords: parseKeywords(keywords),
+      sub_category_id: subCategoryId ? Number(subCategoryId) : null,
+      coordinates,
+      collaborators: buildCollaboratorsPayload(),
+    }),
+    [
+      title,
+      abstract,
+      introduction,
+      methods,
+      findings,
+      conclusion,
+      funder,
+      references,
+      keywords,
+      subCategoryId,
+      coordinates,
+      collaborators,
+      submitterRole,
+      leadAuthorName,
+      leadAuthorAffiliation,
+      leadAuthorEmail,
+    ]
+  );
+
   const saveMutation = useMutation({
     mutationFn: async (_options?: SaveOptions) => {
-      const payload = {
-        title,
-        abstract,
-        introduction,
-        methods,
-        findings,
-        conclusion,
-        funder,
-        references: limitReferences(references, title),
-        keywords: parseKeywords(keywords),
-        sub_category_id: subCategoryId ? Number(subCategoryId) : null,
-        coordinates,
-        collaborators: buildCollaboratorsPayload(),
-      };
+      const payload = buildSavePayload();
       if (isNew && !createdDraftId) {
         const { data } = await api.post<Publication>("/publications/", payload);
         return data;
@@ -738,7 +762,7 @@ export function PublicationManagePage() {
   };
   const openHasSource = hasDocument || Boolean(gre.external_url?.trim());
 
-  const getSaveValidationError = (): string | null => {
+  const getDraftSaveValidationError = (): string | null => {
     if (extractionUi.status === "extracting") {
       return "Please wait while GRE extracts manuscript sections from the uploaded paper.";
     }
@@ -746,6 +770,18 @@ export function PublicationManagePage() {
     if (!hasTextContent(abstract)) return "Abstract is required.";
     if (submitterRole === "coauthor" && !leadAuthorName.trim()) {
       return "Lead author name is required when submitting as a co-author.";
+    }
+    return null;
+  };
+
+  const getSaveValidationError = (): string | null => {
+    const base = getDraftSaveValidationError();
+    if (base) return base;
+    if (figuresUploading) {
+      return "Please wait while figures finish uploading.";
+    }
+    if (figuresHasFailed) {
+      return "Retry or remove failed figure uploads before submitting.";
     }
     return null;
   };
@@ -785,20 +821,42 @@ export function PublicationManagePage() {
     });
   };
 
-  const ensurePublicationForFigures = async (): Promise<number | null> => {
-    if (persistedPublicationId) return persistedPublicationId;
-    const err = getSaveValidationError();
+  const persistDraftPublication = useCallback(async (): Promise<Publication | null> => {
+    const err = getDraftSaveValidationError();
     if (err) {
       reportValidationError(err);
       return null;
     }
     try {
-      const data = await saveMutation.mutateAsync({ quiet: true });
-      return data.id;
-    } catch {
+      const payload = buildSavePayload();
+      if (isNew && !createdDraftId) {
+        const { data } = await api.post<Publication>("/publications/", payload);
+        setCreatedDraftId(data.id);
+        if (data.encoded_id) setCreatedDraftEncodedId(data.encoded_id);
+        hydratedPublicationId.current = data.id;
+        return data;
+      }
+      const targetId = createdDraftId ?? (id && !isNew ? Number(id) : null);
+      if (!targetId) return null;
+      const { data } = await api.patch<Publication>(
+        `/publications/${publicationApiSegment(targetId, persistedEncodedId)}/`,
+        payload
+      );
+      if (data.encoded_id) setCreatedDraftEncodedId(data.encoded_id);
+      hydratedPublicationId.current = data.id;
+      return data;
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      setError(e.response?.data?.detail || "Could not save draft for figure upload.");
       return null;
     }
-  };
+  }, [buildSavePayload, createdDraftId, id, isNew, persistedEncodedId]);
+
+  const ensurePublicationForFigures = useCallback(async (): Promise<number | null> => {
+    if (persistedPublicationId) return persistedPublicationId;
+    const data = await persistDraftPublication();
+    return data?.id ?? null;
+  }, [persistDraftPublication, persistedPublicationId]);
 
   const validateAndSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1142,6 +1200,8 @@ export function PublicationManagePage() {
                       figures={figures}
                       onChange={setFigures}
                       ensurePublicationId={ensurePublicationForFigures}
+                      onUploadingChange={setFiguresUploading}
+                      onFailedPendingChange={setFiguresHasFailed}
                     />
                   }
                 />
@@ -1308,7 +1368,11 @@ export function PublicationManagePage() {
             type="submit"
             variant="secondary"
             className={greFormPrimaryButtonClass}
-            disabled={extractionUi.status === "extracting" || (saveMutation.isPending && !submitReviewOpen)}
+            disabled={
+              extractionUi.status === "extracting" ||
+              figuresUploading ||
+              (saveMutation.isPending && !submitReviewOpen)
+            }
           >
             {saveMutation.isPending && !submitReviewOpen ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -1323,6 +1387,7 @@ export function PublicationManagePage() {
               className={greFormPrimaryButtonClass}
               disabled={
                 extractionUi.status === "extracting" ||
+                figuresUploading ||
                 !readyToSubmit ||
                 (saveMutation.isPending && submitReviewOpen)
               }

@@ -1,4 +1,4 @@
-import { ImagePlus, Trash2, Upload, X, ZoomIn } from "lucide-react";
+import { ImagePlus, Trash2, X, ZoomIn } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   deleteFigure,
@@ -19,6 +19,10 @@ interface Props {
   variant?: "composer" | "public";
   /** Creates a draft on the server when the user uploads before the first manual save. */
   ensurePublicationId?: () => Promise<number | null>;
+  /** Notifies parent while uploads run (blocks submit while true). */
+  onUploadingChange?: (uploading: boolean) => void;
+  /** True when one or more chosen images failed to upload (retry before submit). */
+  onFailedPendingChange?: (hasFailed: boolean) => void;
 }
 
 type PendingUpload = {
@@ -38,6 +42,11 @@ function shellClass(variant: "composer" | "public") {
     : "rounded-2xl border border-slate-200 bg-white p-5 ring-1 ring-slate-200/80 sm:p-6";
 }
 
+function defaultCaptionFromFile(file: File, figureIndex: number): string {
+  const base = file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+  return base || `Figure ${figureIndex}`;
+}
+
 export function PublicationFiguresEditor({
   publicationId,
   encodedPublicationId,
@@ -46,16 +55,26 @@ export function PublicationFiguresEditor({
   readOnly,
   variant = "composer",
   ensurePublicationId,
+  onUploadingChange,
+  onFailedPendingChange,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [preview, setPreview] = useState<PublicationFigure | null>(null);
-  const [pending, setPending] = useState<PendingUpload[]>([]);
-  const pendingRef = useRef(pending);
-  pendingRef.current = pending;
+  const [failed, setFailed] = useState<PendingUpload[]>([]);
+  const failedRef = useRef(failed);
+  failedRef.current = failed;
   const [captions, setCaptions] = useState<Record<number, string>>({});
   const [savingCaptionId, setSavingCaptionId] = useState<number | null>(null);
+
+  useEffect(() => {
+    onUploadingChange?.(uploading);
+  }, [uploading, onUploadingChange]);
+
+  useEffect(() => {
+    onFailedPendingChange?.(failed.length > 0);
+  }, [failed.length, onFailedPendingChange]);
 
   useEffect(() => {
     setCaptions(
@@ -65,31 +84,10 @@ export function PublicationFiguresEditor({
 
   useEffect(
     () => () => {
-      pendingRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      failedRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
     },
     []
   );
-
-  const queueFiles = (files: FileList | null) => {
-    if (!files?.length || readOnly) return;
-    const next = Array.from(files).map((file) => ({
-      key: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
-      file,
-      caption: "",
-      previewUrl: URL.createObjectURL(file),
-    }));
-    setPending((prev) => [...prev, ...next]);
-    setUploadError("");
-    if (inputRef.current) inputRef.current.value = "";
-  };
-
-  const removePending = (key: string) => {
-    setPending((prev) => {
-      const item = prev.find((p) => p.key === key);
-      if (item) URL.revokeObjectURL(item.previewUrl);
-      return prev.filter((p) => p.key !== key);
-    });
-  };
 
   const resolvePublicationId = async (): Promise<number | null> => {
     if (publicationId > 0) return publicationId;
@@ -97,41 +95,80 @@ export function PublicationFiguresEditor({
     return ensurePublicationId();
   };
 
-  const uploadPending = async () => {
-    if (!pending.length || readOnly) return;
-    const missing = pending.filter((p) => !p.caption.trim());
-    if (missing.length) {
-      setUploadError("Add a caption for each figure before uploading.");
+  const uploadItems = async (items: PendingUpload[]) => {
+    if (!items.length || readOnly) return;
+    setUploadError("");
+    const pubId = await resolvePublicationId();
+    if (!pubId) {
+      setUploadError("Add a title and abstract before uploading figures.");
+      setFailed((prev) => [...prev, ...items]);
       return;
     }
     setUploading(true);
-    setUploadError("");
     const uploaded: PublicationFigure[] = [];
+    const stillFailed: PendingUpload[] = [];
     try {
-      const pubId = await resolvePublicationId();
-      if (!pubId) {
-        setUploadError("Add a title and abstract before uploading figures.");
-        return;
+      let nextFigures = figures;
+      let index = figures.length;
+      for (const item of items) {
+        const caption = item.caption.trim() || defaultCaptionFromFile(item.file, index + 1);
+        try {
+          const fig = (await uploadFigure(
+            pubId,
+            item.file,
+            { caption },
+            encodedPublicationId
+          )) as PublicationFigure;
+          uploaded.push(fig);
+          nextFigures = [...nextFigures, fig];
+          URL.revokeObjectURL(item.previewUrl);
+          index += 1;
+        } catch (err: unknown) {
+          const e = err as { response?: { data?: { detail?: string } } };
+          setUploadError(
+            e.response?.data?.detail ||
+              "Figure upload failed. Use JPG, PNG, GIF, WEBP, or SVG under 10 MB."
+          );
+          stillFailed.push({ ...item, caption });
+        }
       }
-      for (const item of pending) {
-        const fig = (await uploadFigure(pubId, item.file, {
-          caption: item.caption.trim(),
-        }, encodedPublicationId)) as PublicationFigure;
-        uploaded.push(fig);
-        URL.revokeObjectURL(item.previewUrl);
+      if (uploaded.length) {
+        onChange(nextFigures);
       }
-      onChange([...figures, ...uploaded]);
-      setPending([]);
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string } } };
-      setUploadError(
-        e.response?.data?.detail ||
-          "Figure upload failed. Use JPG, PNG, GIF, WEBP, or SVG under 10 MB."
-      );
-      if (uploaded.length) onChange([...figures, ...uploaded]);
+      if (stillFailed.length) {
+        setFailed((prev) => [...prev, ...stillFailed]);
+      }
     } finally {
       setUploading(false);
     }
+  };
+
+  const queueFiles = (files: FileList | null) => {
+    if (!files?.length || readOnly || uploading) return;
+    const items = Array.from(files).map((file) => ({
+      key: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
+      file,
+      caption: "",
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setUploadError("");
+    if (inputRef.current) inputRef.current.value = "";
+    void uploadItems(items);
+  };
+
+  const retryFailed = () => {
+    if (!failed.length) return;
+    const batch = [...failed];
+    setFailed([]);
+    void uploadItems(batch);
+  };
+
+  const removeFailed = (key: string) => {
+    setFailed((prev) => {
+      const item = prev.find((p) => p.key === key);
+      if (item) URL.revokeObjectURL(item.previewUrl);
+      return prev.filter((p) => p.key !== key);
+    });
   };
 
   const remove = async (id: number) => {
@@ -148,7 +185,12 @@ export function PublicationFiguresEditor({
     try {
       const pubId = await resolvePublicationId();
       if (!pubId) return;
-      const updated = await updateFigure(pubId, fig.id, { caption: nextCaption }, encodedPublicationId);
+      const updated = await updateFigure(
+        pubId,
+        fig.id,
+        { caption: nextCaption },
+        encodedPublicationId
+      );
       onChange(figures.map((item) => (item.id === fig.id ? updated : item)));
     } finally {
       setSavingCaptionId(null);
@@ -164,30 +206,38 @@ export function PublicationFiguresEditor({
           <input
             ref={inputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
             multiple
             className="hidden"
             onChange={(e) => queueFiles(e.target.files)}
           />
-          <Button type="button" variant="secondary" onClick={() => inputRef.current?.click()}>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={uploading}
+            onClick={() => inputRef.current?.click()}
+          >
             <ImagePlus className="h-4 w-4" />
-            Choose images
+            {uploading ? "Uploading…" : "Choose images"}
           </Button>
-          {pending.length > 0 && (
-            <Button type="button" loading={uploading} onClick={uploadPending}>
-              <Upload className="h-4 w-4" />
-              Upload {pending.length} figure{pending.length === 1 ? "" : "s"}
+          {failed.length > 0 && (
+            <Button type="button" loading={uploading} onClick={retryFailed}>
+              Retry {failed.length} failed
             </Button>
           )}
         </div>
       )}
 
-      {!readOnly && pending.length > 0 && (
+      {!readOnly && uploading && (
+        <p className="mt-2 text-sm text-brand-700">Uploading figures…</p>
+      )}
+
+      {!readOnly && failed.length > 0 && (
         <ul className="mt-4 space-y-3">
-          {pending.map((item, index) => (
+          {failed.map((item, index) => (
             <li
               key={item.key}
-              className="flex flex-col gap-3 rounded-xl border border-brand-100 bg-brand-50/30 p-3 sm:flex-row sm:items-start"
+              className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50/50 p-3 sm:flex-row sm:items-start"
             >
               <img
                 src={item.previewUrl}
@@ -195,14 +245,14 @@ export function PublicationFiguresEditor({
                 className="h-28 w-full shrink-0 rounded-lg border border-slate-200 bg-white object-contain sm:h-24 sm:w-36"
               />
               <div className="min-w-0 flex-1 space-y-2">
-                <p className="text-xs font-semibold text-slate-600">
-                  Pending figure {index + 1} · {item.file.name}
+                <p className="text-xs font-semibold text-red-800">
+                  Upload failed · {item.file.name}
                 </p>
                 <Input
                   label="Caption"
                   value={item.caption}
                   onChange={(e) =>
-                    setPending((prev) =>
+                    setFailed((prev) =>
                       prev.map((p) =>
                         p.key === item.key ? { ...p, caption: e.target.value } : p
                       )
@@ -213,9 +263,9 @@ export function PublicationFiguresEditor({
               </div>
               <button
                 type="button"
-                onClick={() => removePending(item.key)}
+                onClick={() => removeFailed(item.key)}
                 className="self-start rounded-lg p-2 text-slate-400 hover:bg-white hover:text-red-600"
-                aria-label="Remove pending figure"
+                aria-label="Remove failed figure"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -298,7 +348,8 @@ export function PublicationFiguresEditor({
         </div>
       ) : (
         !readOnly &&
-        !pending.length && (
+        !uploading &&
+        !failed.length && (
           <p className="mt-4 text-sm text-slate-500">No figures uploaded yet.</p>
         )
       )}
