@@ -55,9 +55,13 @@ import { PublicationSupplementaryUpload } from "../../components/publication/Pub
 import { renderManuscriptHtml } from "../../lib/renderManuscriptHtml";
 import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
+  type ManuscriptLimitedField,
+  NARRATIVE_MANUSCRIPT_FIELDS,
+  externalWordLimit,
   normalizeFunderField,
   limitReferences,
   truncateHtmlToWordLimit,
+  truncateHtmlToWordLimitAtSentence,
   truncateToWordLimit,
 } from "../../lib/manuscriptFieldLimits";
 import { useToast } from "../../components/ui/ToastProvider";
@@ -210,30 +214,35 @@ export function PublicationManagePage() {
     setters[key](value);
   }, []);
 
-  const applyExtractedSection = useCallback((raw: string | undefined, maxWords: number) => {
-    if (!raw?.trim()) return "";
-    return truncateHtmlToWordLimit(renderManuscriptHtml(raw), maxWords);
-  }, []);
+  const applyExtractedSection = useCallback(
+    (raw: string | undefined, field: ManuscriptLimitedField) => {
+      if (!raw?.trim()) return "";
+      const limit = externalWordLimit(field);
+      const html = renderManuscriptHtml(raw);
+      if (NARRATIVE_MANUSCRIPT_FIELDS.includes(field as (typeof NARRATIVE_MANUSCRIPT_FIELDS)[number])) {
+        return truncateHtmlToWordLimitAtSentence(html, limit);
+      }
+      return truncateHtmlToWordLimit(html, limit);
+    },
+    []
+  );
 
   const applyExtractedDocument = useCallback(
     (payload: ExtractedDocumentPayload) => {
       const limits = MANUSCRIPT_FIELD_WORD_LIMITS;
       const nextTitle = (payload.title || "").trim();
       if (nextTitle) setTitle(truncateToWordLimit(nextTitle, limits.title));
-      const nextAbstract = applyExtractedSection(payload.abstract, limits.abstract);
+      const nextAbstract = applyExtractedSection(payload.abstract, "abstract");
       if (nextAbstract) setAbstract(nextAbstract);
-      const nextIntroduction = applyExtractedSection(payload.introduction, limits.introduction);
+      const nextIntroduction = applyExtractedSection(payload.introduction, "introduction");
       if (nextIntroduction) setIntroduction(nextIntroduction);
-      const nextMethods = applyExtractedSection(payload.methods, limits.methods);
+      const nextMethods = applyExtractedSection(payload.methods, "methods");
       if (nextMethods) setMethods(nextMethods);
-      const nextFindings = applyExtractedSection(payload.findings, limits.findings);
+      const nextFindings = applyExtractedSection(payload.findings, "findings");
       if (nextFindings) setFindings(nextFindings);
-      const nextConclusion = applyExtractedSection(payload.conclusion, limits.conclusion);
+      const nextConclusion = applyExtractedSection(payload.conclusion, "conclusion");
       if (nextConclusion) setConclusion(nextConclusion);
-      const nextFunder = truncateToWordLimit(
-        normalizeFunderField((payload.funder || "").trim()),
-        limits.funder
-      );
+      const nextFunder = normalizeFunderField((payload.funder || "").trim());
       if (nextFunder) setFunder(nextFunder);
       const nextKeywords = truncateToWordLimit((payload.keywords || "").trim(), limits.keywords);
       if (nextKeywords) setKeywords(nextKeywords);

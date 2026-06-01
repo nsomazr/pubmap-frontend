@@ -11,7 +11,27 @@ export const MANUSCRIPT_FIELD_WORD_LIMITS = {
   keywords: 30,
 } as const;
 
+/** Matches backend LLM_WORD_LIMIT_BUFFER — agents aim below the hard cap. */
+export const LLM_WORD_LIMIT_BUFFER = 20;
+
+export const NARRATIVE_MANUSCRIPT_FIELDS = [
+  "abstract",
+  "introduction",
+  "methods",
+  "findings",
+  "conclusion",
+] as const;
+
 export const REFERENCE_ITEM_LIMIT = 5;
+
+export function externalWordLimit(field: ManuscriptLimitedField): number {
+  return MANUSCRIPT_FIELD_WORD_LIMITS[field];
+}
+
+export function llmWordTarget(field: ManuscriptLimitedField): number {
+  const external = externalWordLimit(field);
+  return Math.max(12, external - LLM_WORD_LIMIT_BUFFER);
+}
 
 /** Composer group for findings + conclusion (no separate Discussion section). */
 export const MANUSCRIPT_FINDINGS_GROUP_TITLE = "Findings & Conclusion";
@@ -41,6 +61,44 @@ export function stripContinuationMarkers(value: string): string {
   return text.replace(/[ .,;:]+$/u, "").trimEnd();
 }
 
+function finishSentence(text: string): string {
+  const value = stripContinuationMarkers(text.trim());
+  if (!value) return "";
+  if (/[.!?]$/.test(value)) return value;
+  return `${value.replace(/[.,;:-]+$/, "")}.`;
+}
+
+/** Prefer ending at the last complete sentence within the word cap (mirrors backend). */
+export function truncateToWordLimitAtSentence(text: string, maxWords: number): string {
+  if (maxWords <= 0) return "";
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return finishSentence(text.trim());
+
+  const hard = words.slice(0, maxWords).join(" ");
+  const minWords = Math.max(12, Math.floor(maxWords * 0.55));
+  const sentenceEnd = /[.!?](?:["'”)\]]?)(?=\s|$)/g;
+  let best = "";
+  let match: RegExpExecArray | null;
+  while ((match = sentenceEnd.exec(hard)) !== null) {
+    const candidate = hard.slice(0, match.index + match[0].length).trim();
+    if (candidate.split(/\s+/).filter(Boolean).length >= minWords) {
+      best = candidate;
+    }
+  }
+  if (best) return finishSentence(best);
+
+  for (const punct of [". ", "! ", "? "]) {
+    const idx = hard.lastIndexOf(punct);
+    if (idx >= 0) {
+      const candidate = hard.slice(0, idx + 1);
+      if (candidate.split(/\s+/).filter(Boolean).length >= minWords) {
+        return finishSentence(candidate);
+      }
+    }
+  }
+  return finishSentence(hard);
+}
+
 export function truncateToWordLimit(text: string, maxWords: number): string {
   if (maxWords <= 0) return "";
   const words = text.trim().split(/\s+/).filter(Boolean);
@@ -48,15 +106,34 @@ export function truncateToWordLimit(text: string, maxWords: number): string {
   return stripContinuationMarkers(words.slice(0, maxWords).join(" "));
 }
 
-export function truncateHtmlToWordLimit(html: string, maxWords: number): string {
-  const plain = stripHtmlToText(html);
-  const truncated = truncateToWordLimit(plain, maxWords);
+export function truncateManuscriptField(
+  field: ManuscriptLimitedField,
+  text: string
+): string {
+  const external = externalWordLimit(field);
+  if (NARRATIVE_MANUSCRIPT_FIELDS.includes(field as (typeof NARRATIVE_MANUSCRIPT_FIELDS)[number])) {
+    return truncateToWordLimitAtSentence(text, external);
+  }
+  return truncateToWordLimit(text, external);
+}
+
+function plainToTruncatedHtml(plain: string, truncated: string, html: string): string {
   if (truncated === plain) return html;
   const escaped = truncated
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
   return `<p>${escaped}</p>`;
+}
+
+export function truncateHtmlToWordLimit(html: string, maxWords: number): string {
+  const plain = stripHtmlToText(html);
+  return plainToTruncatedHtml(plain, truncateToWordLimit(plain, maxWords), html);
+}
+
+export function truncateHtmlToWordLimitAtSentence(html: string, maxWords: number): string {
+  const plain = stripHtmlToText(html);
+  return plainToTruncatedHtml(plain, truncateToWordLimitAtSentence(plain, maxWords), html);
 }
 
 function splitReferenceItems(text: string): string[] {
