@@ -2,11 +2,11 @@ import { ImagePlus, Loader2, Trash2, X, ZoomIn } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   deleteFigure,
+  resolveFigureImageSrc,
   updateFigure,
   uploadFigure,
   type PublicationFigure,
 } from "../../lib/publicationGre";
-import { mediaUrl } from "../../lib/mediaUrl";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 
@@ -258,7 +258,7 @@ export function PublicationFiguresEditor({
       {figures.length > 0 ? (
         <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {figures.map((fig, index) => {
-            const src = mediaUrl(fig.photo);
+            const src = resolveFigureImageSrc(fig, publicationId, encodedPublicationId);
             const captionText = (readOnly ? fig.caption : captions[fig.id])?.trim() || "";
             return (
               <figure
@@ -350,7 +350,9 @@ export function PublicationFiguresEditor({
               <X className="h-5 w-5" />
             </button>
             <img
-              src={mediaUrl(preview.photo) || ""}
+              src={
+                resolveFigureImageSrc(preview, publicationId, encodedPublicationId) || ""
+              }
               alt={preview.caption || "Figure preview"}
               loading="eager"
               className="mx-auto max-h-[min(82vh,900px)] w-auto max-w-full rounded-lg object-contain shadow-2xl"
@@ -375,15 +377,20 @@ export function PublicationFiguresEditor({
 
 export function PublicationFiguresGallery({
   figures,
+  publicationId = 0,
+  encodedPublicationId,
   variant = "public",
 }: {
   figures: PublicationFigure[];
+  publicationId?: number;
+  encodedPublicationId?: string | null;
   variant?: "composer" | "public";
 }) {
   if (!figures.length) return null;
   return (
     <PublicationFiguresEditor
-      publicationId={0}
+      publicationId={publicationId}
+      encodedPublicationId={encodedPublicationId}
       figures={figures}
       onChange={() => {}}
       readOnly

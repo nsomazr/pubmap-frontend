@@ -1,6 +1,7 @@
 import api from "./api";
 
 import { resolveApiBaseUrl } from "./apiBaseUrl";
+import { mediaUrl } from "./mediaUrl";
 import { publicationApiSegment } from "./publicationPaths";
 
 export type PublicationAccessType = "open" | "closed";
@@ -23,7 +24,10 @@ export interface PublicationGre {
 
 export interface PublicationFigure {
   id: number;
+  /** Stored media path (e.g. uploads/figures/…) or legacy storage/ URL. */
   photo: string;
+  /** Absolute URL when the API provides one. */
+  photo_url?: string;
   caption?: string;
   title?: string;
   figure_number?: string;
@@ -42,6 +46,42 @@ type PublicationIdRef = number | string;
 
 function pubSeg(publicationId: PublicationIdRef, encodedId?: string | null) {
   return publicationApiSegment(publicationId, encodedId);
+}
+
+/** Preview URL for a figure (API image route; supports JWT via ?access= for <img>). */
+export function figurePreviewUrl(
+  publicationId: PublicationIdRef,
+  figureId: number,
+  encodedId?: string | null
+): string {
+  const apiBase = resolveApiBaseUrl().replace(/\/$/, "");
+  const path = `/publications/${pubSeg(publicationId, encodedId)}/figures/${figureId}/image/`;
+  const base = apiBase.startsWith("http")
+    ? apiBase
+    : typeof window !== "undefined"
+      ? `${window.location.origin}${apiBase.startsWith("/") ? apiBase : `/${apiBase}`}`
+      : apiBase;
+  const url = `${base.replace(/\/$/, "")}${path}`;
+  if (typeof window === "undefined") return url;
+  const token = localStorage.getItem("access_token");
+  if (!token) return url;
+  return `${url}?access=${encodeURIComponent(token)}`;
+}
+
+export function resolveFigureImageSrc(
+  fig: PublicationFigure,
+  publicationId: PublicationIdRef,
+  encodedId?: string | null
+): string | null {
+  if (publicationId && fig.id > 0) {
+    return figurePreviewUrl(publicationId, fig.id, encodedId);
+  }
+  const fromApi = fig.photo_url?.trim();
+  if (fromApi) return fromApi;
+  const raw = fig.photo?.trim();
+  if (!raw) return null;
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  return mediaUrl(raw);
 }
 
 export async function updatePublicationGre(

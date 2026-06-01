@@ -202,7 +202,11 @@ export function PublicationReaderPage() {
           )}
 
           {showManuscriptContent && (
-            <PublicationFiguresGallery figures={pub.figures ?? []} />
+            <PublicationFiguresGallery
+              figures={pub.figures ?? []}
+              publicationId={pub.id}
+              encodedPublicationId={pub.encoded_id}
+            />
           )}
 
           {pub.coordinates && <StudyLocationSection publication={pub} />}

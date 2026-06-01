@@ -200,6 +200,7 @@ export interface PublicationGre {
 export interface PublicationFigure {
   id: number;
   photo: string;
+  photo_url?: string;
   caption?: string;
   title?: string;
   figure_number?: string;
