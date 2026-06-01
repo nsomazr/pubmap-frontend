@@ -84,6 +84,19 @@ export function resolveFigureImageSrc(
   return mediaUrl(raw);
 }
 
+/** Fetch figure bytes through the API (Authorization header, no token in URL). */
+export async function fetchFigureImageBlob(
+  publicationId: PublicationIdRef,
+  figureId: number,
+  encodedId?: string | null
+): Promise<Blob> {
+  const { data } = await api.get<Blob>(
+    `/publications/${pubSeg(publicationId, encodedId)}/figures/${figureId}/image/`,
+    { responseType: "blob" }
+  );
+  return data;
+}
+
 export async function updatePublicationGre(
   publicationId: PublicationIdRef,
   payload: Partial<PublicationGre>,

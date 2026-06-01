@@ -1,0 +1,69 @@
+import { useEffect, useState } from "react";
+import api from "../lib/api";
+import { mediaUrl } from "../lib/mediaUrl";
+import {
+  fetchFigureImageBlob,
+  type PublicationFigure,
+} from "../lib/publicationGre";
+
+type PublicationIdRef = number | string;
+
+/**
+ * Loads figure thumbnails via authenticated API (reliable for drafts)
+ * with media URL fallback for legacy paths.
+ */
+export function useFigurePreviewUrls(
+  figures: PublicationFigure[],
+  publicationId: PublicationIdRef,
+  encodedPublicationId?: string | null
+): Record<number, string> {
+  const [urls, setUrls] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const objectUrls: string[] = [];
+
+    const load = async () => {
+      const next: Record<number, string> = {};
+      await Promise.all(
+        figures.map(async (fig) => {
+          if (!fig.id) return;
+          let resolved = "";
+          if (publicationId && fig.id > 0) {
+            try {
+              const blob = await fetchFigureImageBlob(
+                publicationId,
+                fig.id,
+                encodedPublicationId
+              );
+              const objectUrl = URL.createObjectURL(blob);
+              objectUrls.push(objectUrl);
+              resolved = objectUrl;
+            } catch {
+              /* try fallbacks */
+            }
+          }
+          if (!resolved) {
+            const remote = fig.photo_url?.trim();
+            if (remote?.startsWith("http://") || remote?.startsWith("https://")) {
+              resolved = remote;
+            } else {
+              resolved = mediaUrl(fig.photo) || mediaUrl(remote) || "";
+            }
+          }
+          next[fig.id] = resolved;
+        })
+      );
+      if (!cancelled) setUrls(next);
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [figures, publicationId, encodedPublicationId]);
+
+  return urls;
+}

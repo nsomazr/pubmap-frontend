@@ -1,8 +1,8 @@
 import { ImagePlus, Loader2, Trash2, X, ZoomIn } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useFigurePreviewUrls } from "../../hooks/useFigurePreviewUrls";
 import {
   deleteFigure,
-  resolveFigureImageSrc,
   updateFigure,
   uploadFigure,
   type PublicationFigure,
@@ -58,6 +58,28 @@ export function PublicationFiguresEditor({
   pendingRef.current = pending;
   const [captions, setCaptions] = useState<Record<number, string>>({});
   const [savingCaptionId, setSavingCaptionId] = useState<number | null>(null);
+  const figurePreviewUrls = useFigurePreviewUrls(
+    figures,
+    publicationId,
+    encodedPublicationId
+  );
+  const [localPreviews, setLocalPreviews] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    setLocalPreviews((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const [id, url] of Object.entries(prev)) {
+        const figureId = Number(id);
+        if (figurePreviewUrls[figureId]) {
+          URL.revokeObjectURL(url);
+          delete next[figureId];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [figurePreviewUrls]);
 
   useEffect(() => {
     setCaptions(
@@ -68,8 +90,9 @@ export function PublicationFiguresEditor({
   useEffect(
     () => () => {
       pendingRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      Object.values(localPreviews).forEach((url) => URL.revokeObjectURL(url));
     },
-    []
+    [localPreviews]
   );
 
   useEffect(() => {
@@ -128,7 +151,7 @@ export function PublicationFiguresEditor({
         )) as PublicationFigure;
         uploaded.push(fig);
         uploadedKeys.add(item.key);
-        URL.revokeObjectURL(item.previewUrl);
+        setLocalPreviews((prev) => ({ ...prev, [fig.id]: item.previewUrl }));
       }
       if (uploaded.length) {
         onChange([...figures, ...uploaded]);
@@ -258,7 +281,11 @@ export function PublicationFiguresEditor({
       {figures.length > 0 ? (
         <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {figures.map((fig, index) => {
-            const src = resolveFigureImageSrc(fig, publicationId, encodedPublicationId);
+            const src = figurePreviewUrls[fig.id] || localPreviews[fig.id];
+            const previewLoading =
+              Boolean(publicationId && fig.id > 0) &&
+              src === undefined &&
+              !localPreviews[fig.id];
             const captionText = (readOnly ? fig.caption : captions[fig.id])?.trim() || "";
             return (
               <figure
@@ -278,6 +305,11 @@ export function PublicationFiguresEditor({
                       decoding="async"
                       className="max-h-64 min-h-[12rem] w-full object-contain p-3 transition group-hover:opacity-95"
                     />
+                  ) : previewLoading ? (
+                    <div className="flex min-h-[12rem] items-center justify-center gap-2 bg-slate-100 text-slate-500">
+                      <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                      <span className="text-sm">Loading preview…</span>
+                    </div>
                   ) : (
                     <div className="flex min-h-[12rem] items-center justify-center bg-slate-100 text-slate-400">
                       No preview
@@ -340,24 +372,27 @@ export function PublicationFiguresEditor({
           aria-modal="true"
           aria-label="Figure preview"
         >
-          <div className="max-h-full max-w-5xl w-full" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="relative flex max-h-[min(92vh,880px)] w-full max-w-[min(96vw,52rem)] flex-col overflow-hidden rounded-xl bg-slate-900/40 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
-              className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+              className="absolute right-3 top-3 z-10 rounded-full bg-black/40 p-2 text-white hover:bg-black/55"
               onClick={() => setPreview(null)}
               aria-label="Close preview"
             >
               <X className="h-5 w-5" />
             </button>
-            <img
-              src={
-                resolveFigureImageSrc(preview, publicationId, encodedPublicationId) || ""
-              }
-              alt={preview.caption || "Figure preview"}
-              loading="eager"
-              className="mx-auto max-h-[min(82vh,900px)] w-auto max-w-full rounded-lg object-contain shadow-2xl"
-            />
-            <div className="mt-3 text-center text-sm text-white/95">
+            <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-4 pt-12">
+              <img
+                src={figurePreviewUrls[preview.id] || ""}
+                alt={preview.caption || "Figure preview"}
+                loading="eager"
+                className="mx-auto max-h-[min(68vh,640px)] max-w-full object-contain"
+              />
+            </div>
+            <div className="shrink-0 border-t border-white/10 px-4 py-3 text-center text-sm text-white/95">
               <p className="font-semibold">
                 {figureLabel(
                   preview,
@@ -365,7 +400,7 @@ export function PublicationFiguresEditor({
                 )}
               </p>
               {(preview.caption || "").trim() && (
-                <p className="mt-1 max-w-2xl mx-auto leading-relaxed">{preview.caption}</p>
+                <p className="mt-1 mx-auto max-w-2xl leading-relaxed">{preview.caption}</p>
               )}
             </div>
           </div>
