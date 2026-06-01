@@ -61,11 +61,40 @@ export function stripContinuationMarkers(value: string): string {
   return text.replace(/[ .,;:]+$/u, "").trimEnd();
 }
 
-function finishSentence(text: string): string {
-  const value = stripContinuationMarkers(text.trim());
+/** Strip [1], [2,3] and trailing footnote digits (mirrors backend). */
+export function stripInlineCitations(text: string): string {
+  let value = (text || "").trim();
   if (!value) return "";
-  if (/[.!?]$/.test(value)) return value;
-  return `${value.replace(/[.,;:-]+$/, "")}.`;
+  value = value.replace(/\[\s*\d+(?:\s*[,;\-–—]\s*\d+)*\s*\]/g, "");
+  value = value.replace(/\(\s*(?:see|cf\.|e\.g\.|ref\.)\s+[^)]{0,120}\)/gi, "");
+  value = value.replace(/\s+([.,;:!?])/g, "$1");
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function polishNarrativeEnding(text: string): string {
+  let value = stripInlineCitations(stripContinuationMarkers(text.trim()));
+  if (!value) return "";
+  value = value.replace(/([.!?]["'”\])]?)\s+\d{1,3}\s*$/, "$1");
+  if (/\s\d{1,3}\s*$/.test(value) && !/\s\d{4}\s*$/.test(value)) {
+    value = value.replace(/\s+\d{1,3}\s*$/, "").trimEnd();
+  }
+  if (!/[.!?]$/.test(value)) {
+    for (const punct of [". ", "! ", "? "]) {
+      const idx = value.lastIndexOf(punct);
+      if (idx >= value.length * 0.35) {
+        value = value.slice(0, idx + 1).trim();
+        break;
+      }
+    }
+  }
+  if (value && !/[.!?]$/.test(value)) {
+    value = `${value.replace(/[.,;:-]+$/, "")}.`;
+  }
+  return value;
+}
+
+function finishSentence(text: string): string {
+  return polishNarrativeEnding(text);
 }
 
 /** Prefer ending at the last complete sentence within the word cap (mirrors backend). */
