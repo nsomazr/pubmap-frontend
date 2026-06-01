@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import { FileText, Loader2, Trash2 } from "lucide-react";
+import type { MutableRefObject } from "react";
 import { useState } from "react";
 import api, { parseApiError } from "../../lib/api";
 import { sanitizeExtractionWarnings } from "../../lib/extractionWarnings";
@@ -30,6 +32,8 @@ interface Props {
   disabledHint?: string;
   extractOnUpload?: boolean;
   onExtracted?: (payload: ExtractedDocumentPayload) => void;
+  onExtractingChange?: (extracting: boolean) => void;
+  extractionAbortRef?: MutableRefObject<AbortController | null>;
 }
 
 export function PublicationDocumentUpload({
@@ -39,6 +43,8 @@ export function PublicationDocumentUpload({
   disabledHint,
   extractOnUpload = false,
   onExtracted,
+  onExtractingChange,
+  extractionAbortRef,
 }: Props) {
   const queryClient = useQueryClient();
   const [localError, setLocalError] = useState("");
@@ -49,6 +55,13 @@ export function PublicationDocumentUpload({
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
+      extractionAbortRef?.current?.abort();
+      const controller = new AbortController();
+      if (extractionAbortRef) {
+        extractionAbortRef.current = controller;
+      }
+      const signal = controller.signal;
+
       const form = new FormData();
       form.append("document", file);
       const params = extractOnUpload ? { extract: 1, use_ai: 1 } : undefined;
@@ -57,17 +70,20 @@ export function PublicationDocumentUpload({
         const { data } = await api.post<{ extracted?: ExtractedDocumentPayload }>(
           `/publications/${publicationId}/upload_document/`,
           form,
-          { params }
+          { params, signal }
         );
         return data;
       } catch (error) {
+        if (axios.isCancel(error)) {
+          throw error;
+        }
         if (!extractOnUpload) throw error;
         const retryForm = new FormData();
         retryForm.append("document", file);
         const { data } = await api.post<{ extracted?: ExtractedDocumentPayload }>(
           `/publications/${publicationId}/upload_document/`,
           retryForm,
-          { params: { extract: 1, use_ai: 0, ocr_backend: "tesseract" } }
+          { params: { extract: 1, use_ai: 0, ocr_backend: "tesseract" }, signal }
         );
         if (data?.extracted) {
           data.extracted = {
@@ -76,11 +92,23 @@ export function PublicationDocumentUpload({
           };
         }
         return data;
+      } finally {
+        if (extractionAbortRef?.current === controller) {
+          extractionAbortRef.current = null;
+        }
+      }
+    },
+    onMutate: () => {
+      if (extractOnUpload) {
+        onExtractingChange?.(true);
       }
     },
     onSuccess: (data) => {
       setLocalError("");
       setPendingFile(null);
+      if (extractOnUpload) {
+        onExtractingChange?.(false);
+      }
       if (data?.extracted && onExtracted) {
         onExtracted({
           ...data.extracted,
@@ -90,6 +118,13 @@ export function PublicationDocumentUpload({
       queryClient.invalidateQueries({ queryKey: ["publication-edit", String(publicationId)] });
     },
     onError: (err) => {
+      if (extractOnUpload) {
+        onExtractingChange?.(false);
+      }
+      if (axios.isCancel(err)) {
+        setLocalError("Extraction stopped.");
+        return;
+      }
       setLocalError(parseApiError(err, "Upload failed."));
     },
   });

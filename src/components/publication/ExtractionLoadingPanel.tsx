@@ -5,7 +5,9 @@ import {
   FileText,
   Loader2,
   Sparkles,
+  Square,
 } from "lucide-react";
+import { Button } from "../ui/Button";
 import {
   EXTRACTION_STEPS,
   extractionActiveStepIndex,
@@ -28,6 +30,7 @@ type ExtractionLoadingPanelProps = {
   compact?: boolean;
   /** Uploaded manuscript filename shown in the header. */
   fileName?: string | null;
+  onStop?: () => void;
 };
 
 function StepIcon({ state }: { state: "done" | "active" | "pending" }) {
@@ -52,7 +55,11 @@ function StepIcon({ state }: { state: "done" | "active" | "pending" }) {
   );
 }
 
-export function ExtractionLoadingPanel({ compact = false, fileName }: ExtractionLoadingPanelProps) {
+export function ExtractionLoadingPanel({
+  compact = false,
+  fileName,
+  onStop,
+}: ExtractionLoadingPanelProps) {
   const progress = useExtractionProgress(true);
   const elapsedSeconds = useExtractionElapsedSeconds(true);
   const activeIndex = extractionActiveStepIndex(progress);
@@ -85,6 +92,17 @@ export function ExtractionLoadingPanel({ compact = false, fileName }: Extraction
               This usually takes about half a minute to two minutes. You can review and change
               anything before you submit.
             </p>
+            {onStop && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="mt-3"
+                onClick={onStop}
+              >
+                <Square className="h-3.5 w-3.5 fill-current" aria-hidden />
+                Stop extraction
+              </Button>
+            )}
           </div>
         </div>
 

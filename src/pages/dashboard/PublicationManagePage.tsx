@@ -187,6 +187,9 @@ export function PublicationManagePage() {
   const [createdDraftEncodedId, setCreatedDraftEncodedId] = useState<string | null>(null);
   const [figuresUploadBusy, setFiguresUploadBusy] = useState(false);
   const [figuresPendingCount, setFiguresPendingCount] = useState(0);
+  const extractionAbortRef = useRef<AbortController | null>(null);
+  const extractionCancelledRef = useRef(false);
+  const [documentUploadExtracting, setDocumentUploadExtracting] = useState(false);
   const createdDraftIdRef = useRef<number | null>(createdDraftId);
   createdDraftIdRef.current = createdDraftId;
   const createdDraftEncodedIdRef = useRef<string | null>(createdDraftEncodedId);
@@ -397,6 +400,11 @@ export function PublicationManagePage() {
 
   const extractDocumentMutation = useMutation({
     mutationFn: async (file: File) => {
+      extractionAbortRef.current?.abort();
+      const controller = new AbortController();
+      extractionAbortRef.current = controller;
+      const signal = controller.signal;
+
       const buildForm = () => {
         const form = new FormData();
         form.append("document", file);
@@ -409,10 +417,14 @@ export function PublicationManagePage() {
           buildForm(),
           {
             params: { use_ai: 1 },
+            signal,
           }
         );
         return data;
       } catch (error) {
+        if (axios.isCancel(error)) {
+          throw error;
+        }
         const status = axios.isAxiosError(error) ? error.response?.status : undefined;
         if (status && status < 500 && status !== 401 && status !== 429) {
           throw error;
@@ -423,15 +435,21 @@ export function PublicationManagePage() {
           buildForm(),
           {
             params: { use_ai: 0, ocr_backend: "tesseract" },
+            signal,
           }
         );
         return {
           ...data,
           warnings: sanitizeExtractionWarnings(data.warnings),
         };
+      } finally {
+        if (extractionAbortRef.current === controller) {
+          extractionAbortRef.current = null;
+        }
       }
     },
     onMutate: () => {
+      extractionCancelledRef.current = false;
       setExtractionUi({
         status: "extracting",
         warnings: [],
@@ -442,6 +460,14 @@ export function PublicationManagePage() {
       applyExtractedDocument(data);
     },
     onError: (err) => {
+      if (axios.isCancel(err)) {
+        setExtractionUi({
+          status: "idle",
+          warnings: ["Extraction stopped. You can upload the file again to retry."],
+          sectionNotes: {},
+        });
+        return;
+      }
       setExtractionUi({
         status: "error",
         warnings: [parseApiError(err, "Could not extract sections from that file.")],
@@ -450,9 +476,31 @@ export function PublicationManagePage() {
     },
   });
 
+  const stopExtraction = useCallback(() => {
+    extractionCancelledRef.current = true;
+    extractionAbortRef.current?.abort();
+    extractionAbortRef.current = null;
+    extractDocumentMutation.reset();
+    setDocumentUploadExtracting(false);
+    setExtractionUi({
+      status: "idle",
+      warnings: ["Extraction stopped. You can upload the file again to retry."],
+      sectionNotes: {},
+    });
+  }, [extractDocumentMutation]);
+
+  const extractionActive =
+    extractionUi.status === "extracting" || documentUploadExtracting;
+
   useEffect(() => {
     if (!pendingDocument) {
-      setExtractionUi({ status: "idle", warnings: [], sectionNotes: {} });
+      extractionCancelledRef.current = false;
+      if (!documentUploadExtracting) {
+        setExtractionUi({ status: "idle", warnings: [], sectionNotes: {} });
+      }
+      return;
+    }
+    if (extractionCancelledRef.current) {
       return;
     }
     extractDocumentMutation.mutate(pendingDocument);
@@ -489,7 +537,7 @@ export function PublicationManagePage() {
   };
 
   const getSaveValidationError = (): string | null => {
-    if (extractionUi.status === "extracting") {
+    if (extractionActive) {
       return "Please wait while GRE extracts manuscript sections from the uploaded paper.";
     }
     if (figuresUploadBusy) {
@@ -1162,7 +1210,10 @@ export function PublicationManagePage() {
                   <div className="space-y-3">
                     <ManuscriptUploadField
                       file={pendingDocument}
-                      onFileChange={setPendingDocument}
+                      onFileChange={(file) => {
+                        extractionCancelledRef.current = false;
+                        setPendingDocument(file);
+                      }}
                       existingDocumentPath={existingDocPath}
                       disabled={isReadOnly}
                     />
@@ -1177,14 +1228,29 @@ export function PublicationManagePage() {
                     disabled={isReadOnly}
                     extractOnUpload
                     onExtracted={applyExtractedDocument}
+                    extractionAbortRef={extractionAbortRef}
+                    onExtractingChange={(active) => {
+                      setDocumentUploadExtracting(active);
+                      if (active) {
+                        extractionCancelledRef.current = false;
+                        setExtractionUi({
+                          status: "extracting",
+                          warnings: [],
+                          sectionNotes: {},
+                        });
+                      }
+                    }}
                   />
                 ) : null}
             </ComposerStage>
 
             <ComposerStage number="3" title="Manuscript">
               <div className="space-y-6">
-                {extractionUi.status === "extracting" && (
-                  <ExtractionLoadingPanel fileName={pendingDocument?.name ?? existingDocPath} />
+                {extractionActive && (
+                  <ExtractionLoadingPanel
+                    fileName={pendingDocument?.name ?? existingDocPath}
+                    onStop={stopExtraction}
+                  />
                 )}
                 {extractionUi.status === "ready" && extractionUi.warnings.length > 0 && (
                   <ul className="mb-5 space-y-2 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
@@ -1386,7 +1452,7 @@ export function PublicationManagePage() {
             variant="secondary"
             className={greFormPrimaryButtonClass}
             disabled={
-              extractionUi.status === "extracting" ||
+              extractionActive ||
               figuresUploadBusy ||
               (saveMutation.isPending && !submitReviewOpen)
             }
@@ -1403,7 +1469,7 @@ export function PublicationManagePage() {
               type="button"
               className={greFormPrimaryButtonClass}
               disabled={
-                extractionUi.status === "extracting" ||
+                extractionActive ||
                 figuresUploadBusy ||
                 figuresPendingCount > 0 ||
                 !readyToSubmit ||
