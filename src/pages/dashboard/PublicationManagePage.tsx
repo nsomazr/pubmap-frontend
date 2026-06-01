@@ -1514,12 +1514,18 @@ export function PublicationManagePage() {
       <SubmissionReviewDialog
         open={submitReviewOpen}
         title={title}
-        abstract={abstract}
+        manuscript={manuscript}
+        keywords={keywords}
         subCategoryName={subCategoryName}
         location={coordinates.location}
         institution={coordinates.institution}
-        documentPath={existingDocPath}
-        pendingFile={pendingDocument}
+        accessType={gre.access_type}
+        authorsComment={gre.authors_comment}
+        figureCount={figures.length}
+        manuscriptFileName={
+          pendingDocument?.name ??
+          (existingDocPath ? existingDocPath.split("/").pop() : null)
+        }
         submitting={saveMutation.isPending && submitReviewOpen}
         onClose={() => setSubmitReviewOpen(false)}
         onConfirm={confirmSubmitForReview}

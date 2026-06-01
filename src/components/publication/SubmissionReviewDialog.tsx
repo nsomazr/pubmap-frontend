@@ -1,9 +1,11 @@
-import { MapPin, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { FileText, MapPin, X } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { abstractPlainText } from "../../lib/abstractText";
+import { AUTHORS_PERSONAL_FEELING_LABEL } from "../../lib/publicationGre";
 import { Button } from "../ui/Button";
-import { PdfPreview } from "./PdfPreview";
+import { ManuscriptContent } from "./ManuscriptContent";
+import type { ManuscriptFields } from "./ManuscriptSectionsEditor";
 
 export const AUTHOR_SUBMISSION_DECLARATION =
   "I declare that this work is my own and that the Global Research Explorer (GRE) has no obligation or liability regarding any claims, including complaints from third parties, related to this article.";
@@ -11,31 +13,69 @@ export const AUTHOR_SUBMISSION_DECLARATION =
 interface Props {
   open: boolean;
   title: string;
-  abstract: string;
+  manuscript: ManuscriptFields;
+  keywords?: string;
   subCategoryName?: string;
   location?: string;
   institution?: string;
-  documentPath?: string | null;
-  pendingFile?: File | null;
+  accessType?: "open" | "closed";
+  authorsComment?: string;
+  figureCount?: number;
+  manuscriptFileName?: string | null;
   submitting?: boolean;
   onClose: () => void;
   onConfirm: () => void;
 }
 
+function ReviewBlock({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</h3>
+      <div className="mt-2">{children}</div>
+    </div>
+  );
+}
+
+function ReviewText({ value }: { value?: string | null }) {
+  const text = (value || "").trim();
+  if (!text) {
+    return <p className="text-sm italic text-slate-400">Not provided</p>;
+  }
+  return <ManuscriptContent value={value} className="min-w-0 text-sm" />;
+}
+
+function parseKeywordList(raw?: string): string[] {
+  if (!raw?.trim()) return [];
+  return raw
+    .split(/[,;]/)
+    .map((k) => k.trim())
+    .filter(Boolean);
+}
+
 export function SubmissionReviewDialog({
   open,
   title,
-  abstract,
+  manuscript,
+  keywords,
   subCategoryName,
   location,
   institution,
-  documentPath,
-  pendingFile,
+  accessType,
+  authorsComment,
+  figureCount = 0,
+  manuscriptFileName,
   submitting,
   onClose,
   onConfirm,
 }: Props) {
   const [declared, setDeclared] = useState(false);
+  const keywordList = parseKeywordList(keywords);
 
   useEffect(() => {
     if (!open) setDeclared(false);
@@ -59,8 +99,7 @@ export function SubmissionReviewDialog({
               Review your submission
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Check title, abstract, PDF, and map location. Nothing is sent for admin review until you
-              confirm below.
+              Check every field below. Nothing is sent for admin review until you confirm.
             </p>
           </div>
           <button
@@ -74,47 +113,95 @@ export function SubmissionReviewDialog({
         </div>
 
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5">
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Title</h3>
-            <p className="mt-1 text-base font-semibold text-ink">{title}</p>
+          <ReviewBlock label="Title">
+            <p className="text-base font-semibold text-ink">{title || "Not provided"}</p>
             {subCategoryName && (
               <span className="mt-2 inline-block rounded-md bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-700">
                 {subCategoryName}
               </span>
             )}
-          </div>
+          </ReviewBlock>
 
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Abstract</h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
-              {abstractPlainText(abstract) || "-"}
+          {accessType && (
+            <ReviewBlock label="Access">
+              <p className="text-sm text-slate-700">
+                {accessType === "closed" ? "Closed access" : "Open access"}
+              </p>
+            </ReviewBlock>
+          )}
+
+          {manuscriptFileName && (
+            <ReviewBlock label="Manuscript file">
+              <p className="flex items-center gap-1.5 text-sm text-slate-700">
+                <FileText className="h-4 w-4 shrink-0 text-brand-600" aria-hidden />
+                <span className="truncate">{manuscriptFileName}</span>
+              </p>
+            </ReviewBlock>
+          )}
+
+          <ReviewBlock label="Abstract">
+            <p className="text-sm leading-relaxed text-slate-700">
+              {abstractPlainText(manuscript.abstract) || (
+                <span className="italic text-slate-400">Not provided</span>
+              )}
             </p>
-          </div>
+          </ReviewBlock>
+
+          <ReviewBlock label="Keywords">
+            {keywordList.length > 0 ? (
+              <p className="text-sm text-slate-700">{keywordList.join(", ")}</p>
+            ) : (
+              <p className="text-sm italic text-slate-400">Not provided</p>
+            )}
+          </ReviewBlock>
+
+          <ReviewBlock label="Introduction">
+            <ReviewText value={manuscript.introduction} />
+          </ReviewBlock>
+
+          <ReviewBlock label="Methods">
+            <ReviewText value={manuscript.methods} />
+          </ReviewBlock>
+
+          <ReviewBlock label="Findings">
+            <ReviewText value={manuscript.findings} />
+          </ReviewBlock>
+
+          <ReviewBlock label="Conclusion">
+            <ReviewText value={manuscript.conclusion} />
+          </ReviewBlock>
+
+          <ReviewBlock label="Funding organizations">
+            <ReviewText value={manuscript.funder} />
+          </ReviewBlock>
+
+          <ReviewBlock label="Key references">
+            <ReviewText value={manuscript.references} />
+          </ReviewBlock>
+
+          {figureCount > 0 && (
+            <ReviewBlock label="Research figures">
+              <p className="text-sm text-slate-700">
+                {figureCount} figure{figureCount === 1 ? "" : "s"} attached
+              </p>
+            </ReviewBlock>
+          )}
 
           {location && (
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Study location
-              </h3>
-              <p className="mt-2 flex items-start gap-1.5 text-sm text-slate-700">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
+            <ReviewBlock label="Study location">
+              <p className="flex items-start gap-1.5 text-sm text-slate-700">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" aria-hidden />
                 {location}
                 {institution ? ` · ${institution}` : ""}
               </p>
-            </div>
+            </ReviewBlock>
           )}
 
-          <div>
-            <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-              Manuscript PDF
-            </h3>
-            <PdfPreview
-              file={pendingFile}
-              documentPath={documentPath}
-              title="Manuscript preview"
-              className="min-h-[280px]"
-            />
-          </div>
+          {accessType === "closed" && (
+            <ReviewBlock label={AUTHORS_PERSONAL_FEELING_LABEL}>
+              <ReviewText value={authorsComment} />
+            </ReviewBlock>
+          )}
 
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-3.5">
             <input
