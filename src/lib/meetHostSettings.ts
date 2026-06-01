@@ -1,16 +1,15 @@
 import type { JitsiMeetExternalAPIInstance } from "./jitsi";
 import type { MeetSession } from "../types";
 
+/** Host toggles exposed in GRE Meet room settings (screen share is always allowed for all participants). */
 export type MeetHostRoomSettings = {
   mute_audio_on_join: boolean;
   video_off_on_join: boolean;
-  screen_share_moderator_only: boolean;
 };
 
 export const DEFAULT_MEET_HOST_SETTINGS: MeetHostRoomSettings = {
   mute_audio_on_join: true,
   video_off_on_join: true,
-  screen_share_moderator_only: false,
 };
 
 export function meetHostSettingsFromSession(
@@ -19,8 +18,6 @@ export function meetHostSettingsFromSession(
   return {
     mute_audio_on_join: meeting?.mute_audio_on_join ?? DEFAULT_MEET_HOST_SETTINGS.mute_audio_on_join,
     video_off_on_join: meeting?.video_off_on_join ?? DEFAULT_MEET_HOST_SETTINGS.video_off_on_join,
-    screen_share_moderator_only:
-      meeting?.screen_share_moderator_only ?? DEFAULT_MEET_HOST_SETTINGS.screen_share_moderator_only,
   };
 }
 
