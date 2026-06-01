@@ -61,6 +61,7 @@ import {
 import {
   applyJitsiJoinMediaPolicy,
   buildJitsiConfigOverwrite,
+  buildJitsiInterfaceConfigOverwrite,
   meetHostSettingsFromSession,
 } from "../lib/meetHostSettings";
 import {
@@ -469,6 +470,7 @@ export function MeetRoomPage() {
           email: user?.email,
         },
         configOverwrite: buildJitsiConfigOverwrite(joinHostSettings, isGreModerator, recordingEnabled),
+        interfaceConfigOverwrite: buildJitsiInterfaceConfigOverwrite(),
       });
       setRoomDebug((prev) => ({ ...prev, apiConstructed: true }));
       jitsiApiRef.current = apiInstance;
@@ -489,16 +491,11 @@ export function MeetRoomPage() {
         }
         refreshParticipants();
       };
-      const onParticipantJoined = (payload: { id?: string; participantId?: string }) => {
+      const onParticipantJoined = () => {
         refreshParticipants();
-        if (!joinHostSettings.mute_audio_on_join || !canManage || !apiInstance) return;
-        const participantId = payload?.id || payload?.participantId;
-        if (!participantId) return;
-        try {
-          apiInstance.executeCommand("muteParticipant", participantId);
-        } catch {
-          // Not available on all Jitsi builds; join-time local mute still applies per client.
-        }
+        // Do not call muteParticipant here — moderator remote-mute can leave desktop peers
+        // (Windows/macOS) unable to send audio even after they unmute locally. Join-time mute
+        // is handled via startWithAudioMuted / applyJitsiJoinMediaPolicy on each client.
       };
       const onParticipantLeft = () => refreshParticipants();
       const onRoleChanged = () => {

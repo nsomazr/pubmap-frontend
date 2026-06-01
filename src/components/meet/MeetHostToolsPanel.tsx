@@ -46,11 +46,6 @@ const HOST_SETTING_TOAST: Record<
     enabledDescription: "New attendees will join with their camera off.",
     disabledDescription: "New attendees can join with their camera on.",
   },
-  screen_share_moderator_only: {
-    label: "Screen share for host only",
-    enabledDescription: "Only you can share your screen in this meeting.",
-    disabledDescription: "Attendees can share their screen when the room allows it.",
-  },
 };
 
 function toastForSettingChange(change: SettingChange) {
@@ -209,14 +204,6 @@ export function MeetHostToolsPanel({
           description="Cameras stay off when someone enters. Useful for audio-first discussions."
           checked={settings.video_off_on_join}
           onChange={(checked) => updateSetting("video_off_on_join", checked)}
-        />
-        <SettingToggle
-          id={`screen-host-${meeting.id}`}
-          variant={variant}
-          label="Screen share for host only"
-          description="Only the meeting host can share their screen. Attendees will not see a screen-share button."
-          checked={settings.screen_share_moderator_only}
-          onChange={(checked) => updateSetting("screen_share_moderator_only", checked)}
         />
       </div>
 

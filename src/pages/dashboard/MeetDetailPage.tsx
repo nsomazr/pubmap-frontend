@@ -500,7 +500,7 @@ export function MeetDetailPage() {
           <DetailSectionTitle
             icon={Sparkles}
             title="Host tools"
-            description="Room defaults for mic, video, and screen share."
+            description="Room defaults for mic and video. All participants can share their screen."
           />
           {isHost && meeting.status === "cancelled" ? (
             <p className="text-sm text-slate-500">
