@@ -167,7 +167,7 @@ export function ManuscriptSectionsEditor({
               )
             )
           }
-          placeholder="NSF, University of Dar es Salaam"
+          placeholder="e.g. NSF, Sida (comma-separated organizations; leave blank if none)"
         />
         <FieldExtractionNote note={sectionNotes.funder} />
         <ReferencesFromResearch
