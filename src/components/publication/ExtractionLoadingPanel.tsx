@@ -124,7 +124,9 @@ export function ExtractionLoadingPanel({ compact = false, fileName }: Extraction
                       state === "pending" ? "text-slate-400" : "text-slate-500"
                     }`}
                   >
-                    {step.detail}
+                    {step.id === "extras" && state === "active" && longWait
+                      ? "Still working — expanding summaries and checking funding (several AI steps run at the end)."
+                      : step.detail}
                   </p>
                 </div>
               </li>

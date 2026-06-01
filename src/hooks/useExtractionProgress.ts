@@ -39,17 +39,21 @@ export const EXTRACTION_STEPS: ExtractionStep[] = [
   },
   {
     id: "extras",
-    title: "Checking for funders",
-    detail: "Organization names from funding and acknowledgements",
+    title: "Finalizing your draft",
+    detail: "Funding names, section length, and final quality checks",
   },
 ];
 
-/** Map simulated progress to the active checklist step (0–4). */
+/**
+ * Map simulated progress to the active checklist step (0–4).
+ * Step 4 is timed late on purpose: the backend does one long request and the heaviest
+ * work (narrative expansion, funders) runs near the end — not only during step 4.
+ */
 export function extractionActiveStepIndex(percent: number): number {
   if (percent < 10) return 0;
   if (percent < 26) return 1;
   if (percent < 48) return 2;
-  if (percent < 72) return 3;
+  if (percent < 88) return 3;
   return 4;
 }
 
