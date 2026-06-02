@@ -1306,25 +1306,24 @@ export function PublicationManagePage() {
           </p>
         )}
         {composerTab === "preview" && (
-          <section className="gre-card p-4 sm:p-6">
-            <PublicationPaperPreview
-              data={paperPreviewData}
-              publicationId={persistedPublicationId ?? 0}
-              encodedPublicationId={persistedEncodedId ?? pub?.encoded_id}
-              documentPath={existingDocPath}
-              manuscriptPreviewUrl={
-                persistedPublicationId
-                  ? reviewManuscriptPdfUrl(
-                      persistedPublicationId,
-                      true,
-                      persistedEncodedId ?? pub?.encoded_id
-                    )
-                  : null
-              }
-              pendingFile={pendingDocument}
-              draft
-            />
-          </section>
+          <PublicationPaperPreview
+            data={paperPreviewData}
+            publicationId={persistedPublicationId ?? 0}
+            encodedPublicationId={persistedEncodedId ?? pub?.encoded_id}
+            documentPath={existingDocPath}
+            manuscriptPreviewUrl={
+              persistedPublicationId
+                ? reviewManuscriptPdfUrl(
+                    persistedPublicationId,
+                    true,
+                    persistedEncodedId ?? pub?.encoded_id
+                  )
+                : null
+            }
+            pendingFile={pendingDocument}
+            references={references}
+            draft
+          />
         )}
 
         {composerTab === "editor" && (

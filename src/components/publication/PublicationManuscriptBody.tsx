@@ -11,6 +11,7 @@ type Props = {
   publicationId?: number | string;
   encodedPublicationId?: string | null;
   variant?: "composer" | "public";
+  layout?: "card" | "flat";
   showFigures?: boolean;
 };
 
@@ -24,6 +25,7 @@ export function PublicationManuscriptBody({
   publicationId = 0,
   encodedPublicationId,
   variant = "public",
+  layout = "card",
   showFigures = true,
 }: Props) {
   const hasNarrative = [introduction, methods, findings, conclusion].some((s) =>
@@ -33,11 +35,17 @@ export function PublicationManuscriptBody({
 
   if (!hasNarrative && !hasFigures) return null;
 
+  const sectionGap = layout === "flat" ? "space-y-8" : "space-y-4";
+
   return (
-    <>
-      <div className="space-y-4">
-        <PublicationManuscriptSection title="Introduction" body={introduction} />
-        <PublicationManuscriptSection title="Methods" body={methods} />
+    <div className={layout === "flat" ? "min-w-0 space-y-8" : undefined}>
+      <div className={sectionGap}>
+        <PublicationManuscriptSection
+          title="Introduction"
+          body={introduction}
+          layout={layout}
+        />
+        <PublicationManuscriptSection title="Methods" body={methods} layout={layout} />
       </div>
       {hasFigures && (
         <PublicationFiguresDisplay
@@ -45,12 +53,13 @@ export function PublicationManuscriptBody({
           publicationId={publicationId}
           encodedPublicationId={encodedPublicationId}
           variant={variant}
+          layout={layout}
         />
       )}
-      <div className="space-y-4">
-        <PublicationManuscriptSection title="Findings" body={findings} />
-        <PublicationManuscriptSection title="Conclusion" body={conclusion} />
+      <div className={sectionGap}>
+        <PublicationManuscriptSection title="Findings" body={findings} layout={layout} />
+        <PublicationManuscriptSection title="Conclusion" body={conclusion} layout={layout} />
       </div>
-    </>
+    </div>
   );
 }

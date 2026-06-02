@@ -14,13 +14,14 @@ import { Textarea } from "../ui/Textarea";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import api from "../../lib/api";
 import { publicationApiSegment } from "../../lib/publicationPaths";
-import { abstractPlainText } from "../../lib/abstractText";
 import { authorBylineFromPublication } from "../../lib/publicationAuthors";
 import { AUTHORS_PERSONAL_FEELING_LABEL, reviewManuscriptPdfUrl } from "../../lib/publicationGre";
 import { authorDisplayName } from "../../lib/userDisplay";
 import { PublicationAuthorByline } from "./PublicationAuthorByline";
-import { PublicationManuscriptBody } from "./PublicationManuscriptBody";
-import { PublicationManuscriptSection } from "./PublicationManuscriptSection";
+import {
+  PublicationPaperPreview,
+  type PublicationPaperPreviewData,
+} from "./PublicationPaperPreview";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { SubcategoryBadge } from "../taxonomy/SubcategoryBadge";
 import type { Publication } from "../../types";
@@ -47,15 +48,6 @@ function AccessTypePill({ accessType }: { accessType?: "open" | "closed" }) {
   );
 }
 
-function hasManuscriptSections(pub: Publication) {
-  return Boolean(
-    pub.introduction?.trim() ||
-      pub.methods?.trim() ||
-      pub.findings?.trim() ||
-      pub.conclusion?.trim()
-  );
-}
-
 export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) {
   const queryClient = useQueryClient();
   const [commentOpen, setCommentOpen] = useState(false);
@@ -77,7 +69,6 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
   const subVisual = publicationSubcategoryVisual(reviewPub);
   const accessType = reviewPub.gre?.access_type ?? "open";
   const manuscriptPreviewUrl = reviewManuscriptPdfUrl(reviewPub.id, true);
-  const abstract = abstractPlainText(reviewPub.abstract);
   const keywords = useMemo(() => {
     const raw = reviewPub.keywords;
     if (!raw?.length) return [];
@@ -115,9 +106,27 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
     },
   });
 
-  const showSections = hasManuscriptSections(reviewPub);
   const externalUrl = reviewPub.gre?.external_url?.trim();
   const referenceUrl = reviewPub.gre?.reference_url?.trim();
+
+  const paperPreviewData: PublicationPaperPreviewData = {
+    title: reviewPub.title,
+    greNumber: reviewPub.short_number,
+    authorByline,
+    abstract: reviewPub.abstract,
+    keywords,
+    funder: reviewPub.funder,
+    introduction: reviewPub.introduction,
+    methods: reviewPub.methods,
+    findings: reviewPub.findings,
+    conclusion: reviewPub.conclusion,
+    figures: reviewPub.figures ?? reviewPub.photos ?? [],
+    subVisual,
+    subCategoryName: reviewPub.subfield_name || reviewPub.sub_category_name,
+    location: reviewPub.coordinates?.location,
+    accessType,
+    authorsComment: reviewPub.gre?.authors_comment,
+  };
 
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
@@ -154,49 +163,13 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
         className={`grid gap-0 ${compact ? "" : "md:grid-cols-[minmax(0,1fr)_minmax(16rem,42%)]"}`}
       >
         <div className="min-w-0 space-y-0 lg:border-r lg:border-slate-100">
-          <div className="space-y-4 border-b border-slate-100 p-4 sm:p-5">
-            <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                Abstract
-              </h4>
-              <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                {abstract || "No abstract provided."}
-              </p>
-            </div>
-
-            {keywords.length > 0 && (
-              <div>
-                <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                  Keywords
-                </h4>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {keywords.map((kw) => (
-                    <span
-                      key={kw}
-                      className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700"
-                    >
-                      {kw}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {reviewPub.funder?.trim() ? (
-              <div>
-                <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                  Funder
-                </h4>
-                <p className="mt-1 text-sm text-slate-700">{reviewPub.funder.trim()}</p>
-              </div>
-            ) : null}
-
+          <div className="space-y-6 p-4 sm:p-5">
             {reviewPub.coordinates && (
               <div>
-                <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   Study location
                 </h4>
-                <p className="mt-1 flex items-start gap-1.5 text-sm text-slate-700">
+                <p className="mt-2 flex items-start gap-1.5 text-sm text-slate-700">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
                   <span>
                     {reviewPub.coordinates.location}
@@ -208,8 +181,8 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
             )}
 
             {(externalUrl || referenceUrl) && (
-              <div className="space-y-2 rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 text-sm">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              <div className="space-y-2 text-sm">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   Publisher links
                 </p>
                 {externalUrl && (
@@ -236,53 +209,38 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
                 )}
               </div>
             )}
+
+            <PublicationPaperPreview
+              data={paperPreviewData}
+              publicationId={reviewPub.id}
+              encodedPublicationId={reviewPub.encoded_id}
+              showHeader={false}
+              showPdf={false}
+              references={reviewPub.references}
+            />
+
+            {accessType === "closed" && reviewPub.gre?.author_summary?.trim() && (
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Author summary (restricted)
+                </h4>
+                <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                  {reviewPub.gre.author_summary.trim()}
+                </p>
+              </div>
+            )}
+
+            {accessType === "closed" && reviewPub.gre?.authors_comment?.trim() && (
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {AUTHORS_PERSONAL_FEELING_LABEL}
+                </h4>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                  {reviewPub.gre.authors_comment.trim()}
+                </p>
+              </div>
+            )}
           </div>
-
-          {showSections && (
-            <div className="space-y-3 p-4 sm:p-5">
-              <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                Manuscript sections
-              </h4>
-              <PublicationManuscriptBody
-                introduction={reviewPub.introduction}
-                methods={reviewPub.methods}
-                findings={reviewPub.findings}
-                conclusion={reviewPub.conclusion}
-                figures={reviewPub.figures ?? reviewPub.photos ?? []}
-                publicationId={reviewPub.id}
-                encodedPublicationId={reviewPub.encoded_id}
-                variant="composer"
-              />
-            </div>
-          )}
-
-          {reviewPub.references?.trim() && (
-            <div className="border-t border-slate-100 p-4 sm:p-5">
-              <PublicationManuscriptSection title="References" body={reviewPub.references} />
-            </div>
-          )}
-
-          {accessType === "closed" && reviewPub.gre?.author_summary?.trim() && (
-            <div className="border-t border-slate-100 p-4 sm:p-5">
-              <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                Author summary (restricted)
-              </h4>
-              <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                {reviewPub.gre.author_summary.trim()}
-              </p>
-            </div>
-          )}
-
-          {reviewPub.gre?.authors_comment?.trim() && (
-            <div className="border-t border-slate-100 p-4 sm:p-5">
-              <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                {AUTHORS_PERSONAL_FEELING_LABEL}
-              </h4>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                {reviewPub.gre.authors_comment.trim()}
-              </p>
-            </div>
-          )}
         </div>
 
         {!compact && (

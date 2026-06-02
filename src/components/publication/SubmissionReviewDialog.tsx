@@ -162,16 +162,19 @@ export function SubmissionReviewDialog({
             )}
           </ReviewBlock>
 
-          <PublicationManuscriptBody
-            introduction={manuscript.introduction}
-            methods={manuscript.methods}
-            findings={manuscript.findings}
-            conclusion={manuscript.conclusion}
-            figures={figures}
-            publicationId={publicationId}
-            encodedPublicationId={encodedPublicationId}
-            variant="composer"
-          />
+          <ReviewBlock label="Manuscript sections">
+            <PublicationManuscriptBody
+              introduction={manuscript.introduction}
+              methods={manuscript.methods}
+              findings={manuscript.findings}
+              conclusion={manuscript.conclusion}
+              figures={figures}
+              publicationId={publicationId}
+              encodedPublicationId={encodedPublicationId}
+              variant="composer"
+              layout="flat"
+            />
+          </ReviewBlock>
 
           <ReviewBlock label="Funding organizations">
             <ReviewText value={manuscript.funder} />

@@ -12,6 +12,7 @@ type Props = {
   publicationId?: number | string;
   encodedPublicationId?: string | null;
   variant?: "composer" | "public";
+  layout?: "card" | "flat";
 };
 
 export function PublicationFiguresDisplay({
@@ -19,6 +20,7 @@ export function PublicationFiguresDisplay({
   publicationId = 0,
   encodedPublicationId,
   variant = "public",
+  layout = "card",
 }: Props) {
   const previewUrls = useFigurePreviewUrls(
     figures,
@@ -29,17 +31,25 @@ export function PublicationFiguresDisplay({
 
   if (!figures.length) return null;
 
-  const shell =
-    variant === "public"
+  const flat = layout === "flat";
+  const shell = flat
+    ? "min-w-0 scroll-mt-4"
+    : variant === "public"
       ? "gre-public-card min-w-0 overflow-hidden p-6 sm:p-8"
       : "rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6";
 
   return (
     <section className={shell}>
-      <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
+      <h2
+        className={
+          flat
+            ? "text-xs font-bold uppercase tracking-wider text-slate-500"
+            : "text-sm font-bold uppercase tracking-wider text-brand-600"
+        }
+      >
         Research figures
       </h2>
-      <div className="mt-5 grid gap-6 sm:grid-cols-2">
+      <div className={`grid gap-6 sm:grid-cols-2 ${flat ? "mt-4" : "mt-5"}`}>
         {figures.map((fig, index) => {
           const src = previewUrls[fig.id];
           const loading =
@@ -49,11 +59,15 @@ export function PublicationFiguresDisplay({
           return (
             <figure
               key={fig.id}
-              className="flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50/40"
+              className={
+                flat
+                  ? "flex flex-col gap-2"
+                  : "flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50/40"
+              }
             >
               <button
                 type="button"
-                className="group relative block w-full bg-white"
+                className={`group relative block w-full ${flat ? "rounded-lg bg-slate-50/80" : "bg-white"}`}
                 onClick={() => src && setLightbox(fig)}
                 disabled={!src}
               >
@@ -81,7 +95,7 @@ export function PublicationFiguresDisplay({
                   </span>
                 )}
               </button>
-              <figcaption className="border-t border-slate-100 bg-white px-3 py-2.5">
+              <figcaption className={flat ? "px-0.5" : "border-t border-slate-100 bg-white px-3 py-2.5"}>
                 <p className="text-xs font-bold uppercase tracking-wide text-brand-600">
                   {figureLabel(fig, index)}
                 </p>
