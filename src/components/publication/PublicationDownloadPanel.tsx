@@ -1,12 +1,10 @@
 import {
-  ChevronDown,
   Copy,
   Download,
   ExternalLink,
   Eye,
   EyeOff,
   FileText,
-  Link2,
   MessageSquare,
   MoreHorizontal,
   Share2,
@@ -155,17 +153,6 @@ export function PublicationDownloadPanel({
   const summaryPdfPreviewUrl = summaryPdfUrl(publicationId, { inline: true, encodedId });
   const pdfPreviewPrimaryUrl = summaryPdfPreviewUrl;
 
-  const menuExtraCount = useMemo(() => {
-    let n = 0;
-    if (!closedAccess && fullUrl) n += 1;
-    if (closedAccess) n += 1;
-    if (gre?.external_url) n += 1;
-    n += supplementary.length;
-    n += 3; // copy, linkedin, whatsapp baseline share options
-    if ("share" in navigator) n += 1;
-    return n;
-  }, [closedAccess, fullUrl, gre?.external_url, supplementary.length]);
-
   useEffect(() => {
     setLikesCount(initialLikesCount);
   }, [initialLikesCount]);
@@ -312,90 +299,79 @@ export function PublicationDownloadPanel({
 
   const closeMenu = () => setMenuOpen(false);
 
+  const accessMeta = [doi, paperCode ? `Paper ${paperCode}` : null].filter(Boolean).join(" · ");
+
   return (
     <PublicationPageSection
       id="publication-access"
       title="Publication access"
-      description="Download, preview, and share this paper on GRE."
-      titleAside={
-        doi && doiHref ? (
-          <a
-            href={doiHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex max-w-full shrink-0 items-start gap-2.5 rounded-2xl bg-slate-900 px-3.5 py-2.5 text-white shadow-sm transition hover:bg-slate-800"
-          >
-            <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-300" />
-            <span className="min-w-0 text-left text-xs leading-relaxed">
-              <span className="block font-semibold">DOI: {doi}</span>
-              {paperCode && (
-                <span className="mt-0.5 block text-[10px] font-medium tracking-wide text-slate-400">
-                  Paper ID {paperCode}
-                </span>
-              )}
-            </span>
-          </a>
-        ) : undefined
+      description={
+        accessMeta ? (
+          <>
+            {doi && doiHref ? (
+              <a
+                href={doiHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-brand-600 hover:underline"
+              >
+                {doi}
+              </a>
+            ) : null}
+            {doi && paperCode ? " · " : null}
+            {paperCode ? <span>Paper {paperCode}</span> : null}
+          </>
+        ) : (
+          "Download the GRE PDF or use more options for uploads and sharing."
+        )
       }
     >
-      <div className="overflow-visible rounded-2xl bg-gradient-to-br from-slate-50 via-white to-brand-50/40 p-4 ring-1 ring-slate-200/80 sm:p-5">
-        <div className="grid gap-3 overflow-visible sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] sm:items-stretch">
-          <a
-            href={summaryPdfUrl(publicationId)}
-            onClick={() => recordDownload()}
-            className="inline-flex min-h-[3rem] items-center justify-center gap-2.5 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-brand-600/20 transition hover:bg-brand-700"
+      <div className="flex flex-wrap items-stretch gap-2">
+        <a
+          href={summaryPdfUrl(publicationId)}
+          onClick={() => recordDownload()}
+          className="inline-flex min-h-[2.75rem] min-w-[10rem] flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/15 transition hover:bg-brand-700 sm:flex-[1.2]"
+        >
+          <Download className="h-4 w-4 shrink-0" aria-hidden />
+          Download GRE PDF
+        </a>
+
+        {showViewPaper ? (
+          <button
+            type="button"
+            onClick={() => setPdfOpen((open) => !open)}
+            className={`inline-flex min-h-[2.75rem] flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition sm:flex-1 ${
+              pdfOpen
+                ? "border-brand-300 bg-brand-50 text-brand-800"
+                : "border-slate-200 bg-white text-slate-700 hover:border-brand-200"
+            }`}
+            aria-expanded={pdfOpen}
           >
-            <Download className="h-4 w-4 shrink-0" />
-            Download GRE PDF
-          </a>
+            {pdfOpen ? (
+              <EyeOff className="h-4 w-4 shrink-0" aria-hidden />
+            ) : (
+              <Eye className="h-4 w-4 shrink-0" aria-hidden />
+            )}
+            {pdfOpen ? "Hide PDF" : "View GRE PDF"}
+          </button>
+        ) : null}
 
-          {showViewPaper ? (
-            <button
-              type="button"
-              onClick={() => setPdfOpen((open) => !open)}
-              className={`inline-flex min-h-[3rem] items-center justify-center gap-2.5 rounded-xl border px-5 py-3 text-sm font-semibold transition ${
-                pdfOpen
-                  ? "border-brand-300 bg-brand-50 text-brand-800"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:bg-white"
-              }`}
-              aria-expanded={pdfOpen}
-            >
-              {pdfOpen ? (
-                <EyeOff className="h-4 w-4 shrink-0" aria-hidden />
-              ) : (
-                <Eye className="h-4 w-4 shrink-0" aria-hidden />
-              )}
-              {pdfOpen ? "Hide PDF" : "View GRE PDF"}
-            </button>
-          ) : (
-            <span className="hidden min-h-[3rem] sm:block" aria-hidden />
-          )}
-
-          <div ref={menuWrapRef} className="relative z-20 sm:self-stretch">
-            <button
-              ref={menuTriggerRef}
-              type="button"
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-expanded={menuOpen}
-              aria-haspopup="menu"
-              className={`inline-flex h-full min-h-[3rem] w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition sm:min-w-[8.5rem] ${
-                menuOpen
-                  ? "border-brand-300 bg-brand-50 text-brand-800 ring-2 ring-brand-100"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:bg-white"
-              }`}
-            >
-              <MoreHorizontal className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden">More</span>
-              <span className="hidden sm:inline">More options</span>
-              {menuExtraCount > 0 && (
-                <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">
-                  {menuExtraCount}
-                </span>
-              )}
-              <ChevronDown
-                className={`h-4 w-4 shrink-0 text-slate-400 transition ${menuOpen ? "rotate-180" : ""}`}
-              />
-            </button>
+        <div ref={menuWrapRef} className="relative shrink-0">
+          <button
+            ref={menuTriggerRef}
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            aria-label="More download and share options"
+            className={`inline-flex h-[2.75rem] w-[2.75rem] items-center justify-center rounded-xl border transition ${
+              menuOpen
+                ? "border-brand-300 bg-brand-50 text-brand-800"
+                : "border-slate-200 bg-white text-slate-600 hover:border-brand-200 hover:text-brand-700"
+            }`}
+          >
+            <MoreHorizontal className="h-5 w-5" aria-hidden />
+          </button>
 
             {menuOpen &&
               typeof document !== "undefined" &&
@@ -487,6 +463,16 @@ export function PublicationDownloadPanel({
                 )}
 
                 <MenuSection title="Share">
+                  <MenuItem
+                    icon={ThumbsUp}
+                    onClick={() => {
+                      void handleToggleLike();
+                      closeMenu();
+                    }}
+                  >
+                    {likedByMe ? "Unlike" : "Like"}
+                    {likesCount > 0 ? ` (${likesCount})` : ""}
+                  </MenuItem>
                   <MenuItem icon={Copy} onClick={() => void handleCopyLink()}>
                     Copy paper link
                   </MenuItem>
@@ -524,55 +510,24 @@ export function PublicationDownloadPanel({
                 </div>,
                 document.body
               )}
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-200/80 pt-4">
-          <button
-            type="button"
-            onClick={handleToggleLike}
-            disabled={!user || engagementBusy === "like"}
-            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
-              likedByMe
-                ? "bg-brand-100 text-brand-800 ring-1 ring-brand-200"
-                : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
-            } ${!user ? "cursor-not-allowed opacity-60" : ""}`}
-            title={user ? "Like this paper" : "Sign in to like papers"}
-          >
-            <ThumbsUp className={`h-4 w-4 ${likedByMe ? "fill-current" : ""}`} />
-            {likesCount}
-          </button>
-
-          <span className="hidden h-5 w-px bg-slate-200 sm:block" aria-hidden />
-
-          <button
-            type="button"
-            onClick={() => void handleCopyLink()}
-            disabled={engagementBusy === "share"}
-            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
-          >
-            <Copy className="h-4 w-4" />
-            Copy link
-          </button>
-
-          {"share" in navigator && (
-            <button
-              type="button"
-              onClick={() => void handleNativeShare()}
-              disabled={engagementBusy === "share"}
-              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
-            >
-              <Share2 className="h-4 w-4" />
-              Share
-            </button>
-          )}
-
-          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-slate-100/90 px-3 py-2 text-xs font-medium text-slate-600">
-            <Share2 className="h-3.5 w-3.5 text-slate-400" />
-            {shareCount} share{shareCount === 1 ? "" : "s"}
-          </span>
         </div>
       </div>
+
+      {(likesCount > 0 || shareCount > 0) && (
+        <p className="mt-2 text-xs text-slate-500">
+          {likesCount > 0 && (
+            <>
+              {likesCount} like{likesCount === 1 ? "" : "s"}
+            </>
+          )}
+          {likesCount > 0 && shareCount > 0 ? " · " : null}
+          {shareCount > 0 && (
+            <>
+              {shareCount} share{shareCount === 1 ? "" : "s"}
+            </>
+          )}
+        </p>
+      )}
 
       {showViewPaper && pdfOpen && (
         <div className="mt-5 space-y-2">
