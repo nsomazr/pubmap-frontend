@@ -4,7 +4,6 @@ import {
   Download,
   ExternalLink,
   Eye,
-  EyeOff,
   FileText,
   Link2,
   MessageSquare,
@@ -31,8 +30,6 @@ import type { GreDocument, PublicationGre } from "../../lib/publicationGre";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../ui/ToastProvider";
-import { PdfPreview } from "./PdfPreview";
-
 interface Props {
   publicationId: number;
   gre?: PublicationGre;
@@ -46,6 +43,9 @@ interface Props {
   initialLikesCount?: number;
   initialLikedByMe?: boolean;
   initialShareCount?: number;
+  /** Opens the on-page GRE paper reader (replaces inline GRE PDF preview). */
+  onViewPaper?: () => void;
+  showViewPaperAction?: boolean;
 }
 
 function MenuSection({ title, children }: { title: string; children: ReactNode }) {
@@ -118,6 +118,8 @@ export function PublicationDownloadPanel({
   initialLikesCount = 0,
   initialLikedByMe = false,
   initialShareCount = 0,
+  onViewPaper,
+  showViewPaperAction = false,
 }: Props) {
   const { user } = useAuth();
   const toast = useToast();
@@ -130,8 +132,6 @@ export function PublicationDownloadPanel({
     width: number;
     openUp: boolean;
   } | null>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewDiscussions, setPreviewDiscussions] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [likesCount, setLikesCount] = useState(initialLikesCount);
   const [likedByMe, setLikedByMe] = useState(initialLikedByMe);
@@ -149,11 +149,6 @@ export function PublicationDownloadPanel({
     () => `${window.location.origin}${buildPublicationPath(publicationId, encodedId)}`,
     [publicationId, encodedId]
   );
-
-  const grePdfPreviewUrl = summaryPdfUrl(publicationId, {
-    discussions: previewDiscussions,
-    inline: true,
-  });
 
   const menuExtraCount = useMemo(() => {
     let n = 0;
@@ -354,22 +349,24 @@ export function PublicationDownloadPanel({
             Download GRE PDF
           </a>
 
-          <button
-            type="button"
-            onClick={() => setPreviewOpen((open) => !open)}
-            className={`inline-flex min-h-[3rem] items-center justify-center gap-2.5 rounded-xl border px-5 py-3 text-sm font-semibold transition ${
-              previewOpen
-                ? "border-brand-300 bg-brand-50 text-brand-800"
-                : "border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:bg-white"
-            }`}
-          >
-            {previewOpen ? (
-              <EyeOff className="h-4 w-4 shrink-0" />
-            ) : (
+          {showViewPaperAction && onViewPaper ? (
+            <button
+              type="button"
+              onClick={() => {
+                onViewPaper();
+                document.getElementById("publication-paper")?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }}
+              className="inline-flex min-h-[3rem] items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:bg-white"
+            >
               <Eye className="h-4 w-4 shrink-0" />
-            )}
-            {previewOpen ? "Hide preview" : "Preview GRE PDF"}
-          </button>
+              View paper
+            </button>
+          ) : (
+            <span className="hidden min-h-[3rem] sm:block" aria-hidden />
+          )}
 
           <div ref={menuWrapRef} className="relative z-20 sm:self-stretch">
             <button
@@ -574,28 +571,6 @@ export function PublicationDownloadPanel({
         </div>
       </div>
 
-      {previewOpen && (
-        <div className="mt-5 space-y-3">
-          {closedAccess && (
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-600">
-              <input
-                type="checkbox"
-                checked={previewDiscussions}
-                onChange={(e) => setPreviewDiscussions(e.target.checked)}
-                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-              />
-              Include discussion highlights in preview
-            </label>
-          )}
-          <PdfPreview
-            previewUrl={grePdfPreviewUrl}
-            title={publicationTitle ? `${publicationTitle} · GRE PDF` : "GRE publication PDF"}
-            emptyState="publication"
-            layout="page"
-            className="w-full"
-          />
-        </div>
-      )}
     </section>
   );
 }

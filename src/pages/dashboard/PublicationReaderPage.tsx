@@ -11,7 +11,11 @@ import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { ReportPlagiarismDialog } from "../../components/publication/ReportPlagiarismDialog";
 import { GreAdPlacement } from "../../components/ads/GreAdSlot";
 import { RankedNameLabel } from "../../components/rankings/RankedNameLabel";
-import { PublicationManuscriptPdfSection } from "../../components/publication/PublicationManuscriptPdfSection";
+import {
+  publicationHasGrePaperBody,
+  publicationHasReadablePaper,
+  publicationHasUploadedManuscriptPdf,
+} from "../../lib/publicationReadable";
 import { PublicationDiscussions } from "../../components/publication/PublicationDiscussions";
 import { CoAuthorsPanel } from "../../components/publication/CoAuthorsPanel";
 import { PublicationDownloadPanel } from "../../components/publication/PublicationDownloadPanel";
@@ -20,7 +24,6 @@ import { UserAvatar } from "../../components/ui/UserAvatar";
 import { StudyLocationSection } from "../../components/map/StudyLocationSection";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { authorBylineFromPublication } from "../../lib/publicationAuthors";
-import { primaryManuscriptDocument } from "../../lib/publicationDocuments";
 import { publicationMapLocationLabel } from "../../lib/publicationMapLocation";
 import type { Publication } from "../../types";
 
@@ -38,6 +41,7 @@ function formatPublishedDate(value?: string): string | undefined {
 export function PublicationReaderPage() {
   const { id } = useParams();
   const [reportOpen, setReportOpen] = useState(false);
+  const [paperOpen, setPaperOpen] = useState(false);
 
   const { data: pub, isLoading, isError } = useQuery({
     queryKey: ["publication-reader", id],
@@ -66,11 +70,10 @@ export function PublicationReaderPage() {
     );
   }
 
-  const manuscript = primaryManuscriptDocument(pub);
-  const docPath = manuscript?.document ?? null;
   const isClosed = pub.gre?.access_type === "closed";
-  const showManuscriptContent = Boolean(docPath?.trim()) && !isClosed;
-  const showPdfPreview = showManuscriptContent && Boolean(docPath?.toLowerCase().endsWith(".pdf"));
+  const showManuscriptSections = !isClosed && publicationHasGrePaperBody(pub);
+  const showUploadedManuscriptPdf = publicationHasUploadedManuscriptPdf(pub);
+  const canReadPaper = publicationHasReadablePaper(pub);
   const authorName =
     pub.author?.full_name ||
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
@@ -147,7 +150,7 @@ export function PublicationReaderPage() {
             authorsComment={isClosed ? pub.gre?.authors_comment : undefined}
             abstract={pub.abstract}
             keywords={pub.keywords}
-            showManuscript={showManuscriptContent}
+            showManuscript={showManuscriptSections}
             introduction={pub.introduction}
             methods={pub.methods}
             findings={pub.findings}
@@ -156,6 +159,11 @@ export function PublicationReaderPage() {
             publicationId={pub.id}
             encodedPublicationId={pub.encoded_id}
             references={pub.references}
+            collapsibleReading={canReadPaper}
+            readingOpen={paperOpen}
+            onReadingOpenChange={setPaperOpen}
+            canExpandReading={canReadPaper}
+            showUploadedManuscriptPdf={showUploadedManuscriptPdf}
           />
 
           {pub.coordinates && <StudyLocationSection publication={pub} />}
@@ -173,12 +181,8 @@ export function PublicationReaderPage() {
             initialLikesCount={pub.likes_count ?? 0}
             initialLikedByMe={pub.liked_by_me ?? false}
             initialShareCount={pub.share_count ?? 0}
-          />
-
-          <PublicationManuscriptPdfSection
-            publicationId={pub.id}
-            encodedId={pub.encoded_id}
-            show={showPdfPreview}
+            showViewPaperAction={canReadPaper}
+            onViewPaper={() => setPaperOpen(true)}
           />
 
           <CoAuthorsPanel publication={pub} />
