@@ -70,6 +70,7 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState("");
   const [replyDrafts, setReplyDrafts] = useState<Record<number, string>>({});
+  const [replyOpenFor, setReplyOpenFor] = useState<Record<number, boolean>>({});
 
   const { data: threads = [], isLoading } = useQuery({
     queryKey: ["pub-conversations", publicationId],
@@ -96,6 +97,7 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
       api.post("/replies/", { reply: text, conversation_id: conversationId }),
     onSuccess: (_, vars) => {
       setReplyDrafts((d) => ({ ...d, [vars.conversationId]: "" }));
+      setReplyOpenFor((o) => ({ ...o, [vars.conversationId]: false }));
       queryClient.invalidateQueries({ queryKey: ["pub-conversations", publicationId] });
     },
   });
@@ -168,20 +170,41 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
                 )}
 
                 {user ? (
-                  <InputWithSendAddon
-                    className="mt-4"
-                    value={replyDrafts[thread.id] ?? ""}
-                    onChange={(value) =>
-                      setReplyDrafts((d) => ({ ...d, [thread.id]: value }))
-                    }
-                    onSubmit={() => {
-                      const text = (replyDrafts[thread.id] ?? "").trim();
-                      if (text) postReply.mutate({ conversationId: thread.id, text });
-                    }}
-                    placeholder="Write a response…"
-                    loading={postReply.isPending}
-                    submitAriaLabel="Post response"
-                  />
+                  replyOpenFor[thread.id] ? (
+                    <div className="mt-4 space-y-2">
+                      <InputWithSendAddon
+                        value={replyDrafts[thread.id] ?? ""}
+                        onChange={(value) =>
+                          setReplyDrafts((d) => ({ ...d, [thread.id]: value }))
+                        }
+                        onSubmit={() => {
+                          const text = (replyDrafts[thread.id] ?? "").trim();
+                          if (text) postReply.mutate({ conversationId: thread.id, text });
+                        }}
+                        placeholder="Write a response…"
+                        loading={postReply.isPending}
+                        submitAriaLabel="Post response"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyOpenFor((o) => ({ ...o, [thread.id]: false }));
+                          setReplyDrafts((d) => ({ ...d, [thread.id]: "" }));
+                        }}
+                        className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setReplyOpenFor((o) => ({ ...o, [thread.id]: true }))}
+                      className="mt-3 text-sm font-semibold text-brand-600 hover:text-brand-700"
+                    >
+                      Reply
+                    </button>
+                  )
                 ) : null}
               </article>
             );
