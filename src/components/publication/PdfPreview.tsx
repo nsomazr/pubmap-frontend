@@ -203,7 +203,7 @@ export function PdfPreview({
     !file &&
     Boolean(remoteUrl) &&
     remoteLoadError &&
-    ![401, 403].includes(remoteHttpStatus ?? 0);
+    remoteHttpStatus == null;
   const src = file ? blobUrl : remoteBlobUrl ?? (canUseDirectRemote ? remoteUrl : null);
   const pdf = previewUrl ? true : isPdf(file, documentPath);
   const canExpand = allowExpand && pdf && Boolean(src);

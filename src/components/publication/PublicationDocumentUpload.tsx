@@ -141,8 +141,15 @@ export function PublicationDocumentUpload({
   });
 
   const handleFileChange = (file: File | null) => {
-    if (!file || disabled) {
+    if (disabled) {
       setPendingFile(null);
+      return;
+    }
+    if (!file) {
+      setPendingFile(null);
+      if (primaryDoc && !deleteMutation.isPending) {
+        deleteMutation.mutate(primaryDoc.id);
+      }
       return;
     }
     setPendingFile(file);

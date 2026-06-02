@@ -1,4 +1,4 @@
-import { ImagePlus, Loader2, Trash2, X, ZoomIn } from "lucide-react";
+import { ImagePlus, Loader2, RefreshCw, Trash2, X, ZoomIn } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFigurePreviewUrls } from "../../hooks/useFigurePreviewUrls";
 import {
@@ -62,6 +62,7 @@ export function PublicationFiguresEditor({
   pendingRef.current = pending;
   const [captions, setCaptions] = useState<Record<number, string>>({});
   const [savingCaptionId, setSavingCaptionId] = useState<number | null>(null);
+  const [replacingFigureId, setReplacingFigureId] = useState<number | null>(null);
   const captionsRef = useRef<Record<number, string>>({});
   const persistedCaptionsRef = useRef<Record<number, string>>({});
   const captionSaveTimersRef = useRef<Record<number, number>>({});
@@ -73,6 +74,7 @@ export function PublicationFiguresEditor({
     encodedPublicationId
   );
   const [localPreviews, setLocalPreviews] = useState<Record<number, string>>({});
+  const replaceInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   useEffect(() => {
     setLocalPreviews((prev) => {
@@ -219,6 +221,44 @@ export function PublicationFiguresEditor({
     if (!pubId) return;
     await deleteFigure(pubId, id, encodedPublicationId);
     onChange(figures.filter((f) => f.id !== id));
+  };
+
+  const replaceFigureImage = async (figureId: number, file: File) => {
+    if (readOnly) return;
+    setUploadError("");
+    setReplacingFigureId(figureId);
+    try {
+      const pubId = await resolvePublicationId();
+      if (!pubId) {
+        setUploadError("Save publication details first, then try replacing the figure.");
+        return;
+      }
+      const currentCaption = (captionsRef.current[figureId] ?? "").trim();
+      const updated = await updateFigure(
+        pubId,
+        figureId,
+        { caption: currentCaption },
+        encodedPublicationId,
+        file
+      );
+      const nextLocalUrl = URL.createObjectURL(file);
+      setLocalPreviews((prev) => {
+        const old = prev[figureId];
+        if (old) URL.revokeObjectURL(old);
+        return { ...prev, [figureId]: nextLocalUrl };
+      });
+      onChange(
+        figuresRef.current.map((item) => (item.id === figureId ? updated : item))
+      );
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      setUploadError(
+        e.response?.data?.detail ||
+          "Could not replace figure image. Use JPG, PNG, GIF, or WEBP under 10 MB."
+      );
+    } finally {
+      setReplacingFigureId(null);
+    }
   };
 
   const saveCaptionById = useCallback(
@@ -402,6 +442,21 @@ export function PublicationFiguresEditor({
                   </span>
                 </button>
                 <figcaption className="space-y-2 border-t border-slate-100 bg-white p-3 text-sm">
+                  {!readOnly && (
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      ref={(node) => {
+                        replaceInputRefs.current[fig.id] = node;
+                      }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        if (file) void replaceFigureImage(fig.id, file);
+                        e.target.value = "";
+                      }}
+                    />
+                  )}
                   <p className="text-xs font-bold uppercase tracking-wide text-brand-600">
                     {figureLabel(fig, index)}
                   </p>
@@ -433,13 +488,28 @@ export function PublicationFiguresEditor({
                     <p className="text-xs text-slate-500">Saving caption…</p>
                   )}
                   {!readOnly && (
-                    <button
-                      type="button"
-                      onClick={() => remove(fig.id)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline"
-                    >
-                      <Trash2 className="h-3 w-3" /> Remove
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => replaceInputRefs.current[fig.id]?.click()}
+                        disabled={replacingFigureId === fig.id}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline disabled:opacity-60"
+                      >
+                        {replacingFigureId === fig.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3" />
+                        )}
+                        {replacingFigureId === fig.id ? "Replacing..." : "Replace image"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(fig.id)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline"
+                      >
+                        <Trash2 className="h-3 w-3" /> Remove
+                      </button>
+                    </div>
                   )}
                 </figcaption>
               </figure>

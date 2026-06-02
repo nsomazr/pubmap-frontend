@@ -140,12 +140,29 @@ export async function updateFigure(
   publicationId: PublicationIdRef,
   figureId: number,
   meta: { caption?: string; title?: string; figure_number?: string },
-  encodedId?: string | null
+  encodedId?: string | null,
+  file?: File | null
 ): Promise<PublicationFigure> {
-  const { data } = await api.patch<PublicationFigure>(
-    `/publications/${pubSeg(publicationId, encodedId)}/figures/${figureId}/`,
-    meta
-  );
+  let data: PublicationFigure;
+  if (file) {
+    const form = new FormData();
+    form.append("photo", file);
+    if (meta.caption !== undefined) form.append("caption", meta.caption);
+    if (meta.title !== undefined) form.append("title", meta.title);
+    if (meta.figure_number !== undefined) form.append("figure_number", meta.figure_number);
+    const res = await api.patch<PublicationFigure>(
+      `/publications/${pubSeg(publicationId, encodedId)}/figures/${figureId}/`,
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+    data = res.data;
+  } else {
+    const res = await api.patch<PublicationFigure>(
+      `/publications/${pubSeg(publicationId, encodedId)}/figures/${figureId}/`,
+      meta
+    );
+    data = res.data;
+  }
   return data;
 }
 
