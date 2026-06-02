@@ -1591,23 +1591,21 @@ export function PublicationManagePage() {
             type="submit"
             variant="secondary"
             className={greFormPrimaryButtonClass}
+            loading={saveMutation.isPending && !submitReviewOpen}
             disabled={
               extractionActive ||
               figuresUploadBusy ||
               (saveMutation.isPending && !submitReviewOpen)
             }
           >
-            {saveMutation.isPending && !submitReviewOpen ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
+            <Save className="h-4 w-4" />
             {isNew ? "Save draft" : "Save changes"}
           </Button>
           {showSubmitReview && (
             <Button
               type="button"
               className={greFormPrimaryButtonClass}
+              loading={saveMutation.isPending && submitReviewOpen}
               disabled={
                 extractionActive ||
                 figuresUploadBusy ||

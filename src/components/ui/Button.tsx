@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { Loader2 } from "lucide-react";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "light";
 
@@ -33,7 +34,14 @@ export function Button({
       disabled={disabled || loading}
       {...props}
     >
-      {loading ? "Please wait…" : children}
+      {loading ? (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          <span>Please wait…</span>
+        </>
+      ) : (
+        children
+      )}
     </button>
   );
 }
