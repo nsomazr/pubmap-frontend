@@ -1,5 +1,5 @@
 import { ImagePlus, Loader2, Trash2, X, ZoomIn } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFigurePreviewUrls } from "../../hooks/useFigurePreviewUrls";
 import {
   deleteFigure,
@@ -21,6 +21,8 @@ interface Props {
   /** Creates a draft on the server when the user uploads before the first manual save. */
   ensurePublicationId?: () => Promise<number | null>;
   onActivityChange?: (state: { uploading: boolean; pendingCount: number }) => void;
+  /** Parent calls this before save/submit to persist any debounced caption edits. */
+  registerFlushCaptions?: (flush: (() => Promise<void>) | null) => void;
 }
 
 type PendingUpload = {
@@ -49,6 +51,7 @@ export function PublicationFiguresEditor({
   variant = "composer",
   ensurePublicationId,
   onActivityChange,
+  registerFlushCaptions,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -60,7 +63,10 @@ export function PublicationFiguresEditor({
   const [captions, setCaptions] = useState<Record<number, string>>({});
   const [savingCaptionId, setSavingCaptionId] = useState<number | null>(null);
   const captionsRef = useRef<Record<number, string>>({});
+  const persistedCaptionsRef = useRef<Record<number, string>>({});
   const captionSaveTimersRef = useRef<Record<number, number>>({});
+  const figuresRef = useRef(figures);
+  figuresRef.current = figures;
   const figurePreviewUrls = useFigurePreviewUrls(
     figures,
     publicationId,
@@ -85,9 +91,31 @@ export function PublicationFiguresEditor({
   }, [figurePreviewUrls]);
 
   useEffect(() => {
-    setCaptions(
-      Object.fromEntries(figures.map((fig) => [fig.id, fig.caption?.trim() || ""]))
-    );
+    setCaptions((prev) => {
+      const next: Record<number, string> = { ...prev };
+      const figureIds = new Set(figures.map((fig) => fig.id));
+
+      for (const fig of figures) {
+        const serverCaption = fig.caption?.trim() || "";
+        const persisted = persistedCaptionsRef.current[fig.id];
+        if (persisted === undefined) {
+          next[fig.id] = serverCaption;
+          persistedCaptionsRef.current[fig.id] = serverCaption;
+        } else if (serverCaption === persisted) {
+          next[fig.id] = serverCaption;
+        }
+      }
+
+      for (const id of Object.keys(next)) {
+        const figureId = Number(id);
+        if (!figureIds.has(figureId)) {
+          delete next[figureId];
+          delete persistedCaptionsRef.current[figureId];
+        }
+      }
+
+      return next;
+    });
   }, [figures]);
 
   useEffect(() => {
@@ -193,26 +221,52 @@ export function PublicationFiguresEditor({
     onChange(figures.filter((f) => f.id !== id));
   };
 
-  const saveCaptionById = async (figureId: number) => {
-    const fig = figures.find((item) => item.id === figureId);
-    if (!fig) return;
-    const nextCaption = (captionsRef.current[figureId] ?? "").trim();
-    if (nextCaption === (fig.caption?.trim() || "")) return;
-    setSavingCaptionId(figureId);
-    try {
-      const pubId = await resolvePublicationId();
-      if (!pubId) return;
-      const updated = await updateFigure(
-        pubId,
-        figureId,
-        { caption: nextCaption },
-        encodedPublicationId
-      );
-      onChange(figures.map((item) => (item.id === figureId ? updated : item)));
-    } finally {
-      setSavingCaptionId(null);
+  const saveCaptionById = useCallback(
+    async (figureId: number) => {
+      const fig = figuresRef.current.find((item) => item.id === figureId);
+      if (!fig) return;
+      const nextCaption = (captionsRef.current[figureId] ?? "").trim();
+      const persisted = (persistedCaptionsRef.current[figureId] ?? "").trim();
+      if (nextCaption === persisted) return;
+      setSavingCaptionId(figureId);
+      try {
+        const pubId = await resolvePublicationId();
+        if (!pubId) return;
+        const updated = await updateFigure(
+          pubId,
+          figureId,
+          { caption: nextCaption },
+          encodedPublicationId
+        );
+        persistedCaptionsRef.current[figureId] = nextCaption;
+        const current = figuresRef.current;
+        onChange(current.map((item) => (item.id === figureId ? updated : item)));
+      } finally {
+        setSavingCaptionId(null);
+      }
+    },
+    [encodedPublicationId, onChange, publicationId]
+  );
+
+  const flushPendingCaptionSaves = useCallback(async () => {
+    for (const timer of Object.values(captionSaveTimersRef.current)) {
+      window.clearTimeout(timer);
     }
-  };
+    captionSaveTimersRef.current = {};
+    const dirtyIds = figuresRef.current
+      .map((fig) => fig.id)
+      .filter((figureId) => {
+        const next = (captionsRef.current[figureId] ?? "").trim();
+        const persisted = (persistedCaptionsRef.current[figureId] ?? "").trim();
+        return next !== persisted;
+      });
+    await Promise.all(dirtyIds.map((figureId) => saveCaptionById(figureId)));
+  }, [saveCaptionById]);
+
+  useEffect(() => {
+    registerFlushCaptions?.(flushPendingCaptionSaves);
+    return () => registerFlushCaptions?.(null);
+  }, [registerFlushCaptions, flushPendingCaptionSaves]);
 
   const scheduleCaptionSave = (figureId: number) => {
     const prevTimer = captionSaveTimersRef.current[figureId];

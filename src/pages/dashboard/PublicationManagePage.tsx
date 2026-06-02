@@ -189,6 +189,7 @@ export function PublicationManagePage() {
   const [createdDraftEncodedId, setCreatedDraftEncodedId] = useState<string | null>(null);
   const [figuresUploadBusy, setFiguresUploadBusy] = useState(false);
   const [figuresPendingCount, setFiguresPendingCount] = useState(0);
+  const flushFigureCaptionsRef = useRef<(() => Promise<void>) | null>(null);
   const extractionAbortRef = useRef<AbortController | null>(null);
   const extractionCancelledRef = useRef(false);
   const [documentUploadExtracting, setDocumentUploadExtracting] = useState(false);
@@ -772,6 +773,7 @@ export function PublicationManagePage() {
     mutationFn: async (options?: SaveOptions) => {
       const data = await persistPublicationDraft({ quiet: options?.quiet });
       if (!data) throw new Error("SAVE_FAILED");
+      await flushFigureCaptionsRef.current?.();
       return data;
     },
     onSuccess: async (data, options?: SaveOptions) => {
@@ -1396,6 +1398,9 @@ export function PublicationManagePage() {
                       onActivityChange={({ uploading, pendingCount }) => {
                         setFiguresUploadBusy(uploading);
                         setFiguresPendingCount(pendingCount);
+                      }}
+                      registerFlushCaptions={(flush) => {
+                        flushFigureCaptionsRef.current = flush;
                       }}
                     />
                   }
