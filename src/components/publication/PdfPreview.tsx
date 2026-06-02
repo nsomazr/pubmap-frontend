@@ -6,8 +6,10 @@ import { mediaUrl } from "../../lib/mediaUrl";
 interface Props {
   file?: File | null;
   documentPath?: string | null;
-  /** Direct URL for PDF preview (e.g. API-generated GRE publication PDF). */
+  /** Direct URL for PDF preview (e.g. API manuscript or GRE summary PDF). */
   previewUrl?: string | null;
+  /** Used when {@link previewUrl} returns 404 (e.g. uploaded file missing, GRE summary available). */
+  fallbackPreviewUrl?: string | null;
   className?: string;
   title?: string;
   /** Show fullscreen expand control (default true when a PDF is available). */
@@ -64,7 +66,22 @@ function PdfLoadFailed({
   );
 }
 
-function isPdf(file?: File | null, path?: string | null): boolean {
+function withMediaAccess(url: string | null): string | null {
+  if (!url) return null;
+  const token = localStorage.getItem("access_token");
+  if (!token) return url;
+  try {
+    const parsed = new URL(url, typeof window !== "undefined" ? window.location.origin : undefined);
+    if (!parsed.searchParams.has("access")) {
+      parsed.searchParams.set("access", token);
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+function isPdf(file?: File | null, path?: string | null, previewUrl?: string | null): boolean {
   if (file) return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
   const p = (path || "").toLowerCase().split("?")[0];
   return p.endsWith(".pdf");
@@ -106,6 +123,7 @@ export function PdfPreview({
   file,
   documentPath,
   previewUrl,
+  fallbackPreviewUrl,
   className = "",
   title = "Document preview",
   allowExpand = true,
@@ -119,6 +137,11 @@ export function PdfPreview({
   const [remoteHttpStatus, setRemoteHttpStatus] = useState<number | null>(null);
   const [remoteErrorDetail, setRemoteErrorDetail] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [activePreviewUrl, setActivePreviewUrl] = useState(previewUrl ?? null);
+
+  useEffect(() => {
+    setActivePreviewUrl(previewUrl ?? null);
+  }, [previewUrl]);
 
   useEffect(() => {
     if (!file) {
@@ -130,10 +153,10 @@ export function PdfPreview({
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const remoteUrl = useMemo(
-    () => previewUrl ?? mediaUrl(documentPath ?? null),
-    [previewUrl, documentPath]
-  );
+  const remoteUrl = useMemo(() => {
+    const pathUrl = withMediaAccess(mediaUrl(documentPath ?? null));
+    return activePreviewUrl ?? pathUrl;
+  }, [activePreviewUrl, documentPath]);
 
   useEffect(() => {
     if (file || !remoteUrl) {
@@ -145,46 +168,58 @@ export function PdfPreview({
     }
     let revoked: string | null = null;
     let cancelled = false;
+    setRemoteBlobUrl(null);
     setRemoteLoadError(false);
     setRemoteHttpStatus(null);
     setRemoteErrorDetail(null);
 
     const token = localStorage.getItem("access_token");
-    fetch(remoteUrl, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          let detail: string | null = null;
-          try {
-            const payload = (await res.json()) as { detail?: string };
-            detail = payload.detail?.trim() || null;
-          } catch {
-            detail = null;
-          }
-          if (!cancelled) {
-            setRemoteHttpStatus(res.status);
-            setRemoteErrorDetail(detail);
-            setRemoteLoadError(true);
-          }
-          throw new Error(`HTTP ${res.status}`);
-        }
-        return res.blob();
+    const load = (url: string, allowFallback: boolean) =>
+      fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
-      .then((blob) => {
-        if (cancelled) return;
-        revoked = URL.createObjectURL(blob);
-        setRemoteBlobUrl(revoked);
-      })
-      .catch(() => {
-        if (!cancelled) setRemoteLoadError((prev) => prev || true);
-      });
+        .then(async (res) => {
+          if (!res.ok) {
+            let detail: string | null = null;
+            try {
+              const payload = (await res.json()) as { detail?: string };
+              detail = payload.detail?.trim() || null;
+            } catch {
+              detail = null;
+            }
+            if (
+              allowFallback &&
+              res.status === 404 &&
+              fallbackPreviewUrl &&
+              url !== fallbackPreviewUrl
+            ) {
+              setActivePreviewUrl(fallbackPreviewUrl);
+              return null;
+            }
+            if (!cancelled) {
+              setRemoteHttpStatus(res.status);
+              setRemoteErrorDetail(detail);
+              setRemoteLoadError(true);
+            }
+            throw new Error(`HTTP ${res.status}`);
+          }
+          return res.blob();
+        })
+        .then((blob) => {
+          if (!blob || cancelled) return;
+          revoked = URL.createObjectURL(blob);
+          setRemoteBlobUrl(revoked);
+        });
+
+    load(remoteUrl, true).catch(() => {
+      if (!cancelled) setRemoteLoadError((prev) => prev || true);
+    });
 
     return () => {
       cancelled = true;
       if (revoked) URL.revokeObjectURL(revoked);
     };
-  }, [file, remoteUrl]);
+  }, [file, remoteUrl, fallbackPreviewUrl]);
 
   useEffect(() => {
     if (!expanded) return;
@@ -199,13 +234,8 @@ export function PdfPreview({
     };
   }, [expanded]);
 
-  const canUseDirectRemote =
-    !file &&
-    Boolean(remoteUrl) &&
-    remoteLoadError &&
-    remoteHttpStatus == null;
-  const src = file ? blobUrl : remoteBlobUrl ?? (canUseDirectRemote ? remoteUrl : null);
-  const pdf = previewUrl ? true : isPdf(file, documentPath);
+  const src = file ? blobUrl : remoteBlobUrl;
+  const pdf = activePreviewUrl || previewUrl ? true : isPdf(file, documentPath);
   const canExpand = allowExpand && pdf && Boolean(src);
   const fileMissing =
     remoteLoadError && remoteHttpStatus != null && [404, 410].includes(remoteHttpStatus);
@@ -261,7 +291,7 @@ export function PdfPreview({
     );
   }
 
-  if (remoteLoadError && !file && !canUseDirectRemote) {
+  if (remoteLoadError && !file) {
     if (fileMissing) {
       return <NoPdfAvailable className={className} />;
     }

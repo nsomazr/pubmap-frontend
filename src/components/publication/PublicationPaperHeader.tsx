@@ -27,6 +27,8 @@ export interface PublicationPaperHeaderProps {
   accessType?: "open" | "closed";
   authorsComment?: string | null;
   draft?: boolean;
+  /** Inside {@link PublicationPaperDocument} — no outer card border. */
+  embedded?: boolean;
 }
 
 function GreBrandBlock({ draft }: Pick<PublicationPaperHeaderProps, "draft">) {
@@ -159,6 +161,7 @@ export function PublicationPaperHeader({
   greDoi,
   authorsComment,
   draft,
+  embedded = false,
 }: PublicationPaperHeaderProps) {
   const displayTitle = formatGrePaperTitle(title, greNumber);
   const metaRows = buildMetaRows({
@@ -180,7 +183,13 @@ export function PublicationPaperHeader({
   });
 
   return (
-    <header className="publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+    <header
+      className={
+        embedded
+          ? "publication-paper-header overflow-hidden"
+          : "publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm"
+      }
+    >
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-100 bg-white px-2 py-2.5 sm:grid-cols-[3.75rem_minmax(0,1fr)_3.75rem] sm:items-center sm:gap-3 sm:px-6 sm:py-3">
         <GreBrandBlock draft={draft} />
         <div className="min-w-0 justify-self-stretch">

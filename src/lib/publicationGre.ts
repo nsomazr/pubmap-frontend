@@ -225,6 +225,18 @@ export function reviewManuscriptPdfUrl(
   return `${base}/publications/${pubSeg(publicationId, encodedId)}/review-manuscript/${params}`;
 }
 
+export function manuscriptPdfUrl(
+  publicationId: PublicationIdRef,
+  options: { inline?: boolean; encodedId?: string | null } = {}
+) {
+  const base = resolveApiBaseUrl().replace(/\/$/, "");
+  const params = new URLSearchParams();
+  if (options.inline) params.set("inline", "1");
+  const query = params.toString();
+  const seg = pubSeg(publicationId, options.encodedId);
+  return `${base}/publications/${seg}/manuscript-pdf/${query ? `?${query}` : ""}`;
+}
+
 export function summaryPdfUrl(
   publicationId: PublicationIdRef,
   options: { discussions?: boolean; inline?: boolean; encodedId?: string | null } = {}

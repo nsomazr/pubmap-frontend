@@ -2,7 +2,7 @@ import { PdfPreview } from "./PdfPreview";
 import { ManuscriptContent } from "./ManuscriptContent";
 import { PublicationManuscriptBody } from "./PublicationManuscriptBody";
 import { PublicationManuscriptSection } from "./PublicationManuscriptSection";
-import { PublicationPaperHeader } from "./PublicationPaperHeader";
+import { PublicationPaperDocument } from "./PublicationPaperDocument";
 import type { AuthorByline } from "../../lib/publicationAuthors";
 import type { PublicationFigure } from "../../lib/publicationGre";
 import type { SubcategoryVisual } from "../../types";
@@ -63,10 +63,18 @@ export function PublicationPaperPreview({
   const canShowPdf =
     showPdf && !isClosed && (pendingFile || documentPath?.toLowerCase().endsWith(".pdf"));
 
+  const showManuscriptSections = Boolean(
+    data.introduction?.trim() ||
+      data.methods?.trim() ||
+      data.findings?.trim() ||
+      data.conclusion?.trim() ||
+      (data.figures?.length ?? 0) > 0
+  );
+
   return (
     <div className="publication-paper-preview space-y-8">
-      {showHeader && (
-        <PublicationPaperHeader
+      {showHeader ? (
+        <PublicationPaperDocument
           title={data.title || "Untitled publication"}
           greNumber={data.greNumber}
           funder={data.funder}
@@ -83,43 +91,60 @@ export function PublicationPaperPreview({
           responsesCount={data.responsesCount}
           greDoi={data.greDoi}
           accessType={data.accessType}
-          authorsComment={
-            data.accessType === "closed" ? data.authorsComment : undefined
-          }
+          authorsComment={data.accessType === "closed" ? data.authorsComment : undefined}
           draft={draft}
+          abstract={data.abstract}
+          keywords={data.keywords}
+          showManuscript={showManuscriptSections}
+          introduction={data.introduction}
+          methods={data.methods}
+          findings={data.findings}
+          conclusion={data.conclusion}
+          figures={data.figures ?? []}
+          publicationId={publicationId}
+          encodedPublicationId={encodedPublicationId}
+          references={references}
+          alwaysShowAbstract
+          abstractEmptyMessage={
+            data.abstract?.trim()
+              ? undefined
+              : "Add an abstract to preview how it will appear to readers."
+          }
         />
+      ) : (
+        <>
+          <section className="min-w-0 scroll-mt-4">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">Abstract</h2>
+            {data.abstract?.trim() ? (
+              <ManuscriptContent value={data.abstract} className="mt-4 min-w-0" />
+            ) : (
+              <p className="mt-4 text-base leading-relaxed text-slate-700">
+                Add an abstract to preview how it will appear to readers.
+              </p>
+            )}
+            {data.keywords && data.keywords.length > 0 && (
+              <p className="mt-4 text-sm text-slate-600">
+                <span className="font-semibold text-slate-700">Keywords: </span>
+                {data.keywords.join(", ")}
+              </p>
+            )}
+          </section>
+
+          <PublicationManuscriptBody
+            introduction={data.introduction}
+            methods={data.methods}
+            findings={data.findings}
+            conclusion={data.conclusion}
+            figures={data.figures ?? []}
+            publicationId={publicationId}
+            encodedPublicationId={encodedPublicationId}
+            variant="public"
+            layout="flat"
+          />
+
+          <PublicationManuscriptSection title="References" body={references} layout="flat" />
+        </>
       )}
-
-      <section className="min-w-0 scroll-mt-4">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">Abstract</h2>
-        {data.abstract?.trim() ? (
-          <ManuscriptContent value={data.abstract} className="mt-4 min-w-0" />
-        ) : (
-          <p className="mt-4 text-base leading-relaxed text-slate-700">
-            Add an abstract to preview how it will appear to readers.
-          </p>
-        )}
-        {data.keywords && data.keywords.length > 0 && (
-          <p className="mt-4 text-sm text-slate-600">
-            <span className="font-semibold text-slate-700">Keywords: </span>
-            {data.keywords.join(", ")}
-          </p>
-        )}
-      </section>
-
-      <PublicationManuscriptBody
-        introduction={data.introduction}
-        methods={data.methods}
-        findings={data.findings}
-        conclusion={data.conclusion}
-        figures={data.figures ?? []}
-        publicationId={publicationId}
-        encodedPublicationId={encodedPublicationId}
-        variant="public"
-        layout="flat"
-      />
-
-      <PublicationManuscriptSection title="References" body={references} layout="flat" />
 
       {canShowPdf && (
         <section className="min-w-0 scroll-mt-4">

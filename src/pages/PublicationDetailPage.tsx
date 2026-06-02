@@ -7,12 +7,11 @@ import api from "../lib/api";
 import { ReportPlagiarismDialog } from "../components/publication/ReportPlagiarismDialog";
 import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import { RankedNameLabel } from "../components/rankings/RankedNameLabel";
-import { PdfPreview } from "../components/publication/PdfPreview";
+import { PublicationManuscriptPdfSection } from "../components/publication/PublicationManuscriptPdfSection";
 import { PublicationDiscussions } from "../components/publication/PublicationDiscussions";
 import { CoAuthorsPanel } from "../components/publication/CoAuthorsPanel";
 import { PublicationDownloadPanel } from "../components/publication/PublicationDownloadPanel";
-import { PublicationPaperHeader } from "../components/publication/PublicationPaperHeader";
-import { PublicationReadingPaper } from "../components/publication/PublicationReadingPaper";
+import { PublicationPaperDocument } from "../components/publication/PublicationPaperDocument";
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { StudyLocationSection } from "../components/map/StudyLocationSection";
@@ -53,7 +52,8 @@ export function PublicationDetailPage() {
   const docPath = manuscript?.document ?? null;
   const isClosed = pub?.gre?.access_type === "closed";
   const showManuscriptContent = Boolean(docPath?.trim()) && !isClosed;
-  const showPdfPreview = showManuscriptContent && Boolean(docPath?.toLowerCase().endsWith(".pdf"));
+  const showPdfPreview =
+    showManuscriptContent && Boolean(docPath?.toLowerCase().endsWith(".pdf"));
 
   if (isLoading) {
     return (
@@ -128,7 +128,7 @@ export function PublicationDetailPage() {
         </aside>
 
         <div className="gre-section-stack order-2 min-w-0 space-y-5 lg:order-1">
-          <PublicationPaperHeader
+          <PublicationPaperDocument
             title={pub.title}
             greNumber={pub.short_number}
             funder={pub.funder}
@@ -144,9 +144,6 @@ export function PublicationDetailPage() {
             greDoi={pub.gre?.gre_doi}
             accessType={pub.gre?.access_type}
             authorsComment={isClosed ? pub.gre?.authors_comment : undefined}
-          />
-
-          <PublicationReadingPaper
             abstract={pub.abstract}
             keywords={pub.keywords}
             showManuscript={showManuscriptContent}
@@ -157,6 +154,7 @@ export function PublicationDetailPage() {
             figures={pub.figures ?? []}
             publicationId={pub.id}
             encodedPublicationId={pub.encoded_id}
+            references={pub.references}
           />
 
           {pub.coordinates && <StudyLocationSection publication={pub} />}
@@ -176,25 +174,14 @@ export function PublicationDetailPage() {
             initialShareCount={pub.share_count ?? 0}
           />
 
+          <PublicationManuscriptPdfSection
+            publicationId={pub.id}
+            encodedId={pub.encoded_id}
+            show={showPdfPreview}
+          />
+
           <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
           <CoAuthorsPanel publication={pub} />
-
-          {showPdfPreview && docPath && (
-            <section className="gre-public-card overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-7">
-                <div>
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
-                    Manuscript PDF
-                  </h2>
-                  <p className="mt-1 text-xs text-slate-500">Full open-access paper</p>
-                </div>
-              </div>
-              <PdfPreview
-                documentPath={docPath}
-                className="min-h-[min(50vh,420px)] rounded-none border-0 sm:min-h-[min(75vh,900px)]"
-              />
-            </section>
-          )}
 
           <section className="gre-public-card border-amber-200 bg-amber-50/40 p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
