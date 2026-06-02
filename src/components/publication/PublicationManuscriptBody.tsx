@@ -44,8 +44,14 @@ export function PublicationManuscriptBody({
           title="Introduction"
           body={introduction}
           layout={layout}
+          variant={variant}
         />
-        <PublicationManuscriptSection title="Methods" body={methods} layout={layout} />
+        <PublicationManuscriptSection
+          title="Methods"
+          body={methods}
+          layout={layout}
+          variant={variant}
+        />
       </div>
       {hasFigures && (
         <PublicationFiguresDisplay
@@ -57,8 +63,18 @@ export function PublicationManuscriptBody({
         />
       )}
       <div className={sectionGap}>
-        <PublicationManuscriptSection title="Findings" body={findings} layout={layout} />
-        <PublicationManuscriptSection title="Conclusion" body={conclusion} layout={layout} />
+        <PublicationManuscriptSection
+          title="Findings"
+          body={findings}
+          layout={layout}
+          variant={variant}
+        />
+        <PublicationManuscriptSection
+          title="Conclusion"
+          body={conclusion}
+          layout={layout}
+          variant={variant}
+        />
       </div>
     </div>
   );

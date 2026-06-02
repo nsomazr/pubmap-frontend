@@ -2444,6 +2444,17 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
 }
 
 /* Manuscript reading surfaces (preview, publication page, extracted fields in review) */
+.publication-reading-paper .gre-form-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.publication-reading-paper .gre-manuscript-body {
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
 .gre-manuscript-body {
   max-width: 100%;
   overflow-wrap: anywhere;

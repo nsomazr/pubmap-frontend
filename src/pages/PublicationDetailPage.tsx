@@ -11,12 +11,11 @@ import { PdfPreview } from "../components/publication/PdfPreview";
 import { PublicationDiscussions } from "../components/publication/PublicationDiscussions";
 import { CoAuthorsPanel } from "../components/publication/CoAuthorsPanel";
 import { PublicationDownloadPanel } from "../components/publication/PublicationDownloadPanel";
-import { PublicationManuscriptBody } from "../components/publication/PublicationManuscriptBody";
 import { PublicationPaperHeader } from "../components/publication/PublicationPaperHeader";
+import { PublicationReadingPaper } from "../components/publication/PublicationReadingPaper";
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { StudyLocationSection } from "../components/map/StudyLocationSection";
-import { ManuscriptContent } from "../components/publication/ManuscriptContent";
 import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
 import { authorBylineFromPublication } from "../lib/publicationAuthors";
 import { publicationMapLocationLabel } from "../lib/publicationMapLocation";
@@ -147,6 +146,21 @@ export function PublicationDetailPage() {
             authorsComment={isClosed ? pub.gre?.authors_comment : undefined}
           />
 
+          <PublicationReadingPaper
+            abstract={pub.abstract}
+            keywords={pub.keywords}
+            showManuscript={showManuscriptContent}
+            introduction={pub.introduction}
+            methods={pub.methods}
+            findings={pub.findings}
+            conclusion={pub.conclusion}
+            figures={pub.figures ?? []}
+            publicationId={pub.id}
+            encodedPublicationId={pub.encoded_id}
+          />
+
+          {pub.coordinates && <StudyLocationSection publication={pub} />}
+
           <PublicationDownloadPanel
             publicationId={pub.id}
             encodedId={pub.encoded_id}
@@ -161,35 +175,6 @@ export function PublicationDetailPage() {
             initialLikedByMe={pub.liked_by_me ?? false}
             initialShareCount={pub.share_count ?? 0}
           />
-
-          <section className="gre-public-card min-w-0 overflow-hidden p-6 sm:p-8">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">Abstract</h2>
-            {pub.abstract?.trim() ? (
-              <ManuscriptContent value={pub.abstract} className="mt-4 min-w-0" />
-            ) : (
-              <p className="mt-4 text-base leading-relaxed text-slate-700">No abstract provided.</p>
-            )}
-            {pub.keywords && pub.keywords.length > 0 && (
-              <p className="mt-4 text-sm text-slate-600">
-                <span className="font-semibold text-slate-700">Keywords: </span>
-                {pub.keywords.join(", ")}
-              </p>
-            )}
-          </section>
-
-          {showManuscriptContent && (
-            <PublicationManuscriptBody
-              introduction={pub.introduction}
-              methods={pub.methods}
-              findings={pub.findings}
-              conclusion={pub.conclusion}
-              figures={pub.figures ?? []}
-              publicationId={pub.id}
-              encodedPublicationId={pub.encoded_id}
-            />
-          )}
-
-          {pub.coordinates && <StudyLocationSection publication={pub} />}
 
           <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
           <CoAuthorsPanel publication={pub} />

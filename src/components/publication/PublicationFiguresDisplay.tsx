@@ -44,7 +44,9 @@ export function PublicationFiguresDisplay({
       <h2
         className={
           flat
-            ? "text-xs font-bold uppercase tracking-wider text-slate-500"
+            ? variant === "public"
+              ? "text-sm font-bold uppercase tracking-wider text-brand-600"
+              : "text-xs font-bold uppercase tracking-wider text-slate-500"
             : "text-sm font-bold uppercase tracking-wider text-brand-600"
         }
       >

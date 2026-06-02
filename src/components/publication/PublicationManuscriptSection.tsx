@@ -4,9 +4,15 @@ interface Props {
   title: string;
   body?: string | null;
   layout?: "card" | "flat";
+  variant?: "composer" | "public";
 }
 
-export function PublicationManuscriptSection({ title, body, layout = "card" }: Props) {
+export function PublicationManuscriptSection({
+  title,
+  body,
+  layout = "card",
+  variant = "public",
+}: Props) {
   if (!body?.trim()) return null;
 
   const flat = layout === "flat";
@@ -22,7 +28,9 @@ export function PublicationManuscriptSection({ title, body, layout = "card" }: P
       <h2
         className={
           flat
-            ? "text-xs font-bold uppercase tracking-wider text-slate-500"
+            ? variant === "public"
+              ? "text-sm font-bold uppercase tracking-wider text-brand-600"
+              : "text-xs font-bold uppercase tracking-wider text-slate-500"
             : "text-sm font-bold uppercase tracking-wider text-brand-600"
         }
       >
