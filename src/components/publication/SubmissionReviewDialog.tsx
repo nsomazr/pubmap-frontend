@@ -6,6 +6,8 @@ import { AUTHORS_PERSONAL_FEELING_LABEL } from "../../lib/publicationGre";
 import { Button } from "../ui/Button";
 import { ManuscriptContent } from "./ManuscriptContent";
 import type { ManuscriptFields } from "./ManuscriptSectionsEditor";
+import type { PublicationFigure } from "../../lib/publicationGre";
+import { PublicationManuscriptBody } from "./PublicationManuscriptBody";
 
 export const AUTHOR_SUBMISSION_DECLARATION =
   "I declare that this work is my own and that the Global Research Explorer (GRE) has no obligation or liability regarding any claims, including complaints from third parties, related to this article.";
@@ -20,7 +22,9 @@ interface Props {
   institution?: string;
   accessType?: "open" | "closed";
   authorsComment?: string;
-  figureCount?: number;
+  figures?: PublicationFigure[];
+  publicationId?: number | string;
+  encodedPublicationId?: string | null;
   manuscriptFileName?: string | null;
   submitting?: boolean;
   onClose: () => void;
@@ -68,7 +72,9 @@ export function SubmissionReviewDialog({
   institution,
   accessType,
   authorsComment,
-  figureCount = 0,
+  figures = [],
+  publicationId = 0,
+  encodedPublicationId,
   manuscriptFileName,
   submitting,
   onClose,
@@ -155,21 +161,16 @@ export function SubmissionReviewDialog({
             )}
           </ReviewBlock>
 
-          <ReviewBlock label="Introduction">
-            <ReviewText value={manuscript.introduction} />
-          </ReviewBlock>
-
-          <ReviewBlock label="Methods">
-            <ReviewText value={manuscript.methods} />
-          </ReviewBlock>
-
-          <ReviewBlock label="Findings">
-            <ReviewText value={manuscript.findings} />
-          </ReviewBlock>
-
-          <ReviewBlock label="Conclusion">
-            <ReviewText value={manuscript.conclusion} />
-          </ReviewBlock>
+          <PublicationManuscriptBody
+            introduction={manuscript.introduction}
+            methods={manuscript.methods}
+            findings={manuscript.findings}
+            conclusion={manuscript.conclusion}
+            figures={figures}
+            publicationId={publicationId}
+            encodedPublicationId={encodedPublicationId}
+            variant="composer"
+          />
 
           <ReviewBlock label="Funding organizations">
             <ReviewText value={manuscript.funder} />
@@ -178,14 +179,6 @@ export function SubmissionReviewDialog({
           <ReviewBlock label="Key references">
             <ReviewText value={manuscript.references} />
           </ReviewBlock>
-
-          {figureCount > 0 && (
-            <ReviewBlock label="Research figures">
-              <p className="text-sm text-slate-700">
-                {figureCount} figure{figureCount === 1 ? "" : "s"} attached
-              </p>
-            </ReviewBlock>
-          )}
 
           {location && (
             <ReviewBlock label="Study location">

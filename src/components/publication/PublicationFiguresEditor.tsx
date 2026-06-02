@@ -9,6 +9,7 @@ import {
 } from "../../lib/publicationGre";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
+import { PublicationFiguresDisplay } from "./PublicationFiguresDisplay";
 
 interface Props {
   publicationId: number;
@@ -417,18 +418,15 @@ export function PublicationFiguresGallery({
   variant = "public",
 }: {
   figures: PublicationFigure[];
-  publicationId?: number;
+  publicationId?: number | string;
   encodedPublicationId?: string | null;
   variant?: "composer" | "public";
 }) {
-  if (!figures.length) return null;
   return (
-    <PublicationFiguresEditor
+    <PublicationFiguresDisplay
+      figures={figures}
       publicationId={publicationId}
       encodedPublicationId={encodedPublicationId}
-      figures={figures}
-      onChange={() => {}}
-      readOnly
       variant={variant}
     />
   );

@@ -29,8 +29,8 @@ interface Props {
   sectionNotes?: Partial<Record<"title" | keyof ManuscriptFields, string>>;
   /** Restricted access: introduction, methods, and findings are required for submit. */
   requireNarrativeSections?: boolean;
-  /** Rendered after Findings & Conclusion, before Funding & references. */
-  afterFindings?: ReactNode;
+  /** Rendered after Methods, before Findings & Conclusion. */
+  afterMethods?: ReactNode;
 }
 
 function ManuscriptGroup({
@@ -72,7 +72,7 @@ export function ManuscriptSectionsEditor({
   onChange,
   sectionNotes = {},
   requireNarrativeSections = false,
-  afterFindings,
+  afterMethods,
 }: Props) {
   const narrativeRequired = requireNarrativeSections;
   return (
@@ -134,6 +134,8 @@ export function ManuscriptSectionsEditor({
         <FieldExtractionNote note={sectionNotes.methods} />
       </ManuscriptGroup>
 
+      {afterMethods}
+
       <ManuscriptGroup title={MANUSCRIPT_FINDINGS_GROUP_TITLE}>
         <RichTextEditor
           label="Findings"
@@ -151,8 +153,6 @@ export function ManuscriptSectionsEditor({
         />
         <FieldExtractionNote note={sectionNotes.conclusion} />
       </ManuscriptGroup>
-
-      {afterFindings}
 
       <ManuscriptGroup title="Funding & references">
         <Input

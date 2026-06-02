@@ -11,8 +11,7 @@ import { PdfPreview } from "../components/publication/PdfPreview";
 import { PublicationDiscussions } from "../components/publication/PublicationDiscussions";
 import { CoAuthorsPanel } from "../components/publication/CoAuthorsPanel";
 import { PublicationDownloadPanel } from "../components/publication/PublicationDownloadPanel";
-import { PublicationFiguresGallery } from "../components/publication/PublicationFiguresEditor";
-import { PublicationManuscriptSection } from "../components/publication/PublicationManuscriptSection";
+import { PublicationManuscriptBody } from "../components/publication/PublicationManuscriptBody";
 import { PublicationPaperHeader } from "../components/publication/PublicationPaperHeader";
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
@@ -83,16 +82,6 @@ export function PublicationDetailPage() {
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
   const subVisual = publicationSubcategoryVisual(pub);
   const locationLabel = publicationMapLocationLabel(pub);
-  const manuscriptSections = [
-    { title: "Introduction", body: pub.introduction },
-    { title: "Methods", body: pub.methods },
-    {
-      title: "Findings",
-      body: pub.findings,
-    },
-    { title: "Conclusion", body: pub.conclusion },
-  ].filter((section) => Boolean(section.body?.trim()));
-
   const crumbTitle = formatGrePaperTitle(pub.title, pub.short_number);
 
   return (
@@ -188,20 +177,12 @@ export function PublicationDetailPage() {
             )}
           </section>
 
-          {showManuscriptContent && manuscriptSections.length > 0 && (
-            <div className="space-y-4">
-              {manuscriptSections.map((section) => (
-                <PublicationManuscriptSection
-                  key={section.title}
-                  title={section.title}
-                  body={section.body}
-                />
-              ))}
-            </div>
-          )}
-
           {showManuscriptContent && (
-            <PublicationFiguresGallery
+            <PublicationManuscriptBody
+              introduction={pub.introduction}
+              methods={pub.methods}
+              findings={pub.findings}
+              conclusion={pub.conclusion}
               figures={pub.figures ?? []}
               publicationId={pub.id}
               encodedPublicationId={pub.encoded_id}

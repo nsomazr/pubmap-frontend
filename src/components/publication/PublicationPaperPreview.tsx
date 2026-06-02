@@ -1,7 +1,6 @@
 import { PdfPreview } from "./PdfPreview";
 import { ManuscriptContent } from "./ManuscriptContent";
-import { PublicationFiguresGallery } from "./PublicationFiguresEditor";
-import { PublicationManuscriptSection } from "./PublicationManuscriptSection";
+import { PublicationManuscriptBody } from "./PublicationManuscriptBody";
 import { PublicationPaperHeader } from "./PublicationPaperHeader";
 import type { AuthorByline } from "../../lib/publicationAuthors";
 import type { PublicationFigure } from "../../lib/publicationGre";
@@ -36,6 +35,8 @@ export interface PublicationPaperPreviewData {
 
 interface Props {
   data: PublicationPaperPreviewData;
+  publicationId?: number | string;
+  encodedPublicationId?: string | null;
   documentPath?: string | null;
   pendingFile?: File | null;
   draft?: boolean;
@@ -44,6 +45,8 @@ interface Props {
 
 export function PublicationPaperPreview({
   data,
+  publicationId = 0,
+  encodedPublicationId,
   documentPath,
   pendingFile,
   draft = false,
@@ -95,14 +98,16 @@ export function PublicationPaperPreview({
         )}
       </section>
 
-      <div className="space-y-4">
-        <PublicationManuscriptSection title="Introduction" body={data.introduction} />
-        <PublicationManuscriptSection title="Methods" body={data.methods} />
-        <PublicationManuscriptSection title="Findings" body={data.findings} />
-        <PublicationManuscriptSection title="Conclusion" body={data.conclusion} />
-      </div>
-
-      <PublicationFiguresGallery figures={data.figures ?? []} />
+      <PublicationManuscriptBody
+        introduction={data.introduction}
+        methods={data.methods}
+        findings={data.findings}
+        conclusion={data.conclusion}
+        figures={data.figures ?? []}
+        publicationId={publicationId}
+        encodedPublicationId={encodedPublicationId}
+        variant="public"
+      />
 
       {canShowPdf && (
         <section className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white">

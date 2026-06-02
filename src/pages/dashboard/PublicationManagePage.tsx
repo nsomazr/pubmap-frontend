@@ -1184,6 +1184,8 @@ export function PublicationManagePage() {
           <section className="gre-card p-4 sm:p-6">
             <PublicationPaperPreview
               data={paperPreviewData}
+              publicationId={persistedPublicationId ?? 0}
+              encodedPublicationId={persistedEncodedId ?? pub?.encoded_id}
               documentPath={existingDocPath}
               pendingFile={pendingDocument}
               draft
@@ -1274,7 +1276,7 @@ export function PublicationManagePage() {
                   onChange={setManuscript}
                   requireNarrativeSections={isClosedAccess}
                   sectionNotes={extractionUi.sectionNotes}
-                  afterFindings={
+                  afterMethods={
                     <PublicationFiguresEditor
                       publicationId={persistedPublicationId ?? 0}
                       encodedPublicationId={persistedEncodedId}
@@ -1521,7 +1523,9 @@ export function PublicationManagePage() {
         institution={coordinates.institution}
         accessType={gre.access_type}
         authorsComment={gre.authors_comment}
-        figureCount={figures.length}
+        figures={figures}
+        publicationId={persistedPublicationId ?? 0}
+        encodedPublicationId={persistedEncodedId ?? pub?.encoded_id}
         manuscriptFileName={
           pendingDocument?.name ??
           (existingDocPath ? existingDocPath.split("/").pop() : null)
