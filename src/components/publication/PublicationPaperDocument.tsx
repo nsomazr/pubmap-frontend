@@ -50,6 +50,7 @@ export function PublicationPaperDocument({
       <PublicationPaperHeader {...headerProps} embedded />
       {includeManuscript && (
         <>
+          <div className="border-t border-slate-100" aria-hidden />
           <PublicationReadingPaper
             abstract={abstract}
             keywords={keywords}

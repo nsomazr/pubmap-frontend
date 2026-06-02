@@ -25,7 +25,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import api from "../../lib/api";
-import { manuscriptPdfUrl, summaryPdfUrl } from "../../lib/publicationGre";
+import { summaryPdfUrl } from "../../lib/publicationGre";
 import { PdfPreview } from "./PdfPreview";
 import { mediaUrl } from "../../lib/mediaUrl";
 import type { GreDocument, PublicationGre } from "../../lib/publicationGre";
@@ -151,15 +151,8 @@ export function PublicationDownloadPanel({
     [publicationId, encodedId]
   );
 
-  const manuscriptPdfPreviewUrl = manuscriptPdfUrl(publicationId, {
-    inline: true,
-    encodedId,
-  });
   const summaryPdfPreviewUrl = summaryPdfUrl(publicationId, { inline: true, encodedId });
-  const hasUploadedPdf =
-    !closedAccess && Boolean(manuscript?.document?.trim().toLowerCase().endsWith(".pdf"));
-  const pdfPreviewPrimaryUrl = hasUploadedPdf ? manuscriptPdfPreviewUrl : summaryPdfPreviewUrl;
-  const pdfPreviewFallbackUrl = hasUploadedPdf ? summaryPdfPreviewUrl : null;
+  const pdfPreviewPrimaryUrl = summaryPdfPreviewUrl;
 
   const menuExtraCount = useMemo(() => {
     let n = 0;
@@ -376,7 +369,7 @@ export function PublicationDownloadPanel({
               ) : (
                 <Eye className="h-4 w-4 shrink-0" aria-hidden />
               )}
-              {pdfOpen ? "Hide paper" : "View paper"}
+              {pdfOpen ? "Hide PDF" : "View GRE PDF"}
             </button>
           ) : (
             <span className="hidden min-h-[3rem] sm:block" aria-hidden />
@@ -588,15 +581,12 @@ export function PublicationDownloadPanel({
       {showViewPaper && pdfOpen && (
         <div className="mt-5 space-y-2">
           <p className="text-xs text-slate-500">
-            {hasUploadedPdf
-              ? "Uploaded manuscript PDF"
-              : closedAccess
-                ? "GRE publication PDF (open-access summary)"
-                : "GRE publication PDF"}
+            {closedAccess
+              ? "GRE publication PDF (open-access summary)"
+              : "GRE publication PDF"}
           </p>
           <PdfPreview
             previewUrl={pdfPreviewPrimaryUrl}
-            fallbackPreviewUrl={pdfPreviewFallbackUrl}
             title={publicationTitle ? `${publicationTitle} · PDF` : "Publication PDF"}
             emptyState="publication"
             layout="page"

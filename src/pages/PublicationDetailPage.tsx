@@ -10,9 +10,10 @@ import { RankedNameLabel } from "../components/rankings/RankedNameLabel";
 import {
   publicationHasGrePaperBody,
   publicationHasReadablePaper,
+  publicationHasUploadedManuscriptPdf,
   publicationHasViewablePdf,
 } from "../lib/publicationReadable";
-import { PublicationManuscriptContent } from "../components/publication/PublicationManuscriptContent";
+import { PublicationManuscriptPdfSection } from "../components/publication/PublicationManuscriptPdfSection";
 import { PublicationDiscussions } from "../components/publication/PublicationDiscussions";
 import { CoAuthorsPanel } from "../components/publication/CoAuthorsPanel";
 import { PublicationDownloadPanel } from "../components/publication/PublicationDownloadPanel";
@@ -74,14 +75,16 @@ export function PublicationDetailPage() {
 
   const isClosed = pub.gre?.access_type === "closed";
   const showManuscriptSections = !isClosed && publicationHasGrePaperBody(pub);
-  const showManuscriptBlock = publicationHasReadablePaper(pub);
+  const showManuscriptInPaper = publicationHasReadablePaper(pub);
   const showViewPaperPdf = publicationHasViewablePdf(pub);
+  const showUploadedManuscriptPdf = publicationHasUploadedManuscriptPdf(pub);
 
   const authorName =
     pub.author?.full_name ||
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
   const subVisual = publicationSubcategoryVisual(pub);
   const locationLabel = publicationMapLocationLabel(pub);
+  const headerLocation = pub.coordinates ? undefined : locationLabel || undefined;
   const crumbTitle = formatGrePaperTitle(pub.title, pub.short_number);
 
   return (
@@ -137,7 +140,7 @@ export function PublicationDetailPage() {
             subVisual={subVisual}
             subCategoryName={pub.sub_category_name}
             publishedLabel={formatPublishedDate(pub.created_at)}
-            location={locationLabel || undefined}
+            location={headerLocation}
             viewsCount={pub.views_count ?? 0}
             downloadsCount={pub.downloads_count ?? 0}
             discussionsCount={pub.discussions_count ?? 0}
@@ -145,7 +148,7 @@ export function PublicationDetailPage() {
             greDoi={pub.gre?.gre_doi}
             accessType={pub.gre?.access_type}
             authorsComment={isClosed ? pub.gre?.authors_comment : undefined}
-            includeManuscript={false}
+            includeManuscript={showManuscriptInPaper}
             abstract={pub.abstract}
             keywords={pub.keywords}
             showManuscript={showManuscriptSections}
@@ -177,22 +180,12 @@ export function PublicationDetailPage() {
             showViewPaper={showViewPaperPdf}
           />
 
-          {showManuscriptBlock && (
-            <PublicationManuscriptContent
-              isClosed={isClosed}
-              abstract={pub.abstract}
-              keywords={pub.keywords}
-              showManuscript={showManuscriptSections}
-              introduction={pub.introduction}
-              methods={pub.methods}
-              findings={pub.findings}
-              conclusion={pub.conclusion}
-              figures={pub.figures ?? []}
-              publicationId={pub.id}
-              encodedPublicationId={pub.encoded_id}
-              references={pub.references}
-            />
-          )}
+          <PublicationManuscriptPdfSection
+            publicationId={pub.id}
+            encodedId={pub.encoded_id}
+            show={showUploadedManuscriptPdf}
+            fallbackToSummaryPdf={false}
+          />
 
           <CoAuthorsPanel publication={pub} />
           <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
