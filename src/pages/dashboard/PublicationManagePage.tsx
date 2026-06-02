@@ -1335,9 +1335,9 @@ export function PublicationManagePage() {
                       <p className="text-sm text-red-600">{extractionUi.warnings[0]}</p>
                     )}
                   </div>
-                ) : id ? (
+                ) : persistedPublicationId ? (
                   <PublicationDocumentUpload
-                    publicationId={Number(id)}
+                    publicationId={persistedPublicationId}
                     documents={pub?.documents}
                     disabled={isReadOnly}
                     extractOnUpload
@@ -1427,9 +1427,9 @@ export function PublicationManagePage() {
               requirePublisherLink={isClosedAccess}
             />
 
-            {!isClosedAccess && !isNew && id && (
+            {!isClosedAccess && !isNew && persistedPublicationId && (
               <PublicationSupplementaryUpload
-                publicationId={Number(id)}
+                publicationId={persistedPublicationId}
                 documents={pub?.documents as GreDocument[] | undefined}
               />
             )}
