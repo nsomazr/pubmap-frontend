@@ -2,6 +2,7 @@ import { Loader2, ZoomIn } from "lucide-react";
 import { useState } from "react";
 import { useFigurePreviewUrls } from "../../hooks/useFigurePreviewUrls";
 import type { PublicationFigure } from "../../lib/publicationGre";
+import { FigureLightbox } from "./FigureLightbox";
 
 function figureLabel(fig: PublicationFigure, index: number): string {
   return fig.figure_number?.trim() || `Figure ${index + 1}`;
@@ -112,33 +113,22 @@ export function PublicationFiguresDisplay({
         })}
       </div>
 
-      {lightbox && (
-        <div
-          className="fixed inset-0 z-[2100] flex items-center justify-center bg-slate-900/85 p-4 backdrop-blur-sm"
-          onClick={() => setLightbox(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Figure preview"
-        >
-          <div
-            className="relative flex max-h-[min(92vh,880px)] w-full max-w-[min(96vw,52rem)] flex-col overflow-hidden rounded-xl bg-slate-900/40"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={previewUrls[lightbox.id] || ""}
-              alt={lightbox.caption || "Figure"}
-              className="mx-auto max-h-[min(68vh,640px)] max-w-full object-contain p-4"
-            />
-            <p className="shrink-0 border-t border-white/10 px-4 py-3 text-center text-sm text-white">
-              {figureLabel(
-                lightbox,
-                Math.max(0, figures.findIndex((f) => f.id === lightbox.id))
-              )}
-              {(lightbox.caption || "").trim() ? ` — ${lightbox.caption}` : ""}
-            </p>
-          </div>
-        </div>
-      )}
+      <FigureLightbox
+        open={Boolean(lightbox)}
+        onClose={() => setLightbox(null)}
+        src={lightbox ? previewUrls[lightbox.id] || "" : ""}
+        alt={lightbox?.caption || "Figure"}
+      >
+        {lightbox ? (
+          <p>
+            {figureLabel(
+              lightbox,
+              Math.max(0, figures.findIndex((f) => f.id === lightbox.id))
+            )}
+            {(lightbox.caption || "").trim() ? ` — ${lightbox.caption}` : ""}
+          </p>
+        ) : null}
+      </FigureLightbox>
     </section>
   );
 }

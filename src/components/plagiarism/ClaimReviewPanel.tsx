@@ -1,6 +1,6 @@
-import { FileText, ImageIcon, Maximize2, X } from "lucide-react";
+import { FileText, ImageIcon, Maximize2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
+import { FigureLightbox } from "../publication/FigureLightbox";
 import { PdfPreview } from "../publication/PdfPreview";
 import { summaryPdfUrl } from "../../lib/publicationGre";
 import type { PublicationPlagiarismEvidence } from "../../types";
@@ -153,19 +153,6 @@ export function ClaimReviewPanel({ publicationId, evidence, publicationTitle }: 
     }
   }, [evidence.length, evidenceIndex]);
 
-  useEffect(() => {
-    if (!lightboxUrl) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLightboxUrl(null);
-    };
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [lightboxUrl]);
-
   return (
     <div className="mt-5 rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 sm:p-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -238,31 +225,12 @@ export function ClaimReviewPanel({ publicationId, evidence, publicationTitle }: 
         )}
       </div>
 
-      {lightboxUrl &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/85 p-4"
-            role="dialog"
-            aria-label="Evidence preview"
-            onClick={() => setLightboxUrl(null)}
-          >
-            <button
-              type="button"
-              onClick={() => setLightboxUrl(null)}
-              className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
-              aria-label="Close preview"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <img
-              src={lightboxUrl}
-              alt="Evidence"
-              className="max-h-[90vh] max-w-full rounded-lg object-contain shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>,
-          document.body
-        )}
+      <FigureLightbox
+        open={Boolean(lightboxUrl)}
+        onClose={() => setLightboxUrl(null)}
+        src={lightboxUrl || ""}
+        alt="Evidence"
+      />
     </div>
   );
 }

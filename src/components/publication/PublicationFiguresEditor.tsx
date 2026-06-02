@@ -9,6 +9,7 @@ import {
 } from "../../lib/publicationGre";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
+import { FigureLightbox } from "./FigureLightbox";
 import { PublicationFiguresDisplay } from "./PublicationFiguresDisplay";
 
 interface Props {
@@ -530,48 +531,26 @@ export function PublicationFiguresEditor({
         )
       )}
 
-      {preview && (
-        <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/85 p-4 backdrop-blur-sm"
-          onClick={() => setPreview(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Figure preview"
-        >
-          <div
-            className="relative flex max-h-[min(92vh,880px)] w-full max-w-[min(96vw,52rem)] flex-col overflow-hidden rounded-xl bg-slate-900/40 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="absolute right-3 top-3 z-10 rounded-full bg-black/40 p-2 text-white hover:bg-black/55"
-              onClick={() => setPreview(null)}
-              aria-label="Close preview"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-4 pt-12">
-              <img
-                src={figurePreviewUrls[preview.id] || ""}
-                alt={preview.caption || "Figure preview"}
-                loading="eager"
-                className="mx-auto max-h-[min(68vh,640px)] max-w-full object-contain"
-              />
-            </div>
-            <div className="shrink-0 border-t border-white/10 px-4 py-3 text-center text-sm text-white/95">
-              <p className="font-semibold">
-                {figureLabel(
-                  preview,
-                  Math.max(0, figures.findIndex((f) => f.id === preview.id))
-                )}
-              </p>
-              {(preview.caption || "").trim() && (
-                <p className="mt-1 mx-auto max-w-2xl leading-relaxed">{preview.caption}</p>
+      <FigureLightbox
+        open={Boolean(preview)}
+        onClose={() => setPreview(null)}
+        src={preview ? figurePreviewUrls[preview.id] || "" : ""}
+        alt={preview?.caption || "Figure preview"}
+      >
+        {preview ? (
+          <>
+            <p className="font-semibold">
+              {figureLabel(
+                preview,
+                Math.max(0, figures.findIndex((f) => f.id === preview.id))
               )}
-            </div>
-          </div>
-        </div>
-      )}
+            </p>
+            {(preview.caption || "").trim() && (
+              <p className="mt-1 mx-auto max-w-2xl leading-relaxed">{preview.caption}</p>
+            )}
+          </>
+        ) : null}
+      </FigureLightbox>
     </section>
   );
 }
