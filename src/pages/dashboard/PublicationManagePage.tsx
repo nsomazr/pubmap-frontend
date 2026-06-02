@@ -141,6 +141,7 @@ function ComposerStage({
 }
 
 type ComposerTab = "editor" | "preview";
+const NEW_DRAFT_SESSION_KEY = "gre-publication-new-draft-v1";
 
 export function PublicationManagePage() {
   const { id } = useParams<{ id: string }>();
@@ -151,6 +152,7 @@ export function PublicationManagePage() {
   const { user } = useAuth();
   const toast = useToast();
   const isAdmin = isPlatformAdmin(user);
+  const draftsNavPath = "/dashboard/publications?status=0";
 
   const [composerTab, setComposerTab] = useState<ComposerTab>("editor");
   const [accessTypeChosen, setAccessTypeChosen] = useState(!isNew);
@@ -298,6 +300,105 @@ export function PublicationManagePage() {
   const hasDocument = Boolean(pendingDocument || existingDocPath);
 
   const hydratedPublicationId = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isNew || typeof window === "undefined") return;
+    try {
+      const raw = window.sessionStorage.getItem(NEW_DRAFT_SESSION_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as {
+        accessTypeChosen?: boolean;
+        title?: string;
+        abstract?: string;
+        introduction?: string;
+        methods?: string;
+        findings?: string;
+        conclusion?: string;
+        funder?: string;
+        references?: string;
+        keywords?: string;
+        subCategoryId?: string;
+        categoryId?: string;
+        coordinates?: Coordinate;
+        submitterRole?: "lead" | "coauthor";
+        leadAuthorName?: string;
+        leadAuthorAffiliation?: string;
+        leadAuthorEmail?: string;
+        collaborators?: Collaborator[];
+        gre?: PublicationGre;
+      };
+      if (typeof saved.accessTypeChosen === "boolean") setAccessTypeChosen(saved.accessTypeChosen);
+      if (typeof saved.title === "string") setTitle(saved.title);
+      if (typeof saved.abstract === "string") setAbstract(saved.abstract);
+      if (typeof saved.introduction === "string") setIntroduction(saved.introduction);
+      if (typeof saved.methods === "string") setMethods(saved.methods);
+      if (typeof saved.findings === "string") setFindings(saved.findings);
+      if (typeof saved.conclusion === "string") setConclusion(saved.conclusion);
+      if (typeof saved.funder === "string") setFunder(saved.funder);
+      if (typeof saved.references === "string") setReferences(saved.references);
+      if (typeof saved.keywords === "string") setKeywords(saved.keywords);
+      if (typeof saved.subCategoryId === "string") setSubCategoryId(saved.subCategoryId);
+      if (typeof saved.categoryId === "string") setCategoryId(saved.categoryId);
+      if (saved.coordinates) setCoordinates(saved.coordinates);
+      if (saved.submitterRole) setSubmitterRole(saved.submitterRole);
+      if (typeof saved.leadAuthorName === "string") setLeadAuthorName(saved.leadAuthorName);
+      if (typeof saved.leadAuthorAffiliation === "string") {
+        setLeadAuthorAffiliation(saved.leadAuthorAffiliation);
+      }
+      if (typeof saved.leadAuthorEmail === "string") setLeadAuthorEmail(saved.leadAuthorEmail);
+      if (Array.isArray(saved.collaborators)) setCollaborators(saved.collaborators);
+      if (saved.gre) setGre(saved.gre);
+    } catch {
+      /* ignore malformed session data */
+    }
+  }, [isNew]);
+
+  useEffect(() => {
+    if (!isNew || typeof window === "undefined") return;
+    const payload = {
+      accessTypeChosen,
+      title,
+      abstract,
+      introduction,
+      methods,
+      findings,
+      conclusion,
+      funder,
+      references,
+      keywords,
+      subCategoryId,
+      categoryId,
+      coordinates,
+      submitterRole,
+      leadAuthorName,
+      leadAuthorAffiliation,
+      leadAuthorEmail,
+      collaborators,
+      gre,
+    };
+    window.sessionStorage.setItem(NEW_DRAFT_SESSION_KEY, JSON.stringify(payload));
+  }, [
+    isNew,
+    accessTypeChosen,
+    title,
+    abstract,
+    introduction,
+    methods,
+    findings,
+    conclusion,
+    funder,
+    references,
+    keywords,
+    subCategoryId,
+    categoryId,
+    coordinates,
+    submitterRole,
+    leadAuthorName,
+    leadAuthorAffiliation,
+    leadAuthorEmail,
+    collaborators,
+    gre,
+  ]);
 
   const canReviewThis =
     Boolean(pub) &&
@@ -674,6 +775,9 @@ export function PublicationManagePage() {
       return data;
     },
     onSuccess: async (data, options?: SaveOptions) => {
+      if (isNew && typeof window !== "undefined") {
+        window.sessionStorage.removeItem(NEW_DRAFT_SESSION_KEY);
+      }
       if (pendingDocument) {
         try {
           const form = new FormData();
@@ -722,7 +826,7 @@ export function PublicationManagePage() {
           navigate(buildDashboardPublicationPath(data.id, data.encoded_id));
         }
       } else {
-        navigate(buildDashboardPublicationPath(data.id, data.encoded_id));
+        navigate(draftsNavPath);
       }
     },
     onError: (err: { response?: { data?: Record<string, unknown> } }) => {
@@ -980,6 +1084,12 @@ export function PublicationManagePage() {
           !isNew && pub ? (
             <div className="flex items-center gap-2">
               <StatusBadge status={pub.status} />
+              <Link
+                to={draftsNavPath}
+                className="text-sm font-medium text-brand-600 hover:text-brand-700"
+              >
+                Drafts
+              </Link>
               <Link
                 to="/dashboard/publications"
                 className="text-sm font-medium text-slate-500 hover:text-brand-600"
