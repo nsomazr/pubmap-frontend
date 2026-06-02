@@ -55,7 +55,7 @@ export function PublicationSupplementaryUpload({
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 ring-1 ring-slate-200/80 sm:p-6">
+    <section className="gre-form-section !mb-0 space-y-4">
       <h3 className="text-sm font-bold uppercase tracking-wider text-brand-600">
         Supplementary materials
       </h3>

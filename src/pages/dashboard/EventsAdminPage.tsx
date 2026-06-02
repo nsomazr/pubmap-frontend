@@ -12,6 +12,7 @@ import { Textarea } from "../../components/ui/Textarea";
 import { Pagination } from "../../components/ui/Pagination";
 import { usePageParam } from "../../hooks/usePageParam";
 import api from "../../lib/api";
+import { greFormPanelClass } from "../../lib/formStyles";
 import { buildEventPath } from "../../lib/eventPaths";
 import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../../lib/pagination";
 import { mediaUrl } from "../../lib/mediaUrl";
@@ -80,7 +81,7 @@ export function EventsAdminPage() {
       />
 
       <form
-        className="gre-card space-y-6 p-6"
+        className={`${greFormPanelClass} space-y-6`}
         onSubmit={(e) => {
           e.preventDefault();
           setError("");

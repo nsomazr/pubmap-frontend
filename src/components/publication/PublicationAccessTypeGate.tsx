@@ -1,4 +1,5 @@
 import { Check, Globe, Lock, Unlock } from "lucide-react";
+import { greFormSectionClass, greFormSectionTitleClass } from "../../lib/formStyles";
 import type { PublicationAccessType } from "../../lib/publicationGre";
 
 interface Props {
@@ -39,17 +40,19 @@ const OPTIONS: {
 
 export function PublicationAccessTypeGate({ selected, onSelect }: Props) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="border-b border-slate-100 bg-gradient-to-r from-brand-50/70 via-white to-teal-50/40 px-4 py-4 sm:px-5">
+    <section className={`${greFormSectionClass} !mb-0`}>
+      <div className="mb-5">
         <p className="text-[11px] font-bold uppercase tracking-wide text-brand-700">Step 1</p>
-        <h2 className="mt-0.5 text-lg font-bold text-ink sm:text-xl">Choose publication access</h2>
-        <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-600">
+        <h2 className={`mt-1 ${greFormSectionTitleClass} !mb-2 text-lg sm:text-xl`}>
+          Choose publication access
+        </h2>
+        <p className="max-w-2xl text-sm leading-relaxed text-slate-600">
           Tell us how readers can access your paper today. This helps GRE show the right materials on
           the map and publication page.
         </p>
       </div>
 
-      <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
+      <div className="grid gap-3 sm:grid-cols-2">
         {OPTIONS.map(({ type, title, tagline, description, icon: Icon, accent, iconWrap }) => {
           const active = selected === type;
           return (

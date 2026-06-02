@@ -1053,6 +1053,56 @@ body {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
+/* Flat form layout — sections use dividers instead of nested cards */
+.gre-form-stage {
+  padding-bottom: 2rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgb(226 232 240 / 0.95);
+}
+
+.gre-form-stage:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.gre-form-stage__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgb(241 245 249);
+}
+
+.gre-form-section {
+  padding-bottom: 1.75rem;
+  margin-bottom: 1.75rem;
+  border-bottom: 1px solid rgb(241 245 249);
+}
+
+.gre-form-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.gre-form-section__title {
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: rgb(15 23 42);
+}
+
+.gre-form-panel {
+  /* Intentionally minimal — spacing comes from utility classes */
+}
+
+.gre-form-panel-nested {
+  /* Nested indent without an extra card box */
+}
+
 /* Dashboard forms on phones — readable fields, room for FAB + sticky actions */
 @media (max-width: 639px) {
   .gre-page-with-fab {

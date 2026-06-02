@@ -8,6 +8,7 @@ import {
   normalizeFunderField,
   truncateToWordLimit,
 } from "../../lib/manuscriptFieldLimits";
+import { greFormSectionClass, greFormSectionTitleClass } from "../../lib/formStyles";
 import { ReferencesFromResearch } from "./ReferencesFromResearch";
 
 export type ManuscriptFields = {
@@ -43,12 +44,12 @@ function ManuscriptGroup({
   children: ReactNode;
 }) {
   return (
-    <section className="gre-manuscript-group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <header className="border-b border-slate-100 bg-gradient-to-r from-slate-50/90 to-brand-50/20 px-5 py-4 sm:px-6">
-        <h3 className="text-sm font-bold text-ink">{title}</h3>
-        {description ? <p className="mt-1 text-xs leading-relaxed text-slate-500">{description}</p> : null}
-      </header>
-      <div className="space-y-6 px-5 py-5 sm:px-6 sm:py-6">{children}</div>
+    <section className={`gre-manuscript-group ${greFormSectionClass}`}>
+      <h3 className={greFormSectionTitleClass}>{title}</h3>
+      {description ? (
+        <p className="-mt-2 mb-4 text-xs leading-relaxed text-slate-500">{description}</p>
+      ) : null}
+      <div className="space-y-6">{children}</div>
     </section>
   );
 }
@@ -56,7 +57,7 @@ function ManuscriptGroup({
 function FieldExtractionNote({ note }: { note?: string }) {
   if (!note) return null;
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2.5 text-sm text-amber-900">
+    <div className="rounded-lg border border-amber-200/90 bg-amber-50/70 px-3 py-2.5 text-sm text-amber-900">
       <div className="flex gap-2">
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
         <span>{note}</span>

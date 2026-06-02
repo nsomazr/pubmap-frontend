@@ -33,7 +33,7 @@ export function ReferencesFromResearch({ value, paperTitle, onChange, disabled }
         disabled={disabled}
       />
       {items.length > 0 ? (
-        <ol className="list-decimal space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm leading-relaxed text-slate-800">
+        <ol className="list-decimal space-y-2 border-l-2 border-slate-200/90 py-1 pl-5 text-sm leading-relaxed text-slate-800">
           {items.map((item, index) => (
             <li key={`${index}-${item.slice(0, 40)}`} className="pl-1">
               {item}
@@ -41,7 +41,7 @@ export function ReferencesFromResearch({ value, paperTitle, onChange, disabled }
           ))}
         </ol>
       ) : (
-        <div className="flex gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-5">
+        <div className="flex gap-3 border-l-2 border-dashed border-slate-200 py-2 pl-4 text-slate-600">
           <BookOpen className="h-5 w-5 shrink-0 text-slate-400" aria-hidden />
           <p className="text-sm text-slate-600">No references added yet.</p>
         </div>

@@ -354,8 +354,8 @@ export function AccountPage() {
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start">
-        <section className="rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 sm:px-5">
+        <section className="gre-form-panel border-b border-slate-200/90 pb-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                 <User className="h-4 w-4" />
@@ -393,7 +393,7 @@ export function AccountPage() {
             )}
           </div>
 
-          <div className="p-4 sm:p-5">
+          <div>
             {profileEditing ? (
               <form id="account-profile-form" className="space-y-4" onSubmit={handleProfileSubmit}>
                 {profileMsg && <Alert type={profileMsg.type} message={profileMsg.text} />}

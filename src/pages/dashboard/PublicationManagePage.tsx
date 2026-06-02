@@ -20,6 +20,7 @@ import {
   publicationApiSegment,
 } from "../../lib/publicationPaths";
 import { hasValidCoords } from "../../lib/geocode";
+import { greFormStageClass, greFormStageHeadClass } from "../../lib/formStyles";
 import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { Button } from "../../components/ui/Button";
 import { InstitutionPicker } from "../../components/institutions/InstitutionPicker";
@@ -130,16 +131,14 @@ function ComposerStage({
   children: ReactNode;
 }) {
   return (
-    <section className="gre-card overflow-visible p-4 sm:p-8">
-      <div className="border-b border-slate-100 pb-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white shadow-sm">
-            {number}
-          </span>
-          <h2 className="text-lg font-bold text-ink">{title}</h2>
-        </div>
+    <section className={greFormStageClass}>
+      <div className={greFormStageHeadClass}>
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
+          {number}
+        </span>
+        <h2 className="text-lg font-bold text-ink">{title}</h2>
       </div>
-      <div className="mt-6">{children}</div>
+      <div>{children}</div>
     </section>
   );
 }

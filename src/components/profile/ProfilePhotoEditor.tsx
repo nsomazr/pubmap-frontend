@@ -211,7 +211,7 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
   const avatarVersion = pendingPreview ? "pending" : displayVersion;
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+    <div className="border-b border-slate-100 pb-5">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
         <button
           type="button"

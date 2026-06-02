@@ -7,6 +7,7 @@ import {
   uploadFigure,
   type PublicationFigure,
 } from "../../lib/publicationGre";
+import { greFormSectionTitleClass } from "../../lib/formStyles";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { FigureLightbox } from "./FigureLightbox";
@@ -40,7 +41,7 @@ function figureLabel(fig: PublicationFigure, index: number): string {
 function shellClass(variant: "composer" | "public") {
   return variant === "public"
     ? "gre-public-card min-w-0 overflow-hidden p-6 sm:p-8"
-    : "rounded-2xl border border-slate-200 bg-white p-5 ring-1 ring-slate-200/80 sm:p-6";
+    : "gre-form-section !mb-0 space-y-4";
 }
 
 export function PublicationFiguresEditor({
@@ -329,7 +330,15 @@ export function PublicationFiguresEditor({
 
   return (
     <section className={shellClass(variant)}>
-      <h3 className="text-sm font-bold uppercase tracking-wider text-brand-600">Research figures</h3>
+      <h3
+        className={
+          variant === "public"
+            ? "text-sm font-bold uppercase tracking-wider text-brand-600"
+            : greFormSectionTitleClass
+        }
+      >
+        Research figures
+      </h3>
 
       {!readOnly && (
         <div className="mt-4 flex flex-wrap items-center gap-3">

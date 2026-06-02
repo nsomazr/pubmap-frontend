@@ -162,7 +162,7 @@ export function ManuscriptUploadField({
           </p>
         </div>
       ) : (
-        <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 sm:p-5">
+        <div className="space-y-3 border-t border-slate-100 pt-4">
           <label className="block text-sm font-medium text-slate-700">Link to PDF</label>
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
