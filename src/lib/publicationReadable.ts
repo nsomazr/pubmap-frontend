@@ -35,11 +35,18 @@ export function publicationHasUploadedManuscriptPdf(
   return Boolean(path?.trim().toLowerCase().endsWith(".pdf"));
 }
 
-/** Anything the reader can open under “View paper”. */
+/** Structured manuscript block (abstract + sections) for the page below Publication access. */
 export function publicationHasReadablePaper(pub: Publication): boolean {
   const closed = pub.gre?.access_type === "closed";
   if (closed) {
     return Boolean(pub.abstract?.trim() || pub.gre?.authors_comment?.trim());
   }
-  return publicationHasGrePaperBody(pub) || publicationHasUploadedManuscriptPdf(pub);
+  return publicationHasGrePaperBody(pub);
+}
+
+/** PDF preview in Publication access (“View paper”). */
+export function publicationHasViewablePdf(pub: Publication): boolean {
+  const closed = pub.gre?.access_type === "closed";
+  if (closed) return true;
+  return publicationHasUploadedManuscriptPdf(pub) || publicationHasGrePaperBody(pub);
 }

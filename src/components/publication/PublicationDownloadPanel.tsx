@@ -4,6 +4,7 @@ import {
   Download,
   ExternalLink,
   Eye,
+  EyeOff,
   FileText,
   Link2,
   MessageSquare,
@@ -24,7 +25,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import api from "../../lib/api";
-import { summaryPdfUrl } from "../../lib/publicationGre";
+import { manuscriptPdfUrl, summaryPdfUrl } from "../../lib/publicationGre";
+import { PdfPreview } from "./PdfPreview";
 import { mediaUrl } from "../../lib/mediaUrl";
 import type { GreDocument, PublicationGre } from "../../lib/publicationGre";
 import { buildPublicationPath } from "../../lib/publicationPaths";
@@ -43,9 +45,8 @@ interface Props {
   initialLikesCount?: number;
   initialLikedByMe?: boolean;
   initialShareCount?: number;
-  /** Opens the on-page GRE paper reader (replaces inline GRE PDF preview). */
-  onViewPaper?: () => void;
-  showViewPaperAction?: boolean;
+  /** Show “View paper” to toggle inline PDF preview (uploaded manuscript, else GRE PDF). */
+  showViewPaper?: boolean;
 }
 
 function MenuSection({ title, children }: { title: string; children: ReactNode }) {
@@ -118,8 +119,7 @@ export function PublicationDownloadPanel({
   initialLikesCount = 0,
   initialLikedByMe = false,
   initialShareCount = 0,
-  onViewPaper,
-  showViewPaperAction = false,
+  showViewPaper = true,
 }: Props) {
   const { user } = useAuth();
   const toast = useToast();
@@ -133,6 +133,7 @@ export function PublicationDownloadPanel({
     openUp: boolean;
   } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pdfOpen, setPdfOpen] = useState(false);
   const [likesCount, setLikesCount] = useState(initialLikesCount);
   const [likedByMe, setLikedByMe] = useState(initialLikedByMe);
   const [shareCount, setShareCount] = useState(initialShareCount);
@@ -149,6 +150,16 @@ export function PublicationDownloadPanel({
     () => `${window.location.origin}${buildPublicationPath(publicationId, encodedId)}`,
     [publicationId, encodedId]
   );
+
+  const manuscriptPdfPreviewUrl = manuscriptPdfUrl(publicationId, {
+    inline: true,
+    encodedId,
+  });
+  const summaryPdfPreviewUrl = summaryPdfUrl(publicationId, { inline: true, encodedId });
+  const hasUploadedPdf =
+    !closedAccess && Boolean(manuscript?.document?.trim().toLowerCase().endsWith(".pdf"));
+  const pdfPreviewPrimaryUrl = hasUploadedPdf ? manuscriptPdfPreviewUrl : summaryPdfPreviewUrl;
+  const pdfPreviewFallbackUrl = hasUploadedPdf ? summaryPdfPreviewUrl : null;
 
   const menuExtraCount = useMemo(() => {
     let n = 0;
@@ -349,20 +360,23 @@ export function PublicationDownloadPanel({
             Download GRE PDF
           </a>
 
-          {showViewPaperAction && onViewPaper ? (
+          {showViewPaper ? (
             <button
               type="button"
-              onClick={() => {
-                onViewPaper();
-                document.getElementById("publication-paper")?.scrollIntoView({
-                  behavior: "smooth",
-                  block: "start",
-                });
-              }}
-              className="inline-flex min-h-[3rem] items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:bg-white"
+              onClick={() => setPdfOpen((open) => !open)}
+              className={`inline-flex min-h-[3rem] items-center justify-center gap-2.5 rounded-xl border px-5 py-3 text-sm font-semibold transition ${
+                pdfOpen
+                  ? "border-brand-300 bg-brand-50 text-brand-800"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:bg-white"
+              }`}
+              aria-expanded={pdfOpen}
             >
-              <Eye className="h-4 w-4 shrink-0" />
-              View paper
+              {pdfOpen ? (
+                <EyeOff className="h-4 w-4 shrink-0" aria-hidden />
+              ) : (
+                <Eye className="h-4 w-4 shrink-0" aria-hidden />
+              )}
+              {pdfOpen ? "Hide paper" : "View paper"}
             </button>
           ) : (
             <span className="hidden min-h-[3rem] sm:block" aria-hidden />
@@ -571,6 +585,25 @@ export function PublicationDownloadPanel({
         </div>
       </div>
 
+      {showViewPaper && pdfOpen && (
+        <div className="mt-5 space-y-2">
+          <p className="text-xs text-slate-500">
+            {hasUploadedPdf
+              ? "Uploaded manuscript PDF"
+              : closedAccess
+                ? "GRE publication PDF (open-access summary)"
+                : "GRE publication PDF"}
+          </p>
+          <PdfPreview
+            previewUrl={pdfPreviewPrimaryUrl}
+            fallbackPreviewUrl={pdfPreviewFallbackUrl}
+            title={publicationTitle ? `${publicationTitle} · PDF` : "Publication PDF"}
+            emptyState="publication"
+            layout="page"
+            className="w-full"
+          />
+        </div>
+      )}
     </section>
   );
 }

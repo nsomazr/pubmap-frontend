@@ -14,8 +14,9 @@ import { RankedNameLabel } from "../../components/rankings/RankedNameLabel";
 import {
   publicationHasGrePaperBody,
   publicationHasReadablePaper,
-  publicationHasUploadedManuscriptPdf,
+  publicationHasViewablePdf,
 } from "../../lib/publicationReadable";
+import { PublicationManuscriptContent } from "../../components/publication/PublicationManuscriptContent";
 import { PublicationDiscussions } from "../../components/publication/PublicationDiscussions";
 import { CoAuthorsPanel } from "../../components/publication/CoAuthorsPanel";
 import { PublicationDownloadPanel } from "../../components/publication/PublicationDownloadPanel";
@@ -41,8 +42,6 @@ function formatPublishedDate(value?: string): string | undefined {
 export function PublicationReaderPage() {
   const { id } = useParams();
   const [reportOpen, setReportOpen] = useState(false);
-  const [paperOpen, setPaperOpen] = useState(false);
-
   const { data: pub, isLoading, isError } = useQuery({
     queryKey: ["publication-reader", id],
     queryFn: async () => {
@@ -72,8 +71,8 @@ export function PublicationReaderPage() {
 
   const isClosed = pub.gre?.access_type === "closed";
   const showManuscriptSections = !isClosed && publicationHasGrePaperBody(pub);
-  const showUploadedManuscriptPdf = publicationHasUploadedManuscriptPdf(pub);
-  const canReadPaper = publicationHasReadablePaper(pub);
+  const showManuscriptBlock = publicationHasReadablePaper(pub);
+  const showViewPaperPdf = publicationHasViewablePdf(pub);
   const authorName =
     pub.author?.full_name ||
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
@@ -159,11 +158,7 @@ export function PublicationReaderPage() {
             publicationId={pub.id}
             encodedPublicationId={pub.encoded_id}
             references={pub.references}
-            collapsibleReading={canReadPaper}
-            readingOpen={paperOpen}
-            onReadingOpenChange={setPaperOpen}
-            canExpandReading={canReadPaper}
-            showUploadedManuscriptPdf={showUploadedManuscriptPdf}
+            includeManuscript={false}
           />
 
           {pub.coordinates && <StudyLocationSection publication={pub} />}
@@ -181,9 +176,25 @@ export function PublicationReaderPage() {
             initialLikesCount={pub.likes_count ?? 0}
             initialLikedByMe={pub.liked_by_me ?? false}
             initialShareCount={pub.share_count ?? 0}
-            showViewPaperAction={canReadPaper}
-            onViewPaper={() => setPaperOpen(true)}
+            showViewPaper={showViewPaperPdf}
           />
+
+          {showManuscriptBlock && (
+            <PublicationManuscriptContent
+              isClosed={isClosed}
+              abstract={pub.abstract}
+              keywords={pub.keywords}
+              showManuscript={showManuscriptSections}
+              introduction={pub.introduction}
+              methods={pub.methods}
+              findings={pub.findings}
+              conclusion={pub.conclusion}
+              figures={pub.figures ?? []}
+              publicationId={pub.id}
+              encodedPublicationId={pub.encoded_id}
+              references={pub.references}
+            />
+          )}
 
           <CoAuthorsPanel publication={pub} />
           <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
