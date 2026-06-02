@@ -181,8 +181,8 @@ export function PublicationReaderPage() {
             show={showPdfPreview}
           />
 
-          <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
           <CoAuthorsPanel publication={pub} />
+          <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
 
           <section className="gre-card border-amber-100 bg-amber-50/30 p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">

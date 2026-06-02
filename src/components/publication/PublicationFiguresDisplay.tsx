@@ -33,6 +33,7 @@ export function PublicationFiguresDisplay({
   if (!figures.length) return null;
 
   const flat = layout === "flat";
+  const inlineOnPaper = flat && variant === "public";
   const shell = flat
     ? "min-w-0 scroll-mt-4"
     : variant === "public"
@@ -41,18 +42,24 @@ export function PublicationFiguresDisplay({
 
   return (
     <section className={shell}>
-      <h2
+      {!inlineOnPaper && (
+        <h2
+          className={
+            flat
+              ? "text-xs font-bold uppercase tracking-wider text-slate-500"
+              : "text-sm font-bold uppercase tracking-wider text-brand-600"
+          }
+        >
+          Research figures
+        </h2>
+      )}
+      <div
         className={
-          flat
-            ? variant === "public"
-              ? "text-sm font-bold uppercase tracking-wider text-brand-600"
-              : "text-xs font-bold uppercase tracking-wider text-slate-500"
-            : "text-sm font-bold uppercase tracking-wider text-brand-600"
+          inlineOnPaper
+            ? "space-y-10"
+            : `grid gap-6 sm:grid-cols-2 ${flat ? "mt-4" : "mt-5"}`
         }
       >
-        Research figures
-      </h2>
-      <div className={`grid gap-6 sm:grid-cols-2 ${flat ? "mt-4" : "mt-5"}`}>
         {figures.map((fig, index) => {
           const src = previewUrls[fig.id];
           const loading =
@@ -64,13 +71,13 @@ export function PublicationFiguresDisplay({
               key={fig.id}
               className={
                 flat
-                  ? "flex flex-col gap-2"
+                  ? "mx-auto flex max-w-3xl flex-col gap-2"
                   : "flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50/40"
               }
             >
               <button
                 type="button"
-                className={`group relative block w-full ${flat ? "rounded-lg bg-slate-50/80" : "bg-white"}`}
+                className={`group relative block w-full ${flat ? "" : "bg-white"}`}
                 onClick={() => src && setLightbox(fig)}
                 disabled={!src}
               >
@@ -80,15 +87,27 @@ export function PublicationFiguresDisplay({
                     alt={caption || figureLabel(fig, index)}
                     loading="lazy"
                     decoding="async"
-                    className="aspect-[4/3] w-full object-contain p-2 transition group-hover:opacity-95"
+                    className={
+                      flat
+                        ? "mx-auto max-h-[min(70vh,720px)] w-auto max-w-full object-contain transition group-hover:opacity-95"
+                        : "aspect-[4/3] w-full object-contain p-2 transition group-hover:opacity-95"
+                    }
                   />
                 ) : loading ? (
-                  <div className="flex aspect-[4/3] items-center justify-center gap-2 bg-slate-100 text-slate-500">
+                  <div
+                    className={`flex items-center justify-center gap-2 text-slate-500 ${
+                      flat ? "min-h-[12rem] py-8" : "aspect-[4/3] bg-slate-100"
+                    }`}
+                  >
                     <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
                     <span className="text-sm">Loading…</span>
                   </div>
                 ) : (
-                  <div className="flex aspect-[4/3] items-center justify-center bg-slate-100 text-sm text-slate-400">
+                  <div
+                    className={`flex items-center justify-center text-sm text-slate-400 ${
+                      flat ? "min-h-[12rem] py-8" : "aspect-[4/3] bg-slate-100"
+                    }`}
+                  >
                     Preview unavailable
                   </div>
                 )}
@@ -98,7 +117,15 @@ export function PublicationFiguresDisplay({
                   </span>
                 )}
               </button>
-              <figcaption className={flat ? "px-0.5" : "border-t border-slate-100 bg-white px-3 py-2.5"}>
+              <figcaption
+                className={
+                  inlineOnPaper
+                    ? "text-center"
+                    : flat
+                      ? "px-0.5"
+                      : "border-t border-slate-100 bg-white px-3 py-2.5"
+                }
+              >
                 <p className="text-xs font-bold uppercase tracking-wide text-brand-600">
                   {figureLabel(fig, index)}
                 </p>
