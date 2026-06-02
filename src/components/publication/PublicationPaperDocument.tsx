@@ -18,7 +18,10 @@ export type PublicationManuscriptFields = {
   abstractEmptyMessage?: string;
 };
 
-export type PublicationPaperDocumentProps = PublicationPaperHeaderProps &
+export type PublicationPaperDocumentProps = Omit<
+  PublicationPaperHeaderProps,
+  "publicationId" | "encodedPublicationId"
+> &
   PublicationManuscriptFields & {
     /** When false, only the masthead/metadata card is rendered (manuscript shown elsewhere). */
     includeManuscript?: boolean;

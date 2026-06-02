@@ -213,10 +213,10 @@ export function PublicationPaperHeader({
         ) : null}
       </div>
 
-      {publicationId != null && (
+      {publicationId != null && Number(publicationId) > 0 && (
         <div className="flex justify-end border-t border-slate-100 bg-white px-5 py-3 sm:px-7">
           <PublicationSummaryButton
-            publicationId={publicationId}
+            publicationId={Number(publicationId)}
             encodedPublicationId={encodedPublicationId}
           />
         </div>
