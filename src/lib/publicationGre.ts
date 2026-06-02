@@ -24,6 +24,7 @@ export interface PublicationGre {
 
 export interface PublicationFigure {
   id: number;
+  publication?: number;
   /** Stored media path (e.g. uploads/figures/…) or legacy storage/ URL. */
   photo: string;
   /** Absolute URL when the API provides one. */

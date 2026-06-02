@@ -29,10 +29,11 @@ export function useFigurePreviewUrls(
         figures.map(async (fig) => {
           if (!fig.id) return;
           let resolved = "";
-          if (publicationId && fig.id > 0) {
+          const targetPublicationId = publicationId || fig.publication || 0;
+          if (targetPublicationId && fig.id > 0) {
             try {
               const blob = await fetchFigureImageBlob(
-                publicationId,
+                targetPublicationId,
                 fig.id,
                 encodedPublicationId
               );

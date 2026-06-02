@@ -1634,7 +1634,7 @@ export function PublicationManagePage() {
         accessType={gre.access_type}
         authorsComment={gre.authors_comment}
         figures={figures}
-        publicationId={persistedPublicationId ?? 0}
+        publicationId={persistedPublicationId ?? figures[0]?.publication ?? 0}
         encodedPublicationId={persistedEncodedId ?? pub?.encoded_id}
         manuscriptFileName={
           pendingDocument?.name ??

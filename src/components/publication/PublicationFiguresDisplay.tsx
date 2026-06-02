@@ -42,7 +42,8 @@ export function PublicationFiguresDisplay({
       <div className="mt-5 grid gap-6 sm:grid-cols-2">
         {figures.map((fig, index) => {
           const src = previewUrls[fig.id];
-          const loading = Boolean(publicationId && fig.id > 0) && !src;
+          const loading =
+            Boolean((publicationId || fig.publication) && fig.id > 0) && src === undefined;
           const caption = (fig.caption || "").trim();
 
           return (

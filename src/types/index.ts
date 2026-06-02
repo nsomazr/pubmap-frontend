@@ -199,6 +199,7 @@ export interface PublicationGre {
 
 export interface PublicationFigure {
   id: number;
+  publication?: number;
   photo: string;
   photo_url?: string;
   caption?: string;
