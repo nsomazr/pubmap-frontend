@@ -1352,6 +1352,19 @@ export function PublicationManagePage() {
                     disabled={isReadOnly}
                     extractOnUpload
                     onExtracted={applyExtractedDocument}
+                    onSourceRemoved={() => {
+                      setTitle("");
+                      setAbstract("");
+                      setIntroduction("");
+                      setMethods("");
+                      setFindings("");
+                      setConclusion("");
+                      setFunder("");
+                      setReferences("");
+                      setKeywords("");
+                      setPendingDocument(null);
+                      setExtractionUi({ status: "idle", warnings: [], sectionNotes: {} });
+                    }}
                     extractionAbortRef={extractionAbortRef}
                     onExtractingChange={(active) => {
                       setDocumentUploadExtracting(active);

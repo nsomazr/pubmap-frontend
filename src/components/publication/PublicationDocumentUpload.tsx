@@ -35,6 +35,7 @@ interface Props {
   onExtracted?: (payload: ExtractedDocumentPayload) => void;
   onExtractingChange?: (extracting: boolean) => void;
   extractionAbortRef?: MutableRefObject<AbortController | null>;
+  onSourceRemoved?: () => void;
 }
 
 export function PublicationDocumentUpload({
@@ -46,6 +47,7 @@ export function PublicationDocumentUpload({
   onExtracted,
   onExtractingChange,
   extractionAbortRef,
+  onSourceRemoved,
 }: Props) {
   const queryClient = useQueryClient();
   const [localError, setLocalError] = useState("");
@@ -117,7 +119,7 @@ export function PublicationDocumentUpload({
           warnings: sanitizeExtractionWarnings(data.extracted.warnings),
         });
       }
-      queryClient.invalidateQueries({ queryKey: ["publication-edit", String(publicationId)] });
+      queryClient.invalidateQueries({ queryKey: ["publication-edit"] });
     },
     onError: (err) => {
       if (extractOnUpload) {
@@ -136,7 +138,11 @@ export function PublicationDocumentUpload({
       api.delete(`/publications/${publicationId}/documents/${docId}/`),
     onSuccess: () => {
       setPendingFile(null);
-      queryClient.invalidateQueries({ queryKey: ["publication-edit", String(publicationId)] });
+      queryClient.invalidateQueries({ queryKey: ["publication-edit"] });
+      onSourceRemoved?.();
+    },
+    onError: (err) => {
+      setLocalError(parseApiError(err, "Could not remove source document."));
     },
   });
 
