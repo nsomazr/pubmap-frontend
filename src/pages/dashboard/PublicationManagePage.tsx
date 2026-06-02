@@ -837,11 +837,12 @@ export function PublicationManagePage() {
     },
     onError: (err: { response?: { data?: Record<string, unknown> } }, options?: SaveOptions) => {
       if (options?.thenSubmit) {
-        const detail =
-          typeof err.response?.data?.detail === "string"
-            ? err.response.data.detail
-            : parseApiError(err);
-        setError(detail || "Could not submit for review. Check required fields and try again.");
+        setError(
+          parseApiError(
+            err,
+            "Could not submit for review. Check required fields and try again."
+          )
+        );
         return;
       }
       const data = err.response?.data;
