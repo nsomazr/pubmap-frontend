@@ -13,6 +13,12 @@ export const greFormStageClass = "gre-form-stage";
 
 export const greFormStageHeadClass = "gre-form-stage__head";
 
+/** Artistic card for major form steps only (new paper, meet setup) — do not nest heavily. */
+export const greFormArtCardClass = "gre-form-art-card";
+
+/** Stack of {@link greFormArtCardClass} sections with consistent gap. */
+export const greFormArtStackClass = "gre-form-art-stack space-y-5 sm:space-y-6";
+
 /** Subsection inside a form (Summary, Methods, admin form blocks). */
 export const greFormSectionClass = "gre-form-section";
 

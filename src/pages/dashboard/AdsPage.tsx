@@ -13,7 +13,7 @@ import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
 import api from "../../lib/api";
-import { greFormPanelClass } from "../../lib/formStyles";
+import { greFormArtCardClass } from "../../lib/formStyles";
 import { AD_PLACEMENTS, type AdPlacement } from "../../lib/ads";
 
 interface Ad {
@@ -115,7 +115,7 @@ export function AdsPage() {
       </section>
 
       <form
-        className={`${greFormPanelClass} grid gap-4 lg:grid-cols-2`}
+        className={`${greFormArtCardClass} grid gap-4 lg:grid-cols-2`}
         onSubmit={(e) => {
           e.preventDefault();
           createMutation.mutate();

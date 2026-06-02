@@ -1,5 +1,8 @@
 import { Check, Globe, Lock, Unlock } from "lucide-react";
-import { greFormSectionClass, greFormSectionTitleClass } from "../../lib/formStyles";
+import {
+  greFormArtCardClass,
+  greFormSectionTitleClass,
+} from "../../lib/formStyles";
 import type { PublicationAccessType } from "../../lib/publicationGre";
 
 interface Props {
@@ -40,7 +43,7 @@ const OPTIONS: {
 
 export function PublicationAccessTypeGate({ selected, onSelect }: Props) {
   return (
-    <section className={`${greFormSectionClass} !mb-0`}>
+    <section className={greFormArtCardClass}>
       <div className="mb-5">
         <p className="text-[11px] font-bold uppercase tracking-wide text-brand-700">Step 1</p>
         <h2 className={`mt-1 ${greFormSectionTitleClass} !mb-2 text-lg sm:text-xl`}>

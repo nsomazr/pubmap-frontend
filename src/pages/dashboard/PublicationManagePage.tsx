@@ -20,7 +20,11 @@ import {
   publicationApiSegment,
 } from "../../lib/publicationPaths";
 import { hasValidCoords } from "../../lib/geocode";
-import { greFormStageClass, greFormStageHeadClass } from "../../lib/formStyles";
+import {
+  greFormArtCardClass,
+  greFormArtStackClass,
+  greFormStageHeadClass,
+} from "../../lib/formStyles";
 import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { Button } from "../../components/ui/Button";
 import { InstitutionPicker } from "../../components/institutions/InstitutionPicker";
@@ -131,9 +135,9 @@ function ComposerStage({
   children: ReactNode;
 }) {
   return (
-    <section className={greFormStageClass}>
+    <section className={greFormArtCardClass}>
       <div className={greFormStageHeadClass}>
-        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white shadow-sm shadow-brand-600/25">
           {number}
         </span>
         <h2 className="text-lg font-bold text-ink">{title}</h2>
@@ -1335,6 +1339,7 @@ export function PublicationManagePage() {
 
         {composerTab === "editor" && (
           <>
+          <div className={greFormArtStackClass}>
             <ComposerStage number="1" title="Research setup">
               <RequiredFieldsLegend className="mb-4" />
               <CategorySubcategoryPicker
@@ -1601,6 +1606,7 @@ export function PublicationManagePage() {
         <ComposerStage number="7" title={AUTHORS_PERSONAL_FEELING_LABEL}>
           <AuthorsCommentSection gre={gre} onChange={setGre} disabled={isReadOnly} />
         </ComposerStage>
+          </div>
 
         <div
           className={`publication-submit-bar ${greFormActionsClass} !shadow-lg`}

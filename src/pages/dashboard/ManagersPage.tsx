@@ -9,7 +9,7 @@ import { Input } from "../../components/ui/Input";
 import { RequiredFieldsLegend, RequiredMark } from "../../components/ui/RequiredField";
 import { Select } from "../../components/ui/Select";
 import api, { parseApiError } from "../../lib/api";
-import { greFormPanelClass } from "../../lib/formStyles";
+import { greFormArtCardClass } from "../../lib/formStyles";
 import { useAuth } from "../../context/AuthContext";
 import { isPlatformAdmin } from "../../lib/userAccess";
 import type { Category, CategoryManagerRow, User } from "../../types";
@@ -186,7 +186,7 @@ export function ManagersPage() {
         </div>
       </section>
 
-      <section className={`${greFormPanelClass} sm:p-0`}>
+      <section className={`${greFormArtCardClass} sm:p-0`}>
         <h2 className="flex items-center gap-2 font-semibold text-ink">
           <Plus className="h-5 w-5 text-brand-600" />
           Assign manager

@@ -31,7 +31,7 @@ import {
   wallTimeToUtcIso,
 } from "../../lib/meetTimezones";
 import {
-  greDashboardCardClass,
+  greFormArtCardClass,
   greFormActionsClass,
   greFormGridClass,
   greFormGridMdClass,
@@ -66,7 +66,7 @@ function MeetFormSection({
   children: ReactNode;
 }) {
   return (
-    <section className={`${greDashboardCardClass} space-y-4`}>
+    <section className={`${greFormArtCardClass} space-y-4`}>
       <div className="border-b border-slate-100 pb-3">
         <div className="flex items-start gap-2.5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700 sm:h-8 sm:w-8">
@@ -594,7 +594,7 @@ export function MeetManagePage() {
       </form>
 
       {!isNew && meeting && (
-        <section className={`${greDashboardCardClass} space-y-4`}>
+        <section className={`${greFormArtCardClass} space-y-4`}>
           <div className="border-b border-slate-100 pb-3">
             <div className="flex items-start gap-2.5">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700 sm:h-8 sm:w-8">
@@ -611,7 +611,7 @@ export function MeetManagePage() {
       )}
 
       {!isNew && meeting && (
-        <section className={`${greDashboardCardClass} space-y-5`}>
+        <section className={`${greFormArtCardClass} space-y-5`}>
           <div className="border-b border-slate-100 pb-3">
             <div className="flex items-start gap-2.5">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-brand-700 sm:h-8 sm:w-8">
