@@ -47,7 +47,12 @@ export function PublicationPaperDocument({
       id="publication-paper"
       className="publication-reading-paper min-w-0 overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.05)]"
     >
-      <PublicationPaperHeader {...headerProps} embedded />
+      <PublicationPaperHeader
+        {...headerProps}
+        publicationId={Number(publicationId)}
+        encodedPublicationId={encodedPublicationId}
+        embedded
+      />
       {includeManuscript && (
         <>
           <div className="border-t border-slate-100" aria-hidden />

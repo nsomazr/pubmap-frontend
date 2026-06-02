@@ -1,4 +1,5 @@
 import { metaCountValue } from "../../lib/formatMetaCount";
+import { PublicationSummaryButton } from "./PublicationSummaryButton";
 import { formatGrePaperTitle, grePaperCode } from "../../lib/grePaperTitle";
 import { BrandMark } from "../brand/BrandMark";
 import { AUTHORS_PERSONAL_FEELING_LABEL } from "../../lib/publicationGre";
@@ -28,6 +29,8 @@ export interface PublicationPaperHeaderProps {
   accessType?: "open" | "closed";
   authorsComment?: string | null;
   draft?: boolean;
+  publicationId?: number;
+  encodedPublicationId?: string | null;
   /** Inside {@link PublicationPaperDocument} — no outer card border. */
   embedded?: boolean;
 }
@@ -162,6 +165,8 @@ export function PublicationPaperHeader({
   greDoi,
   authorsComment,
   draft,
+  publicationId,
+  encodedPublicationId,
   embedded = false,
 }: PublicationPaperHeaderProps) {
   const displayTitle = formatGrePaperTitle(title, greNumber);
@@ -207,6 +212,15 @@ export function PublicationPaperHeader({
           <PublicationAuthorByline byline={resolvedByline} />
         ) : null}
       </div>
+
+      {publicationId != null && (
+        <div className="flex justify-end border-t border-slate-100 bg-white px-5 py-3 sm:px-7">
+          <PublicationSummaryButton
+            publicationId={publicationId}
+            encodedPublicationId={encodedPublicationId}
+          />
+        </div>
+      )}
 
       {metaRows.length > 0 && (
         <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-3 sm:px-7">
