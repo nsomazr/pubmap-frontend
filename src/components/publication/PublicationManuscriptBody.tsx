@@ -10,6 +10,7 @@ type Props = {
   figures?: PublicationFigure[];
   publicationId?: number | string;
   encodedPublicationId?: string | null;
+  variant?: "composer" | "public";
   showFigures?: boolean;
 };
 
@@ -22,6 +23,7 @@ export function PublicationManuscriptBody({
   figures = [],
   publicationId = 0,
   encodedPublicationId,
+  variant = "public",
   showFigures = true,
 }: Props) {
   const hasNarrative = [introduction, methods, findings, conclusion].some((s) =>
@@ -42,7 +44,7 @@ export function PublicationManuscriptBody({
           figures={figures}
           publicationId={publicationId}
           encodedPublicationId={encodedPublicationId}
-          variant="public"
+          variant={variant}
         />
       )}
       <div className="space-y-4">
