@@ -49,7 +49,10 @@ import { useAuth } from "../../context/AuthContext";
 import api, { parseApiError } from "../../lib/api";
 import { sanitizeExtractionWarnings } from "../../lib/extractionWarnings";
 import { PublicationFiguresEditor } from "../../components/publication/PublicationFiguresEditor";
-import { RevisionFeedbackBanner } from "../../components/publication/RevisionFeedbackBanner";
+import {
+  RevisionFeedbackBanner,
+  countOpenRevisionComments,
+} from "../../components/publication/RevisionFeedbackBanner";
 import { primaryManuscriptPath } from "../../lib/publicationDocuments";
 import { PublicationSupplementaryUpload } from "../../components/publication/PublicationSupplementaryUpload";
 import { renderManuscriptHtml } from "../../lib/renderManuscriptHtml";
@@ -1253,7 +1256,12 @@ export function PublicationManagePage() {
         <div className="mb-6">
           <RevisionFeedbackBanner
             comments={pub.admin_comments ?? []}
+            publicationId={persistedPublicationId ?? pub.id}
+            encodedPublicationId={persistedEncodedId ?? pub.encoded_id}
             revisionRequested
+            onCommentsChange={() => {
+              queryClient.invalidateQueries({ queryKey: editQueryKey });
+            }}
           />
         </div>
       )}
@@ -1676,6 +1684,9 @@ export function PublicationManagePage() {
         manuscriptFileName={
           pendingDocument?.name ??
           (existingDocPath ? existingDocPath.split("/").pop() : null)
+        }
+        openRevisionNotesCount={
+          pub?.status === 2 ? countOpenRevisionComments(pub.admin_comments ?? []) : 0
         }
         submitting={saveMutation.isPending && submitReviewOpen}
         onClose={() => setSubmitReviewOpen(false)}

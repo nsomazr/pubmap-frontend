@@ -578,6 +578,10 @@ export interface PublicationComment {
   id: number;
   comment: string;
   created_at?: string;
+  revision_round?: number;
+  marked_addressed_at?: string | null;
+  resolved_on_resubmit_at?: string | null;
+  is_addressed?: boolean;
 }
 
 export interface PublicationConversation {

@@ -1,5 +1,5 @@
 import api from "./api";
-
+import type { PublicationComment } from "../types";
 import { resolveApiBaseUrl } from "./apiBaseUrl";
 import { mediaUrl } from "./mediaUrl";
 import { publicationApiSegment } from "./publicationPaths";
@@ -200,6 +200,19 @@ export async function deletePublicationDocument(
   await api.delete(
     `/publications/${pubSeg(publicationId, encodedId)}/documents/${documentId}/`
   );
+}
+
+export async function setRevisionCommentAddressed(
+  publicationId: PublicationIdRef,
+  commentId: number,
+  addressed: boolean,
+  encodedId?: string | null
+): Promise<PublicationComment> {
+  const { data } = await api.post<PublicationComment>(
+    `/publications/${pubSeg(publicationId, encodedId)}/admin_comments/${commentId}/address/`,
+    { addressed }
+  );
+  return data;
 }
 
 export function reviewManuscriptPdfUrl(

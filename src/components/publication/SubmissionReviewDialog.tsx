@@ -26,6 +26,7 @@ interface Props {
   publicationId?: number | string;
   encodedPublicationId?: string | null;
   manuscriptFileName?: string | null;
+  openRevisionNotesCount?: number;
   submitting?: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -76,6 +77,7 @@ export function SubmissionReviewDialog({
   publicationId = 0,
   encodedPublicationId,
   manuscriptFileName,
+  openRevisionNotesCount = 0,
   submitting,
   onClose,
   onConfirm,
@@ -198,6 +200,15 @@ export function SubmissionReviewDialog({
             <ReviewBlock label={AUTHORS_PERSONAL_FEELING_LABEL}>
               <ReviewText value={authorsComment} />
             </ReviewBlock>
+          )}
+
+          {openRevisionNotesCount > 0 && (
+            <p className="rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
+              {openRevisionNotesCount} revision note
+              {openRevisionNotesCount === 1 ? "" : "s"} still open. They will be marked as addressed
+              in this resubmission; review the feedback section first if you have not made those
+              changes yet.
+            </p>
           )}
 
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-3.5">
