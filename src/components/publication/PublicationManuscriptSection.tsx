@@ -1,3 +1,4 @@
+import { grePaperSectionHeadingClass } from "../../lib/publicationPageStyles";
 import { ManuscriptContent } from "./ManuscriptContent";
 
 interface Props {
@@ -29,9 +30,9 @@ export function PublicationManuscriptSection({
         className={
           flat
             ? variant === "public"
-              ? "text-sm font-bold uppercase tracking-wider text-brand-600"
-              : "text-xs font-bold uppercase tracking-wider text-slate-500"
-            : "text-sm font-bold uppercase tracking-wider text-brand-600"
+              ? grePaperSectionHeadingClass
+              : "gre-paper-section-heading text-xs font-bold uppercase tracking-wider text-slate-500"
+            : grePaperSectionHeadingClass
         }
       >
         {title}

@@ -1145,6 +1145,39 @@ body {
   margin-bottom: 0;
 }
 
+.gre-form-art-card--amber {
+  border-color: rgb(253 230 138 / 0.85);
+  background: linear-gradient(
+    165deg,
+    #fffbeb 0%,
+    #ffffff 38%,
+    #fff7ed 100%
+  );
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 14px 44px -22px rgba(180 83 9 / 0.12);
+}
+
+.gre-form-art-card--amber::before {
+  background: linear-gradient(
+    90deg,
+    #f59e0b 0%,
+    #fbbf24 45%,
+    #f97316 100%
+  );
+}
+
+/* Publication page + in-paper headings — one typographic system */
+.gre-publication-section-title,
+.gre-paper-section-heading {
+  font-family: inherit;
+  letter-spacing: 0.06em;
+}
+
+.gre-paper-figure-label {
+  letter-spacing: 0.05em;
+}
+
 /* Dashboard forms on phones — readable fields, room for FAB + sticky actions */
 @media (max-width: 639px) {
   .gre-page-with-fab {

@@ -1,5 +1,6 @@
 import { PdfPreview } from "./PdfPreview";
 import { manuscriptPdfUrl, summaryPdfUrl } from "../../lib/publicationGre";
+import { PublicationPageSection } from "./PublicationPageSection";
 
 type Props = {
   publicationId: number | string;
@@ -22,20 +23,16 @@ export function PublicationManuscriptPdfSection({
   const summaryUrl = summaryPdfUrl(publicationId, { inline: true, encodedId });
 
   return (
-    <section className="publication-uploaded-manuscript min-w-0 overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.05)]">
-      <header className="border-b border-slate-100 px-5 py-4 sm:px-7">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
-          Uploaded manuscript
-        </h2>
-        <p className="mt-1 text-xs text-slate-500">Original PDF as submitted by the author</p>
-      </header>
-      <div className="p-4 sm:p-5">
-        <PdfPreview
-          previewUrl={manuscriptUrl}
-          fallbackPreviewUrl={fallbackToSummaryPdf ? summaryUrl : null}
-          className="min-h-[min(50vh,420px)] sm:min-h-[min(70vh,720px)]"
-        />
-      </div>
-    </section>
+    <PublicationPageSection
+      id="uploaded-manuscript"
+      title="Uploaded manuscript"
+      description="Original PDF as submitted by the author"
+    >
+      <PdfPreview
+        previewUrl={manuscriptUrl}
+        fallbackPreviewUrl={fallbackToSummaryPdf ? summaryUrl : null}
+        className="min-h-[min(50vh,420px)] sm:min-h-[min(70vh,720px)]"
+      />
+    </PublicationPageSection>
   );
 }

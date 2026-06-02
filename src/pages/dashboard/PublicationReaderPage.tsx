@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, PencilLine } from "lucide-react";
+import { ArrowLeft, PencilLine } from "lucide-react";
 import api from "../../lib/api";
 import {
   buildDashboardPublicationPath,
@@ -21,6 +21,7 @@ import { PublicationManuscriptPdfSection } from "../../components/publication/Pu
 import { PublicationDiscussions } from "../../components/publication/PublicationDiscussions";
 import { CoAuthorsPanel } from "../../components/publication/CoAuthorsPanel";
 import { PublicationDownloadPanel } from "../../components/publication/PublicationDownloadPanel";
+import { PublicationResearchIntegritySection } from "../../components/publication/PublicationResearchIntegritySection";
 import { PublicationPaperDocument } from "../../components/publication/PublicationPaperDocument";
 import { UserAvatar } from "../../components/ui/UserAvatar";
 import { StudyLocationSection } from "../../components/map/StudyLocationSection";
@@ -192,26 +193,7 @@ export function PublicationReaderPage() {
           <CoAuthorsPanel publication={pub} />
           <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
 
-          <section className="gre-card border-amber-100 bg-amber-50/30 p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h2 className="flex items-center gap-2 text-sm font-semibold text-amber-950">
-                  <AlertTriangle className="h-4 w-4" />
-                  Research integrity
-                </h2>
-                <p className="mt-1 text-sm text-amber-900/90">
-                  Report concerns about originality or attribution. GRE reviews all reports.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setReportOpen(true)}
-                className="rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-50"
-              >
-                Report concern
-              </button>
-            </div>
-          </section>
+          <PublicationResearchIntegritySection onReport={() => setReportOpen(true)} />
         </div>
       </div>
 

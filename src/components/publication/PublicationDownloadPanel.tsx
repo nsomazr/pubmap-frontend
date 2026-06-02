@@ -27,6 +27,7 @@ import { createPortal } from "react-dom";
 import api from "../../lib/api";
 import { summaryPdfUrl } from "../../lib/publicationGre";
 import { PdfPreview } from "./PdfPreview";
+import { PublicationPageSection } from "./PublicationPageSection";
 import { mediaUrl } from "../../lib/mediaUrl";
 import type { GreDocument, PublicationGre } from "../../lib/publicationGre";
 import { buildPublicationPath } from "../../lib/publicationPaths";
@@ -312,17 +313,12 @@ export function PublicationDownloadPanel({
   const closeMenu = () => setMenuOpen(false);
 
   return (
-    <section className="gre-public-card min-w-0 overflow-visible p-5 sm:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">
-            Publication access
-          </h2>
-          <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-500">
-            Download, preview, and share this paper on GRE.
-          </p>
-        </div>
-        {doi && doiHref && (
+    <PublicationPageSection
+      id="publication-access"
+      title="Publication access"
+      description="Download, preview, and share this paper on GRE."
+      titleAside={
+        doi && doiHref ? (
           <a
             href={doiHref}
             target="_blank"
@@ -339,10 +335,10 @@ export function PublicationDownloadPanel({
               )}
             </span>
           </a>
-        )}
-      </div>
-
-      <div className="mt-5 overflow-visible rounded-2xl bg-gradient-to-br from-slate-50 via-white to-brand-50/40 p-4 ring-1 ring-slate-200/80 sm:p-5">
+        ) : undefined
+      }
+    >
+      <div className="overflow-visible rounded-2xl bg-gradient-to-br from-slate-50 via-white to-brand-50/40 p-4 ring-1 ring-slate-200/80 sm:p-5">
         <div className="grid gap-3 overflow-visible sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] sm:items-stretch">
           <a
             href={summaryPdfUrl(publicationId)}
@@ -594,6 +590,6 @@ export function PublicationDownloadPanel({
           />
         </div>
       )}
-    </section>
+    </PublicationPageSection>
   );
 }

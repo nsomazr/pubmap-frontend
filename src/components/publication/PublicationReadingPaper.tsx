@@ -1,3 +1,4 @@
+import { grePaperSectionHeadingClass } from "../../lib/publicationPageStyles";
 import { ManuscriptContent } from "./ManuscriptContent";
 import { PublicationManuscriptBody } from "./PublicationManuscriptBody";
 import { PublicationManuscriptSection } from "./PublicationManuscriptSection";
@@ -58,7 +59,7 @@ export function PublicationReadingPaper({
             hasManuscript || hasReferences ? "mb-8 border-b border-slate-100 pb-8" : ""
           }`}
         >
-          <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">Abstract</h2>
+          <h2 className={grePaperSectionHeadingClass}>Abstract</h2>
           {abstract?.trim() ? (
             <ManuscriptContent value={abstract} className="mt-4 min-w-0" />
           ) : (

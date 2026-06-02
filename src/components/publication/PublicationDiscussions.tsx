@@ -8,6 +8,8 @@ import api from "../../lib/api";
 import { RankedNameLabel } from "../rankings/RankedNameLabel";
 import { UserAvatar } from "../ui/UserAvatar";
 import type { CoAuthorPerson, PublicationCoAuthors, PublicationConversation } from "../../types";
+import { PublicationPageSection } from "./PublicationPageSection";
+import { grePaperSectionHeadingClass } from "../../lib/publicationPageStyles";
 
 interface Props {
   publicationId: number;
@@ -103,17 +105,20 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
   });
 
   return (
-    <section className="rounded-3xl bg-white ring-1 ring-slate-200/80 sm:p-8 p-6">
-      <h2 className="flex items-center gap-2 text-lg font-semibold text-ink">
-        <MessageSquare className="h-5 w-5 text-brand-600" />
-        Discussion
-        <span className="text-sm font-normal text-slate-400">({threads.length})</span>
-      </h2>
-
+    <PublicationPageSection
+      id="discussion"
+      title="Discussion"
+      icon={MessageSquare}
+      description={
+        <>
+          {threads.length} thread{threads.length === 1 ? "" : "s"} on this study
+        </>
+      }
+    >
       {isLoading ? (
-        <p className="mt-6 text-sm text-slate-500">Loading discussions…</p>
+        <p className="text-sm text-slate-500">Loading discussions…</p>
       ) : (
-        <div className="mt-6 space-y-5">
+        <div className="space-y-5">
           {threads.map((thread) => {
             const threadRole = authorRoleLabel(thread.user, coAuthors);
             return (
@@ -213,8 +218,8 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
       )}
 
       {user ? (
-        <div className="mt-8 border-t border-slate-100 pt-6">
-          <p className="mb-2 text-sm font-medium text-slate-700">Start a discussion</p>
+        <div className="border-t border-slate-100 pt-6">
+          <p className={`mb-2 ${grePaperSectionHeadingClass}`}>Start a discussion</p>
           <TextareaWithSendAddon
             value={newComment}
             onChange={setNewComment}
@@ -235,6 +240,6 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
           to join the discussion.
         </p>
       )}
-    </section>
+    </PublicationPageSection>
   );
 }

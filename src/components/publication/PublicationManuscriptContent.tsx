@@ -1,6 +1,12 @@
 import { PublicationReadingPaper } from "./PublicationReadingPaper";
 import type { PublicationManuscriptFields } from "./PublicationPaperDocument";
 import { publicationHasGrePaperBody } from "../../lib/publicationReadable";
+import {
+  grePublicationSectionCardClass,
+  grePublicationSectionDescClass,
+  grePublicationSectionHeadClass,
+  grePublicationSectionTitleClass,
+} from "../../lib/publicationPageStyles";
 import type { Publication } from "../../types";
 
 type Props = PublicationManuscriptFields & {
@@ -41,10 +47,10 @@ export function PublicationManuscriptContent({ isClosed = false, ...props }: Pro
   if (!hasManuscriptContent(props, isClosed)) return null;
 
   return (
-    <article className="publication-manuscript min-w-0 overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.05)]">
-      <header className="border-b border-slate-100 px-5 py-4 sm:px-7">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-brand-600">Manuscript</h2>
-        <p className="mt-1 text-xs text-slate-500">
+    <article className={`publication-manuscript min-w-0 overflow-hidden ${grePublicationSectionCardClass}`}>
+      <header className={`${grePublicationSectionHeadClass} px-1`}>
+        <h2 className={grePublicationSectionTitleClass}>Manuscript</h2>
+        <p className={grePublicationSectionDescClass}>
           Structured summary on GRE (abstract, sections, and figures)
         </p>
       </header>

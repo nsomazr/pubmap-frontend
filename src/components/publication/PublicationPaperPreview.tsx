@@ -1,3 +1,4 @@
+import { grePaperSectionHeadingClass } from "../../lib/publicationPageStyles";
 import { PdfPreview } from "./PdfPreview";
 import { ManuscriptContent } from "./ManuscriptContent";
 import { PublicationManuscriptBody } from "./PublicationManuscriptBody";
@@ -114,7 +115,7 @@ export function PublicationPaperPreview({
       ) : (
         <>
           <section className="min-w-0 scroll-mt-4">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">Abstract</h2>
+            <h2 className={grePaperSectionHeadingClass}>Abstract</h2>
             {data.abstract?.trim() ? (
               <ManuscriptContent value={data.abstract} className="mt-4 min-w-0" />
             ) : (
@@ -148,9 +149,7 @@ export function PublicationPaperPreview({
 
       {canShowPdf && (
         <section className="min-w-0 scroll-mt-4">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Manuscript PDF
-          </h2>
+          <h2 className={grePaperSectionHeadingClass}>Manuscript PDF</h2>
           <p className="mt-1 text-xs text-slate-500">Full open-access paper</p>
           <PdfPreview
             file={pendingFile}

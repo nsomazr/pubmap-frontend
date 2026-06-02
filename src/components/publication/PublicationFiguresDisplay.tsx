@@ -2,6 +2,7 @@ import { Loader2, ZoomIn } from "lucide-react";
 import { useState } from "react";
 import { useFigurePreviewUrls } from "../../hooks/useFigurePreviewUrls";
 import type { PublicationFigure } from "../../lib/publicationGre";
+import { grePaperFigureLabelClass, grePaperSectionHeadingClass } from "../../lib/publicationPageStyles";
 import { FigureLightbox } from "./FigureLightbox";
 
 function figureLabel(fig: PublicationFigure, index: number): string {
@@ -43,14 +44,8 @@ export function PublicationFiguresDisplay({
   return (
     <section className={shell}>
       {!inlineOnPaper && (
-        <h2
-          className={
-            flat
-              ? "text-xs font-bold uppercase tracking-wider text-slate-500"
-              : "text-sm font-bold uppercase tracking-wider text-brand-600"
-          }
-        >
-          Research figures
+        <h2 className={flat && variant !== "public" ? "gre-paper-section-heading text-xs font-bold uppercase tracking-wider text-slate-500" : grePaperSectionHeadingClass}>
+          Figures
         </h2>
       )}
       <div
@@ -126,7 +121,7 @@ export function PublicationFiguresDisplay({
                       : "border-t border-slate-100 bg-white px-3 py-2.5"
                 }
               >
-                <p className="text-xs font-bold uppercase tracking-wide text-brand-600">
+                <p className={grePaperFigureLabelClass}>
                   {figureLabel(fig, index)}
                 </p>
                 <p

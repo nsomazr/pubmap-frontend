@@ -5,6 +5,7 @@ import { AUTHORS_PERSONAL_FEELING_LABEL } from "../../lib/publicationGre";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import { resolvePaperHeaderByline, type AuthorByline } from "../../lib/publicationAuthors";
 import { PublicationAuthorByline } from "./PublicationAuthorByline";
+import { grePaperSectionHeadingClass } from "../../lib/publicationPageStyles";
 import { ManuscriptContent } from "./ManuscriptContent";
 import type { SubcategoryVisual as Visual } from "../../types";
 
@@ -246,9 +247,7 @@ export function PublicationPaperHeader({
 
       {authorsComment?.trim() && (
         <div className="border-t border-slate-100 px-5 py-4 sm:px-7">
-          <h2 className="text-sm font-bold leading-snug text-brand-600">
-            {AUTHORS_PERSONAL_FEELING_LABEL}
-          </h2>
+          <h2 className={grePaperSectionHeadingClass}>{AUTHORS_PERSONAL_FEELING_LABEL}</h2>
           <ManuscriptContent
             value={authorsComment.trim()}
             className="mt-3 min-w-0 text-sm leading-relaxed text-slate-700"
