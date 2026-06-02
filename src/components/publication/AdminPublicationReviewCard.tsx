@@ -19,6 +19,7 @@ import { authorBylineFromPublication } from "../../lib/publicationAuthors";
 import { AUTHORS_PERSONAL_FEELING_LABEL, reviewManuscriptPdfUrl } from "../../lib/publicationGre";
 import { authorDisplayName } from "../../lib/userDisplay";
 import { PublicationAuthorByline } from "./PublicationAuthorByline";
+import { PublicationManuscriptBody } from "./PublicationManuscriptBody";
 import { PublicationManuscriptSection } from "./PublicationManuscriptSection";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { SubcategoryBadge } from "../taxonomy/SubcategoryBadge";
@@ -242,15 +243,16 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
               <h4 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
                 Manuscript sections
               </h4>
-              <PublicationManuscriptSection title="Introduction" body={reviewPub.introduction} />
-              <PublicationManuscriptSection title="Methods" body={reviewPub.methods} />
-              <PublicationManuscriptSection
-                title="Findings"
-                body={
-                  reviewPub.findings
-                }
+              <PublicationManuscriptBody
+                introduction={reviewPub.introduction}
+                methods={reviewPub.methods}
+                findings={reviewPub.findings}
+                conclusion={reviewPub.conclusion}
+                figures={reviewPub.figures ?? reviewPub.photos ?? []}
+                publicationId={reviewPub.id}
+                encodedPublicationId={reviewPub.encoded_id}
+                variant="composer"
               />
-              <PublicationManuscriptSection title="Conclusion" body={reviewPub.conclusion} />
             </div>
           )}
 
