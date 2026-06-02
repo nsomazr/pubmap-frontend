@@ -1191,7 +1191,7 @@ export function PublicationManagePage() {
         />
       )}
 
-      {isAdmin && !isNew && pub && pub.status !== 1 && pub.status !== 4 && pub.status !== 6 && (
+      {isAdmin && !isOwner && !isNew && pub && pub.status !== 1 && pub.status !== 4 && pub.status !== 6 && (
         <section className="mb-6 rounded-2xl border border-violet-200 bg-violet-50/40 p-5">
           <h2 className="text-sm font-semibold text-violet-900">Admin actions</h2>
           {!isOwner && (
