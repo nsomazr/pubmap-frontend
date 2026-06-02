@@ -67,6 +67,7 @@ import {
 import { useToast } from "../../components/ui/ToastProvider";
 import {
   AUTHORS_PERSONAL_FEELING_LABEL,
+  reviewManuscriptPdfUrl,
   updatePublicationGre,
   type GreDocument,
   type PublicationAccessType,
@@ -1299,6 +1300,15 @@ export function PublicationManagePage() {
               publicationId={persistedPublicationId ?? 0}
               encodedPublicationId={persistedEncodedId ?? pub?.encoded_id}
               documentPath={existingDocPath}
+              manuscriptPreviewUrl={
+                persistedPublicationId
+                  ? reviewManuscriptPdfUrl(
+                      persistedPublicationId,
+                      true,
+                      persistedEncodedId ?? pub?.encoded_id
+                    )
+                  : null
+              }
               pendingFile={pendingDocument}
               draft
             />

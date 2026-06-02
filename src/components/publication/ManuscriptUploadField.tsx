@@ -13,6 +13,7 @@ interface Props {
   file: File | null;
   onFileChange: (file: File | null) => void;
   existingDocumentPath?: string | null;
+  previewUrl?: string | null;
   disabled?: boolean;
 }
 
@@ -20,6 +21,7 @@ export function ManuscriptUploadField({
   file,
   onFileChange,
   existingDocumentPath,
+  previewUrl,
   disabled,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -223,6 +225,7 @@ export function ManuscriptUploadField({
         <PdfPreview
           file={file}
           documentPath={existingDocumentPath}
+          previewUrl={previewUrl}
           title="Manuscript preview"
           className="min-h-[240px]"
           emptyState="upload"

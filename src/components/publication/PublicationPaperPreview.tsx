@@ -38,6 +38,7 @@ interface Props {
   publicationId?: number | string;
   encodedPublicationId?: string | null;
   documentPath?: string | null;
+  manuscriptPreviewUrl?: string | null;
   pendingFile?: File | null;
   draft?: boolean;
   showPdf?: boolean;
@@ -48,6 +49,7 @@ export function PublicationPaperPreview({
   publicationId = 0,
   encodedPublicationId,
   documentPath,
+  manuscriptPreviewUrl,
   pendingFile,
   draft = false,
   showPdf = true,
@@ -120,6 +122,7 @@ export function PublicationPaperPreview({
           <PdfPreview
             file={pendingFile}
             documentPath={documentPath}
+            previewUrl={manuscriptPreviewUrl}
             className="min-h-[min(70vh,720px)] rounded-none border-0"
           />
         </section>

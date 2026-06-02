@@ -6,6 +6,7 @@ import { useState } from "react";
 import api, { parseApiError } from "../../lib/api";
 import { sanitizeExtractionWarnings } from "../../lib/extractionWarnings";
 import { mediaUrl } from "../../lib/mediaUrl";
+import { reviewManuscriptPdfUrl } from "../../lib/publicationGre";
 import type { Publication } from "../../types";
 import { ManuscriptUploadField } from "./ManuscriptUploadField";
 
@@ -52,6 +53,7 @@ export function PublicationDocumentUpload({
 
   const primaryDoc = documents[0];
   const existingPath = primaryDoc?.document ?? null;
+  const manuscriptPreviewUrl = reviewManuscriptPdfUrl(publicationId, true);
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -172,6 +174,7 @@ export function PublicationDocumentUpload({
           file={pendingFile}
           onFileChange={handleFileChange}
           existingDocumentPath={existingPath}
+          previewUrl={manuscriptPreviewUrl}
           disabled={disabled || uploadMutation.isPending}
         />
       ) : (
@@ -179,6 +182,7 @@ export function PublicationDocumentUpload({
           file={null}
           onFileChange={handleFileChange}
           existingDocumentPath={existingPath}
+          previewUrl={manuscriptPreviewUrl}
           disabled={disabled || uploadMutation.isPending}
         />
       )}
