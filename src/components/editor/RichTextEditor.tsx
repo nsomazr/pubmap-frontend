@@ -28,10 +28,12 @@ export function RichTextEditor({
   );
   const onChangeRef = useRef(onChange);
   const maxWordsRef = useRef(maxWords);
+  const valueRef = useRef(value);
   const id = useId();
 
   onChangeRef.current = onChange;
   maxWordsRef.current = maxWords;
+  valueRef.current = value;
 
   const wordCount = countWords(value);
   const overLimit = Boolean(maxWords && wordCount > maxWords);
@@ -68,7 +70,8 @@ export function RichTextEditor({
         return;
       }
 
-      editor.setData(value || "");
+      // Use the freshest controlled value in case data arrived before editor init completed.
+      editor.setData(valueRef.current || "");
       editor.model.document.on("change:data", () => {
         let next = editor.getData();
         const limit = maxWordsRef.current;
