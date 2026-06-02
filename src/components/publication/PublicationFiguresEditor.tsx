@@ -264,14 +264,14 @@ export function PublicationFiguresEditor({
   const saveCaptionById = useCallback(
     async (figureId: number) => {
       const fig = figuresRef.current.find((item) => item.id === figureId);
-      if (!fig) return;
+      if (!fig) return true;
       const nextCaption = (captionsRef.current[figureId] ?? "").trim();
       const persisted = (persistedCaptionsRef.current[figureId] ?? "").trim();
-      if (nextCaption === persisted) return;
+      if (nextCaption === persisted) return true;
       setSavingCaptionId(figureId);
       try {
         const pubId = await resolvePublicationId();
-        if (!pubId) return;
+        if (!pubId) return false;
         const updated = await updateFigure(
           pubId,
           figureId,
@@ -281,6 +281,9 @@ export function PublicationFiguresEditor({
         persistedCaptionsRef.current[figureId] = nextCaption;
         const current = figuresRef.current;
         onChange(current.map((item) => (item.id === figureId ? updated : item)));
+        return true;
+      } catch {
+        return false;
       } finally {
         setSavingCaptionId(null);
       }
@@ -300,7 +303,11 @@ export function PublicationFiguresEditor({
         const persisted = (persistedCaptionsRef.current[figureId] ?? "").trim();
         return next !== persisted;
       });
-    await Promise.all(dirtyIds.map((figureId) => saveCaptionById(figureId)));
+    if (!dirtyIds.length) return;
+    const results = await Promise.all(dirtyIds.map((figureId) => saveCaptionById(figureId)));
+    if (results.some((ok) => !ok)) {
+      throw new Error("CAPTION_SAVE_FAILED");
+    }
   }, [saveCaptionById]);
 
   useEffect(() => {

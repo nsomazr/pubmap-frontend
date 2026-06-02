@@ -136,6 +136,25 @@ export async function deleteFigure(
   await api.delete(`/publications/${pubSeg(publicationId, encodedId)}/figures/${figureId}/`);
 }
 
+async function patchOrPostFigure(
+  url: string,
+  body: FormData | Record<string, string | undefined>
+): Promise<PublicationFigure> {
+  const config =
+    body instanceof FormData
+      ? { headers: { "Content-Type": "multipart/form-data" } }
+      : undefined;
+  try {
+    const res = await api.patch<PublicationFigure>(url, body, config);
+    return res.data;
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status;
+    if (status !== 405) throw err;
+    const res = await api.post<PublicationFigure>(url, body, config);
+    return res.data;
+  }
+}
+
 export async function updateFigure(
   publicationId: PublicationIdRef,
   figureId: number,
@@ -143,27 +162,16 @@ export async function updateFigure(
   encodedId?: string | null,
   file?: File | null
 ): Promise<PublicationFigure> {
-  let data: PublicationFigure;
+  const url = `/publications/${pubSeg(publicationId, encodedId)}/figures/${figureId}/`;
   if (file) {
     const form = new FormData();
     form.append("photo", file);
     if (meta.caption !== undefined) form.append("caption", meta.caption);
     if (meta.title !== undefined) form.append("title", meta.title);
     if (meta.figure_number !== undefined) form.append("figure_number", meta.figure_number);
-    const res = await api.patch<PublicationFigure>(
-      `/publications/${pubSeg(publicationId, encodedId)}/figures/${figureId}/`,
-      form,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    );
-    data = res.data;
-  } else {
-    const res = await api.patch<PublicationFigure>(
-      `/publications/${pubSeg(publicationId, encodedId)}/figures/${figureId}/`,
-      meta
-    );
-    data = res.data;
+    return patchOrPostFigure(url, form);
   }
-  return data;
+  return patchOrPostFigure(url, meta);
 }
 
 export async function uploadSupplementaryDocument(

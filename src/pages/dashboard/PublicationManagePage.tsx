@@ -774,10 +774,22 @@ export function PublicationManagePage() {
     mutationFn: async (options?: SaveOptions) => {
       const data = await persistPublicationDraft({ quiet: options?.quiet });
       if (!data) throw new Error("SAVE_FAILED");
-      await flushFigureCaptionsRef.current?.();
-      return data;
+      let captionWarning: string | null = null;
+      try {
+        await flushFigureCaptionsRef.current?.();
+      } catch {
+        captionWarning =
+          "Some figure captions could not be saved. Re-open the draft and save captions again if needed.";
+      }
+      if (options?.thenSubmit) {
+        await api.post(
+          `/publications/${publicationApiSegment(data.id, data.encoded_id)}/submit_review/`,
+          { author_declaration: true }
+        );
+      }
+      return { data, captionWarning };
     },
-    onSuccess: async (data, options?: SaveOptions) => {
+    onSuccess: async ({ data, captionWarning }, options?: SaveOptions) => {
       if (isNew && typeof window !== "undefined") {
         window.sessionStorage.removeItem(NEW_DRAFT_SESSION_KEY);
       }
@@ -812,27 +824,26 @@ export function PublicationManagePage() {
         return;
       }
 
+      if (captionWarning) {
+        setError(captionWarning);
+      }
+
       if (options?.thenSubmit) {
-        try {
-          await api.post(
-            `/publications/${publicationApiSegment(data.id, data.encoded_id)}/submit_review/`,
-            {
-              author_declaration: true,
-            }
-          );
-          setSubmitReviewOpen(false);
-          navigate("/dashboard/publications?status=1");
-        } catch (err: unknown) {
-          const e = err as { response?: { data?: { detail?: string } } };
-          setError(e.response?.data?.detail || "Saved, but could not submit for review.");
-          setSubmitReviewOpen(false);
-          navigate(buildDashboardPublicationPath(data.id, data.encoded_id));
-        }
-      } else {
+        setSubmitReviewOpen(false);
+        navigate("/dashboard/publications?status=1");
+      } else if (!options?.quiet) {
         navigate(draftsNavPath);
       }
     },
-    onError: (err: { response?: { data?: Record<string, unknown> } }) => {
+    onError: (err: { response?: { data?: Record<string, unknown> } }, options?: SaveOptions) => {
+      if (options?.thenSubmit) {
+        const detail =
+          typeof err.response?.data?.detail === "string"
+            ? err.response.data.detail
+            : parseApiError(err);
+        setError(detail || "Could not submit for review. Check required fields and try again.");
+        return;
+      }
       const data = err.response?.data;
       if (typeof data?.detail === "string") {
         setError(data.detail);
