@@ -3,6 +3,7 @@ import api from "../lib/api";
 import { mediaUrl } from "../lib/mediaUrl";
 import {
   fetchFigureImageBlob,
+  resolveFigureImageSrc,
   type PublicationFigure,
 } from "../lib/publicationGre";
 
@@ -45,12 +46,15 @@ export function useFigurePreviewUrls(
             }
           }
           if (!resolved) {
+            resolved = resolveFigureImageSrc(
+              fig,
+              targetPublicationId || fig.publication || 0,
+              encodedPublicationId
+            ) || "";
+          }
+          if (!resolved) {
             const remote = fig.photo_url?.trim();
-            if (remote?.startsWith("http://") || remote?.startsWith("https://")) {
-              resolved = remote;
-            } else {
-              resolved = mediaUrl(fig.photo) || mediaUrl(remote) || "";
-            }
+            resolved = mediaUrl(fig.photo) || mediaUrl(remote) || "";
           }
           next[fig.id] = resolved;
         })
