@@ -59,6 +59,8 @@ export function PublicationFiguresEditor({
   pendingRef.current = pending;
   const [captions, setCaptions] = useState<Record<number, string>>({});
   const [savingCaptionId, setSavingCaptionId] = useState<number | null>(null);
+  const captionsRef = useRef<Record<number, string>>({});
+  const captionSaveTimersRef = useRef<Record<number, number>>({});
   const figurePreviewUrls = useFigurePreviewUrls(
     figures,
     publicationId,
@@ -88,10 +90,17 @@ export function PublicationFiguresEditor({
     );
   }, [figures]);
 
+  useEffect(() => {
+    captionsRef.current = captions;
+  }, [captions]);
+
   useEffect(
     () => () => {
       pendingRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
       Object.values(localPreviews).forEach((url) => URL.revokeObjectURL(url));
+      Object.values(captionSaveTimersRef.current).forEach((timer) => {
+        window.clearTimeout(timer);
+      });
     },
     [localPreviews]
   );
@@ -184,18 +193,36 @@ export function PublicationFiguresEditor({
     onChange(figures.filter((f) => f.id !== id));
   };
 
-  const saveCaption = async (fig: PublicationFigure) => {
-    const nextCaption = (captions[fig.id] ?? "").trim();
+  const saveCaptionById = async (figureId: number) => {
+    const fig = figures.find((item) => item.id === figureId);
+    if (!fig) return;
+    const nextCaption = (captionsRef.current[figureId] ?? "").trim();
     if (nextCaption === (fig.caption?.trim() || "")) return;
-    setSavingCaptionId(fig.id);
+    setSavingCaptionId(figureId);
     try {
       const pubId = await resolvePublicationId();
       if (!pubId) return;
-      const updated = await updateFigure(pubId, fig.id, { caption: nextCaption }, encodedPublicationId);
-      onChange(figures.map((item) => (item.id === fig.id ? updated : item)));
+      const updated = await updateFigure(
+        pubId,
+        figureId,
+        { caption: nextCaption },
+        encodedPublicationId
+      );
+      onChange(figures.map((item) => (item.id === figureId ? updated : item)));
     } finally {
       setSavingCaptionId(null);
     }
+  };
+
+  const scheduleCaptionSave = (figureId: number) => {
+    const prevTimer = captionSaveTimersRef.current[figureId];
+    if (prevTimer) {
+      window.clearTimeout(prevTimer);
+    }
+    captionSaveTimersRef.current[figureId] = window.setTimeout(() => {
+      delete captionSaveTimersRef.current[figureId];
+      void saveCaptionById(figureId);
+    }, 600);
   };
 
   return (
@@ -328,10 +355,17 @@ export function PublicationFiguresEditor({
                     <Input
                       label="Caption"
                       value={captions[fig.id] ?? ""}
-                      onChange={(e) =>
-                        setCaptions((prev) => ({ ...prev, [fig.id]: e.target.value }))
-                      }
-                      onBlur={() => saveCaption(fig)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setCaptions((prev) => ({ ...prev, [fig.id]: value }));
+                        onChange(
+                          figures.map((item) =>
+                            item.id === fig.id ? { ...item, caption: value } : item
+                          )
+                        );
+                        scheduleCaptionSave(fig.id);
+                      }}
+                      onBlur={() => void saveCaptionById(fig.id)}
                       placeholder="Describe what this figure shows"
                     />
                   ) : (
