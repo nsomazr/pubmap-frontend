@@ -287,7 +287,7 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
       </div>
 
       {reviewPub.status !== 6 && (
-        <AdminPublicationActions publication={reviewPub} variant="card" onReviewed={onReviewed} />
+        <AdminPublicationActions publication={reviewPub} variant="card" onChanged={onReviewed} />
       )}
 
       {commentOpen && (
