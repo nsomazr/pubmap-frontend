@@ -67,11 +67,14 @@ import {
   type ManuscriptLimitedField,
   NARRATIVE_MANUSCRIPT_FIELDS,
   externalWordLimit,
+  filterSectionNotes,
   normalizeFunderField,
   limitReferences,
   truncateHtmlToWordLimit,
   truncateHtmlToWordLimitAtSentence,
+  stripHtmlToText,
   truncateToWordLimit,
+  unwrapNarrativeFieldText,
 } from "../../lib/manuscriptFieldLimits";
 import { useToast } from "../../components/ui/ToastProvider";
 import {
@@ -235,11 +238,29 @@ export function PublicationManagePage() {
     setters[key](value);
   }, []);
 
+  const narrativeHtmlFromApi = useCallback(
+    (field: ManuscriptLimitedField, value: string) => {
+      const raw = (value || "").trim();
+      if (!raw) return "";
+      const plain = raw.includes("<") ? stripHtmlToText(raw) : raw;
+      const unwrapped = unwrapNarrativeFieldText(field, plain);
+      if (!unwrapped.trim()) return "";
+      const limit = externalWordLimit(field);
+      const html = renderManuscriptHtml(unwrapped);
+      if (NARRATIVE_MANUSCRIPT_FIELDS.includes(field as (typeof NARRATIVE_MANUSCRIPT_FIELDS)[number])) {
+        return truncateHtmlToWordLimitAtSentence(html, limit);
+      }
+      return truncateHtmlToWordLimit(html, limit);
+    },
+    []
+  );
+
   const applyExtractedSection = useCallback(
     (raw: string | undefined, field: ManuscriptLimitedField) => {
       if (!raw?.trim()) return "";
       const limit = externalWordLimit(field);
-      const html = renderManuscriptHtml(raw);
+      const plain = unwrapNarrativeFieldText(field, raw);
+      const html = renderManuscriptHtml(plain);
       if (NARRATIVE_MANUSCRIPT_FIELDS.includes(field as (typeof NARRATIVE_MANUSCRIPT_FIELDS)[number])) {
         return truncateHtmlToWordLimitAtSentence(html, limit);
       }
@@ -271,7 +292,7 @@ export function PublicationManagePage() {
         status: "ready",
         warnings: sanitizeExtractionWarnings(payload.warnings),
         engine: payload.extraction_engine,
-        sectionNotes: payload.section_notes ?? {},
+        sectionNotes: filterSectionNotes(payload.section_notes),
       });
     },
     [applyExtractedSection, title]
@@ -338,11 +359,16 @@ export function PublicationManagePage() {
       };
       if (typeof saved.accessTypeChosen === "boolean") setAccessTypeChosen(saved.accessTypeChosen);
       if (typeof saved.title === "string") setTitle(saved.title);
-      if (typeof saved.abstract === "string") setAbstract(saved.abstract);
-      if (typeof saved.introduction === "string") setIntroduction(saved.introduction);
-      if (typeof saved.methods === "string") setMethods(saved.methods);
-      if (typeof saved.findings === "string") setFindings(saved.findings);
-      if (typeof saved.conclusion === "string") setConclusion(saved.conclusion);
+      if (typeof saved.abstract === "string")
+        setAbstract(narrativeHtmlFromApi("abstract", saved.abstract));
+      if (typeof saved.introduction === "string")
+        setIntroduction(narrativeHtmlFromApi("introduction", saved.introduction));
+      if (typeof saved.methods === "string")
+        setMethods(narrativeHtmlFromApi("methods", saved.methods));
+      if (typeof saved.findings === "string")
+        setFindings(narrativeHtmlFromApi("findings", saved.findings));
+      if (typeof saved.conclusion === "string")
+        setConclusion(narrativeHtmlFromApi("conclusion", saved.conclusion));
       if (typeof saved.funder === "string") setFunder(saved.funder);
       if (typeof saved.references === "string") setReferences(saved.references);
       if (typeof saved.keywords === "string") setKeywords(saved.keywords);
@@ -422,11 +448,11 @@ export function PublicationManagePage() {
     hydratedPublicationId.current = pub.id;
 
     setTitle(pub.title);
-    setAbstract(pub.abstract ?? "");
-    setIntroduction(pub.introduction ?? "");
-    setMethods(pub.methods ?? "");
-    setFindings(pub.findings ?? "");
-    setConclusion(pub.conclusion ?? "");
+    setAbstract(narrativeHtmlFromApi("abstract", pub.abstract ?? ""));
+    setIntroduction(narrativeHtmlFromApi("introduction", pub.introduction ?? ""));
+    setMethods(narrativeHtmlFromApi("methods", pub.methods ?? ""));
+    setFindings(narrativeHtmlFromApi("findings", pub.findings ?? ""));
+    setConclusion(narrativeHtmlFromApi("conclusion", pub.conclusion ?? ""));
     setFunder(normalizeFunderField(pub.funder ?? ""));
     setReferences(limitReferences(pub.references ?? "", pub.title ?? ""));
     setKeywords(formatKeywords(pub.keywords));

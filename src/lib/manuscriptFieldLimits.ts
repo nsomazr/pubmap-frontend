@@ -15,7 +15,7 @@ export const MANUSCRIPT_FIELD_WORD_LIMITS = {
 export const LLM_WORD_LIMIT_BUFFER = 20;
 
 /** Matches backend LLM_WORD_TARGET_RATIO — preferred summary length. */
-export const LLM_WORD_TARGET_RATIO = 0.75;
+export const LLM_WORD_TARGET_RATIO = 0.9;
 
 export const NARRATIVE_MANUSCRIPT_FIELDS = [
   "abstract",
@@ -61,6 +61,83 @@ export function countWords(value: string): number {
   const text = stripHtmlToText(value);
   if (!text) return 0;
   return text.split(/\s+/).filter(Boolean).length;
+}
+
+const NARRATIVE_JSON_FIELDS = new Set([
+  "abstract",
+  "introduction",
+  "methods",
+  "findings",
+  "conclusion",
+]);
+
+function cleanLooseJsonBody(body: string): string {
+  let value = body.trimEnd();
+  value = value.replace(/"\s*\}\s*$/u, "");
+  if (value.endsWith('"')) value = value.slice(0, -1);
+  return value.replace(/\\"/g, '"').replace(/\\n/g, "\n").trim();
+}
+
+/** Unwrap LLM JSON payloads (e.g. {\"conclusion\":\"...\"}) before rendering. */
+export function unwrapNarrativeFieldText(
+  field: ManuscriptLimitedField,
+  raw: string
+): string {
+  const text = (raw || "").trim();
+  if (!text.startsWith("{")) return raw;
+
+  try {
+    const data = JSON.parse(text) as Record<string, unknown>;
+    const direct = data[field];
+    if (typeof direct === "string" && direct.trim()) return direct.trim();
+    for (const key of ["text", "content", "summary", "body"]) {
+      const candidate = data[key];
+      if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+    }
+    const values = Object.values(data).filter((v) => typeof v === "string") as string[];
+    if (values.length === 1 && values[0].trim()) return values[0].trim();
+  } catch {
+    /* fall through to loose parse */
+  }
+
+  const fieldMatch = text.match(
+    new RegExp(`^\\s*\\{\\s*"${field}"\\s*:\\s*"(.*)`, "is")
+  );
+  if (fieldMatch?.[1]) {
+    const body = cleanLooseJsonBody(fieldMatch[1]);
+    if (body) return body;
+  }
+
+  const generic = text.match(/^\s*\{\s*"([a-z_]+)"\s*:\s*"(.*)/is);
+  if (generic) {
+    const key = generic[1];
+    const bodyRaw = generic[2];
+    if (NARRATIVE_JSON_FIELDS.has(key) && bodyRaw) {
+      const body = cleanLooseJsonBody(bodyRaw);
+      if (body) return body;
+    }
+  }
+
+  return raw;
+}
+
+/** Hide legacy word-count advisory notes; keep actionable extraction messages. */
+export function isActionableSectionNote(note: string | undefined): boolean {
+  const text = (note || "").trim();
+  if (!text) return false;
+  if (/aim for roughly \d+ words when you have enough/i.test(text)) return false;
+  if (/this section has about \d+ words;/i.test(text)) return false;
+  return true;
+}
+
+export function filterSectionNotes(
+  notes: Record<string, string> | undefined
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(notes ?? {})) {
+    if (isActionableSectionNote(value)) out[key] = value;
+  }
+  return out;
 }
 
 /** Remove trailing ellipsis / continuation dots from summarized GRE fields. */
