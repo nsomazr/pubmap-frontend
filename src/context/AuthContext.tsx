@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import api from "../lib/api";
+import api, { refreshAccessToken } from "../lib/api";
 import type { User } from "../types";
 
 export type SignupMethod = "otp" | "password";
@@ -74,18 +74,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
+    const access = localStorage.getItem("access_token");
+    const refresh = localStorage.getItem("refresh_token");
+    if (!access && !refresh) {
       setUser(null);
       setLoading(false);
       return;
+    }
+    if (!access && refresh) {
+      const renewed = await refreshAccessToken();
+      if (!renewed) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
     }
     try {
       const { data } = await api.get<User>("/auth/me/");
       setUser(data);
       setOnboardingRequired(!data.onboarding_complete);
     } catch {
-      localStorage.clear();
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
       setUser(null);
     } finally {
       setLoading(false);

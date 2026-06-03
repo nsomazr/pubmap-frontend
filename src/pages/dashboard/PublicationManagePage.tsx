@@ -31,6 +31,7 @@ import { InstitutionPicker } from "../../components/institutions/InstitutionPick
 import { Input } from "../../components/ui/Input";
 import { CategorySubcategoryPicker } from "../../components/forms/CategorySubcategoryPicker";
 import { PublicationLifecyclePanel } from "../../components/publication/PublicationLifecyclePanel";
+import { AdminPublicationActions } from "../../components/publication/AdminPublicationActions";
 import { AdminPublicationReviewCard } from "../../components/publication/AdminPublicationReviewCard";
 import { ManuscriptUploadField } from "../../components/publication/ManuscriptUploadField";
 import {
@@ -891,12 +892,6 @@ export function PublicationManagePage() {
     },
   });
 
-  const hideMutation = useMutation({
-    mutationFn: () =>
-      api.post(`/publications/${publicationApiSegment(id!, pub?.encoded_id)}/archive/`),
-    onSuccess: () => navigate("/dashboard/publications?status=4"),
-  });
-
   const isOwner = Boolean(pub && pub.author?.id === user?.id);
   const canEditForm = isNew || isOwner || isAdmin;
   const isReadOnly = Boolean(
@@ -1209,22 +1204,17 @@ export function PublicationManagePage() {
         />
       )}
 
+      {isAdmin && !isNew && pub && <AdminPublicationActions publication={pub} />}
+
       {isAdmin && !isOwner && !isNew && pub && pub.status !== 1 && pub.status !== 4 && pub.status !== 6 && (
         <section className="mb-6 rounded-2xl border border-violet-200 bg-violet-50/40 p-5">
-          <h2 className="text-sm font-semibold text-violet-900">Admin actions</h2>
+          <h2 className="text-sm font-semibold text-violet-900">Reviewer notes</h2>
           {!isOwner && (
             <p className="mt-2 text-sm text-violet-800/90">
               You are viewing another researcher&apos;s submission. You can edit metadata to help, but
               only the author may submit for review.
             </p>
           )}
-          <div className="mt-3 flex flex-wrap gap-2">
-            {pub.status === 3 && (
-              <Button type="button" variant="secondary" onClick={() => hideMutation.mutate()}>
-                Archive (admin)
-              </Button>
-            )}
-          </div>
           {pub.status === 2 && (
             <form
               className="mt-4 space-y-2"

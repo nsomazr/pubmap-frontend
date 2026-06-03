@@ -17,6 +17,7 @@ import { publicationApiSegment } from "../../lib/publicationPaths";
 import { authorBylineFromPublication } from "../../lib/publicationAuthors";
 import { AUTHORS_PERSONAL_FEELING_LABEL, reviewManuscriptPdfUrl } from "../../lib/publicationGre";
 import { authorDisplayName } from "../../lib/userDisplay";
+import { AdminPublicationActions } from "./AdminPublicationActions";
 import { PublicationAuthorByline } from "./PublicationAuthorByline";
 import {
   PublicationPaperPreview,
@@ -284,6 +285,10 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
           Only the author can edit this submission from their dashboard.
         </p>
       </div>
+
+      {reviewPub.status !== 6 && (
+        <AdminPublicationActions publication={reviewPub} variant="card" onReviewed={onReviewed} />
+      )}
 
       {commentOpen && (
         <form

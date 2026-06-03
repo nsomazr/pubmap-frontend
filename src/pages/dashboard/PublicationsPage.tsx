@@ -53,7 +53,7 @@ const EMPTY_COPY: Record<string, { title: string; description: string }> = {
   },
   "6": {
     title: "No deleted publications",
-    description: "Soft-deleted studies appear here for admin recovery.",
+    description: "Soft-deleted studies appear here for admin recovery or permanent removal.",
   },
 };
 

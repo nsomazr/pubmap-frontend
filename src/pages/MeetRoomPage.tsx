@@ -60,6 +60,7 @@ import {
 } from "../lib/meetPictureInPicture";
 import {
   applyJitsiJoinMediaPolicy,
+  buildExternalMeetRoomUrl,
   buildJitsiConfigOverwrite,
   buildJitsiInterfaceConfigOverwrite,
   meetHostSettingsFromSession,
@@ -220,17 +221,6 @@ function buildCopilotPrompt(
   ].join("\n");
 }
 
-function buildExternalRoomUrl(joinData?: {
-  server_url?: string;
-  room_name?: string;
-  token?: string;
-} | null) {
-  if (!joinData?.server_url || !joinData?.room_name || !joinData?.token) return null;
-  const url = new URL(`${joinData.server_url.replace(/\/$/, "")}/${joinData.room_name}`);
-  url.searchParams.set("jwt", joinData.token);
-  return url.toString();
-}
-
 export function MeetRoomPage() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
@@ -264,6 +254,7 @@ export function MeetRoomPage() {
   const roomContainerRef = useRef<HTMLDivElement | null>(null);
   const jitsiApiRef = useRef<JitsiMeetExternalAPIInstance | null>(null);
   const [jitsiReady, setJitsiReady] = useState(false);
+  const [localAudioMuted, setLocalAudioMuted] = useState<boolean | null>(null);
   const [autoJoinFailed, setAutoJoinFailed] = useState(false);
   const [autoJoining, setAutoJoining] = useState(false);
   const autoJoinStartedRef = useRef(false);
@@ -490,6 +481,21 @@ export function MeetRoomPage() {
           applyJitsiJoinMediaPolicy(apiInstance, joinHostSettings);
         }
         refreshParticipants();
+        if (joinHostSettings.mute_audio_on_join) {
+          setLocalAudioMuted(true);
+          toast.info({
+            title: "Microphone is off",
+            description:
+              "This meeting starts muted. Click the microphone button in the toolbar to speak.",
+          });
+        } else {
+          setLocalAudioMuted(false);
+        }
+      };
+      const onAudioMuteStatusChanged = (payload: { muted?: boolean }) => {
+        if (typeof payload?.muted === "boolean") {
+          setLocalAudioMuted(payload.muted);
+        }
       };
       const onParticipantJoined = () => {
         refreshParticipants();
@@ -542,6 +548,7 @@ export function MeetRoomPage() {
       };
 
       apiInstance.addListener("videoConferenceJoined", onJoined);
+      apiInstance.addListener("audioMuteStatusChanged", onAudioMuteStatusChanged);
       apiInstance.addListener("participantJoined", onParticipantJoined);
       apiInstance.addListener("participantLeft", onParticipantLeft);
       apiInstance.addListener("participantRoleChanged", onRoleChanged);
@@ -602,10 +609,8 @@ export function MeetRoomPage() {
 
   const openMeetingPopoutFallback = async () => {
     const joinData = await prepareRoom();
-    const directUrl = buildExternalRoomUrl(joinData);
-    if (!directUrl) {
-      throw new Error("Could not prepare a direct Jitsi room link.");
-    }
+    const joinSettings = meetHostSettingsFromSession(joinData.meeting ?? activeMeeting);
+    const directUrl = buildExternalMeetRoomUrl(joinData, joinSettings);
     const popup = window.open(directUrl, "gre-meet-pip", "popup=yes,width=400,height=520,noopener,noreferrer");
     if (!popup) {
       throw new Error("Popup blocked. Allow popups for this site to open the meeting window.");
@@ -922,10 +927,8 @@ export function MeetRoomPage() {
   const handleOpenExternalRoom = async () => {
     try {
       const joinData = await prepareRoom();
-      const directUrl = buildExternalRoomUrl(joinData);
-      if (!directUrl) {
-        throw new Error("Could not create the external room URL.");
-      }
+      const joinSettings = meetHostSettingsFromSession(joinData.meeting ?? activeMeeting);
+      const directUrl = buildExternalMeetRoomUrl(joinData, joinSettings);
       window.location.assign(directUrl);
     } catch (error) {
       const detail = parseApiError(error, "Could not open the external room.");
@@ -1129,6 +1132,11 @@ export function MeetRoomPage() {
       ) : (
         <div className="relative h-full w-full">
           <div ref={roomContainerRef} className="h-full w-full" />
+          {jitsiReady && localAudioMuted && (
+            <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 w-[min(92%,520px)] -translate-x-1/2 rounded-xl border border-amber-500/50 bg-amber-950/90 px-4 py-2.5 text-center text-sm text-amber-50 shadow-lg">
+              Your microphone is off. Use the mic button in the meeting toolbar so others can hear you.
+            </div>
+          )}
           {roomError.trim() && (
             <div className="pointer-events-none absolute left-1/2 top-14 z-30 w-[min(92%,780px)] -translate-x-1/2 rounded-2xl border border-red-700/60 bg-red-950/95 px-4 py-3 text-sm text-red-100 shadow-[0_10px_28px_rgba(127,29,29,0.35)]">
               {roomError}

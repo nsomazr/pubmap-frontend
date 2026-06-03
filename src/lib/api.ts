@@ -10,7 +10,7 @@ export const api = axios.create({
 
 let refreshPromise: Promise<string | null> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   const refresh = localStorage.getItem("refresh_token");
   if (!refresh) return null;
 

@@ -65,6 +65,7 @@ export function PublicationLifecyclePanel({
 
   const canManage = isOwner || isAdmin;
   if (!canManage) return null;
+  if (isAdmin) return null;
 
   if (status === 6) {
     if (!isAdmin) return null;
@@ -126,8 +127,8 @@ export function PublicationLifecyclePanel({
     <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <h2 className="text-sm font-semibold text-ink">Publication lifecycle</h2>
       <p className="mt-1 text-sm text-slate-500">
-        Archive removes a study from the map while keeping your files. Delete moves it to the admin
-        recovery queue.
+        Archive removes a study from the public map while keeping your files. Delete moves it to the
+        admin recovery queue (GRE admins can remove it permanently).
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button
