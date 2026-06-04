@@ -95,6 +95,13 @@ export function AdminLlmSettingsPage() {
     },
     onSuccess: (payload) => {
       queryClient.setQueryData(["admin-llm-settings"], payload);
+      if (payload.settings) {
+        setProvider(payload.settings.provider);
+        setGroqModel(payload.settings.groq_model);
+        setGroqFallbacks(payload.settings.groq_model_fallbacks);
+        setOllamaUrl(payload.settings.ollama_base_url);
+        setOllamaModel(payload.settings.ollama_model);
+      }
       toast.success({ title: "LLM settings saved." });
     },
     onError: () => {
@@ -178,7 +185,7 @@ export function AdminLlmSettingsPage() {
           <section className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100">
             <h2 className="text-sm font-semibold text-ink">Provider</h2>
             <div className="flex flex-wrap gap-3">
-              {data.providers.map((item) => (
+              {(data.providers ?? []).map((item) => (
                 <button
                   key={item.id}
                   type="button"
