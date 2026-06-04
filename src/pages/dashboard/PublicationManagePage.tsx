@@ -6,6 +6,7 @@ import {
   Loader2,
   PenLine,
   Plus,
+  RotateCcw,
   Save,
   Send,
   X,
@@ -27,6 +28,7 @@ import {
 } from "../../lib/formStyles";
 import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { Button } from "../../components/ui/Button";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
 import { InstitutionPicker } from "../../components/institutions/InstitutionPicker";
 import { Input } from "../../components/ui/Input";
 import { CategorySubcategoryPicker } from "../../components/forms/CategorySubcategoryPicker";
@@ -162,6 +164,7 @@ export function PublicationManagePage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const isAdmin = isPlatformAdmin(user);
   const draftsNavPath = "/dashboard/publications?status=0";
 
@@ -625,6 +628,51 @@ export function PublicationManagePage() {
     });
   }, [extractDocumentMutation]);
 
+  const clearManuscriptContent = useCallback(() => {
+    extractionCancelledRef.current = true;
+    extractionAbortRef.current?.abort();
+    extractionAbortRef.current = null;
+    extractDocumentMutation.reset();
+    setDocumentUploadExtracting(false);
+    setTitle("");
+    setAbstract("");
+    setIntroduction("");
+    setMethods("");
+    setFindings("");
+    setConclusion("");
+    setFunder("");
+    setReferences("");
+    setKeywords("");
+    setPendingDocument(null);
+    setExtractionUi({ status: "idle", warnings: [], sectionNotes: {} });
+  }, [extractDocumentMutation]);
+
+  const hasManuscriptContent = useMemo(
+    () =>
+      Boolean(
+        title.trim() ||
+          abstract.trim() ||
+          introduction.trim() ||
+          methods.trim() ||
+          findings.trim() ||
+          conclusion.trim() ||
+          funder.trim() ||
+          references.trim() ||
+          keywords.trim()
+      ),
+    [
+      title,
+      abstract,
+      introduction,
+      methods,
+      findings,
+      conclusion,
+      funder,
+      references,
+      keywords,
+    ]
+  );
+
   const extractionActive =
     extractionUi.status === "extracting" || documentUploadExtracting;
 
@@ -923,6 +971,22 @@ export function PublicationManagePage() {
   const isReadOnly = Boolean(
     pub && (pub.status === 4 || pub.status === 6 || (!canEditForm && !isNew))
   );
+
+  const handleResetManuscript = useCallback(async () => {
+    if (!hasManuscriptContent || isReadOnly) return;
+    const ok = await confirm({
+      title: "Clear manuscript content?",
+      description:
+        "This removes the title, all section summaries, keywords, and funder text. Your uploaded file, figures, and other submission details are kept.",
+      confirmLabel: "Clear content",
+      cancelLabel: "Keep content",
+      tone: "danger",
+    });
+    if (!ok) return;
+    clearManuscriptContent();
+    toast.success({ title: "Manuscript content cleared." });
+  }, [clearManuscriptContent, confirm, hasManuscriptContent, isReadOnly, toast]);
+
   const canSubmit =
     pub && (pub.status === 0 || pub.status === 2) && isOwner && !isReadOnly;
 
@@ -1311,11 +1375,29 @@ export function PublicationManagePage() {
             <Eye className="h-4 w-4" />
             Paper preview
           </button>
+          <button
+            type="button"
+            onClick={() => void handleResetManuscript()}
+            disabled={!hasManuscriptContent || isReadOnly || extractionActive}
+            title={
+              extractionActive
+                ? "Wait until extraction finishes"
+                : "Clear title and all manuscript sections"
+            }
+            className={`ml-auto inline-flex items-center gap-2 self-center rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+              hasManuscriptContent && !isReadOnly && !extractionActive
+                ? "text-slate-600 hover:bg-white/80 hover:text-ink"
+                : "text-slate-400"
+            }`}
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reset content
+          </button>
           {isNew && accessTypeChosen && (
             <button
               type="button"
               onClick={() => setAccessTypeChosen(false)}
-              className="ml-auto self-center px-3 text-xs font-semibold text-brand-600 hover:underline"
+              className="self-center px-3 text-xs font-semibold text-brand-600 hover:underline"
             >
               Change access type
             </button>
@@ -1391,19 +1473,7 @@ export function PublicationManagePage() {
                     disabled={isReadOnly}
                     extractOnUpload
                     onExtracted={applyExtractedDocument}
-                    onSourceRemoved={() => {
-                      setTitle("");
-                      setAbstract("");
-                      setIntroduction("");
-                      setMethods("");
-                      setFindings("");
-                      setConclusion("");
-                      setFunder("");
-                      setReferences("");
-                      setKeywords("");
-                      setPendingDocument(null);
-                      setExtractionUi({ status: "idle", warnings: [], sectionNotes: {} });
-                    }}
+                    onSourceRemoved={clearManuscriptContent}
                     extractionAbortRef={extractionAbortRef}
                     onExtractingChange={(active) => {
                       setDocumentUploadExtracting(active);
