@@ -27,6 +27,7 @@ function breadcrumbLabel(pathname: string): string {
   if (pathname.includes("/plagiarism")) return "Plagiarism";
   if (pathname.includes("/ads")) return "Ads";
   if (pathname.includes("/operations")) return "Operations";
+  if (pathname.includes("/llm-settings")) return "LLM provider";
   return "Overview";
 }
 

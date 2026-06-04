@@ -23,6 +23,7 @@ const prefetchers: Record<string, () => Promise<unknown>> = {
   "/dashboard/events": () => import("../pages/dashboard/EventsAdminPage"),
   "/dashboard/ads": () => import("../pages/dashboard/AdsPage"),
   "/dashboard/operations": () => import("../pages/dashboard/AdminOperationsPage"),
+  "/dashboard/llm-settings": () => import("../pages/dashboard/AdminLlmSettingsPage"),
   "/dashboard/plagiarism": () => import("../pages/dashboard/PlagiarismClaimsPage"),
 };
 

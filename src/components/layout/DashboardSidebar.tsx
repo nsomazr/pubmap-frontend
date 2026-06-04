@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Bot,
   Calendar,
   ChevronDown,
   ChevronLeft,
@@ -44,6 +45,7 @@ const adminNavGroups: { label: string; items: { to: string; label: string; icon:
     label: "Moderation",
     items: [
       { to: "/dashboard/operations", label: "Operations", icon: Shield },
+      { to: "/dashboard/llm-settings", label: "LLM provider", icon: Bot },
       { to: "/dashboard/review", label: "Review queue", icon: ClipboardCheck },
     ],
   },

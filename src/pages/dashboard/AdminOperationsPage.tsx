@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   BookOpen,
+  Bot,
   Calendar,
   CheckCircle2,
   ClipboardCheck,
@@ -26,6 +27,12 @@ import { authorDisplayName } from "../../lib/userDisplay";
 import type { DashboardStats, Publication } from "../../types";
 
 const QUICK_LINKS = [
+  {
+    to: "/dashboard/llm-settings",
+    label: "LLM provider",
+    description: "Groq cloud or local Ollama models",
+    icon: Bot,
+  },
   {
     to: "/dashboard/review",
     label: "Review queue",
