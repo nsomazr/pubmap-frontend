@@ -11,10 +11,6 @@ interface Props {
   minHeight?: number;
   required?: boolean;
   maxWords?: number;
-  /** Minimum words (e.g. 60% of registry cap). */
-  minWords?: number;
-  /** Soft maximum before registry cap (e.g. 95% of cap). */
-  bandMaxWords?: number;
 }
 
 export function RichTextEditor({
@@ -25,8 +21,6 @@ export function RichTextEditor({
   minHeight = 176,
   required,
   maxWords,
-  minWords,
-  bandMaxWords,
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Awaited<ReturnType<NonNullable<typeof window.ClassicEditor>["create"]>> | null>(
@@ -42,11 +36,7 @@ export function RichTextEditor({
   valueRef.current = value;
 
   const wordCount = countWords(value);
-  const registryCap = maxWords ?? 0;
-  const bandMax = bandMaxWords ?? registryCap;
-  const overRegistryCap = Boolean(registryCap && wordCount > registryCap);
-  const belowBand = Boolean(minWords && wordCount > 0 && wordCount < minWords);
-  const aboveBand = Boolean(bandMax && wordCount > bandMax);
+  const overLimit = Boolean(maxWords && wordCount > maxWords);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,23 +110,12 @@ export function RichTextEditor({
           {label}
           {required ? <RequiredMark /> : null}
         </label>
-        {registryCap ? (
-          <div className="flex flex-col items-end gap-0.5 text-xs text-slate-500">
-            <p
-              className={
-                overRegistryCap || belowBand || aboveBand
-                  ? "font-medium text-amber-700"
-                  : undefined
-              }
-            >
-              {wordCount}/{registryCap} words
-            </p>
-            {minWords && bandMax ? (
-              <p className={belowBand || aboveBand ? "font-medium text-amber-700" : undefined}>
-                Target {minWords}–{bandMax} words
-              </p>
-            ) : null}
-          </div>
+        {maxWords ? (
+          <p
+            className={`text-xs text-slate-500 ${overLimit ? "font-medium text-amber-700" : ""}`}
+          >
+            {wordCount}/{maxWords} words
+          </p>
         ) : null}
       </div>
       <div className="gre-manuscript-editor-shell overflow-hidden rounded-xl border border-slate-200/90 bg-white transition gre-field-composer focus-within:border-brand-400 focus-within:ring-0">

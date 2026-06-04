@@ -145,6 +145,9 @@ export function isActionableSectionNote(note: string | undefined): boolean {
   if (!text) return false;
   if (/aim for roughly \d+ words when you have enough/i.test(text)) return false;
   if (/this section has about \d+ words;/i.test(text)) return false;
+  if (/after autofill/i.test(text)) return false;
+  if (/aim for at least \d+ words/i.test(text)) return false;
+  if (/60% of the \d+-word limit/i.test(text)) return false;
   return true;
 }
 
