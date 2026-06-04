@@ -14,8 +14,14 @@ export const MANUSCRIPT_FIELD_WORD_LIMITS = {
 /** Matches backend — safety margin below hard cap. */
 export const LLM_WORD_LIMIT_BUFFER = 20;
 
-/** Matches backend LLM_WORD_TARGET_RATIO — preferred summary length. */
+/** Matches backend — preferred summary length (~mid-band). */
 export const LLM_WORD_TARGET_RATIO = 0.9;
+
+/** Matches backend LLM_WORD_TARGET_FLOOR_RATIO — minimum narrative length. */
+export const LLM_WORD_TARGET_FLOOR_RATIO = 0.6;
+
+/** Matches backend LLM_WORD_TARGET_CEILING_RATIO — maximum narrative length. */
+export const LLM_WORD_TARGET_CEILING_RATIO = 0.95;
 
 export const NARRATIVE_MANUSCRIPT_FIELDS = [
   "abstract",
@@ -31,16 +37,28 @@ export function externalWordLimit(field: ManuscriptLimitedField): number {
   return MANUSCRIPT_FIELD_WORD_LIMITS[field];
 }
 
+export function narrativeWordMinimum(field: ManuscriptLimitedField): number {
+  const external = externalWordLimit(field);
+  return Math.max(12, Math.round(external * LLM_WORD_TARGET_FLOOR_RATIO));
+}
+
+export function narrativeWordMaximum(field: ManuscriptLimitedField): number {
+  const external = externalWordLimit(field);
+  return Math.max(12, Math.min(external, Math.round(external * LLM_WORD_TARGET_CEILING_RATIO)));
+}
+
 export function llmWordTarget(field: ManuscriptLimitedField): number {
   const external = externalWordLimit(field);
   const desired = Math.max(12, Math.round(external * LLM_WORD_TARGET_RATIO));
-  const ceiling = Math.max(12, external - LLM_WORD_LIMIT_BUFFER);
-  return Math.min(desired, ceiling);
+  return Math.min(
+    Math.max(desired, narrativeWordMinimum(field)),
+    narrativeWordMaximum(field)
+  );
 }
 
+/** @deprecated Use narrativeWordMinimum */
 export function llmWordTargetFloor(field: ManuscriptLimitedField): number {
-  const external = externalWordLimit(field);
-  return Math.max(12, Math.round(external * 0.55));
+  return narrativeWordMinimum(field);
 }
 
 /** Composer group for findings + conclusion (no separate Discussion section). */
@@ -228,7 +246,7 @@ export function truncateManuscriptField(
 ): string {
   const external = externalWordLimit(field);
   if (NARRATIVE_MANUSCRIPT_FIELDS.includes(field as (typeof NARRATIVE_MANUSCRIPT_FIELDS)[number])) {
-    return truncateToWordLimitAtSentence(text, external);
+    return truncateToWordLimitAtSentence(text, narrativeWordMaximum(field));
   }
   return truncateToWordLimit(text, external);
 }

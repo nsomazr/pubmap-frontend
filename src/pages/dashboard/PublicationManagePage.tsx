@@ -69,6 +69,7 @@ import {
   type ManuscriptLimitedField,
   NARRATIVE_MANUSCRIPT_FIELDS,
   externalWordLimit,
+  narrativeWordMaximum,
   filterSectionNotes,
   normalizeFunderField,
   limitReferences,
@@ -248,9 +249,12 @@ export function PublicationManagePage() {
       const plain = raw.includes("<") ? stripHtmlToText(raw) : raw;
       const unwrapped = unwrapNarrativeFieldText(field, plain);
       if (!unwrapped.trim()) return "";
-      const limit = externalWordLimit(field);
+      const isNarrative = NARRATIVE_MANUSCRIPT_FIELDS.includes(
+        field as (typeof NARRATIVE_MANUSCRIPT_FIELDS)[number]
+      );
+      const limit = isNarrative ? narrativeWordMaximum(field) : externalWordLimit(field);
       const html = renderManuscriptHtml(unwrapped);
-      if (NARRATIVE_MANUSCRIPT_FIELDS.includes(field as (typeof NARRATIVE_MANUSCRIPT_FIELDS)[number])) {
+      if (isNarrative) {
         return truncateHtmlToWordLimitAtSentence(html, limit);
       }
       return truncateHtmlToWordLimit(html, limit);
@@ -261,10 +265,13 @@ export function PublicationManagePage() {
   const applyExtractedSection = useCallback(
     (raw: string | undefined, field: ManuscriptLimitedField) => {
       if (!raw?.trim()) return "";
-      const limit = externalWordLimit(field);
+      const isNarrative = NARRATIVE_MANUSCRIPT_FIELDS.includes(
+        field as (typeof NARRATIVE_MANUSCRIPT_FIELDS)[number]
+      );
+      const limit = isNarrative ? narrativeWordMaximum(field) : externalWordLimit(field);
       const plain = unwrapNarrativeFieldText(field, raw);
       const html = renderManuscriptHtml(plain);
-      if (NARRATIVE_MANUSCRIPT_FIELDS.includes(field as (typeof NARRATIVE_MANUSCRIPT_FIELDS)[number])) {
+      if (isNarrative) {
         return truncateHtmlToWordLimitAtSentence(html, limit);
       }
       return truncateHtmlToWordLimit(html, limit);
