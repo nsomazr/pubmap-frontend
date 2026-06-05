@@ -83,10 +83,14 @@ api.interceptors.response.use(
 export function parseApiError(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as
-      | { detail?: string }
+      | { detail?: string; warnings?: string[] }
       | Record<string, string | string[]>
       | undefined;
     if (data && typeof data === "object") {
+      if (Array.isArray(data.warnings)) {
+        const warning = data.warnings.map((item) => item.trim()).find(Boolean);
+        if (warning) return warning;
+      }
       if (typeof data.detail === "string" && data.detail.trim()) {
         return data.detail;
       }

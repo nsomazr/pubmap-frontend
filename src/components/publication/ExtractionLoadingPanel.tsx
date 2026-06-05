@@ -143,7 +143,7 @@ export function ExtractionLoadingPanel({
                     }`}
                   >
                     {step.id === "extras" && state === "active" && longWait
-                      ? "Still working — expanding summaries and checking funding (several AI steps run at the end)."
+                      ? "Still working — expanding summaries and checking funding (several processing steps run at the end)."
                       : step.detail}
                   </p>
                 </div>

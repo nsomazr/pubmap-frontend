@@ -40,6 +40,7 @@ import {
   ManuscriptSectionsEditor,
   type ManuscriptFields,
 } from "../../components/publication/ManuscriptSectionsEditor";
+import { ExtractionErrorBanner } from "../../components/publication/ExtractionErrorBanner";
 import { ExtractionLoadingPanel } from "../../components/publication/ExtractionLoadingPanel";
 import {
   PublicationDocumentUpload,
@@ -281,6 +282,19 @@ export function PublicationManagePage() {
 
   const applyExtractedDocument = useCallback(
     (payload: ExtractedDocumentPayload) => {
+      const warnings = sanitizeExtractionWarnings(payload.warnings);
+      if (payload.success === false) {
+        setExtractionUi({
+          status: "error",
+          warnings: warnings.length
+            ? warnings
+            : ["Could not structure the manuscript from your document. Please try again or fill the fields manually."],
+          engine: payload.extraction_engine,
+          sectionNotes: filterSectionNotes(payload.section_notes),
+        });
+        return;
+      }
+
       const limits = MANUSCRIPT_FIELD_WORD_LIMITS;
       const nextTitle = (payload.title || "").trim();
       if (nextTitle) setTitle(truncateToWordLimit(nextTitle, limits.title));
@@ -300,12 +314,12 @@ export function PublicationManagePage() {
       if (nextKeywords) setKeywords(nextKeywords);
       setExtractionUi({
         status: "ready",
-        warnings: sanitizeExtractionWarnings(payload.warnings),
+        warnings,
         engine: payload.extraction_engine,
         sectionNotes: filterSectionNotes(payload.section_notes),
       });
     },
-    [applyExtractedSection, title]
+    [applyExtractedSection]
   );
 
   const { data: categories = [] } = useQuery({
@@ -609,14 +623,73 @@ export function PublicationManagePage() {
       if (axios.isCancel(err)) {
         setExtractionUi({
           status: "idle",
-          warnings: ["Extraction stopped. You can upload the file again to retry."],
+          warnings: ["Extraction stopped."],
           sectionNotes: {},
         });
         return;
       }
       setExtractionUi({
         status: "error",
-        warnings: [parseApiError(err, "Could not extract sections from that file.")],
+        warnings: [
+          parseApiError(
+            err,
+            "Could not structure the manuscript from your document. Please try again or fill the fields manually."
+          ),
+        ],
+        sectionNotes: {},
+      });
+    },
+  });
+
+  const reextractDocumentMutation = useMutation({
+    mutationFn: async () => {
+      if (!persistedPublicationId) {
+        throw new Error("No saved publication to re-extract.");
+      }
+      extractionAbortRef.current?.abort();
+      const controller = new AbortController();
+      extractionAbortRef.current = controller;
+      try {
+        const { data } = await api.post<ExtractedDocumentPayload>(
+          `/publications/${publicationApiSegment(persistedPublicationId, persistedEncodedId)}/reextract_document/`,
+          {},
+          { params: { use_ai: 1 }, signal: controller.signal }
+        );
+        return data;
+      } finally {
+        if (extractionAbortRef.current === controller) {
+          extractionAbortRef.current = null;
+        }
+      }
+    },
+    onMutate: () => {
+      extractionCancelledRef.current = false;
+      setExtractionUi({
+        status: "extracting",
+        warnings: [],
+        sectionNotes: {},
+      });
+    },
+    onSuccess: (data) => {
+      applyExtractedDocument(data);
+    },
+    onError: (err) => {
+      if (axios.isCancel(err)) {
+        setExtractionUi({
+          status: "idle",
+          warnings: ["Extraction stopped."],
+          sectionNotes: {},
+        });
+        return;
+      }
+      setExtractionUi({
+        status: "error",
+        warnings: [
+          parseApiError(
+            err,
+            "Could not structure the manuscript from your document. Please try again or fill the fields manually."
+          ),
+        ],
         sectionNotes: {},
       });
     },
@@ -627,19 +700,43 @@ export function PublicationManagePage() {
     extractionAbortRef.current?.abort();
     extractionAbortRef.current = null;
     extractDocumentMutation.reset();
+    reextractDocumentMutation.reset();
     setDocumentUploadExtracting(false);
     setExtractionUi({
       status: "idle",
-      warnings: ["Extraction stopped. You can upload the file again to retry."],
+      warnings: ["Extraction stopped."],
       sectionNotes: {},
     });
-  }, [extractDocumentMutation]);
+  }, [extractDocumentMutation, reextractDocumentMutation]);
+
+  const extractionRetrying =
+    extractDocumentMutation.isPending || reextractDocumentMutation.isPending;
+
+  const canRetryExtraction = Boolean(pendingDocument || (persistedPublicationId && existingDocPath));
+
+  const retryExtraction = useCallback(() => {
+    extractionCancelledRef.current = false;
+    if (pendingDocument) {
+      extractDocumentMutation.mutate(pendingDocument);
+      return;
+    }
+    if (persistedPublicationId && existingDocPath) {
+      reextractDocumentMutation.mutate();
+    }
+  }, [
+    pendingDocument,
+    persistedPublicationId,
+    existingDocPath,
+    extractDocumentMutation,
+    reextractDocumentMutation,
+  ]);
 
   const clearManuscriptContent = useCallback(() => {
     extractionCancelledRef.current = true;
     extractionAbortRef.current?.abort();
     extractionAbortRef.current = null;
     extractDocumentMutation.reset();
+    reextractDocumentMutation.reset();
     setDocumentUploadExtracting(false);
     setTitle("");
     setAbstract("");
@@ -652,7 +749,7 @@ export function PublicationManagePage() {
     setKeywords("");
     setPendingDocument(null);
     setExtractionUi({ status: "idle", warnings: [], sectionNotes: {} });
-  }, [extractDocumentMutation]);
+  }, [extractDocumentMutation, reextractDocumentMutation]);
 
   const hasManuscriptContent = useMemo(
     () =>
@@ -681,7 +778,9 @@ export function PublicationManagePage() {
   );
 
   const extractionActive =
-    extractionUi.status === "extracting" || documentUploadExtracting;
+    extractionUi.status === "extracting" ||
+    documentUploadExtracting ||
+    reextractDocumentMutation.isPending;
 
   useEffect(() => {
     if (!pendingDocument) {
@@ -1470,7 +1569,12 @@ export function PublicationManagePage() {
                       disabled={isReadOnly}
                     />
                     {extractionUi.status === "error" && extractionUi.warnings[0] && (
-                      <p className="text-sm text-red-600">{extractionUi.warnings[0]}</p>
+                      <ExtractionErrorBanner
+                        message={extractionUi.warnings[0]}
+                        onRetry={canRetryExtraction ? retryExtraction : undefined}
+                        retrying={extractionRetrying}
+                        className=""
+                      />
                     )}
                   </div>
                 ) : persistedPublicationId ? (
@@ -1481,6 +1585,8 @@ export function PublicationManagePage() {
                     extractOnUpload
                     onExtracted={applyExtractedDocument}
                     onSourceRemoved={clearManuscriptContent}
+                    onRetryExtraction={canRetryExtraction ? retryExtraction : undefined}
+                    extractionRetrying={extractionRetrying}
                     extractionAbortRef={extractionAbortRef}
                     onExtractingChange={(active) => {
                       setDocumentUploadExtracting(active);
@@ -1516,9 +1622,11 @@ export function PublicationManagePage() {
                   </ul>
                 )}
                 {extractionUi.status === "error" && extractionUi.warnings[0] && (
-                  <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {extractionUi.warnings[0]}
-                  </div>
+                  <ExtractionErrorBanner
+                    message={extractionUi.warnings[0]}
+                    onRetry={canRetryExtraction ? retryExtraction : undefined}
+                    retrying={extractionRetrying}
+                  />
                 )}
                 <ManuscriptSectionsEditor
                   title={title}

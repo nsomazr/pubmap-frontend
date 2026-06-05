@@ -8,6 +8,7 @@ import { sanitizeExtractionWarnings } from "../../lib/extractionWarnings";
 import { mediaUrl } from "../../lib/mediaUrl";
 import { reviewManuscriptPdfUrl } from "../../lib/publicationGre";
 import type { Publication } from "../../types";
+import { ExtractionErrorBanner } from "./ExtractionErrorBanner";
 import { ManuscriptUploadField } from "./ManuscriptUploadField";
 
 export interface ExtractedDocumentPayload {
@@ -36,6 +37,8 @@ interface Props {
   onExtractingChange?: (extracting: boolean) => void;
   extractionAbortRef?: MutableRefObject<AbortController | null>;
   onSourceRemoved?: () => void;
+  onRetryExtraction?: () => void;
+  extractionRetrying?: boolean;
 }
 
 export function PublicationDocumentUpload({
@@ -48,6 +51,8 @@ export function PublicationDocumentUpload({
   onExtractingChange,
   extractionAbortRef,
   onSourceRemoved,
+  onRetryExtraction,
+  extractionRetrying = false,
 }: Props) {
   const queryClient = useQueryClient();
   const [localError, setLocalError] = useState("");
@@ -200,7 +205,14 @@ export function PublicationDocumentUpload({
         />
       )}
 
-      {localError && <p className="text-sm text-red-600">{localError}</p>}
+      {localError && (
+        <ExtractionErrorBanner
+          message={localError}
+          onRetry={extractOnUpload ? onRetryExtraction : undefined}
+          retrying={extractionRetrying}
+          className=""
+        />
+      )}
 
       {primaryDoc && !pendingFile && (
         <ul className="space-y-2">
