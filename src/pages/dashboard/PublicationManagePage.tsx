@@ -860,6 +860,7 @@ export function PublicationManagePage() {
       if (!hasTextContent(findings)) {
         return "Findings is required for restricted access.";
       }
+      if (!hasTextContent(conclusion)) return "Conclusion is required for restricted access.";
       if (!gre.external_url?.trim()) return "Publisher access link is required for restricted access.";
     } else if (!hasDocument && !gre.external_url?.trim()) {
       return "Upload a manuscript PDF or add an external access link.";
@@ -961,6 +962,26 @@ export function PublicationManagePage() {
     mutationFn: async (options?: SaveOptions) => {
       const data = await persistPublicationDraft({ quiet: options?.quiet });
       if (!data) throw new Error("SAVE_FAILED");
+
+      let documentUploaded = false;
+      if (pendingDocument) {
+        const form = new FormData();
+        form.append("document", pendingDocument);
+        await api.post(
+          `/publications/${publicationApiSegment(data.id, data.encoded_id)}/upload_document/`,
+          form
+        );
+        documentUploaded = true;
+      }
+
+      if (data.id) {
+        try {
+          await updatePublicationGre(data.id, gre, data.encoded_id);
+        } catch (greErr) {
+          if (options?.thenSubmit) throw greErr;
+        }
+      }
+
       let captionWarning: string | null = null;
       try {
         await flushFigureCaptionsRef.current?.();
@@ -968,38 +989,21 @@ export function PublicationManagePage() {
         captionWarning =
           "Some figure captions could not be saved. Re-open the draft and save captions again if needed.";
       }
+
       if (options?.thenSubmit) {
         await api.post(
           `/publications/${publicationApiSegment(data.id, data.encoded_id)}/submit_review/`,
           { author_declaration: true }
         );
       }
-      return { data, captionWarning };
+      return { data, captionWarning, documentUploaded };
     },
-    onSuccess: async ({ data, captionWarning }, options?: SaveOptions) => {
+    onSuccess: async ({ data, captionWarning, documentUploaded }, options?: SaveOptions) => {
       if (isNew && typeof window !== "undefined") {
         window.sessionStorage.removeItem(NEW_DRAFT_SESSION_KEY);
       }
-      if (pendingDocument) {
-        try {
-          const form = new FormData();
-          form.append("document", pendingDocument);
-          await api.post(`/publications/${data.id}/upload_document/`, form);
-        } catch {
-          setError("Draft saved, but the manuscript file could not be uploaded. Try again from the submission form.");
-          setSubmitReviewOpen(false);
-          queryClient.invalidateQueries({ queryKey: ["publications"] });
-          navigate(buildDashboardPublicationPath(data.id, data.encoded_id));
-          return;
-        }
+      if (documentUploaded) {
         setPendingDocument(null);
-      }
-      if (data.id) {
-        try {
-          await updatePublicationGre(data.id, gre);
-        } catch {
-          /* gre meta optional on save */
-        }
       }
       queryClient.invalidateQueries({ queryKey: ["publications"] });
       queryClient.invalidateQueries({ queryKey: editQueryKey });
@@ -1024,12 +1028,14 @@ export function PublicationManagePage() {
     },
     onError: (err: { response?: { data?: Record<string, unknown> } }, options?: SaveOptions) => {
       if (options?.thenSubmit) {
-        setError(
-          parseApiError(
-            err,
-            "Could not submit for review. Check required fields and try again."
-          )
+        setSubmitReviewOpen(false);
+        const message = parseApiError(
+          err,
+          "Could not submit for review. Check required fields and try again."
         );
+        setError(message);
+        toast.error({ title: "Submission failed", description: message });
+        queryClient.invalidateQueries({ queryKey: editQueryKey });
         return;
       }
       const data = err.response?.data;
