@@ -336,6 +336,7 @@ export function PublicationManagePage() {
     data: pub,
     isLoading,
     isError: pubLoadError,
+    error: pubLoadQueryError,
     refetch: refetchPublication,
   } = useQuery({
     queryKey: editQueryKey,
@@ -347,8 +348,10 @@ export function PublicationManagePage() {
     staleTime: 30_000,
   });
 
+  const routeNumericId =
+    id && /^\d+$/.test(id) ? Number(id) : null;
   const persistedPublicationId =
-    pub?.id ?? createdDraftId ?? (id && !isNew ? Number(id) : null);
+    pub?.id ?? createdDraftId ?? (!isNew ? routeNumericId : null);
   const persistedEncodedId = pub?.encoded_id ?? createdDraftEncodedId ?? null;
   const existingDocPath = primaryManuscriptPath(pub);
   const hasDocument = Boolean(pendingDocument || existingDocPath);
@@ -1273,12 +1276,14 @@ export function PublicationManagePage() {
   }
 
   if (!isNew && !isLoading && (pubLoadError || !pub)) {
+    const loadErrorMessage = parseApiError(
+      pubLoadQueryError,
+      "Your draft or revision data could not be retrieved. Check your connection and try again."
+    );
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-6">
         <p className="font-semibold text-red-900">Could not load this publication</p>
-        <p className="mt-2 text-sm text-red-800/90">
-          Your draft or revision data could not be retrieved. Check your connection and try again.
-        </p>
+        <p className="mt-2 text-sm text-red-800/90">{loadErrorMessage}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Button type="button" variant="secondary" onClick={() => refetchPublication()}>
             Retry
@@ -1287,7 +1292,7 @@ export function PublicationManagePage() {
             to="/dashboard/publications?status=2"
             className="inline-flex items-center text-sm font-semibold text-brand-600 hover:underline"
           >
-            Back to revisions
+            Back to drafts
           </Link>
         </div>
       </div>
