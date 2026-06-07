@@ -55,7 +55,7 @@ import { PublicationPaperPreview } from "../../components/publication/Publicatio
 import { SubmissionReviewDialog } from "../../components/publication/SubmissionReviewDialog";
 import { Textarea } from "../../components/ui/Textarea";
 import { useAuth } from "../../context/AuthContext";
-import api, { parseApiError } from "../../lib/api";
+import api, { extractionPayloadFromAxiosError, parseApiError } from "../../lib/api";
 import { sanitizeExtractionWarnings } from "../../lib/extractionWarnings";
 import { PublicationFiguresEditor } from "../../components/publication/PublicationFiguresEditor";
 import {
@@ -607,8 +607,15 @@ export function PublicationManagePage() {
         if (axios.isCancel(error)) {
           throw error;
         }
+        const structured = extractionPayloadFromAxiosError<ExtractedDocumentPayload>(error);
+        if (structured) {
+          return {
+            ...structured,
+            warnings: sanitizeExtractionWarnings(structured.warnings),
+          };
+        }
         const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-        if (status && status < 500 && status !== 401 && status !== 429) {
+        if (status === 401 || status === 429) {
           throw error;
         }
 
@@ -678,6 +685,30 @@ export function PublicationManagePage() {
           { params: { use_ai: 1 }, signal: controller.signal }
         );
         return data;
+      } catch (error) {
+        if (axios.isCancel(error)) {
+          throw error;
+        }
+        const structured = extractionPayloadFromAxiosError<ExtractedDocumentPayload>(error);
+        if (structured) {
+          return {
+            ...structured,
+            warnings: sanitizeExtractionWarnings(structured.warnings),
+          };
+        }
+        const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+        if (status === 401 || status === 429) {
+          throw error;
+        }
+        const { data } = await api.post<ExtractedDocumentPayload>(
+          `/publications/${publicationApiSegment(persistedPublicationId, persistedEncodedId)}/reextract_document/`,
+          {},
+          { params: { use_ai: 0, ocr_backend: "tesseract" }, signal: controller.signal }
+        );
+        return {
+          ...data,
+          warnings: sanitizeExtractionWarnings(data.warnings),
+        };
       } finally {
         if (extractionAbortRef.current === controller) {
           extractionAbortRef.current = null;
