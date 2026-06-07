@@ -114,7 +114,7 @@ export function parseApiError(error: unknown, fallback: string): string {
 }
 
 /** Structured manuscript extraction payloads may arrive on non-2xx responses (legacy API). */
-export function extractionPayloadFromAxiosError<T extends Record<string, unknown>>(
+export function extractionPayloadFromAxiosError<T extends object>(
   error: unknown
 ): T | null {
   if (!axios.isAxiosError(error)) return null;
