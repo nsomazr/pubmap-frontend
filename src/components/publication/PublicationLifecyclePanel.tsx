@@ -3,8 +3,10 @@ import { Archive, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
-import api from "../../lib/api";
+import api, { parseApiError } from "../../lib/api";
+import { publicationApiSegment } from "../../lib/publicationPaths";
 import type { Publication } from "../../types";
+import { useToast } from "../ui/ToastProvider";
 
 interface Props {
   publication: Publication;
@@ -21,45 +23,87 @@ export function PublicationLifecyclePanel({
 }: Props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const pubId = publication.id;
+  const pubSeg = publicationApiSegment(publication.id, publication.encoded_id);
   const status = publication.status;
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["publications"] });
-    queryClient.invalidateQueries({ queryKey: ["publication-edit", String(pubId)] });
+    queryClient.invalidateQueries({ queryKey: ["publication-edit", pubSeg] });
     onChanged?.();
   };
 
   const archiveMutation = useMutation({
-    mutationFn: () => api.post(`/publications/${pubId}/archive/`),
+    mutationFn: () => api.post(`/publications/${pubSeg}/archive/`),
     onSuccess: () => {
       invalidate();
+      toast.success({
+        title: "Publication archived",
+        description: "It is off the public map but still in your account.",
+      });
       navigate("/dashboard/publications?status=4");
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not archive",
+        description: parseApiError(error, "Archive failed."),
+      });
     },
   });
 
   const unarchiveMutation = useMutation({
-    mutationFn: () => api.post(`/publications/${pubId}/unarchive/`),
+    mutationFn: () => api.post(`/publications/${pubSeg}/unarchive/`),
     onSuccess: () => {
       invalidate();
+      toast.success({
+        title: "Publication restored",
+        description: "Your study is back in your workflow.",
+      });
       navigate("/dashboard/publications");
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not restore",
+        description: parseApiError(error, "Restore failed."),
+      });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => api.delete(`/publications/${pubId}/`),
+    mutationFn: () => api.delete(`/publications/${pubSeg}/`),
     onSuccess: () => {
       invalidate();
+      toast.success({
+        title: "Publication deleted",
+        description: "It was moved to the admin recovery queue.",
+      });
       navigate(isAdmin ? "/dashboard/publications?status=6" : "/dashboard/publications");
+    },
+    onError: (error) => {
+      setConfirmDelete(false);
+      toast.error({
+        title: "Could not delete",
+        description: parseApiError(error, "Delete failed."),
+      });
     },
   });
 
   const restoreMutation = useMutation({
-    mutationFn: () => api.post(`/publications/${pubId}/restore/`),
+    mutationFn: () => api.post(`/publications/${pubSeg}/restore/`),
     onSuccess: () => {
       invalidate();
+      toast.success({
+        title: "Publication restored",
+        description: "The study is visible in your account again.",
+      });
       navigate("/dashboard/publications");
+    },
+    onError: (error) => {
+      toast.error({
+        title: "Could not restore",
+        description: parseApiError(error, "Restore failed."),
+      });
     },
   });
 
@@ -128,7 +172,8 @@ export function PublicationLifecyclePanel({
       <h2 className="text-sm font-semibold text-ink">Publication lifecycle</h2>
       <p className="mt-1 text-sm text-slate-500">
         Archive removes a study from the public map while keeping your files. Delete moves it to the
-        admin recovery queue (GRE admins can remove it permanently).
+        admin recovery queue (GRE admins can remove it permanently). After you click Delete, choose
+        Confirm delete to finish.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button

@@ -1,6 +1,13 @@
 import { useEffect, useId, useRef, type CSSProperties } from "react";
 import { loadCkEditor } from "../../lib/ckeditorLoader";
-import { countWords, truncateHtmlToWordLimit } from "../../lib/manuscriptFieldLimits";
+import {
+  countWords,
+  narrativeWordCountLabel,
+  narrativeWordCountStatus,
+  truncateHtmlToWordLimit,
+  truncateHtmlToWordLimitAtSentence,
+  type ManuscriptLimitedField,
+} from "../../lib/manuscriptFieldLimits";
 import { RequiredMark } from "../ui/RequiredField";
 
 interface Props {
@@ -11,6 +18,8 @@ interface Props {
   minHeight?: number;
   required?: boolean;
   maxWords?: number;
+  /** When set, shows the GRE narrative band (60–95% of registry cap) and enforces sentence-aware trimming. */
+  narrativeField?: ManuscriptLimitedField;
 }
 
 export function RichTextEditor({
@@ -21,6 +30,7 @@ export function RichTextEditor({
   minHeight = 176,
   required,
   maxWords,
+  narrativeField,
 }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Awaited<ReturnType<NonNullable<typeof window.ClassicEditor>["create"]>> | null>(
@@ -37,6 +47,17 @@ export function RichTextEditor({
 
   const wordCount = countWords(value);
   const overLimit = Boolean(maxWords && wordCount > maxWords);
+  const narrativeStatus = narrativeField
+    ? narrativeWordCountStatus(narrativeField, wordCount)
+    : null;
+  const wordCountClass =
+    narrativeStatus === "under"
+      ? "font-medium text-amber-700"
+      : narrativeStatus === "over" || overLimit
+        ? "font-medium text-amber-700"
+        : narrativeStatus === "ok"
+          ? "text-emerald-700"
+          : "text-slate-500";
 
   useEffect(() => {
     let cancelled = false;
@@ -76,7 +97,9 @@ export function RichTextEditor({
         let next = editor.getData();
         const limit = maxWordsRef.current;
         if (limit && countWords(next) > limit) {
-          next = truncateHtmlToWordLimit(next, limit);
+          next = narrativeField
+            ? truncateHtmlToWordLimitAtSentence(next, limit)
+            : truncateHtmlToWordLimit(next, limit);
           if (next !== editor.getData()) {
             editor.setData(next);
           }
@@ -111,10 +134,10 @@ export function RichTextEditor({
           {required ? <RequiredMark /> : null}
         </label>
         {maxWords ? (
-          <p
-            className={`text-xs text-slate-500 ${overLimit ? "font-medium text-amber-700" : ""}`}
-          >
-            {wordCount}/{maxWords} words
+          <p className={`text-xs ${wordCountClass}`}>
+            {narrativeField
+              ? narrativeWordCountLabel(narrativeField, wordCount)
+              : `${wordCount}/${maxWords} words`}
           </p>
         ) : null}
       </div>

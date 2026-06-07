@@ -145,10 +145,28 @@ export function isActionableSectionNote(note: string | undefined): boolean {
   if (!text) return false;
   if (/aim for roughly \d+ words when you have enough/i.test(text)) return false;
   if (/this section has about \d+ words;/i.test(text)) return false;
-  if (/after autofill/i.test(text)) return false;
-  if (/aim for at least \d+ words/i.test(text)) return false;
-  if (/60% of the \d+-word limit/i.test(text)) return false;
   return true;
+}
+
+export function narrativeWordCountLabel(
+  field: ManuscriptLimitedField,
+  wordCount: number
+): string {
+  const min = narrativeWordMinimum(field);
+  const max = narrativeWordMaximum(field);
+  return `${wordCount} words · aim for ${min}–${max}`;
+}
+
+export function narrativeWordCountStatus(
+  field: ManuscriptLimitedField,
+  wordCount: number
+): "empty" | "under" | "ok" | "over" {
+  if (wordCount <= 0) return "empty";
+  const min = narrativeWordMinimum(field);
+  const max = narrativeWordMaximum(field);
+  if (wordCount < min) return "under";
+  if (wordCount > max) return "over";
+  return "ok";
 }
 
 export function filterSectionNotes(

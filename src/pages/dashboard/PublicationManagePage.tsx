@@ -69,8 +69,10 @@ import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
   type ManuscriptLimitedField,
   NARRATIVE_MANUSCRIPT_FIELDS,
+  countWords,
   externalWordLimit,
   narrativeWordMaximum,
+  narrativeWordMinimum,
   filterSectionNotes,
   normalizeFunderField,
   limitReferences,
@@ -102,6 +104,23 @@ const emptyCoord = (): Coordinate => ({
   longitude: "",
   institution: "",
 });
+
+function narrativeFieldWordCount(value: string): number {
+  return countWords(stripHtmlToText(value));
+}
+
+function narrativeLengthError(
+  field: ManuscriptLimitedField,
+  value: string,
+  label: string
+): string | null {
+  const words = narrativeFieldWordCount(value);
+  const minimum = narrativeWordMinimum(field);
+  if (words > 0 && words < minimum) {
+    return `${label} needs at least ${minimum} words (currently ${words}).`;
+  }
+  return null;
+}
 
 function hasTextContent(value: string): boolean {
   const trimmed = (value || "").trim();
@@ -841,6 +860,8 @@ export function PublicationManagePage() {
     }
     if (!title.trim()) return "Title is required.";
     if (!hasTextContent(abstract)) return "Abstract is required.";
+    const abstractLengthErr = narrativeLengthError("abstract", abstract, "Abstract");
+    if (abstractLengthErr) return abstractLengthErr;
     if (submitterRole === "coauthor" && !leadAuthorName.trim()) {
       return "Lead author name is required when submitting as a co-author.";
     }
@@ -864,6 +885,14 @@ export function PublicationManagePage() {
         return "Findings is required for restricted access.";
       }
       if (!hasTextContent(conclusion)) return "Conclusion is required for restricted access.";
+      const conclusionLengthErr = narrativeLengthError("conclusion", conclusion, "Conclusion");
+      if (conclusionLengthErr) return conclusionLengthErr;
+      const introLengthErr = narrativeLengthError("introduction", introduction, "Introduction");
+      if (introLengthErr) return introLengthErr;
+      const methodsLengthErr = narrativeLengthError("methods", methods, "Methods");
+      if (methodsLengthErr) return methodsLengthErr;
+      const findingsLengthErr = narrativeLengthError("findings", findings, "Findings");
+      if (findingsLengthErr) return findingsLengthErr;
       if (!gre.external_url?.trim()) return "Publisher access link is required for restricted access.";
     } else if (!hasDocument && !gre.external_url?.trim()) {
       return "Upload a manuscript PDF or add an external access link.";

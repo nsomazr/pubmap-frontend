@@ -5,6 +5,7 @@ import { Input } from "../ui/Input";
 import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
   MANUSCRIPT_FINDINGS_GROUP_TITLE,
+  narrativeWordMaximum,
   normalizeFunderField,
   truncateToWordLimit,
 } from "../../lib/manuscriptFieldLimits";
@@ -97,7 +98,8 @@ export function ManuscriptSectionsEditor({
           onChange={(v) => onChange("abstract", v)}
           minHeight={160}
           required
-          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.abstract}
+          narrativeField="abstract"
+          maxWords={narrativeWordMaximum("abstract")}
         />
         <FieldExtractionNote note={sectionNotes.abstract} />
         <Input
@@ -120,7 +122,8 @@ export function ManuscriptSectionsEditor({
           value={fields.introduction}
           onChange={(v) => onChange("introduction", v)}
           required={narrativeRequired}
-          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.introduction}
+          narrativeField="introduction"
+          maxWords={narrativeWordMaximum("introduction")}
         />
         <FieldExtractionNote note={sectionNotes.introduction} />
       </ManuscriptGroup>
@@ -131,7 +134,8 @@ export function ManuscriptSectionsEditor({
           value={fields.methods}
           onChange={(v) => onChange("methods", v)}
           required={narrativeRequired}
-          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.methods}
+          narrativeField="methods"
+          maxWords={narrativeWordMaximum("methods")}
         />
         <FieldExtractionNote note={sectionNotes.methods} />
       </ManuscriptGroup>
@@ -144,14 +148,16 @@ export function ManuscriptSectionsEditor({
           value={fields.findings}
           onChange={(v) => onChange("findings", v)}
           required={narrativeRequired}
-          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.findings}
+          narrativeField="findings"
+          maxWords={narrativeWordMaximum("findings")}
         />
         <FieldExtractionNote note={sectionNotes.findings} />
         <RichTextEditor
           label="Conclusion"
           value={fields.conclusion}
           onChange={(v) => onChange("conclusion", v)}
-          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.conclusion}
+          narrativeField="conclusion"
+          maxWords={narrativeWordMaximum("conclusion")}
         />
         <FieldExtractionNote note={sectionNotes.conclusion} />
       </ManuscriptGroup>
