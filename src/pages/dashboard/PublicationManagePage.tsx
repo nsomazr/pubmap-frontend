@@ -72,6 +72,7 @@ import {
   countWords,
   externalWordLimit,
   narrativeWordMaximum,
+  llmWordTarget,
   narrativeWordMinimum,
   filterSectionNotes,
   normalizeFunderField,
@@ -115,9 +116,10 @@ function narrativeLengthError(
   label: string
 ): string | null {
   const words = narrativeFieldWordCount(value);
+  const target = llmWordTarget(field);
   const minimum = narrativeWordMinimum(field);
-  if (words > 0 && words < minimum) {
-    return `${label} needs at least ${minimum} words (currently ${words}).`;
+  if (words > 0 && words < target) {
+    return `${label} needs about ${target} words (currently ${words}; minimum ${minimum}).`;
   }
   return null;
 }
