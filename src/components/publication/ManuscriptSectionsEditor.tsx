@@ -5,7 +5,7 @@ import { Input } from "../ui/Input";
 import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
   MANUSCRIPT_FINDINGS_GROUP_TITLE,
-  narrativeWordMaximum,
+  filterSectionNotes,
   normalizeFunderField,
   truncateToWordLimit,
 } from "../../lib/manuscriptFieldLimits";
@@ -77,6 +77,7 @@ export function ManuscriptSectionsEditor({
   afterMethods,
 }: Props) {
   const narrativeRequired = requireNarrativeSections;
+  const displayNotes = filterSectionNotes(sectionNotes as Record<string, string>);
 
   return (
     <div className="space-y-6">
@@ -91,7 +92,7 @@ export function ManuscriptSectionsEditor({
           }
           required
         />
-        <FieldExtractionNote note={sectionNotes.title} />
+        <FieldExtractionNote note={displayNotes.title} />
         <RichTextEditor
           label="Abstract"
           value={fields.abstract}
@@ -99,9 +100,9 @@ export function ManuscriptSectionsEditor({
           minHeight={160}
           required
           narrativeField="abstract"
-          maxWords={narrativeWordMaximum("abstract")}
+          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.abstract}
         />
-        <FieldExtractionNote note={sectionNotes.abstract} />
+        <FieldExtractionNote note={displayNotes.abstract} />
         <Input
           label="Keywords"
           value={fields.keywords}
@@ -113,7 +114,7 @@ export function ManuscriptSectionsEditor({
           }
           placeholder="climate, remote sensing, East Africa"
         />
-        <FieldExtractionNote note={sectionNotes.keywords} />
+        <FieldExtractionNote note={displayNotes.keywords} />
       </ManuscriptGroup>
 
       <ManuscriptGroup title="Background">
@@ -123,9 +124,9 @@ export function ManuscriptSectionsEditor({
           onChange={(v) => onChange("introduction", v)}
           required={narrativeRequired}
           narrativeField="introduction"
-          maxWords={narrativeWordMaximum("introduction")}
+          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.introduction}
         />
-        <FieldExtractionNote note={sectionNotes.introduction} />
+        <FieldExtractionNote note={displayNotes.introduction} />
       </ManuscriptGroup>
 
       <ManuscriptGroup title="Methods">
@@ -135,9 +136,9 @@ export function ManuscriptSectionsEditor({
           onChange={(v) => onChange("methods", v)}
           required={narrativeRequired}
           narrativeField="methods"
-          maxWords={narrativeWordMaximum("methods")}
+          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.methods}
         />
-        <FieldExtractionNote note={sectionNotes.methods} />
+        <FieldExtractionNote note={displayNotes.methods} />
       </ManuscriptGroup>
 
       {afterMethods}
@@ -149,17 +150,17 @@ export function ManuscriptSectionsEditor({
           onChange={(v) => onChange("findings", v)}
           required={narrativeRequired}
           narrativeField="findings"
-          maxWords={narrativeWordMaximum("findings")}
+          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.findings}
         />
-        <FieldExtractionNote note={sectionNotes.findings} />
+        <FieldExtractionNote note={displayNotes.findings} />
         <RichTextEditor
           label="Conclusion"
           value={fields.conclusion}
           onChange={(v) => onChange("conclusion", v)}
           narrativeField="conclusion"
-          maxWords={narrativeWordMaximum("conclusion")}
+          maxWords={MANUSCRIPT_FIELD_WORD_LIMITS.conclusion}
         />
-        <FieldExtractionNote note={sectionNotes.conclusion} />
+        <FieldExtractionNote note={displayNotes.conclusion} />
       </ManuscriptGroup>
 
       <ManuscriptGroup title="Funding & references">
@@ -177,13 +178,13 @@ export function ManuscriptSectionsEditor({
           }
           placeholder="e.g. NSF, Sida (comma-separated organizations; leave blank if none)"
         />
-        <FieldExtractionNote note={sectionNotes.funder} />
+        <FieldExtractionNote note={displayNotes.funder} />
         <ReferencesFromResearch
           value={fields.references}
           paperTitle={title}
           onChange={(v) => onChange("references", v)}
         />
-        <FieldExtractionNote note={sectionNotes.references} />
+        <FieldExtractionNote note={displayNotes.references} />
       </ManuscriptGroup>
     </div>
   );
