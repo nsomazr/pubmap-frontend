@@ -34,11 +34,22 @@ interface Props {
   registerFlushCaptions?: (flush: (() => Promise<void>) | null) => void;
 }
 
+type PendingUploadStatus = "queued" | "uploading" | "error";
+
 type PendingUpload = {
   key: string;
   file: File;
   caption: string;
   previewUrl: string;
+  status: PendingUploadStatus;
+  error?: string;
+};
+
+type UploadProgress = {
+  completed: number;
+  total: number;
+  activeName: string;
+  phase: "prepare" | "upload";
 };
 
 function figureLabel(fig: PublicationFigure, index: number): string {
@@ -64,6 +75,7 @@ export function PublicationFiguresEditor({
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [uploadError, setUploadError] = useState("");
   const [preview, setPreview] = useState<PublicationFigure | null>(null);
   const [pending, setPending] = useState<PendingUpload[]>([]);
@@ -168,6 +180,7 @@ export function PublicationFiguresEditor({
         file,
         caption: "",
         previewUrl: URL.createObjectURL(file),
+        status: "queued",
       });
     }
     if (errors.length) {
@@ -198,54 +211,92 @@ export function PublicationFiguresEditor({
     return ensurePublicationId();
   };
 
+  const patchPending = (key: string, patch: Partial<PendingUpload>) => {
+    setPending((prev) =>
+      prev.map((item) => (item.key === key ? { ...item, ...patch } : item))
+    );
+  };
+
   const uploadItems = async (items: PendingUpload[]) => {
     if (!items.length || readOnly) return;
     setUploading(true);
     setUploadError("");
-    const uploaded: PublicationFigure[] = [];
-    const uploadedKeys = new Set<string>();
-    let baseIndex = figures.length;
+    const total = items.length;
+    setUploadProgress({
+      completed: 0,
+      total,
+      activeName: total > 1 ? "Preparing publication draft…" : items[0].file.name,
+      phase: "prepare",
+    });
+
+    let workingFigures = [...figuresRef.current];
+    let baseIndex = workingFigures.length;
+    let pubId: number | null = null;
+
     try {
+      setUploadProgress((prev) =>
+        prev
+          ? { ...prev, phase: "prepare", activeName: "Preparing publication draft…" }
+          : prev
+      );
       const resolved = await resolvePublicationId();
       if (!resolved.ok) {
         setUploadError(resolved.error);
+        setPending((prev) =>
+          prev.map((item) =>
+            items.some((row) => row.key === item.key)
+              ? { ...item, status: "error", error: resolved.error }
+              : item
+          )
+        );
         return;
       }
-      const pubId = resolved.id;
-      for (const item of items) {
+      pubId = resolved.id;
+
+      for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
+        patchPending(item.key, { status: "uploading", error: undefined });
+        setUploadProgress({
+          completed: index,
+          total,
+          activeName: item.file.name,
+          phase: "upload",
+        });
+
         const caption =
-          item.caption.trim() || `Figure ${baseIndex + uploaded.length + 1}`;
-        const fig = (await uploadFigure(
-          pubId,
-          item.file,
-          { caption },
-          encodedPublicationId
-        )) as PublicationFigure;
-        uploaded.push(fig);
-        uploadedKeys.add(item.key);
-        setLocalPreviews((prev) => ({ ...prev, [fig.id]: item.previewUrl }));
-      }
-      if (uploaded.length) {
-        onChange([...figures, ...uploaded]);
-        setPending((prev) => prev.filter((p) => !uploadedKeys.has(p.key)));
-      }
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string } } };
-      setUploadError(
-        e.response?.data?.detail ||
-          "Figure upload failed. Use JPG, PNG, GIF, or WEBP under 10 MB."
-      );
-      if (uploaded.length) {
-        onChange([...figures, ...uploaded]);
-        setPending((prev) => prev.filter((p) => !uploadedKeys.has(p.key)));
+          item.caption.trim() || `Figure ${baseIndex + 1}`;
+        try {
+          const fig = (await uploadFigure(
+            pubId,
+            item.file,
+            { caption },
+            encodedPublicationId
+          )) as PublicationFigure;
+          workingFigures = [...workingFigures, fig];
+          baseIndex += 1;
+          figuresRef.current = workingFigures;
+          onChange(workingFigures);
+          setLocalPreviews((prev) => ({ ...prev, [fig.id]: item.previewUrl }));
+          setPending((prev) => prev.filter((row) => row.key !== item.key));
+          setUploadProgress({
+            completed: index + 1,
+            total,
+            activeName: item.file.name,
+            phase: "upload",
+          });
+        } catch (err: unknown) {
+          const e = err as { response?: { data?: { detail?: string } } };
+          const message =
+            e.response?.data?.detail ||
+            "Figure upload failed. Use JPG, PNG, GIF, or WEBP under 10 MB.";
+          patchPending(item.key, { status: "error", error: message });
+          setUploadError(message);
+        }
       }
     } finally {
       setUploading(false);
+      setUploadProgress(null);
     }
-  };
-
-  const retryPending = () => {
-    if (pending.length) void uploadItems([...pending]);
   };
 
   const remove = async (id: number) => {
@@ -397,57 +448,148 @@ export function PublicationFiguresEditor({
             <ImagePlus className="h-4 w-4" />
             Choose images
           </Button>
-          {uploading && (
+          {uploading && !uploadProgress && (
             <span className="inline-flex items-center gap-2 text-sm text-slate-600">
               <Loader2 className="h-4 w-4 animate-spin text-brand-600" aria-hidden />
               Uploading figures…
             </span>
           )}
-          {pending.length > 0 && !uploading && (
-            <Button type="button" variant="secondary" onClick={retryPending}>
-              Retry upload ({pending.length})
+          {pending.some((item) => item.status === "error") && !uploading && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                const failed = pending.filter((item) => item.status === "error");
+                setPending((prev) =>
+                  prev.map((item) =>
+                    item.status === "error"
+                      ? { ...item, status: "queued", error: undefined }
+                      : item
+                  )
+                );
+                void uploadItems(
+                  failed.map((item) => ({ ...item, status: "queued" as const, error: undefined }))
+                );
+              }}
+            >
+              Retry failed ({pending.filter((item) => item.status === "error").length})
             </Button>
           )}
         </div>
       )}
 
-      {!readOnly && pending.length > 0 && (
-        <ul className="mt-4 space-y-3">
-          {pending.map((item, index) => (
-            <li
-              key={item.key}
-              className="flex flex-col gap-3 rounded-xl border border-brand-100 bg-brand-50/30 p-3 sm:flex-row sm:items-start"
-            >
-              <img
-                src={item.previewUrl}
-                alt=""
-                className="h-28 w-full shrink-0 rounded-lg border border-slate-200 bg-white object-contain sm:h-24 sm:w-36"
-              />
-              <div className="min-w-0 flex-1 space-y-2">
-                <p className="text-xs font-semibold text-slate-600">
-                  {uploading ? "Uploading" : "Waiting to upload"} · {item.file.name}
-                </p>
-                <Input
-                  label="Caption"
-                  value={item.caption}
-                  onChange={(e) =>
-                    setPending((prev) =>
-                      prev.map((p) =>
-                        p.key === item.key ? { ...p, caption: e.target.value } : p
-                      )
-                    )
-                  }
-                  placeholder="Describe what this figure shows"
+      {!readOnly && uploadProgress && (
+        <div
+          className="mt-4 rounded-xl border border-brand-200 bg-brand-50/80 p-4"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex items-start gap-3">
+            <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-brand-600" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-ink">
+                {uploadProgress.phase === "prepare"
+                  ? "Preparing to upload figures…"
+                  : uploadProgress.total > 1
+                    ? `Uploading figure ${Math.min(
+                        uploadProgress.completed + 1,
+                        uploadProgress.total
+                      )} of ${uploadProgress.total}`
+                    : "Uploading figure…"}
+              </p>
+              <p className="mt-0.5 truncate text-xs text-slate-600">
+                {uploadProgress.activeName}
+              </p>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-brand-100">
+                <div
+                  className="h-full rounded-full bg-brand-600 transition-all duration-300 ease-out"
+                  style={{
+                    width: `${
+                      uploadProgress.phase === "prepare"
+                        ? 8
+                        : Math.round(
+                            (uploadProgress.completed / uploadProgress.total) * 100
+                          )
+                    }%`,
+                  }}
                 />
               </div>
-              <button
-                type="button"
-                onClick={() => removePending(item.key)}
-                className="self-start rounded-lg p-2 text-slate-400 hover:bg-white hover:text-red-600"
-                aria-label="Remove pending figure"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <p className="mt-2 text-[11px] text-slate-500">
+                {uploadProgress.completed} of {uploadProgress.total} complete
+                {uploadProgress.total > 1 ? " · figures appear below as each finishes" : ""}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!readOnly && pending.length > 0 && (
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {pending.map((item) => (
+            <li
+              key={item.key}
+              className={`relative overflow-hidden rounded-xl border bg-white p-3 shadow-sm ${
+                item.status === "error"
+                  ? "border-red-200 bg-red-50/40"
+                  : item.status === "uploading"
+                    ? "border-brand-300 ring-2 ring-brand-100"
+                    : "border-slate-200/80"
+              }`}
+            >
+              <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                <img
+                  src={item.previewUrl}
+                  alt=""
+                  className={`aspect-[4/3] w-full object-contain p-2 transition ${
+                    item.status === "uploading" ? "opacity-60" : ""
+                  }`}
+                />
+                {item.status === "uploading" && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/70 backdrop-blur-[1px]">
+                    <Loader2 className="h-6 w-6 animate-spin text-brand-600" aria-hidden />
+                    <span className="text-xs font-semibold text-brand-700">Uploading…</span>
+                  </div>
+                )}
+                {item.status === "queued" && uploading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/50">
+                    <span className="rounded-full bg-slate-900/75 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
+                      Queued
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 space-y-2">
+                <p className="truncate text-xs font-medium text-slate-700" title={item.file.name}>
+                  {item.file.name}
+                </p>
+                {item.status === "error" && item.error ? (
+                  <p className="text-xs leading-snug text-red-600">{item.error}</p>
+                ) : (
+                  <Input
+                    label="Caption"
+                    value={item.caption}
+                    disabled={uploading}
+                    onChange={(e) =>
+                      setPending((prev) =>
+                        prev.map((p) =>
+                          p.key === item.key ? { ...p, caption: e.target.value } : p
+                        )
+                      )
+                    }
+                    placeholder="Describe what this figure shows"
+                  />
+                )}
+              </div>
+              {!uploading && (
+                <button
+                  type="button"
+                  onClick={() => removePending(item.key)}
+                  className="absolute right-2 top-2 rounded-full bg-white/95 p-1.5 text-slate-400 shadow ring-1 ring-slate-200/80 hover:text-red-600"
+                  aria-label="Remove pending figure"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </li>
           ))}
         </ul>
