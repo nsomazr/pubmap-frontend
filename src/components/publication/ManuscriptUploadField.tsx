@@ -158,7 +158,7 @@ export function ManuscriptUploadField({
               ? file.name
               : existingDocumentPath
                 ? "Replace uploaded manuscript"
-                : "Upload original paper"}
+                : "Upload original publication"}
           </p>
         </div>
       ) : (
@@ -216,7 +216,7 @@ export function ManuscriptUploadField({
             onClick={clearSource}
             className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:border-red-200 hover:text-red-600"
           >
-            Remove source paper
+            Remove source publication
           </button>
         </div>
       )}

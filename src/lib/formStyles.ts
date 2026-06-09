@@ -13,7 +13,7 @@ export const greFormStageClass = "gre-form-stage";
 
 export const greFormStageHeadClass = "gre-form-stage__head";
 
-/** Artistic card for major form steps only (new paper, meet setup) — do not nest heavily. */
+/** Artistic card for major form steps only (new publication, meet setup) — do not nest heavily. */
 export const greFormArtCardClass = "gre-form-art-card";
 
 /** Stack of {@link greFormArtCardClass} sections with consistent gap. */

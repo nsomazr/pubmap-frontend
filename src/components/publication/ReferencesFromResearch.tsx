@@ -29,7 +29,7 @@ export function ReferencesFromResearch({ value, paperTitle, onChange, disabled }
         onChange={(e) => onChange(e.target.value)}
         onBlur={() => onChange(formatted)}
         rows={6}
-        placeholder={`1. First key reference\n2. Second reference\n…\n${REFERENCE_ITEM_LIMIT}. ${paperTitle.trim() || "This paper"} (this paper)`}
+        placeholder={`1. First key reference\n2. Second reference\n…\n${REFERENCE_ITEM_LIMIT}. ${paperTitle.trim() || "This publication"} (this publication)`}
         disabled={disabled}
       />
       {items.length > 0 ? (

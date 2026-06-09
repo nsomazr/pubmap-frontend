@@ -172,9 +172,9 @@ export function PublicationDocumentUpload({
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-500">
-        Add your source paper by uploading a file or pasting a PDF link. GRE downloads the PDF,
-        shows a preview, and can extract manuscript fields. Open papers show the file publicly after
-        approval; closed papers keep it visible only to the owner.
+        Add your source publication by uploading a file or pasting a PDF link. GRE downloads the PDF,
+        shows a preview, and can extract manuscript fields. Open-access publications show the file publicly after
+        approval; restricted publications keep it visible only to the owner.
       </p>
       {disabled && disabledHint && (
         <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{disabledHint}</p>

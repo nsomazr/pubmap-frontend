@@ -425,7 +425,7 @@ export function PublicationFiguresEditor({
         <p className="mt-2 text-xs leading-relaxed text-slate-500">
           Upload JPG, PNG, GIF, or WEBP (max {FIGURE_MAX_BYTES / (1024 * 1024)} MB each, up to{" "}
           {FIGURE_MAX_COUNT} figures). Add captions before submit; order follows upload sequence.
-          Images appear in the published paper preview.
+          Images appear in the published publication preview.
         </p>
       )}
 

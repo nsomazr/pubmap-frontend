@@ -18,7 +18,10 @@ import { PageHeader } from "../../components/dashboard/PageHeader";
 import { buildAuthorByline } from "../../lib/publicationAuthors";
 import {
   buildDashboardPublicationPath,
+  buildPublicationPath,
+  DASHBOARD_NEW_PUBLICATION_PATH,
   publicationApiSegment,
+  type NewPublicationLocationState,
 } from "../../lib/publicationPaths";
 import { hasValidCoords } from "../../lib/geocode";
 import {
@@ -90,7 +93,6 @@ import {
   type PublicationGre,
 } from "../../lib/publicationGre";
 import type { EnsurePublicationIdResult } from "../../lib/figureUpload";
-import { buildPublicationPath } from "../../lib/publicationPaths";
 import { resolveSubcategoryFromModel } from "../../lib/taxonomyVisuals";
 import { canReviewPublication, isPlatformAdmin } from "../../lib/userAccess";
 import { greFormActionsClass, greFormGridClass, greFormPrimaryButtonClass } from "../../lib/formStyles";
@@ -399,6 +401,50 @@ export function PublicationManagePage() {
   const hasDocument = Boolean(pendingDocument || existingDocPath);
 
   const hydratedPublicationId = useRef<number | null>(null);
+  const freshDraftHandledRef = useRef(false);
+
+  const resetForFreshDraft = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(NEW_DRAFT_SESSION_KEY);
+    }
+    createdDraftIdRef.current = null;
+    createdDraftEncodedIdRef.current = null;
+    setCreatedDraftId(null);
+    setCreatedDraftEncodedId(null);
+    setAccessTypeChosen(false);
+    setComposerTab("editor");
+    setTitle("");
+    setAbstract("");
+    setIntroduction("");
+    setMethods("");
+    setFindings("");
+    setConclusion("");
+    setFunder("");
+    setReferences("");
+    setKeywords("");
+    setSubCategoryId("");
+    setCategoryId("");
+    setCoordinates(emptyCoord());
+    setCollaborators([]);
+    setSubmitterRole("lead");
+    setLeadAuthorName("");
+    setLeadAuthorAffiliation("");
+    setLeadAuthorEmail("");
+    setGre({ access_type: "open" });
+    setFigures([]);
+    setPendingDocument(null);
+    setError("");
+    setExtractionUi({ status: "idle", warnings: [], sectionNotes: {} });
+  }, []);
+
+  useEffect(() => {
+    if (!isNew || typeof window === "undefined" || freshDraftHandledRef.current) return;
+    const navState = location.state as NewPublicationLocationState | null;
+    if (!navState?.freshDraft) return;
+    freshDraftHandledRef.current = true;
+    resetForFreshDraft();
+    navigate(DASHBOARD_NEW_PUBLICATION_PATH, { replace: true, state: null });
+  }, [isNew, location.state, navigate, resetForFreshDraft]);
 
   useEffect(() => {
     if (!isNew || typeof window === "undefined") return;
@@ -440,20 +486,34 @@ export function PublicationManagePage() {
       if (typeof saved.leadAuthorEmail === "string") setLeadAuthorEmail(saved.leadAuthorEmail);
       if (Array.isArray(saved.collaborators)) setCollaborators(saved.collaborators);
       if (saved.gre) setGre(saved.gre);
+
+      if (saved.draftId && saved.draftId > 0) {
+        const draftId = saved.draftId;
+        const encodedId = saved.encodedId;
+        void api
+          .get<Publication>(
+            `/publications/${publicationApiSegment(draftId, encodedId)}/`
+          )
+          .then(({ data }) => {
+            if (data.id) {
+              navigate(buildDashboardPublicationPath(data.id, data.encoded_id), {
+                replace: true,
+              });
+            }
+          })
+          .catch(() => {
+            const nextSession: NewDraftSession = { ...saved, draftId: undefined, encodedId: undefined };
+            window.sessionStorage.setItem(NEW_DRAFT_SESSION_KEY, JSON.stringify(nextSession));
+            setCreatedDraftId(null);
+            createdDraftIdRef.current = null;
+            setCreatedDraftEncodedId(null);
+            createdDraftEncodedIdRef.current = null;
+          });
+      }
     } catch {
       /* ignore malformed session data */
     }
-  }, [isNew]);
-
-  useEffect(() => {
-    if (!isNew || typeof window === "undefined") return;
-    const session = readNewDraftSession();
-    const draftId = createdDraftId ?? session?.draftId;
-    const encodedId = createdDraftEncodedId ?? session?.encodedId;
-    if (draftId) {
-      navigate(buildDashboardPublicationPath(draftId, encodedId), { replace: true });
-    }
-  }, [isNew, createdDraftId, createdDraftEncodedId, navigate]);
+  }, [isNew, navigate]);
 
   useEffect(() => {
     if (!isNew || typeof window === "undefined") return;
@@ -912,7 +972,7 @@ export function PublicationManagePage() {
 
   const getInflightWorkError = (): string | null => {
     if (extractionActive) {
-      return "Please wait while GRE extracts manuscript sections from the uploaded paper.";
+      return "Please wait while GRE extracts manuscript sections from the uploaded publication.";
     }
     if (figuresUploadBusy) {
       return "Please wait while figures finish uploading.";
@@ -1102,7 +1162,7 @@ export function PublicationManagePage() {
       return { data, captionWarning, documentUploaded };
     },
     onSuccess: async ({ data, captionWarning, documentUploaded }, options?: SaveOptions) => {
-      if (isNew && typeof window !== "undefined") {
+      if (typeof window !== "undefined") {
         window.sessionStorage.removeItem(NEW_DRAFT_SESSION_KEY);
       }
       if (documentUploaded) {
@@ -1598,7 +1658,7 @@ export function PublicationManagePage() {
             }`}
           >
             <Eye className="h-4 w-4" />
-            Paper preview
+            Publication preview
           </button>
           <button
             type="button"
@@ -1675,7 +1735,7 @@ export function PublicationManagePage() {
               />
             </ComposerStage>
 
-            <ComposerStage number="2" title="Source paper">
+            <ComposerStage number="2" title="Source publication">
                 {isNew ? (
                   <div className="space-y-3">
                     <ManuscriptUploadField

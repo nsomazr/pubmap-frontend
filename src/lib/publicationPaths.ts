@@ -1,3 +1,14 @@
+export const DASHBOARD_NEW_PUBLICATION_PATH = "/dashboard/publications/new";
+
+export type NewPublicationLocationState = {
+  /** Set when the user explicitly starts a new publication (clears any in-progress draft session). */
+  freshDraft?: boolean;
+};
+
+export const freshNewPublicationState: NewPublicationLocationState = {
+  freshDraft: true,
+};
+
 export function publicationRef(
   publicationId: number | string | undefined | null,
   encodedId?: string | null

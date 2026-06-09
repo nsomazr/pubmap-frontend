@@ -247,13 +247,13 @@ export function PublicationDownloadPanel({
       await navigator.clipboard.writeText(publicationHref);
     } catch {
       toast.error({
-        title: "Could not copy paper link",
+        title: "Could not copy publication link",
         description: "Clipboard access was blocked. Please copy the page URL manually.",
       });
       return;
     }
     toast.success({
-      title: "Paper link copied",
+      title: "Publication link copied",
       description: "The publication link is ready to paste.",
     });
     setMenuOpen(false);
@@ -299,7 +299,7 @@ export function PublicationDownloadPanel({
 
   const closeMenu = () => setMenuOpen(false);
 
-  const accessMeta = [doi, paperCode ? `Paper ${paperCode}` : null].filter(Boolean).join(" · ");
+  const accessMeta = [doi, paperCode ? `Publication ${paperCode}` : null].filter(Boolean).join(" · ");
 
   return (
     <PublicationPageSection
@@ -319,7 +319,7 @@ export function PublicationDownloadPanel({
               </a>
             ) : null}
             {doi && paperCode ? " · " : null}
-            {paperCode ? <span>Paper {paperCode}</span> : null}
+            {paperCode ? <span>Publication {paperCode}</span> : null}
           </>
         ) : (
           "Download the GRE PDF or use more options for uploads and sharing."
@@ -412,7 +412,7 @@ export function PublicationDownloadPanel({
                         closeMenu();
                       }}
                     >
-                      Full paper (uploaded PDF)
+                      Full publication (uploaded PDF)
                     </MenuItem>
                   )}
                   {closedAccess && (
@@ -474,7 +474,7 @@ export function PublicationDownloadPanel({
                     {likesCount > 0 ? ` (${likesCount})` : ""}
                   </MenuItem>
                   <MenuItem icon={Copy} onClick={() => void handleCopyLink()}>
-                    Copy paper link
+                    Copy publication link
                   </MenuItem>
                   <MenuItem
                     icon={Share2}

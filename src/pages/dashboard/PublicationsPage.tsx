@@ -132,7 +132,7 @@ export function PublicationsPage() {
     <div className="animate-fade-up space-y-6">
       <PageHeader
         title="Publications"
-        description="Manage drafts, track review status, and open papers on the GRE map."
+        description="Manage drafts, track review status, and open publications on the GRE map."
         action={
           <div className="flex flex-wrap items-center gap-2">
             {canReview && (
@@ -151,6 +151,7 @@ export function PublicationsPage() {
             )}
             <Link
               to="/dashboard/publications/new"
+              state={{ freshDraft: true }}
               className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
             >
               <Plus className="h-4 w-4" />
@@ -217,7 +218,7 @@ export function PublicationsPage() {
         {canReview && status === "1" && (counts?.["1"] ?? 0) > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-violet-100 bg-violet-50/60 px-4 py-3 sm:px-5">
             <p className="text-sm text-violet-900">
-              <span className="font-semibold">{counts?.["1"]}</span> paper
+              <span className="font-semibold">{counts?.["1"]}</span> publication
               {counts?.["1"] === 1 ? "" : "s"} waiting in the review queue.
             </p>
             <Link
@@ -252,6 +253,7 @@ export function PublicationsPage() {
                 status === "5" || status === "0" ? (
                   <Link
                     to="/dashboard/publications/new"
+                    state={{ freshDraft: true }}
                     className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
                   >
                     <Plus className="h-4 w-4" />
@@ -309,9 +311,9 @@ function activeTabLabel(status: string): string {
     "0": "drafts",
     "1": "pending items",
     "2": "revisions",
-    "3": "published papers",
-    "4": "archived papers",
-    "6": "deleted papers",
+    "3": "published publications",
+    "4": "archived publications",
+    "6": "deleted publications",
   };
   return labels[status] ?? "items";
 }

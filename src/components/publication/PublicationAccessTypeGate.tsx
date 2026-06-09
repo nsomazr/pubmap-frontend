@@ -24,7 +24,7 @@ const OPTIONS: {
     title: "Open access",
     tagline: "Free to read online",
     description:
-      "Choose this when your paper is already published and anyone can read it on the internet without paying. You will share the full PDF and links on GRE so researchers can find and download your work.",
+      "Choose this when your publication is already published and anyone can read it on the internet without paying. You will share the full PDF and links on GRE so researchers can find and download your work.",
     icon: Unlock,
     accent: "border-brand-400 bg-brand-50/80 ring-brand-100",
     iconWrap: "bg-brand-600 text-white shadow-brand-600/20",
@@ -34,7 +34,7 @@ const OPTIONS: {
     title: "Restricted access",
     tagline: "Paywall or subscription",
     description:
-      "Choose this when readers must pay or subscribe to access the full paper elsewhere. GRE will publish your summary and structured sections so your study is discoverable without hosting the paid manuscript.",
+      "Choose this when readers must pay or subscribe to access the full publication elsewhere. GRE will publish your summary and structured sections so your study is discoverable without hosting the paid manuscript.",
     icon: Lock,
     accent: "border-slate-400 bg-slate-50 ring-slate-200",
     iconWrap: "bg-slate-800 text-white shadow-slate-900/15",
@@ -50,7 +50,7 @@ export function PublicationAccessTypeGate({ selected, onSelect }: Props) {
           Choose publication access
         </h2>
         <p className="max-w-2xl text-sm leading-relaxed text-slate-600">
-          Tell us how readers can access your paper today. This helps GRE show the right materials on
+          Tell us how readers can access your publication today. This helps GRE show the right materials on
           the map and publication page.
         </p>
       </div>

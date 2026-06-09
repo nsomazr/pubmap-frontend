@@ -150,7 +150,7 @@ export function PublicationPaperPreview({
       {canShowPdf && (
         <section className="min-w-0 scroll-mt-4">
           <h2 className={grePaperSectionHeadingClass}>Manuscript PDF</h2>
-          <p className="mt-1 text-xs text-slate-500">Full open-access paper</p>
+          <p className="mt-1 text-xs text-slate-500">Full open-access publication</p>
           <PdfPreview
             file={pendingFile}
             documentPath={documentPath}

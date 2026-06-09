@@ -121,7 +121,7 @@ function buildMetaRows({
   const paperCode = grePaperCode(greNumber);
 
   if (paperCode) {
-    rows.push({ label: "Paper ID", value: paperCode });
+    rows.push({ label: "Publication ID", value: paperCode });
   }
   if (publishedLabel) {
     rows.push({ label: "Published On:", value: publishedLabel });

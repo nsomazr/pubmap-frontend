@@ -81,7 +81,7 @@ export function ExtractionLoadingPanel({
             <Sparkles className="h-5 w-5" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-base font-semibold text-ink">Preparing your draft from the paper</p>
+            <p className="text-base font-semibold text-ink">Preparing your draft from the publication</p>
             <p className="mt-1 text-sm text-slate-600">
               <span className="inline-flex max-w-full items-center gap-1.5">
                 <FileText className="h-3.5 w-3.5 shrink-0 text-brand-600" aria-hidden />

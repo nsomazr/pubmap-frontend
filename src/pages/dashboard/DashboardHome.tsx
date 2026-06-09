@@ -83,7 +83,7 @@ const QUICK_LINKS = [
   {
     to: "/dashboard/publications",
     label: "Publications",
-    description: "Drafts, review, and published papers",
+    description: "Drafts, review, and published publications",
     icon: FileText,
   },
   {
@@ -155,6 +155,7 @@ export function DashboardHome() {
             ? {
                 label: "Start your first publication",
                 to: "/dashboard/publications/new",
+                freshDraft: true,
                 tone: "brand" as const,
               }
             : null;
@@ -200,7 +201,7 @@ export function DashboardHome() {
           </div>
 
           <div className="flex flex-wrap gap-2 lg:justify-end">
-            <Link to="/dashboard/publications/new">
+            <Link to="/dashboard/publications/new" state={{ freshDraft: true }}>
               <Button className="!px-3.5 !py-2 text-sm">
                 <Plus className="h-4 w-4" />
                 New publication
@@ -218,6 +219,7 @@ export function DashboardHome() {
         {nextStep && (
           <Link
             to={nextStep.to}
+            state={"freshDraft" in nextStep && nextStep.freshDraft ? { freshDraft: true } : undefined}
             className={`gre-interactive flex items-center justify-between gap-3 px-4 py-3 text-sm font-semibold sm:px-5 ${
               nextStep.tone === "amber"
                 ? "bg-amber-50 text-amber-900 hover:bg-amber-100/80"
@@ -243,7 +245,7 @@ export function DashboardHome() {
               </Link>
             }
           >
-            Published papers appear on the research map. Use <strong>Map layers</strong> to
+            Published publications appear on the research map. Use <strong>Map layers</strong> to
             explore density, basemaps, and clusters.
           </InfoBanner>
         </div>

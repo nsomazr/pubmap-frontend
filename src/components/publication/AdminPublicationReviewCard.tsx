@@ -254,7 +254,7 @@ export function AdminPublicationReviewCard({ pub, compact, onReviewed }: Props) 
             </div>
             <p className="mb-3 text-xs leading-relaxed text-slate-500">
               {accessType === "closed"
-                ? "Restricted papers show the GRE summary PDF when no upload is available. Open-access papers use the uploaded PDF."
+                ? "Restricted publications show the GRE summary PDF when no upload is available. Open-access publications use the uploaded PDF."
                 : "Uploaded PDF for this submission."}
             </p>
             <PdfPreview

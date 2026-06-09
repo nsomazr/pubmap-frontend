@@ -31,14 +31,14 @@ export function PublicationAccessFields({
     <section className="space-y-5">
       <div>
         <h3 className="text-sm font-bold uppercase tracking-wider text-brand-600">
-          {isClosed ? "Publisher access" : hasOpenUploadSlot ? "Original paper & links" : "Access links"}
+          {isClosed ? "Publisher access" : hasOpenUploadSlot ? "Original publication & links" : "Access links"}
         </h3>
         <p className="mt-1 text-sm text-slate-600">
           {isClosed
-            ? "Link to where readers can access the full paper (journal, repository, or publisher page)."
+            ? "Link to where readers can access the full publication (journal, repository, or publisher page)."
             : hasOpenUploadSlot
-              ? "Upload the original paper for GRE, link to a journal copy, or both."
-              : "Add journal or DOI links that readers can use alongside the uploaded paper."}
+              ? "Upload the original publication for GRE, link to a journal copy, or both."
+              : "Add journal or DOI links that readers can use alongside the uploaded publication."}
         </p>
         {accessLocked ? (
           <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
@@ -113,14 +113,14 @@ export function PublicationAccessFields({
           <p className="flex items-start gap-2 rounded-xl border border-brand-100 bg-brand-50/50 px-3 py-2.5 text-xs text-slate-600">
             <Link2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
             The access link is shown on your GRE publication so readers can request or read the full
-            paper from the publisher, while the uploaded original stays visible only to the paper owner.
+            publication from the publisher, while the uploaded original stays visible only to the publication owner.
           </p>
           <Textarea
             label="Author summary (for GRE summary PDF)"
             value={gre.author_summary || ""}
             onChange={(e) => onChange({ ...gre, author_summary: e.target.value })}
             rows={4}
-            placeholder="Plain-language summary readers can download when the full paper is restricted."
+            placeholder="Plain-language summary readers can download when the full publication is restricted."
             disabled={disabled}
           />
         </>

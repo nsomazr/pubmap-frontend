@@ -311,7 +311,7 @@ export function normalizeFunderField(value: string): string {
   return stripContinuationMarkers(value.replace(/\s+/g, " ").trim());
 }
 
-/** Up to five key references, always including this paper when a title is set. */
+/** Up to five key references, always including this publication when a title is set. */
 export function limitReferences(
   text: string,
   paperTitle = "",
@@ -320,10 +320,10 @@ export function limitReferences(
   const items = splitReferenceItems(stripHtmlToText(text));
   const title = paperTitle.trim();
   if (items.length === 0) {
-    return title ? `1. ${title} (this paper)` : "";
+    return title ? `1. ${title} (this publication)` : "";
   }
 
-  const thisPaper = title ? `${title} (this paper)` : "";
+  const thisPaper = title ? `${title} (this publication)` : "";
   const normalizedTitle = title.replace(/\s+/g, " ").toLowerCase();
 
   const external: string[] = [];
@@ -334,7 +334,7 @@ export function limitReferences(
       hasSelf = true;
       continue;
     }
-    if (/\(this paper\)/i.test(item)) {
+    if (/\(this (?:paper|publication)\)/i.test(item)) {
       hasSelf = true;
       continue;
     }
@@ -362,7 +362,7 @@ export function limitReferences(
 
   const capped = selected.slice(0, maxItems);
   if (capped.length === 0 && title) {
-    return `1. ${title} (this paper)`;
+    return `1. ${title} (this publication)`;
   }
   return capped.map((item, index) => `${index + 1}. ${item}`).join("\n");
 }

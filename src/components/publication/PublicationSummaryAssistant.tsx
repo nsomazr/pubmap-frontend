@@ -227,7 +227,7 @@ export function PublicationSummaryAssistant({
   const manuscriptNotice = (
     <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-3.5 py-2.5 text-xs leading-relaxed text-slate-600 sm:text-sm">
       <p>
-        This conversation is grounded in this paper&apos;s GRE registry entry
+        This conversation is grounded in this publication&apos;s GRE registry entry
         {manuscriptLabel ? (
           <>
             {" "}
@@ -334,7 +334,7 @@ export function PublicationSummaryAssistant({
       value={question}
       onChange={setQuestion}
       onSubmit={() => askFollowUp()}
-      placeholder="Ask about this paper's methods, findings, authors…"
+      placeholder="Ask about this publication's methods, findings, authors…"
       disabled={!canAskManuscript}
       loading={followUpLoading}
       submitAriaLabel="Ask follow-up question"
