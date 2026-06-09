@@ -69,11 +69,8 @@ import {
   MANUSCRIPT_FIELD_WORD_LIMITS,
   type ManuscriptLimitedField,
   NARRATIVE_MANUSCRIPT_FIELDS,
-  countWords,
   externalWordLimit,
   narrativeWordMaximum,
-  llmWordTarget,
-  narrativeWordMinimum,
   filterSectionNotes,
   normalizeFunderField,
   limitReferences,
@@ -92,6 +89,7 @@ import {
   type PublicationAccessType,
   type PublicationGre,
 } from "../../lib/publicationGre";
+import type { EnsurePublicationIdResult } from "../../lib/figureUpload";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { resolveSubcategoryFromModel } from "../../lib/taxonomyVisuals";
 import { canReviewPublication, isPlatformAdmin } from "../../lib/userAccess";
@@ -105,24 +103,6 @@ const emptyCoord = (): Coordinate => ({
   longitude: "",
   institution: "",
 });
-
-function narrativeFieldWordCount(value: string): number {
-  return countWords(stripHtmlToText(value));
-}
-
-function narrativeLengthError(
-  field: ManuscriptLimitedField,
-  value: string,
-  label: string
-): string | null {
-  const words = narrativeFieldWordCount(value);
-  const target = llmWordTarget(field);
-  const minimum = narrativeWordMinimum(field);
-  if (words > 0 && words < target) {
-    return `${label} needs about ${target} words (currently ${words}; minimum ${minimum}).`;
-  }
-  return null;
-}
 
 function hasTextContent(value: string): boolean {
   const trimmed = (value || "").trim();
@@ -179,6 +159,41 @@ function ComposerStage({
 type ComposerTab = "editor" | "preview";
 const NEW_DRAFT_SESSION_KEY = "gre-publication-new-draft-v1";
 
+type NewDraftSession = {
+  draftId?: number;
+  encodedId?: string;
+  accessTypeChosen?: boolean;
+  title?: string;
+  abstract?: string;
+  introduction?: string;
+  methods?: string;
+  findings?: string;
+  conclusion?: string;
+  funder?: string;
+  references?: string;
+  keywords?: string;
+  subCategoryId?: string;
+  categoryId?: string;
+  coordinates?: Coordinate;
+  submitterRole?: "lead" | "coauthor";
+  leadAuthorName?: string;
+  leadAuthorAffiliation?: string;
+  leadAuthorEmail?: string;
+  collaborators?: Collaborator[];
+  gre?: PublicationGre;
+};
+
+function readNewDraftSession(): NewDraftSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(NEW_DRAFT_SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as NewDraftSession;
+  } catch {
+    return null;
+  }
+}
+
 export function PublicationManagePage() {
   const { id } = useParams<{ id: string }>();
   const isNew = !id || id === "new";
@@ -222,8 +237,13 @@ export function PublicationManagePage() {
     sectionNotes: {},
   });
   const [submitReviewOpen, setSubmitReviewOpen] = useState(false);
-  const [createdDraftId, setCreatedDraftId] = useState<number | null>(null);
-  const [createdDraftEncodedId, setCreatedDraftEncodedId] = useState<string | null>(null);
+  const initialNewDraftSession = isNew ? readNewDraftSession() : null;
+  const [createdDraftId, setCreatedDraftId] = useState<number | null>(
+    initialNewDraftSession?.draftId ?? null
+  );
+  const [createdDraftEncodedId, setCreatedDraftEncodedId] = useState<string | null>(
+    initialNewDraftSession?.encodedId ?? null
+  );
   const [figuresUploadBusy, setFiguresUploadBusy] = useState(false);
   const [figuresPendingCount, setFiguresPendingCount] = useState(0);
   const flushFigureCaptionsRef = useRef<(() => Promise<void>) | null>(null);
@@ -237,7 +257,8 @@ export function PublicationManagePage() {
   const saveDraftPromiseRef = useRef<Promise<Publication | null> | null>(null);
   const isClosedAccess = gre.access_type === "closed";
 
-  type SaveOptions = { thenSubmit?: boolean; quiet?: boolean };
+  type SaveOptions = { thenSubmit?: boolean; quiet?: boolean; minimal?: boolean };
+  type PersistOptions = { quiet?: boolean; minimal?: boolean };
 
   const manuscript: ManuscriptFields = {
     abstract,
@@ -384,27 +405,15 @@ export function PublicationManagePage() {
     try {
       const raw = window.sessionStorage.getItem(NEW_DRAFT_SESSION_KEY);
       if (!raw) return;
-      const saved = JSON.parse(raw) as {
-        accessTypeChosen?: boolean;
-        title?: string;
-        abstract?: string;
-        introduction?: string;
-        methods?: string;
-        findings?: string;
-        conclusion?: string;
-        funder?: string;
-        references?: string;
-        keywords?: string;
-        subCategoryId?: string;
-        categoryId?: string;
-        coordinates?: Coordinate;
-        submitterRole?: "lead" | "coauthor";
-        leadAuthorName?: string;
-        leadAuthorAffiliation?: string;
-        leadAuthorEmail?: string;
-        collaborators?: Collaborator[];
-        gre?: PublicationGre;
-      };
+      const saved = JSON.parse(raw) as NewDraftSession;
+      if (typeof saved.draftId === "number" && saved.draftId > 0) {
+        setCreatedDraftId(saved.draftId);
+        createdDraftIdRef.current = saved.draftId;
+      }
+      if (typeof saved.encodedId === "string" && saved.encodedId.trim()) {
+        setCreatedDraftEncodedId(saved.encodedId.trim());
+        createdDraftEncodedIdRef.current = saved.encodedId.trim();
+      }
       if (typeof saved.accessTypeChosen === "boolean") setAccessTypeChosen(saved.accessTypeChosen);
       if (typeof saved.title === "string") setTitle(saved.title);
       if (typeof saved.abstract === "string")
@@ -438,7 +447,19 @@ export function PublicationManagePage() {
 
   useEffect(() => {
     if (!isNew || typeof window === "undefined") return;
-    const payload = {
+    const session = readNewDraftSession();
+    const draftId = createdDraftId ?? session?.draftId;
+    const encodedId = createdDraftEncodedId ?? session?.encodedId;
+    if (draftId) {
+      navigate(buildDashboardPublicationPath(draftId, encodedId), { replace: true });
+    }
+  }, [isNew, createdDraftId, createdDraftEncodedId, navigate]);
+
+  useEffect(() => {
+    if (!isNew || typeof window === "undefined") return;
+    const payload: NewDraftSession = {
+      draftId: createdDraftId ?? undefined,
+      encodedId: createdDraftEncodedId ?? undefined,
       accessTypeChosen,
       title,
       abstract,
@@ -462,6 +483,8 @@ export function PublicationManagePage() {
     window.sessionStorage.setItem(NEW_DRAFT_SESSION_KEY, JSON.stringify(payload));
   }, [
     isNew,
+    createdDraftId,
+    createdDraftEncodedId,
     accessTypeChosen,
     title,
     abstract,
@@ -881,7 +904,13 @@ export function PublicationManagePage() {
     });
   };
 
-  const getSaveValidationError = (): string | null => {
+  const getDraftIdentityError = (): string | null => {
+    if (!title.trim()) return "Title is required.";
+    if (!hasTextContent(abstract)) return "Abstract is required.";
+    return null;
+  };
+
+  const getInflightWorkError = (): string | null => {
     if (extractionActive) {
       return "Please wait while GRE extracts manuscript sections from the uploaded paper.";
     }
@@ -891,10 +920,14 @@ export function PublicationManagePage() {
     if (figuresPendingCount > 0) {
       return "Wait for figures to finish uploading, or remove pending images.";
     }
-    if (!title.trim()) return "Title is required.";
-    if (!hasTextContent(abstract)) return "Abstract is required.";
-    const abstractLengthErr = narrativeLengthError("abstract", abstract, "Abstract");
-    if (abstractLengthErr) return abstractLengthErr;
+    return null;
+  };
+
+  const getSaveValidationError = (): string | null => {
+    const inflight = getInflightWorkError();
+    if (inflight) return inflight;
+    const identity = getDraftIdentityError();
+    if (identity) return identity;
     if (submitterRole === "coauthor" && !leadAuthorName.trim()) {
       return "Lead author name is required when submitting as a co-author.";
     }
@@ -902,8 +935,13 @@ export function PublicationManagePage() {
   };
 
   const getSubmitValidationError = (): string | null => {
-    const saveErr = getSaveValidationError();
-    if (saveErr) return saveErr;
+    const inflight = getInflightWorkError();
+    if (inflight) return inflight;
+    const identity = getDraftIdentityError();
+    if (identity) return identity;
+    if (submitterRole === "coauthor" && !leadAuthorName.trim()) {
+      return "Lead author name is required when submitting as a co-author.";
+    }
     if (!categoryId) return "Research field is required.";
     if (!subCategoryId) return "Research subfield is required.";
     if (!coordinates.location.trim()) return "Location of study is required.";
@@ -918,14 +956,6 @@ export function PublicationManagePage() {
         return "Findings is required for restricted access.";
       }
       if (!hasTextContent(conclusion)) return "Conclusion is required for restricted access.";
-      const conclusionLengthErr = narrativeLengthError("conclusion", conclusion, "Conclusion");
-      if (conclusionLengthErr) return conclusionLengthErr;
-      const introLengthErr = narrativeLengthError("introduction", introduction, "Introduction");
-      if (introLengthErr) return introLengthErr;
-      const methodsLengthErr = narrativeLengthError("methods", methods, "Methods");
-      if (methodsLengthErr) return methodsLengthErr;
-      const findingsLengthErr = narrativeLengthError("findings", findings, "Findings");
-      if (findingsLengthErr) return findingsLengthErr;
       if (!gre.external_url?.trim()) return "Publisher access link is required for restricted access.";
     } else if (!hasDocument && !gre.external_url?.trim()) {
       return "Upload a manuscript PDF or add an external access link.";
@@ -934,8 +964,8 @@ export function PublicationManagePage() {
   };
 
   const persistPublicationDraft = useCallback(
-    async (options?: { quiet?: boolean }): Promise<Publication | null> => {
-      const err = getSaveValidationError();
+    async (options?: PersistOptions): Promise<Publication | null> => {
+      const err = options?.minimal ? getDraftIdentityError() : getSaveValidationError();
       if (err) {
         if (!options?.quiet) reportValidationError(err);
         return null;
@@ -946,6 +976,7 @@ export function PublicationManagePage() {
 
       const task = (async (): Promise<Publication | null> => {
         try {
+          const wasFirstCreate = isNew && !createdDraftIdRef.current;
           const payload = {
             title,
             abstract,
@@ -982,6 +1013,9 @@ export function PublicationManagePage() {
           if (data.encoded_id) setCreatedDraftEncodedId(data.encoded_id);
           queryClient.invalidateQueries({ queryKey: ["publications"] });
           queryClient.invalidateQueries({ queryKey: editQueryKey });
+          if (wasFirstCreate) {
+            navigate(buildDashboardPublicationPath(data.id, data.encoded_id), { replace: true });
+          }
           return data;
         } catch {
           return null;
@@ -1020,12 +1054,16 @@ export function PublicationManagePage() {
       subCategoryId,
       submitterRole,
       title,
+      navigate,
     ]
   );
 
   const saveMutation = useMutation({
     mutationFn: async (options?: SaveOptions) => {
-      const data = await persistPublicationDraft({ quiet: options?.quiet });
+      const data = await persistPublicationDraft({
+        quiet: options?.quiet,
+        minimal: options?.minimal,
+      });
       if (!data) throw new Error("SAVE_FAILED");
 
       let documentUploaded = false;
@@ -1088,7 +1126,7 @@ export function PublicationManagePage() {
         setSubmitReviewOpen(false);
         navigate("/dashboard/publications?status=1");
       } else if (!options?.quiet) {
-        navigate(draftsNavPath);
+        navigate(buildDashboardPublicationPath(data.id, data.encoded_id));
       }
     },
     onError: (err: { response?: { data?: Record<string, unknown> } }, options?: SaveOptions) => {
@@ -1302,10 +1340,18 @@ export function PublicationManagePage() {
   const readyToSubmit = submitValidationError === null;
   const showSubmitReview = isNew || canSubmit;
 
-  const ensurePublicationForFigures = async (): Promise<number | null> => {
-    if (persistedPublicationId) return persistedPublicationId;
-    const data = await persistPublicationDraft({ quiet: true });
-    return data?.id ?? null;
+  const ensurePublicationForFigures = async (): Promise<EnsurePublicationIdResult> => {
+    if (persistedPublicationId) return { ok: true, id: persistedPublicationId };
+    const gateErr = getDraftIdentityError();
+    if (gateErr) return { ok: false, error: gateErr };
+    const data = await persistPublicationDraft({ quiet: true, minimal: true });
+    if (!data?.id) {
+      return {
+        ok: false,
+        error: getSaveValidationError() || "Could not save draft before uploading figures.",
+      };
+    }
+    return { ok: true, id: data.id };
   };
 
   const validateAndSave = (e: React.FormEvent) => {

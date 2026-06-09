@@ -17,6 +17,7 @@ import {
 } from "../../lib/publicationManuscript";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { buildPublicationFollowUpSuggestions } from "../../lib/publicationFollowUpSuggestions";
+import { compactAuthorLineFromPublication } from "../../lib/publicationAuthors";
 import type { Publication } from "../../types";
 import { ChatComposerSection } from "../chat/ChatComposerSection";
 import { PublicationSummaryActions } from "./PublicationSummaryActions";
@@ -278,6 +279,27 @@ export function PublicationSummaryAssistant({
     [publication]
   );
 
+  const authorLine = useMemo(
+    () => (publication ? compactAuthorLineFromPublication(publication) : ""),
+    [publication]
+  );
+
+  const publicationHeader =
+    publicationTitle || authorLine ? (
+      <div className="rounded-xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-sm">
+        {publicationTitle ? (
+          <p className="text-sm font-semibold leading-snug text-ink sm:text-base">
+            {publicationTitle}
+          </p>
+        ) : null}
+        {authorLine ? (
+          <p className={`text-xs text-slate-600 ${publicationTitle ? "mt-1" : ""}`}>
+            {authorLine}
+          </p>
+        ) : null}
+      </div>
+    ) : null;
+
   const summaryActions =
     summary.trim() && !summaryLoading ? (
       <PublicationSummaryActions
@@ -402,6 +424,7 @@ export function PublicationSummaryAssistant({
           ref={scrollContainerRef}
           className="gre-chat-thread publication-chat__thread space-y-3 pr-0.5 sm:space-y-4"
         >
+          {publicationHeader}
           {summaryBlock}
           {followUpThread}
         </div>
@@ -424,6 +447,7 @@ export function PublicationSummaryAssistant({
         ref={scrollContainerRef}
         className="gre-chat-thread space-y-3 sm:space-y-4"
       >
+        {publicationHeader}
         {manuscriptNotice}
         {summaryBlock}
         {followUpThread}

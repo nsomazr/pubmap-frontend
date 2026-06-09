@@ -103,6 +103,23 @@ export function HomePage() {
     retry: 2,
   });
 
+  const syncMapUrlFromFilters = useCallback(
+    (filters: MapSearchFilters) => {
+      const params = new URLSearchParams();
+      const authorQ = filters.author.trim();
+      const affiliationQ = filters.affiliation.trim();
+      const locationQ = filters.location.trim();
+      if (authorQ) params.set("author", authorQ);
+      if (affiliationQ) params.set("affiliation", affiliationQ);
+      if (locationQ && !filters.mapRegion) params.set("location", locationQ);
+      if (filters.categoryId) params.set("category", filters.categoryId);
+      if (filters.subCategoryId) params.set("sub_category", filters.subCategoryId);
+      if (mapDeepLink.publicationRef) params.set("pub", mapDeepLink.publicationRef);
+      setSearchParams(params, { replace: true });
+    },
+    [mapDeepLink.publicationRef, setSearchParams]
+  );
+
   const runSearch = useCallback(
     async (
       filters?: MapSearchFilters,
@@ -165,6 +182,7 @@ export function HomePage() {
         setInstitutionResearch(
           institutionResponse ? institutionResponse.data : null
         );
+        syncMapUrlFromFilters(active);
         if (options?.revealResults) {
           userDismissedResultsRailRef.current = false;
           setResultsRailOpen(true);
@@ -191,6 +209,7 @@ export function HomePage() {
       categoryId,
       subCategoryId,
       data?.publications,
+      syncMapUrlFromFilters,
     ]
   );
 
@@ -249,6 +268,13 @@ export function HomePage() {
     setLocation(mapDeepLink.location);
     skipAutoSearchRef.current = false;
   }, [mapDeepLink.location]);
+
+  useEffect(() => {
+    if (!mapDeepLink.categoryId && !mapDeepLink.subCategoryId) return;
+    if (mapDeepLink.categoryId) setCategoryId(mapDeepLink.categoryId);
+    if (mapDeepLink.subCategoryId) setSubCategoryId(mapDeepLink.subCategoryId);
+    skipAutoSearchRef.current = false;
+  }, [mapDeepLink.categoryId, mapDeepLink.subCategoryId]);
 
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -604,9 +630,15 @@ export function HomePage() {
           <div className="pointer-events-none absolute bottom-32 z-[1000] hidden w-[min(100%,240px)] md:right-16 md:block lg:bottom-28 lg:right-20">
             <GreAdPlacement
               placement="sidebar"
-              limit={6}
+              limit={4}
               rotate
               className="pointer-events-auto space-y-3"
+            />
+            <GreAdPlacement
+              placement="research_tool"
+              limit={2}
+              rotate
+              className="pointer-events-auto mt-3 space-y-3"
             />
           </div>
         )}

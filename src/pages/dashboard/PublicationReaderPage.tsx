@@ -132,6 +132,7 @@ export function PublicationReaderPage() {
             )}
           </div>
           <GreAdPlacement placement="sidebar" limit={4} rotate />
+          <GreAdPlacement placement="sponsored_publication" limit={1} className="mt-4 space-y-3" />
         </aside>
 
         <div className="gre-section-stack order-2 min-w-0 space-y-5 lg:order-1">

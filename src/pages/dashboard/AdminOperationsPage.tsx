@@ -23,7 +23,7 @@ import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 import { pickActivityTrend } from "../../lib/sparkline";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
-import { authorDisplayName } from "../../lib/userDisplay";
+import { PublicationAuthorLine } from "../../components/publication/PublicationAuthorLine";
 import type { DashboardStats, Publication } from "../../types";
 
 const QUICK_LINKS = [
@@ -231,9 +231,7 @@ export function AdminOperationsPage() {
                     className="flex flex-col gap-2 px-5 py-4 transition hover:bg-slate-50 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-600">
-                        {authorDisplayName(pub.author)}
-                      </p>
+                      <PublicationAuthorLine publication={pub} className="text-sm font-medium text-slate-600" />
                       <p className="font-semibold text-ink">
                         {formatGrePaperTitle(pub.title, pub.short_number)}
                       </p>

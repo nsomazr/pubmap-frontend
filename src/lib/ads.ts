@@ -92,7 +92,8 @@ export function usePlacementAds(
       return data.ads;
     },
     enabled,
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 }
 

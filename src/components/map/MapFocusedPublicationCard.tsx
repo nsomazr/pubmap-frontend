@@ -2,6 +2,7 @@ import { Eye, MapPin, X } from "lucide-react";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
+import { PublicationAuthorLine } from "../publication/PublicationAuthorLine";
 import { PublicationIdentityRow } from "../publication/PublicationIdentityRow";
 
 interface Props {
@@ -34,6 +35,7 @@ export function MapFocusedPublicationCard({ publication, onClose }: Props) {
           <h3 className="text-sm font-semibold leading-snug text-ink sm:text-base">
             {formatGrePaperTitle(publication.title, publication.short_number)}
           </h3>
+          <PublicationAuthorLine publication={publication} className="mt-1" />
           {location && (
             <p className="mt-1.5 flex items-start gap-1.5 text-xs text-slate-500">
               <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />

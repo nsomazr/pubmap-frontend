@@ -7,6 +7,13 @@ import {
   uploadFigure,
   type PublicationFigure,
 } from "../../lib/publicationGre";
+import {
+  FIGURE_ACCEPT,
+  FIGURE_MAX_COUNT,
+  FIGURE_MAX_BYTES,
+  type EnsurePublicationIdResult,
+  validateFigureFile,
+} from "../../lib/figureUpload";
 import { greFormSectionTitleClass } from "../../lib/formStyles";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -21,7 +28,7 @@ interface Props {
   readOnly?: boolean;
   variant?: "composer" | "public";
   /** Creates a draft on the server when the user uploads before the first manual save. */
-  ensurePublicationId?: () => Promise<number | null>;
+  ensurePublicationId?: () => Promise<EnsurePublicationIdResult>;
   onActivityChange?: (state: { uploading: boolean; pendingCount: number }) => void;
   /** Parent calls this before save/submit to persist any debounced caption edits. */
   registerFlushCaptions?: (flush: (() => Promise<void>) | null) => void;
@@ -143,16 +150,34 @@ export function PublicationFiguresEditor({
 
   const queueFiles = (files: FileList | null) => {
     if (!files?.length || readOnly || uploading) return;
-    const next = Array.from(files).map((file) => ({
-      key: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
-      file,
-      caption: "",
-      previewUrl: URL.createObjectURL(file),
-    }));
-    setPending((prev) => [...prev, ...next]);
-    setUploadError("");
+    const remaining = FIGURE_MAX_COUNT - figures.length - pending.length;
+    if (remaining <= 0) {
+      setUploadError(`You can upload up to ${FIGURE_MAX_COUNT} figures per publication.`);
+      return;
+    }
+    const accepted: PendingUpload[] = [];
+    const errors: string[] = [];
+    for (const file of Array.from(files).slice(0, remaining)) {
+      const err = validateFigureFile(file);
+      if (err) {
+        errors.push(`${file.name}: ${err}`);
+        continue;
+      }
+      accepted.push({
+        key: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
+        file,
+        caption: "",
+        previewUrl: URL.createObjectURL(file),
+      });
+    }
+    if (errors.length) {
+      setUploadError(errors[0]);
+    }
+    if (!accepted.length) return;
+    setPending((prev) => [...prev, ...accepted]);
+    if (!errors.length) setUploadError("");
     if (inputRef.current) inputRef.current.value = "";
-    void uploadItems(next);
+    void uploadItems(accepted);
   };
 
   const removePending = (key: string) => {
@@ -163,9 +188,13 @@ export function PublicationFiguresEditor({
     });
   };
 
-  const resolvePublicationId = async (): Promise<number | null> => {
-    if (publicationId > 0) return publicationId;
-    if (!ensurePublicationId) return null;
+  const resolvePublicationId = async (): Promise<
+    { ok: true; id: number } | { ok: false; error: string }
+  > => {
+    if (publicationId > 0) return { ok: true, id: publicationId };
+    if (!ensurePublicationId) {
+      return { ok: false, error: "Save a title and abstract before adding figures." };
+    }
     return ensurePublicationId();
   };
 
@@ -177,11 +206,12 @@ export function PublicationFiguresEditor({
     const uploadedKeys = new Set<string>();
     let baseIndex = figures.length;
     try {
-      const pubId = await resolvePublicationId();
-      if (!pubId) {
-        setUploadError("Add a title and abstract before adding figures.");
+      const resolved = await resolvePublicationId();
+      if (!resolved.ok) {
+        setUploadError(resolved.error);
         return;
       }
+      const pubId = resolved.id;
       for (const item of items) {
         const caption =
           item.caption.trim() || `Figure ${baseIndex + uploaded.length + 1}`;
@@ -219,9 +249,9 @@ export function PublicationFiguresEditor({
   };
 
   const remove = async (id: number) => {
-    const pubId = await resolvePublicationId();
-    if (!pubId) return;
-    await deleteFigure(pubId, id, encodedPublicationId);
+    const resolved = await resolvePublicationId();
+    if (!resolved.ok) return;
+    await deleteFigure(resolved.id, id, encodedPublicationId);
     onChange(figures.filter((f) => f.id !== id));
   };
 
@@ -230,14 +260,14 @@ export function PublicationFiguresEditor({
     setUploadError("");
     setReplacingFigureId(figureId);
     try {
-      const pubId = await resolvePublicationId();
-      if (!pubId) {
-        setUploadError("Save publication details first, then try replacing the figure.");
+      const resolved = await resolvePublicationId();
+      if (!resolved.ok) {
+        setUploadError(resolved.error);
         return;
       }
       const currentCaption = (captionsRef.current[figureId] ?? "").trim();
       const updated = await updateFigure(
-        pubId,
+        resolved.id,
         figureId,
         { caption: currentCaption },
         encodedPublicationId,
@@ -272,10 +302,10 @@ export function PublicationFiguresEditor({
       if (nextCaption === persisted) return true;
       setSavingCaptionId(figureId);
       try {
-        const pubId = await resolvePublicationId();
-        if (!pubId) return false;
+        const resolved = await resolvePublicationId();
+        if (!resolved.ok) return false;
         const updated = await updateFigure(
-          pubId,
+          resolved.id,
           figureId,
           { caption: nextCaption },
           encodedPublicationId
@@ -340,12 +370,20 @@ export function PublicationFiguresEditor({
         Research figures
       </h3>
 
+      {!readOnly && variant === "composer" && (
+        <p className="mt-2 text-xs leading-relaxed text-slate-500">
+          Upload JPG, PNG, GIF, or WEBP (max {FIGURE_MAX_BYTES / (1024 * 1024)} MB each, up to{" "}
+          {FIGURE_MAX_COUNT} figures). Add captions before submit; order follows upload sequence.
+          Images appear in the published paper preview.
+        </p>
+      )}
+
       {!readOnly && (
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <input
             ref={inputRef}
             type="file"
-            accept="image/*"
+            accept={FIGURE_ACCEPT}
             multiple
             className="hidden"
             onChange={(e) => queueFiles(e.target.files)}

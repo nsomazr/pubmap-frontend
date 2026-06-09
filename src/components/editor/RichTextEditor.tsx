@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, type CSSProperties } from "react";
 import { loadCkEditor } from "../../lib/ckeditorLoader";
 import {
   countWords,
+  llmWordTarget,
+  narrativeWordMinimum,
   truncateHtmlToWordLimit,
   truncateHtmlToWordLimitAtSentence,
   type ManuscriptLimitedField,
@@ -45,6 +47,9 @@ export function RichTextEditor({
 
   const wordCount = countWords(value);
   const overLimit = Boolean(maxWords && wordCount > maxWords);
+  const targetWords = narrativeField ? llmWordTarget(narrativeField) : null;
+  const belowTarget =
+    Boolean(targetWords && wordCount > 0 && wordCount < targetWords) && !overLimit;
 
   useEffect(() => {
     let cancelled = false;
@@ -121,8 +126,17 @@ export function RichTextEditor({
           {required ? <RequiredMark /> : null}
         </label>
         {maxWords ? (
-          <p className={`text-xs text-slate-500 ${overLimit ? "font-medium text-amber-700" : ""}`}>
+          <p
+            className={`text-xs text-slate-500 ${
+              overLimit || belowTarget ? "font-medium text-amber-700" : ""
+            }`}
+          >
             {wordCount}/{maxWords} words
+            {belowTarget && targetWords ? (
+              <span className="ml-1.5 text-amber-700">
+                (aim for ~{targetWords}; min {narrativeWordMinimum(narrativeField!)})
+              </span>
+            ) : null}
           </p>
         ) : null}
       </div>

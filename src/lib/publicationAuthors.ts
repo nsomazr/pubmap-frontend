@@ -45,7 +45,17 @@ function dedupeAuthorTeam<
 
     const userId = person.user_id;
     const nameKey = authorNameKey(name);
-    const key = userId ? `uid:${userId}|name:${nameKey}` : `name:${nameKey}`;
+    const email = normalizeAffiliation(
+      "email" in person ? String((person as { email?: string }).email || "") : ""
+    );
+    const affiliation = normalizeAffiliation(
+      "affiliation" in person ? String((person as { affiliation?: string }).affiliation || "") : ""
+    );
+    const key = userId
+      ? `uid:${userId}|name:${nameKey}`
+      : email
+        ? `email:${email}|name:${nameKey}`
+        : `name:${nameKey}|aff:${affiliation}`;
     if (seen.has(key)) continue;
 
     seen.add(key);
@@ -162,6 +172,20 @@ export function buildAuthorByline(
 export function authorBylineFromPublication(publication: Publication): AuthorByline {
   const coAuthors = publication.co_authors ?? publicationCoAuthorsFromPublication(publication);
   return buildAuthorByline(coAuthors.team);
+}
+
+/** Compact comma-separated author line for map cards and list rows. */
+export function compactAuthorLineFromPublication(
+  publication: Publication,
+  maxAuthors = 3
+): string {
+  const byline = authorBylineFromPublication(publication);
+  const names = byline.authors.map((author) => author.name).filter(Boolean);
+  if (!names.length) return "";
+  if (names.length <= maxAuthors) return names.join(", ");
+  const shown = names.slice(0, maxAuthors);
+  const extra = names.length - maxAuthors;
+  return `${shown.join(", ")}, et al. (+${extra})`;
 }
 
 /** Build a journal-style byline when only a single author name is available. */

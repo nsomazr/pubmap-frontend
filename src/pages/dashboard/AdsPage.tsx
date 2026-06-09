@@ -49,7 +49,14 @@ export function AdsPage() {
   if (!isPlatformAdmin(user)) return <Navigate to="/dashboard" replace />;
 
   const [form, setForm] = useState(EMPTY_FORM);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const queryClient = useQueryClient();
+
+  const invalidateAdQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["ads"] });
+    queryClient.invalidateQueries({ queryKey: ["ads", "analytics"] });
+    queryClient.invalidateQueries({ queryKey: ["ads", "placement"] });
+  };
 
   const { page, setPage } = usePageParam();
 
@@ -66,25 +73,62 @@ export function AdsPage() {
   const ads = adsData?.results ?? [];
   const adsTotal = adsData?.count ?? 0;
 
+  const adPayload = () => ({
+    title: form.title,
+    image: form.image,
+    link: form.link,
+    location: form.location,
+    status: form.status,
+    sponsor_label: form.sponsor_label,
+    description: form.description,
+    sort_order: Number(form.sort_order) || 0,
+    publication_id: form.publication_id ? Number(form.publication_id) : null,
+  });
+
   const createMutation = useMutation({
-    mutationFn: () =>
-      api.post("/ads/", {
-        title: form.title,
-        image: form.image,
-        link: form.link,
-        location: form.location,
-        status: form.status,
-        sponsor_label: form.sponsor_label,
-        description: form.description,
-        sort_order: Number(form.sort_order) || 0,
-        publication_id: form.publication_id ? Number(form.publication_id) : null,
-      }),
+    mutationFn: () => api.post("/ads/", adPayload()),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ads"] });
-      queryClient.invalidateQueries({ queryKey: ["ads", "analytics"] });
+      invalidateAdQueries();
       setForm(EMPTY_FORM);
+      setEditingId(null);
     },
   });
+
+  const updateMutation = useMutation({
+    mutationFn: (id: number) => api.patch(`/ads/${id}/`, adPayload()),
+    onSuccess: () => {
+      invalidateAdQueries();
+      setForm(EMPTY_FORM);
+      setEditingId(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/ads/${id}/`),
+    onSuccess: () => {
+      invalidateAdQueries();
+      if (editingId) {
+        setForm(EMPTY_FORM);
+        setEditingId(null);
+      }
+    },
+  });
+
+  const startEdit = (ad: Ad) => {
+    setEditingId(ad.id);
+    setForm({
+      title: ad.title,
+      image: ad.image,
+      link: ad.link,
+      location: (ad.placement || ad.location) as AdPlacement,
+      status: ad.status,
+      sponsor_label: ad.gre_meta?.sponsor_label || "Sponsored",
+      description: ad.gre_meta?.description || "",
+      sort_order: String(ad.gre_meta?.sort_order ?? 0),
+      publication_id: ad.gre_meta?.publication_id ? String(ad.gre_meta.publication_id) : "",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const selectedPlacement = AD_PLACEMENTS.find((p) => p.value === form.location);
 
@@ -118,11 +162,28 @@ export function AdsPage() {
         className={`${greFormArtCardClass} grid gap-4 lg:grid-cols-2`}
         onSubmit={(e) => {
           e.preventDefault();
-          createMutation.mutate();
+          if (editingId) updateMutation.mutate(editingId);
+          else createMutation.mutate();
         }}
       >
+        <div className="lg:col-span-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-bold text-ink">
+            {editingId ? "Edit advertisement" : "Create advertisement"}
+          </h2>
+          {editingId && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setEditingId(null);
+                setForm(EMPTY_FORM);
+              }}
+            >
+              Cancel edit
+            </Button>
+          )}
+        </div>
         <div className="lg:col-span-2">
-          <h2 className="text-lg font-bold text-ink">Create advertisement</h2>
           {selectedPlacement && (
             <p className="mt-1 text-sm text-slate-500">{selectedPlacement.hint}</p>
           )}
@@ -189,8 +250,11 @@ export function AdsPage() {
           />
         </div>
         <div className="lg:col-span-2">
-          <Button type="submit" loading={createMutation.isPending}>
-            Add advertisement
+          <Button
+            type="submit"
+            loading={createMutation.isPending || updateMutation.isPending}
+          >
+            {editingId ? "Save changes" : "Add advertisement"}
           </Button>
         </div>
       </form>
@@ -212,6 +276,23 @@ export function AdsPage() {
                 <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-800">
                   {ad.gre_meta?.sponsor_label || "Sponsored"}
                 </span>
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button type="button" variant="secondary" onClick={() => startEdit(ad)}>
+                    Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    loading={deleteMutation.isPending}
+                    onClick={() => {
+                      if (window.confirm(`Delete ad "${ad.title}"?`)) {
+                        deleteMutation.mutate(ad.id);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </div>
             </div>
           ))}

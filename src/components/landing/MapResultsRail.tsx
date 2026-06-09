@@ -35,6 +35,7 @@ import { RankedNameLabel } from "../rankings/RankedNameLabel";
 import { SubcategoryBadge } from "../taxonomy/SubcategoryBadge";
 import { UserAvatar } from "../ui/UserAvatar";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
+import { PublicationAuthorLine } from "../publication/PublicationAuthorLine";
 import { authorDisplayName } from "../../lib/userDisplay";
 import {
   collectAuthorMatchedResearchers,
@@ -1133,18 +1134,10 @@ export function MapResultsRail({
                               <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink group-hover:text-brand-700">
                                 {formatGrePaperTitle(pub.title, pub.short_number)}
                               </p>
-                              <p className="mt-1 truncate text-xs text-slate-500">
-                                <RankedNameLabel
-                                  name={
-                                    authorDisplayName(pub.author) ||
-                                    `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim()
-                                  }
-                                  nameClassName="truncate"
-                                  ranking={pub.author?.ranking}
-                                  compact
-                                  showBadges={false}
-                                />
-                              </p>
+                              <PublicationAuthorLine
+                                publication={pub}
+                                className="mt-1"
+                              />
                               {location && (
                                 <p className="mt-1 flex items-start gap-1 text-xs text-slate-600">
                                   <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-teal-600" />
