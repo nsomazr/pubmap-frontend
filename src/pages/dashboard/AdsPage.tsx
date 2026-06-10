@@ -108,9 +108,9 @@ export function AdsPage() {
   };
 
   const adPayload = (image: string) => ({
-    title: form.title,
+    title: form.title.trim(),
     image,
-    link: form.link,
+    link: form.link.trim(),
     location: form.location,
     status: form.status,
     sponsor_label: form.sponsor_label,
@@ -121,9 +121,24 @@ export function AdsPage() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      let imagePath = form.image.trim();
+      if (!form.title.trim()) {
+        throw new Error("Title is required.");
+      }
+      let imagePath = "";
       if (imageFile) {
         imagePath = await uploadAdImage(imageFile);
+      } else {
+        const raw = form.image.trim();
+        const isDisplayApiUrl = /\/api\/ads\/\d+\/image\/?$/i.test(raw);
+        if (editingId && isDisplayApiUrl) {
+          const current = ads.find((row) => row.id === editingId);
+          imagePath = (current?.image_path || current?.image || "").trim();
+          if (imagePath.startsWith("http")) {
+            imagePath = "";
+          }
+        } else {
+          imagePath = raw;
+        }
       }
       if (!imagePath) {
         throw new Error("Add an image file or paste an image URL.");
