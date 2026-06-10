@@ -2303,6 +2303,34 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
   filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.25));
 }
 
+.gre-pub-marker--taxonomy-highlight {
+  --accent: #16a34a;
+  transform: translateY(-4px) scale(1.18);
+  filter: drop-shadow(0 0 10px rgba(22, 163, 74, 0.55));
+}
+
+.gre-pub-marker--taxonomy-highlight .gre-pub-marker__halo {
+  background: color-mix(in srgb, #16a34a 42%, white);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, #16a34a 35%, transparent),
+    0 0 16px color-mix(in srgb, #16a34a 55%, transparent);
+  animation: gre-taxonomy-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes gre-taxonomy-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, #16a34a 35%, transparent),
+      0 0 14px color-mix(in srgb, #16a34a 45%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px color-mix(in srgb, #16a34a 45%, transparent),
+      0 0 22px color-mix(in srgb, #16a34a 65%, transparent);
+  }
+}
+
 .gre-popup-title {
   margin: 0.5rem 1rem 0.25rem;
   font-size: 0.875rem;

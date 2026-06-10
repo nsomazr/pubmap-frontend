@@ -1,5 +1,5 @@
 import { Star } from "lucide-react";
-import { greStarCount, greStarFill } from "../../lib/greTheme";
+import { greStarCount } from "../../lib/greTheme";
 
 interface Props {
   stars: number;
@@ -43,7 +43,11 @@ export function StarRating({
     >
       {label && <span className="mr-1 text-xs font-semibold text-slate-600">{label}</span>}
       {Array.from({ length: visible }).map((_, i) => (
-        <Star key={i} className={`${icon} ${greStarFill}`} aria-hidden />
+        <Star
+          key={i}
+          className={`${icon} fill-amber-400 text-amber-500 drop-shadow-sm`}
+          aria-hidden
+        />
       ))}
       {extra > 0 && showCount && (
         <span className={`ml-0.5 text-xs font-bold ${greStarCount}`}>+{extra}</span>

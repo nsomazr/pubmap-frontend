@@ -14,13 +14,17 @@ import { PublicNav } from "../components/layout/PublicNav";
 import { ResearchMap } from "../components/map/ResearchMap";
 import { MapPublicationSheet } from "../components/map/MapPublicationSheet";
 import { BrandMark } from "../components/brand/BrandMark";
-import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { formatMapRegionLabel, reverseGeocodeRegion } from "../lib/geocode";
 import { MAP_REGION_RADIUS_KM } from "../lib/mapRegion";
 import {
   filterPublicationsByAuthorQuery,
   normalizeAuthorSearchQuery,
 } from "../lib/mapAuthorSearch";
+import {
+  publicationIdsForTaxonomyHighlight,
+  toggleTaxonomyHighlight,
+  type MapTaxonomyHighlight,
+} from "../lib/mapTaxonomyHighlight";
 import type {
   AuthorResearchResponse,
   Category,
@@ -74,10 +78,44 @@ export function HomePage() {
   const skipAutoSearchRef = useRef(true);
   const userDismissedResultsRailRef = useRef(false);
   const [mapViewResetToken, setMapViewResetToken] = useState(0);
+  const [taxonomyHighlight, setTaxonomyHighlight] = useState<MapTaxonomyHighlight | null>(null);
 
-  const debouncedAuthor = useDebouncedValue(author, 400);
-  const debouncedAffiliation = useDebouncedValue(affiliation, 400);
-  const debouncedTitle = useDebouncedValue(title, 400);
+  const currentMapFilters = useCallback(
+    (): MapSearchFilters => ({
+      author,
+      affiliation,
+      title,
+      location,
+      mapRegion,
+      categoryId,
+      subCategoryId,
+    }),
+    [author, affiliation, title, location, mapRegion, categoryId, subCategoryId]
+  );
+
+  const mapFiltersActive = useCallback((filters: MapSearchFilters) => {
+    return Boolean(
+      filters.author.trim() ||
+        filters.affiliation.trim() ||
+        filters.title.trim() ||
+        filters.location.trim() ||
+        filters.mapRegion ||
+        filters.categoryId ||
+        filters.subCategoryId
+    );
+  }, []);
+
+  const clearMapSearchUrl = useCallback(() => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams();
+        const pub = prev.get("pub") || prev.get("publication");
+        if (pub) next.set("pub", pub);
+        return next;
+      },
+      { replace: true }
+    );
+  }, [setSearchParams]);
 
   useEffect(() => {
     const ref = mapDeepLink.publicationRef;
@@ -125,15 +163,8 @@ export function HomePage() {
       filters?: MapSearchFilters,
       options?: { revealResults?: boolean }
     ) => {
-      const active = filters ?? {
-        author: debouncedAuthor,
-        affiliation: debouncedAffiliation,
-        title: debouncedTitle,
-        location,
-        mapRegion,
-        categoryId,
-        subCategoryId,
-      };
+      const active = filters ?? currentMapFilters();
+      setTaxonomyHighlight(null);
       setSearching(true);
       setSearchError(null);
       const authorQuery = normalizeAuthorSearchQuery(active.author);
@@ -200,17 +231,7 @@ export function HomePage() {
         setInstitutionResearchLoading(false);
       }
     },
-    [
-      debouncedAuthor,
-      debouncedAffiliation,
-      debouncedTitle,
-      location,
-      mapRegion,
-      categoryId,
-      subCategoryId,
-      data?.publications,
-      syncMapUrlFromFilters,
-    ]
+    [currentMapFilters, data?.publications, syncMapUrlFromFilters]
   );
 
   const applyDeepLinkSearch = useCallback(
@@ -253,28 +274,40 @@ export function HomePage() {
     [author, affiliation, title, location, mapRegion, categoryId, subCategoryId, runSearch]
   );
 
+  const applyDeepLinkSearchRef = useRef(applyDeepLinkSearch);
+  applyDeepLinkSearchRef.current = applyDeepLinkSearch;
+
   useEffect(() => {
     if (!mapDeepLink.author) return;
-    applyDeepLinkSearch({ author: mapDeepLink.author });
-  }, [mapDeepLink.author, applyDeepLinkSearch]);
+    applyDeepLinkSearchRef.current({ author: mapDeepLink.author });
+  }, [mapDeepLink.author]);
 
   useEffect(() => {
     if (!mapDeepLink.affiliation) return;
-    applyDeepLinkSearch({ affiliation: mapDeepLink.affiliation });
-  }, [mapDeepLink.affiliation, applyDeepLinkSearch]);
+    applyDeepLinkSearchRef.current({ affiliation: mapDeepLink.affiliation });
+  }, [mapDeepLink.affiliation]);
 
   useEffect(() => {
-    if (!mapDeepLink.location) return;
-    setLocation(mapDeepLink.location);
-    skipAutoSearchRef.current = false;
-  }, [mapDeepLink.location]);
+    if (mapDeepLink.location) {
+      setLocation(mapDeepLink.location);
+      skipAutoSearchRef.current = false;
+      return;
+    }
+    if (!searchPanelOpen) setLocation("");
+  }, [mapDeepLink.location, searchPanelOpen]);
 
   useEffect(() => {
-    if (!mapDeepLink.categoryId && !mapDeepLink.subCategoryId) return;
-    if (mapDeepLink.categoryId) setCategoryId(mapDeepLink.categoryId);
-    if (mapDeepLink.subCategoryId) setSubCategoryId(mapDeepLink.subCategoryId);
-    skipAutoSearchRef.current = false;
-  }, [mapDeepLink.categoryId, mapDeepLink.subCategoryId]);
+    if (mapDeepLink.categoryId || mapDeepLink.subCategoryId) {
+      if (mapDeepLink.categoryId) setCategoryId(mapDeepLink.categoryId);
+      if (mapDeepLink.subCategoryId) setSubCategoryId(mapDeepLink.subCategoryId);
+      skipAutoSearchRef.current = false;
+      return;
+    }
+    if (!searchPanelOpen) {
+      setCategoryId("");
+      setSubCategoryId("");
+    }
+  }, [mapDeepLink.categoryId, mapDeepLink.subCategoryId, searchPanelOpen]);
 
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -342,8 +375,25 @@ export function HomePage() {
     setSelectedPublicationId(null);
     setFocusPubId(null);
     userDismissedResultsRailRef.current = false;
+    setTaxonomyHighlight(null);
     setMapViewResetToken((token) => token + 1);
   }, []);
+
+  const applyMapFilterChange = useCallback(
+    (patch: Partial<MapSearchFilters>) => {
+      if (patch.author !== undefined) setAuthor(patch.author);
+      if (patch.affiliation !== undefined) setAffiliation(patch.affiliation);
+      if (patch.title !== undefined) setTitle(patch.title);
+      if (patch.location !== undefined) setLocation(patch.location);
+      if (patch.mapRegion !== undefined) setMapRegion(patch.mapRegion);
+      if (patch.categoryId !== undefined) setCategoryId(patch.categoryId);
+      if (patch.subCategoryId !== undefined) setSubCategoryId(patch.subCategoryId);
+
+      if (searchPanelOpen) return;
+      skipAutoSearchRef.current = false;
+    },
+    [searchPanelOpen]
+  );
 
   const clearFilters = useCallback(() => {
     setAuthor("");
@@ -357,18 +407,10 @@ export function HomePage() {
     setDeepLinkPub(null);
     returnToMapOverview();
     skipAutoSearchRef.current = true;
-    setSearchParams({}, { replace: true });
-  }, [returnToMapOverview, setSearchParams]);
+    clearMapSearchUrl();
+  }, [clearMapSearchUrl, returnToMapOverview]);
 
-  const hasImmediateMapFilters = Boolean(
-    author.trim() ||
-      affiliation.trim() ||
-      title.trim() ||
-      location.trim() ||
-      mapRegion ||
-      categoryId ||
-      subCategoryId
-  );
+  const hasImmediateMapFilters = mapFiltersActive(currentMapFilters());
 
   useEffect(() => {
     if (hasImmediateMapFilters) return;
@@ -380,6 +422,8 @@ export function HomePage() {
       searchError
     ) {
       returnToMapOverview();
+      clearMapSearchUrl();
+      skipAutoSearchRef.current = true;
     }
   }, [
     hasImmediateMapFilters,
@@ -389,27 +433,27 @@ export function HomePage() {
     institutionResearch,
     searchError,
     returnToMapOverview,
+    clearMapSearchUrl,
   ]);
 
   useEffect(() => {
     if (skipAutoSearchRef.current) return;
     if (searchPanelOpen) return;
     if (!hasImmediateMapFilters) return;
-    const hasDebouncedFilter =
-      debouncedAuthor ||
-      debouncedAffiliation ||
-      debouncedTitle ||
-      location ||
-      mapRegion ||
-      categoryId ||
-      subCategoryId;
-    if (!hasDebouncedFilter) return;
-    void runSearch();
+    void runSearch({
+      author,
+      affiliation,
+      title,
+      location,
+      mapRegion,
+      categoryId,
+      subCategoryId,
+    });
   }, [
     hasImmediateMapFilters,
-    debouncedAuthor,
-    debouncedAffiliation,
-    debouncedTitle,
+    author,
+    affiliation,
+    title,
     location,
     mapRegion,
     categoryId,
@@ -450,13 +494,32 @@ export function HomePage() {
 
   const hasSearched = results !== null;
   const basePublications = hasSearched ? (results ?? []) : mapPublications;
+  const handleTaxonomyHighlight = useCallback((next: MapTaxonomyHighlight) => {
+    setTaxonomyHighlight((current) => toggleTaxonomyHighlight(current, next));
+  }, []);
+
   const publications = useMemo(() => {
     if (deepLinkPub && !basePublications.some((p) => p.id === deepLinkPub.id)) {
       return [deepLinkPub, ...basePublications];
     }
     return basePublications;
   }, [basePublications, deepLinkPub]);
-  const mapDisplayPublications = publications;
+  const mapDisplayPublications = useMemo(() => {
+    if (deepLinkPub && !mapPublications.some((p) => p.id === deepLinkPub.id)) {
+      return [deepLinkPub, ...mapPublications];
+    }
+    return mapPublications;
+  }, [mapPublications, deepLinkPub]);
+  const highlightedPublicationIds = useMemo(() => {
+    const searchPool = results ?? [];
+    if (taxonomyHighlight?.name) {
+      return publicationIdsForTaxonomyHighlight(searchPool, taxonomyHighlight);
+    }
+    if (hasSearched && searchPool.length > 0) {
+      return searchPool.map((pub) => pub.id);
+    }
+    return [];
+  }, [hasSearched, results, taxonomyHighlight]);
   const categories = data?.categories ?? [];
   const subCategories = data?.sub_categories ?? [];
   const totalOnMap = mapPublications.length;
@@ -502,6 +565,7 @@ export function HomePage() {
             <ResearchMap
               publications={mapDisplayPublications}
               focusPublicationId={focusPubId}
+              highlightedPublicationIds={highlightedPublicationIds}
               mapViewResetToken={mapViewResetToken}
               height="100%"
               className="rounded-none border-0"
@@ -571,20 +635,27 @@ export function HomePage() {
               setResultsRailOpen(true);
               setResultsRailCollapsed(false);
             }}
-            onAuthorChange={setAuthor}
-            onAffiliationChange={setAffiliation}
-            onTitleChange={setTitle}
+            onAuthorChange={(value) => applyMapFilterChange({ author: value })}
+            onAffiliationChange={(value) => applyMapFilterChange({ affiliation: value })}
+            onTitleChange={(value) => applyMapFilterChange({ title: value })}
             onLocationChange={(value) => {
-              setLocation(value);
-              if (value.trim()) setMapRegion(null);
+              applyMapFilterChange({
+                location: value,
+                ...(value.trim() ? { mapRegion: null } : {}),
+              });
             }}
             onMapPickModeChange={setMapPickMode}
             onMapRegionClear={() => {
-              setMapRegion(null);
               setMapPickMode(false);
+              applyMapFilterChange({ mapRegion: null });
             }}
-            onCategoryChange={setCategoryId}
-            onSubCategoryChange={setSubCategoryId}
+            onCategoryChange={(value) =>
+              applyMapFilterChange({
+                categoryId: value,
+                subCategoryId: value ? subCategoryId : "",
+              })
+            }
+            onSubCategoryChange={(value) => applyMapFilterChange({ subCategoryId: value })}
             onSearch={handleSearch}
             onClear={clearFilters}
           />
@@ -623,6 +694,8 @@ export function HomePage() {
             onToggleCollapse={() => setResultsRailCollapsed((c) => !c)}
             onClose={clearFilters}
             onApplyMapFilter={applyDeepLinkSearch}
+            taxonomyHighlight={taxonomyHighlight}
+            onTaxonomyHighlight={handleTaxonomyHighlight}
           />
         )}
 

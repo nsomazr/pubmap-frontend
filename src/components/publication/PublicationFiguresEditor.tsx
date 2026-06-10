@@ -95,6 +95,11 @@ export function PublicationFiguresEditor({
     encodedPublicationId
   );
   const [localPreviews, setLocalPreviews] = useState<Record<number, string>>({});
+  const localPreviewsRef = useRef(localPreviews);
+  localPreviewsRef.current = localPreviews;
+  const encodedPublicationIdRef = useRef(encodedPublicationId);
+  encodedPublicationIdRef.current = encodedPublicationId;
+  const uploadRunRef = useRef(0);
   const replaceInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   useEffect(() => {
@@ -148,12 +153,12 @@ export function PublicationFiguresEditor({
   useEffect(
     () => () => {
       pendingRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
-      Object.values(localPreviews).forEach((url) => URL.revokeObjectURL(url));
+      Object.values(localPreviewsRef.current).forEach((url) => URL.revokeObjectURL(url));
       Object.values(captionSaveTimersRef.current).forEach((timer) => {
         window.clearTimeout(timer);
       });
     },
-    [localPreviews]
+    []
   );
 
   useEffect(() => {
@@ -219,6 +224,8 @@ export function PublicationFiguresEditor({
 
   const uploadItems = async (items: PendingUpload[]) => {
     if (!items.length || readOnly) return;
+    const runId = uploadRunRef.current + 1;
+    uploadRunRef.current = runId;
     setUploading(true);
     setUploadError("");
     const total = items.length;
@@ -234,12 +241,8 @@ export function PublicationFiguresEditor({
     let pubId: number | null = null;
 
     try {
-      setUploadProgress((prev) =>
-        prev
-          ? { ...prev, phase: "prepare", activeName: "Preparing publication draft…" }
-          : prev
-      );
       const resolved = await resolvePublicationId();
+      if (uploadRunRef.current !== runId) return;
       if (!resolved.ok) {
         setUploadError(resolved.error);
         setPending((prev) =>
@@ -254,6 +257,7 @@ export function PublicationFiguresEditor({
       pubId = resolved.id;
 
       for (let index = 0; index < items.length; index += 1) {
+        if (uploadRunRef.current !== runId) return;
         const item = items[index];
         patchPending(item.key, { status: "uploading", error: undefined });
         setUploadProgress({
@@ -270,8 +274,9 @@ export function PublicationFiguresEditor({
             pubId,
             item.file,
             { caption },
-            encodedPublicationId
+            encodedPublicationIdRef.current
           )) as PublicationFigure;
+          if (uploadRunRef.current !== runId) return;
           workingFigures = [...workingFigures, fig];
           baseIndex += 1;
           figuresRef.current = workingFigures;
@@ -285,6 +290,7 @@ export function PublicationFiguresEditor({
             phase: "upload",
           });
         } catch (err: unknown) {
+          if (uploadRunRef.current !== runId) return;
           const e = err as { response?: { data?: { detail?: string } } };
           const message =
             e.response?.data?.detail ||
@@ -294,8 +300,10 @@ export function PublicationFiguresEditor({
         }
       }
     } finally {
-      setUploading(false);
-      setUploadProgress(null);
+      if (uploadRunRef.current === runId) {
+        setUploading(false);
+        setUploadProgress(null);
+      }
     }
   };
 

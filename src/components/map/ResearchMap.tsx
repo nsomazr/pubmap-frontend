@@ -90,6 +90,7 @@ interface Props {
   className?: string;
   zoomPosition?: "bottomright" | "bottomleft" | "topright" | "topleft";
   focusPublicationId?: number | null;
+  highlightedPublicationIds?: number[];
   /** Increment to refit the default map viewport (e.g. after clearing search). */
   mapViewResetToken?: number;
   variant?: "default" | "embedded";
@@ -109,6 +110,7 @@ export function ResearchMap({
   className = "",
   zoomPosition = "bottomright",
   focusPublicationId = null,
+  highlightedPublicationIds = [],
   mapViewResetToken = 0,
   variant = "default",
   advancedControls,
@@ -213,6 +215,7 @@ export function ResearchMap({
         <PublicationMarkerLayer
           publications={publications}
           focusPublicationId={focusPublicationId}
+          highlightedPublicationIds={highlightedPublicationIds}
           embedded={embedded}
           useSheet={useSheet}
           clustered={showAdvanced ? displayPrefs.showClusters : true}

@@ -10,7 +10,7 @@ import {
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { ReportPlagiarismDialog } from "../../components/publication/ReportPlagiarismDialog";
 import { GreAdPlacement } from "../../components/ads/GreAdSlot";
-import { RankedNameLabel } from "../../components/rankings/RankedNameLabel";
+import { PublicationAuthorsSidebar } from "../../components/publication/PublicationAuthorsSidebar";
 import {
   publicationHasGrePaperBody,
   publicationHasReadablePaper,
@@ -23,7 +23,6 @@ import { CoAuthorsPanel } from "../../components/publication/CoAuthorsPanel";
 import { PublicationDownloadPanel } from "../../components/publication/PublicationDownloadPanel";
 import { PublicationResearchIntegritySection } from "../../components/publication/PublicationResearchIntegritySection";
 import { PublicationPaperDocument } from "../../components/publication/PublicationPaperDocument";
-import { UserAvatar } from "../../components/ui/UserAvatar";
 import { StudyLocationSection } from "../../components/map/StudyLocationSection";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { authorBylineFromPublication } from "../../lib/publicationAuthors";
@@ -76,9 +75,6 @@ export function PublicationReaderPage() {
   const showManuscriptInPaper = publicationHasReadablePaper(pub);
   const showViewPaperPdf = publicationHasViewablePdf(pub);
   const showUploadedManuscriptPdf = publicationHasUploadedManuscriptPdf(pub);
-  const authorName =
-    pub.author?.full_name ||
-    `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
   const subVisual = publicationSubcategoryVisual(pub);
   const locationLabel = publicationMapLocationLabel(pub);
   const headerLocation = pub.coordinates ? undefined : locationLabel || undefined;
@@ -105,32 +101,7 @@ export function PublicationReaderPage() {
 
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_280px]">
         <aside className="order-1 space-y-6 lg:order-2">
-          <div className="gre-card p-5">
-            <div className="flex items-center gap-3">
-              <UserAvatar user={pub.author} size="md" />
-              <div className="min-w-0">
-                <RankedNameLabel
-                  name={authorName}
-                  nameClassName="font-semibold text-ink"
-                  ranking={pub.author?.ranking}
-                />
-                <p className="truncate text-xs text-slate-500">{pub.author?.affiliation}</p>
-              </div>
-            </div>
-            {pub.author?.ranking && (
-              <div className="mt-4 border-t border-slate-100 pt-4 text-xs text-slate-600">
-                <span>{pub.author.ranking.published_count} on GRE</span>
-              </div>
-            )}
-            {pub.author?.id && (
-              <Link
-                to={`/researcher/${pub.author.id}`}
-                className="mt-4 inline-flex text-sm font-semibold text-brand-600 hover:underline"
-              >
-                View researcher profile
-              </Link>
-            )}
-          </div>
+          <PublicationAuthorsSidebar publication={pub} />
           <GreAdPlacement placement="sidebar" limit={4} rotate />
           <GreAdPlacement placement="sponsored_publication" limit={1} className="mt-4 space-y-3" />
         </aside>

@@ -254,6 +254,7 @@ export interface Collaborator {
   profile_url?: string | null;
   institution_map_url?: string;
   is_registered?: boolean;
+  ranking?: ResearcherRanking;
 }
 
 export interface CoAuthorPerson extends Collaborator {

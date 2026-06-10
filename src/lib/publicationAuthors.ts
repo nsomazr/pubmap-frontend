@@ -1,4 +1,4 @@
-import type { CoAuthorPerson, Publication, PublicationCoAuthors } from "../types";
+import type { CoAuthorPerson, Publication, PublicationCoAuthors, ResearcherRanking } from "../types";
 
 export type AuthorBylineEntry = {
   name: string;
@@ -114,6 +114,7 @@ export function publicationCoAuthorsFromPublication(publication: Publication): P
     ...person,
     kind: "coauthor",
     role: person.role || "Co-author",
+    ranking: (person as CoAuthorPerson).ranking,
   }));
   return {
     primary_author: primary,
@@ -172,6 +173,46 @@ export function buildAuthorByline(
 export function authorBylineFromPublication(publication: Publication): AuthorByline {
   const coAuthors = publication.co_authors ?? publicationCoAuthorsFromPublication(publication);
   return buildAuthorByline(coAuthors.team);
+}
+
+/** Full author team (lead + co-authors), deduped. */
+export function publicationAuthorTeam(publication: Publication): CoAuthorPerson[] {
+  const coAuthors = publication.co_authors ?? publicationCoAuthorsFromPublication(publication);
+  return coAuthors.team;
+}
+
+/** GRE rank for a team member on a publication (never the lead author's rank by mistake). */
+export function rankingForPublicationTeamMember(
+  publication: Publication,
+  opts: { userId?: number | null; name?: string }
+): ResearcherRanking | undefined {
+  const team = publication.co_authors ?? publicationCoAuthorsFromPublication(publication);
+  const nameKey = opts.name ? authorNameKey(opts.name) : "";
+  for (const person of team.team) {
+    if (opts.userId != null && person.user_id === opts.userId) {
+      return person.ranking ?? undefined;
+    }
+    const personName = (person.fullname || "").trim();
+    if (nameKey && personName && authorNameKey(personName) === nameKey) {
+      return person.ranking ?? undefined;
+    }
+  }
+  if (opts.userId != null && publication.author?.id === opts.userId) {
+    return publication.author.ranking ?? undefined;
+  }
+  return undefined;
+}
+
+/** Resolve researcher stars from API ranking only (10 published GRE papers per star). */
+export function researcherRankStars(ranking?: ResearcherRanking | null): number {
+  if (!ranking) return 0;
+  if (typeof ranking.stars === "number" && ranking.stars > 0) {
+    return ranking.stars;
+  }
+  if (typeof ranking.published_count === "number" && ranking.published_count >= 10) {
+    return Math.floor(ranking.published_count / 10);
+  }
+  return 0;
 }
 
 /** Compact comma-separated author line for map cards and list rows. */

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { ResearcherRanking } from "../../types";
-import { institutionStarsFromPublicationCount, researcherStarsFromPublishedCount } from "../../lib/greStars";
+import { institutionStarsFromPublicationCount } from "../../lib/greStars";
+import { researcherRankStars } from "../../lib/publicationAuthors";
 import { ResearcherBadges } from "./ResearcherBadges";
 import { StarRating } from "./StarRating";
 
@@ -24,12 +25,8 @@ export function resolveRankStars(
   if (starsOverride != null && starsOverride > 0) {
     return starsOverride;
   }
-  if (ranking && ranking.stars > 0) {
-    return ranking.stars;
-  }
-  if (ranking?.published_count != null && ranking.published_count > 0) {
-    const derived = researcherStarsFromPublishedCount(ranking.published_count);
-    if (derived > 0) return derived;
+  if (ranking) {
+    return researcherRankStars(ranking);
   }
   if (institutionPublicationCount != null && institutionPublicationCount > 0) {
     return institutionStarsFromPublicationCount(institutionPublicationCount);
@@ -53,7 +50,15 @@ export function RankedNameLabel({
   return (
     <span className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
       {stars > 0 && (
-        <StarRating stars={stars} size={compact ? "sm" : "md"} showCount={false} />
+        <span
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-gradient-to-br from-amber-50 to-amber-100/90 px-1.5 py-0.5 shadow-sm ring-1 ring-amber-300/90"
+          title={`${stars} GRE rank star${stars === 1 ? "" : "s"} (10+ published papers each)`}
+        >
+          <StarRating stars={stars} size={compact ? "sm" : "md"} showCount={false} />
+          <span className="text-[10px] font-extrabold tabular-nums leading-none text-amber-900">
+            {stars}
+          </span>
+        </span>
       )}
       <span className={`min-w-0 ${nameClassName}`}>{name}</span>
       {showBadges && badges.length > 0 && (

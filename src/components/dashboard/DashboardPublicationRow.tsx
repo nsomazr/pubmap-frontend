@@ -2,7 +2,7 @@ import { AlertTriangle, ArrowRight, FileText, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { abstractListingSnippet } from "../../lib/abstractText";
 import { formatGrePaperTitle, grePaperCode } from "../../lib/grePaperTitle";
-import { authorDisplayName } from "../../lib/userDisplay";
+import { PublicationAuthorTeamRow } from "../publication/PublicationAuthorTeamRow";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { StatusBadge } from "./StatusBadge";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
@@ -39,7 +39,6 @@ export function DashboardPublicationRow({
   const title = formatGrePaperTitle(pub.title, pub.short_number, {
     fallback: "Untitled publication",
   });
-  const author = authorDisplayName(pub.author);
   const snippet = abstractListingSnippet(pub.abstract);
   const accent = STATUS_ACCENT[pub.status] ?? STATUS_ACCENT[0];
 
@@ -84,11 +83,11 @@ export function DashboardPublicationRow({
           <ArrowRight className="hidden h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-600 sm:block" />
         </div>
 
-        {author && (
-          <p className="mt-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
-            {author}
-          </p>
-        )}
+        <PublicationAuthorTeamRow
+          publication={pub}
+          showAvatars={false}
+          className="mt-1.5 uppercase tracking-wide"
+        />
 
         <h3 className="mt-0.5 line-clamp-2 text-base font-semibold leading-snug text-ink group-hover:text-brand-800 sm:text-[1.05rem]">
           {title}

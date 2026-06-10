@@ -12,7 +12,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { buildMapAffiliationPath, buildMapAuthorPath } from "../../lib/mapSearchLink";
@@ -35,13 +35,23 @@ import { RankedNameLabel } from "../rankings/RankedNameLabel";
 import { SubcategoryBadge } from "../taxonomy/SubcategoryBadge";
 import { UserAvatar } from "../ui/UserAvatar";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
-import { PublicationAuthorLine } from "../publication/PublicationAuthorLine";
+import { PublicationAuthorTeamRow } from "../publication/PublicationAuthorTeamRow";
 import { authorDisplayName } from "../../lib/userDisplay";
+import {
+  publicationCoAuthorsFromPublication,
+  rankingForPublicationTeamMember,
+} from "../../lib/publicationAuthors";
 import {
   collectAuthorMatchedResearchers,
   normalizeAuthorSearchQuery,
 } from "../../lib/mapAuthorSearch";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
+import {
+  isTaxonomyHighlightActive,
+  publicationIdsForTaxonomyHighlight,
+  type MapTaxonomyHighlight,
+  type MapTaxonomyHighlightKind,
+} from "../../lib/mapTaxonomyHighlight";
 import type {
   AuthorResearchResponse,
   InstitutionResearchResponse,
@@ -67,6 +77,55 @@ interface Props {
   onClose: () => void;
   /** Apply author/affiliation filter on the map (runs search + updates markers). */
   onApplyMapFilter?: (patch: { author?: string; affiliation?: string }) => void;
+  taxonomyHighlight?: MapTaxonomyHighlight | null;
+  onTaxonomyHighlight?: (highlight: MapTaxonomyHighlight) => void;
+}
+
+function TaxonomyMapHighlightButton({
+  kind,
+  name,
+  taxonomyHighlight,
+  onTaxonomyHighlight,
+  children,
+  className = "",
+  activeClassName = "ring-2 ring-emerald-500/70 bg-emerald-50/90",
+}: {
+  kind: MapTaxonomyHighlightKind;
+  name: string;
+  taxonomyHighlight?: MapTaxonomyHighlight | null;
+  onTaxonomyHighlight?: (highlight: MapTaxonomyHighlight) => void;
+  children: ReactNode;
+  className?: string;
+  activeClassName?: string;
+}) {
+  const label = name.trim();
+  if (!label || !onTaxonomyHighlight) {
+    return <>{children}</>;
+  }
+  const active = isTaxonomyHighlightActive(taxonomyHighlight, kind, label);
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onTaxonomyHighlight({ kind, name: label });
+      }}
+      className={`text-left transition ${className} ${
+        active
+          ? activeClassName
+          : "cursor-pointer hover:bg-emerald-50/60 hover:ring-1 hover:ring-emerald-300/60"
+      }`}
+      title={
+        active
+          ? "Clear green highlight on map"
+          : `Highlight ${kind === "field" ? "field" : "subfield"} on map`
+      }
+      aria-pressed={active}
+    >
+      {children}
+    </button>
+  );
 }
 
 function MapFilterLink({
@@ -165,44 +224,74 @@ function institutionNameMatchesQuery(label: string, query: string): boolean {
   return tokens.every((token) => normalizedLabel.includes(token));
 }
 
+function teamRankingForPerson(
+  pubs: Publication[],
+  person: { userId?: number | null; name: string }
+) {
+  for (const pub of pubs) {
+    const ranking = rankingForPublicationTeamMember(pub, {
+      userId: person.userId,
+      name: person.name,
+    });
+    if (ranking) return ranking;
+  }
+  return undefined;
+}
+
 function collectResearcherResults(publications: Publication[]): ResearcherResult[] {
-  const grouped = new Map<string, Publication[]>();
+  const grouped = new Map<
+    string,
+    {
+      pubs: Publication[];
+      userId?: number | null;
+      name: string;
+      affiliation: string;
+      photo?: string;
+    }
+  >();
+
   for (const pub of publications) {
-    const author = pub.author;
-    const name =
-      authorDisplayName(author) ||
-      `${author?.firstname ?? ""} ${author?.lastname ?? ""}`.trim();
-    if (!name) continue;
-    const key = author?.id ? `user:${author.id}` : `name:${name.toLowerCase()}`;
-    grouped.set(key, [...(grouped.get(key) ?? []), pub]);
+    const team = (pub.co_authors ?? publicationCoAuthorsFromPublication(pub)).team;
+    for (const person of team) {
+      const name = (person.fullname || "").trim();
+      if (!name) continue;
+      const key = person.user_id ? `user:${person.user_id}` : `name:${name.toLowerCase()}`;
+      const existing = grouped.get(key);
+      const pubs = existing?.pubs ?? [];
+      if (!pubs.some((row) => row.id === pub.id)) {
+        pubs.push(pub);
+      }
+      grouped.set(key, {
+        pubs,
+        userId: person.user_id ?? existing?.userId,
+        name,
+        affiliation: person.affiliation || existing?.affiliation || "",
+        photo: person.photo || existing?.photo,
+      });
+    }
   }
 
   return [...grouped.entries()]
-    .map(([key, pubs]) => {
-      const lead = pubs[0];
-      const author = lead.author;
+    .map(([key, row]) => {
       const interests = [
         ...new Set(
-          pubs.flatMap((pub) => (pub.author?.interests ?? []).map((interest) => interest.label))
+          row.pubs.flatMap((pub) => (pub.author?.interests ?? []).map((interest) => interest.label))
         ),
       ].slice(0, 4);
       return {
         key,
-        userId: author?.id,
-        name:
-          authorDisplayName(author) ||
-          `${author?.firstname ?? ""} ${author?.lastname ?? ""}`.trim() ||
-          "Researcher",
-        affiliation: author?.affiliation || "",
-        photo: author?.photo,
-        ranking: author?.ranking,
+        userId: row.userId,
+        name: row.name || "Researcher",
+        affiliation: row.affiliation,
+        photo: row.photo,
+        ranking: teamRankingForPerson(row.pubs, { userId: row.userId, name: row.name }),
         leadSubfield: topValues(
-          pubs.map((pub) => pub.subfield_name || pub.sub_category_name || "")
+          row.pubs.map((pub) => pub.subfield_name || pub.sub_category_name || "")
         )[0],
         interests,
-        totalPublications: pubs.length,
-        totalDiscussions: pubs.reduce((sum, pub) => sum + (pub.discussions_count ?? 0), 0),
-        publications: pubs,
+        totalPublications: row.pubs.length,
+        totalDiscussions: row.pubs.reduce((sum, pub) => sum + (pub.discussions_count ?? 0), 0),
+        publications: row.pubs,
       };
     })
     .sort(
@@ -391,10 +480,14 @@ function InstitutionIdentityCard({
   institution,
   compact = false,
   onApplyMapFilter,
+  taxonomyHighlight,
+  onTaxonomyHighlight,
 }: {
   institution: InstitutionSearchIdentity;
   compact?: boolean;
   onApplyMapFilter?: (patch: { author?: string; affiliation?: string }) => void;
+  taxonomyHighlight?: MapTaxonomyHighlight | null;
+  onTaxonomyHighlight?: (highlight: MapTaxonomyHighlight) => void;
 }) {
   const subfields =
     institution.leading_subfields?.length
@@ -440,7 +533,13 @@ function InstitutionIdentityCard({
 
       <div className="mt-3 grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
         <InsightStat icon={BookOpenText} label="Publications" value={institution.publication_count} tone="brand" />
-        <div className="rounded-xl border border-brand-100 bg-brand-50/50 px-2.5 py-2 ring-1 ring-brand-100/80">
+        <TaxonomyMapHighlightButton
+          kind="field"
+          name={leadingField.name}
+          taxonomyHighlight={taxonomyHighlight}
+          onTaxonomyHighlight={onTaxonomyHighlight}
+          className="rounded-xl border border-brand-100 bg-brand-50/50 px-2.5 py-2 ring-1 ring-brand-100/80"
+        >
           <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
             <Sparkles className="h-3 w-3 shrink-0" />
             Leading field
@@ -454,21 +553,27 @@ function InstitutionIdentityCard({
               {leadingField.publication_count === 1 ? "" : "s"}
             </p>
           ) : null}
-        </div>
+        </TaxonomyMapHighlightButton>
         <InsightStat icon={Users} label="Researchers" value={institution.researcher_count} />
         <InsightStat icon={MessageSquare} label="Discussions" value={institution.discussions_count} tone="teal" />
         <InsightStat icon={Reply} label="Responses" value={institution.responses_count} tone="brand" />
       </div>
 
       {leadingField.name && !compact && (
-        <p className="mt-2 rounded-lg bg-brand-50/80 px-2.5 py-2 text-xs text-brand-900">
+        <TaxonomyMapHighlightButton
+          kind="field"
+          name={leadingField.name}
+          taxonomyHighlight={taxonomyHighlight}
+          onTaxonomyHighlight={onTaxonomyHighlight}
+          className="mt-2 block w-full rounded-lg bg-brand-50/80 px-2.5 py-2 text-xs text-brand-900"
+        >
           <span className="font-semibold">Leading field:</span> {leadingField.name}
           <span className="text-brand-700">
             {" "}
             · {leadingField.publication_count} paper
             {leadingField.publication_count === 1 ? "" : "s"}
           </span>
-        </p>
+        </TaxonomyMapHighlightButton>
       )}
 
       {!compact && subfields.length > 0 && (
@@ -476,14 +581,19 @@ function InstitutionIdentityCard({
           <p className="text-[10px] font-bold uppercase tracking-wider text-brand-600">Leading subfields</p>
           <ul className="mt-2 max-h-40 space-y-1.5 overflow-y-auto">
             {subfields.slice(0, 10).map((row) => (
-              <li
-                key={row.name}
-                className="flex items-center justify-between gap-2 rounded-lg bg-white px-2.5 py-1.5 text-xs ring-1 ring-slate-100"
-              >
-                <span className="min-w-0 truncate font-medium text-ink">{row.name}</span>
-                <span className="shrink-0 tabular-nums font-semibold text-slate-600">
-                  {row.publication_count}
-                </span>
+              <li key={row.name}>
+                <TaxonomyMapHighlightButton
+                  kind="subfield"
+                  name={row.name}
+                  taxonomyHighlight={taxonomyHighlight}
+                  onTaxonomyHighlight={onTaxonomyHighlight}
+                  className="flex w-full items-center justify-between gap-2 rounded-lg bg-white px-2.5 py-1.5 text-xs ring-1 ring-slate-100"
+                >
+                  <span className="min-w-0 truncate font-medium text-ink">{row.name}</span>
+                  <span className="shrink-0 tabular-nums font-semibold text-slate-600">
+                    {row.publication_count}
+                  </span>
+                </TaxonomyMapHighlightButton>
               </li>
             ))}
           </ul>
@@ -536,10 +646,14 @@ function ResearcherIdentityCard({
   person,
   compact = false,
   onApplyMapFilter,
+  taxonomyHighlight,
+  onTaxonomyHighlight,
 }: {
   person: ResearcherSearchIdentity;
   compact?: boolean;
   onApplyMapFilter?: (patch: { author?: string; affiliation?: string }) => void;
+  taxonomyHighlight?: MapTaxonomyHighlight | null;
+  onTaxonomyHighlight?: (highlight: MapTaxonomyHighlight) => void;
 }) {
   const profilePath =
     person.profile_url || (person.user_id ? `/researcher/${person.user_id}` : null);
@@ -592,7 +706,13 @@ function ResearcherIdentityCard({
 
       <div className="mt-3 grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
         <InsightStat icon={BookOpenText} label="Papers published" value={person.publication_count} tone="brand" />
-        <div className="rounded-xl border border-slate-100 bg-white px-2.5 py-2">
+        <TaxonomyMapHighlightButton
+          kind="subfield"
+          name={leadingSubfield.name}
+          taxonomyHighlight={taxonomyHighlight}
+          onTaxonomyHighlight={onTaxonomyHighlight}
+          className="rounded-xl border border-slate-100 bg-white px-2.5 py-2"
+        >
           <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-brand-600">
             <Sparkles className="h-3 w-3 shrink-0" />
             Lead subfield
@@ -605,7 +725,7 @@ function ResearcherIdentityCard({
               {leadingSubfield.publication_count} paper{leadingSubfield.publication_count === 1 ? "" : "s"}
             </p>
           ) : null}
-        </div>
+        </TaxonomyMapHighlightButton>
         <InsightStat icon={MessageSquare} label="Discussions" value={person.discussions_count} tone="teal" />
         <InsightStat icon={Reply} label="Responses" value={person.responses_count} tone="brand" />
       </div>
@@ -654,6 +774,8 @@ export function MapResultsRail({
   onToggleCollapse,
   onClose,
   onApplyMapFilter,
+  taxonomyHighlight = null,
+  onTaxonomyHighlight,
 }: Props) {
   const isMobile = useIsMobile();
   const swipeRef = useRef<{ startY: number } | null>(null);
@@ -712,14 +834,16 @@ export function MapResultsRail({
           .slice(0, 6)
           .map((person) => {
             const pubs = person.publications;
-            const lead = pubs[0];
             return {
               key: person.key,
               userId: person.userId,
               name: person.name,
               affiliation: person.affiliation,
               photo: person.photo,
-              ranking: lead?.author?.ranking,
+              ranking: teamRankingForPerson(pubs, {
+                userId: person.userId,
+                name: person.name,
+              }),
               leadSubfield: topValues(
                 pubs.map((pub) => pub.subfield_name || pub.sub_category_name || "")
               )[0],
@@ -753,6 +877,10 @@ export function MapResultsRail({
       : [];
 
   const paperList = publications;
+  const highlightedMapCount = publicationIdsForTaxonomyHighlight(
+    publications,
+    taxonomyHighlight
+  ).length;
 
   const institutionResultCount = exactInstitution
     ? 1
@@ -869,6 +997,37 @@ export function MapResultsRail({
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 pb-4">
+          {taxonomyHighlight?.name && onTaxonomyHighlight ? (
+            <div className="mb-4 flex items-start justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50/90 px-3 py-2.5 text-xs text-emerald-900">
+              <p>
+                <span className="font-semibold">
+                  {highlightedMapCount} publication{highlightedMapCount === 1 ? "" : "s"}
+                </span>{" "}
+                highlighted on map for{" "}
+                <span className="font-semibold">
+                  {taxonomyHighlight.kind === "field" ? "field" : "subfield"} &ldquo;
+                  {taxonomyHighlight.name}&rdquo;
+                </span>
+                {highlightedMapCount === 0 ? (
+                  <span className="block mt-0.5 text-emerald-800/80">
+                    None in the current results have map coordinates.
+                  </span>
+                ) : null}
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  onTaxonomyHighlight({
+                    kind: taxonomyHighlight.kind,
+                    name: taxonomyHighlight.name,
+                  })
+                }
+                className="shrink-0 rounded-lg px-2 py-1 font-semibold text-emerald-800 hover:bg-emerald-100"
+              >
+                Clear
+              </button>
+            </div>
+          ) : null}
           {railEmpty ? (
             <div className="rounded-2xl border-2 border-dashed border-slate-200 px-4 py-12 text-center">
               {institutionSearchActive ? (
@@ -901,6 +1060,8 @@ export function MapResultsRail({
                   <ResearcherIdentityCard
                     person={exactResearcher}
                     onApplyMapFilter={onApplyMapFilter}
+                    taxonomyHighlight={taxonomyHighlight}
+                    onTaxonomyHighlight={onTaxonomyHighlight}
                   />
                 </section>
               )}
@@ -922,6 +1083,8 @@ export function MapResultsRail({
                         <ResearcherIdentityCard
                           person={researcherIdentityFromPaperResults(person)}
                           onApplyMapFilter={onApplyMapFilter}
+                          taxonomyHighlight={taxonomyHighlight}
+                          onTaxonomyHighlight={onTaxonomyHighlight}
                         />
                       </li>
                     ))}
@@ -948,6 +1111,8 @@ export function MapResultsRail({
                           person={person}
                           compact
                           onApplyMapFilter={onApplyMapFilter}
+                          taxonomyHighlight={taxonomyHighlight}
+                          onTaxonomyHighlight={onTaxonomyHighlight}
                         />
                       </li>
                     ))}
@@ -1002,10 +1167,16 @@ export function MapResultsRail({
                                 </span>
                               </div>
                               {person.leadSubfield && (
-                                <p className="mt-2 text-xs text-slate-600">
+                                <TaxonomyMapHighlightButton
+                                  kind="subfield"
+                                  name={person.leadSubfield}
+                                  taxonomyHighlight={taxonomyHighlight}
+                                  onTaxonomyHighlight={onTaxonomyHighlight}
+                                  className="mt-2 block w-full rounded-lg px-1 py-1 text-xs text-slate-600"
+                                >
                                   <span className="font-semibold text-slate-700">Lead subfield: </span>
                                   {person.leadSubfield}
-                                </p>
+                                </TaxonomyMapHighlightButton>
                               )}
                               {person.userId && (
                                 <Link
@@ -1042,6 +1213,8 @@ export function MapResultsRail({
                   <InstitutionIdentityCard
                     institution={exactInstitution}
                     onApplyMapFilter={onApplyMapFilter}
+                    taxonomyHighlight={taxonomyHighlight}
+                    onTaxonomyHighlight={onTaxonomyHighlight}
                   />
                 </section>
               )}
@@ -1063,6 +1236,8 @@ export function MapResultsRail({
                         <InstitutionIdentityCard
                           institution={institutionIdentityFromPaperResults(row)}
                           onApplyMapFilter={onApplyMapFilter}
+                          taxonomyHighlight={taxonomyHighlight}
+                          onTaxonomyHighlight={onTaxonomyHighlight}
                         />
                       </li>
                     ))}
@@ -1089,6 +1264,8 @@ export function MapResultsRail({
                           institution={institution}
                           compact
                           onApplyMapFilter={onApplyMapFilter}
+                          taxonomyHighlight={taxonomyHighlight}
+                          onTaxonomyHighlight={onTaxonomyHighlight}
                         />
                       </li>
                     ))}
@@ -1125,19 +1302,11 @@ export function MapResultsRail({
                             to={buildPublicationPath(pub.id, pub.encoded_id)}
                             className="flex gap-3 p-3.5 pb-2.5"
                           >
-                            <UserAvatar
-                              user={pub.author}
-                              size="sm"
-                              className="h-11 w-11 rounded-xl border-2 text-sm"
-                            />
                             <div className="min-w-0 flex-1 text-left">
+                              <PublicationAuthorTeamRow publication={pub} className="mb-1.5" />
                               <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink group-hover:text-brand-700">
                                 {formatGrePaperTitle(pub.title, pub.short_number)}
                               </p>
-                              <PublicationAuthorLine
-                                publication={pub}
-                                className="mt-1"
-                              />
                               {location && (
                                 <p className="mt-1 flex items-start gap-1 text-xs text-slate-600">
                                   <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-teal-600" />
@@ -1151,7 +1320,28 @@ export function MapResultsRail({
                               )}
                               {subVisual ? (
                                 <div className="mt-2">
-                                  <SubcategoryBadge visual={subVisual} size="xs" />
+                                  <TaxonomyMapHighlightButton
+                                    kind="subfield"
+                                    name={subVisual.name}
+                                    taxonomyHighlight={taxonomyHighlight}
+                                    onTaxonomyHighlight={onTaxonomyHighlight}
+                                    className="inline-flex rounded-lg"
+                                  >
+                                    <SubcategoryBadge visual={subVisual} size="xs" />
+                                  </TaxonomyMapHighlightButton>
+                                </div>
+                              ) : null}
+                              {pub.field_name?.trim() ? (
+                                <div className="mt-1.5">
+                                  <TaxonomyMapHighlightButton
+                                    kind="field"
+                                    name={pub.field_name}
+                                    taxonomyHighlight={taxonomyHighlight}
+                                    onTaxonomyHighlight={onTaxonomyHighlight}
+                                    className="inline-flex rounded-md px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200"
+                                  >
+                                    {pub.field_name}
+                                  </TaxonomyMapHighlightButton>
                                 </div>
                               ) : null}
                             </div>

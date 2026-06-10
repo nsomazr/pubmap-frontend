@@ -2,8 +2,7 @@ import { Eye, MapPin, X } from "lucide-react";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
-import { PublicationAuthorLine } from "../publication/PublicationAuthorLine";
-import { PublicationIdentityRow } from "../publication/PublicationIdentityRow";
+import { PublicationAuthorTeamRow } from "../publication/PublicationAuthorTeamRow";
 
 interface Props {
   publication: Publication;
@@ -11,9 +10,6 @@ interface Props {
 }
 
 export function MapFocusedPublicationCard({ publication, onClose }: Props) {
-  const author =
-    publication.author?.full_name ||
-    `${publication.author?.firstname ?? ""} ${publication.author?.lastname ?? ""}`.trim();
   const subVisual = publicationSubcategoryVisual(publication);
   const location = publication.coordinates?.location?.trim();
 
@@ -31,11 +27,17 @@ export function MapFocusedPublicationCard({ publication, onClose }: Props) {
           </button>
         )}
         <div className="min-w-0 pr-6">
-          <PublicationIdentityRow user={publication.author} authorName={author} subVisual={subVisual} />
+          <PublicationAuthorTeamRow publication={publication} className="mb-2.5" />
+          {subVisual && (
+            <div className="mb-2 inline-flex max-w-full items-center gap-2 rounded-full bg-brand-50 px-2.5 py-1.5 ring-1 ring-brand-100/80">
+              <span className="truncate text-[11px] font-bold uppercase tracking-wide text-brand-700">
+                {subVisual.name}
+              </span>
+            </div>
+          )}
           <h3 className="text-sm font-semibold leading-snug text-ink sm:text-base">
             {formatGrePaperTitle(publication.title, publication.short_number)}
           </h3>
-          <PublicationAuthorLine publication={publication} className="mt-1" />
           {location && (
             <p className="mt-1.5 flex items-start gap-1.5 text-xs text-slate-500">
               <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />

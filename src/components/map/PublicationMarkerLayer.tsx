@@ -17,6 +17,8 @@ const EMBEDDED_FOCUS_ZOOM = 10;
 interface Props {
   publications: Publication[];
   focusPublicationId?: number | null;
+  /** Publication IDs to emphasize on the map (e.g. field/subfield filter from search rail). */
+  highlightedPublicationIds?: number[];
   embedded?: boolean;
   useSheet?: boolean;
   clustered?: boolean;
@@ -26,6 +28,7 @@ interface Props {
 export function PublicationMarkerLayer({
   publications,
   focusPublicationId,
+  highlightedPublicationIds = [],
   embedded = false,
   useSheet = false,
   clustered = true,
@@ -200,6 +203,46 @@ export function PublicationMarkerLayer({
 
     return () => window.clearTimeout(timer);
   }, [focusPublicationId, publications, map, embedded, useSheet]);
+
+  useEffect(() => {
+    const highlightSet = new Set(highlightedPublicationIds);
+    const hasHighlight = highlightSet.size > 0;
+
+    for (const [id, marker] of markersById.current) {
+      const el = marker.getElement();
+      if (!el) continue;
+      const pin = el.querySelector(".gre-pub-marker");
+      if (pin) {
+        pin.classList.toggle("gre-pub-marker--taxonomy-highlight", hasHighlight && highlightSet.has(id));
+      }
+      el.style.opacity = hasHighlight && !highlightSet.has(id) ? "0.32" : "";
+      el.style.filter = hasHighlight && !highlightSet.has(id) ? "grayscale(0.35)" : "";
+    }
+  }, [highlightedPublicationIds]);
+
+  useEffect(() => {
+    if (!highlightedPublicationIds.length) return;
+
+    const coords = highlightedPublicationIds
+      .map((id) => publications.find((pub) => pub.id === id))
+      .filter(
+        (pub): pub is Publication =>
+          Boolean(pub?.coordinates?.latitude && pub?.coordinates?.longitude)
+      )
+      .map(
+        (pub) =>
+          [
+            parseFloat(pub.coordinates!.latitude),
+            parseFloat(pub.coordinates!.longitude),
+          ] as [number, number]
+      );
+
+    if (!coords.length) return;
+
+    safeMapOp(map, (m) => {
+      m.fitBounds(L.latLngBounds(coords), { padding: [72, 72], maxZoom: 11 });
+    });
+  }, [highlightedPublicationIds, publications, map]);
 
   return null;
 }

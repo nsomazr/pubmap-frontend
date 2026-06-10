@@ -248,6 +248,8 @@ export function PublicationManagePage() {
   );
   const [figuresUploadBusy, setFiguresUploadBusy] = useState(false);
   const [figuresPendingCount, setFiguresPendingCount] = useState(0);
+  const figuresUploadBusyRef = useRef(false);
+  const figuresPendingCountRef = useRef(0);
   const flushFigureCaptionsRef = useRef<(() => Promise<void>) | null>(null);
   const extractionAbortRef = useRef<AbortController | null>(null);
   const extractionCancelledRef = useRef(false);
@@ -623,7 +625,9 @@ export function PublicationManagePage() {
       setCollaborators([]);
     }
     setGre(pub.gre ?? { access_type: "open" });
-    setFigures(pub.figures ?? pub.photos ?? []);
+    if (!figuresUploadBusyRef.current && figuresPendingCountRef.current === 0) {
+      setFigures(pub.figures ?? pub.photos ?? []);
+    }
     setAccessTypeChosen(true);
     setPendingDocument(null);
     setExtractionUi({ status: "idle", warnings: [], sectionNotes: {} });
@@ -1073,7 +1077,7 @@ export function PublicationManagePage() {
           if (data.encoded_id) setCreatedDraftEncodedId(data.encoded_id);
           queryClient.invalidateQueries({ queryKey: ["publications"] });
           queryClient.invalidateQueries({ queryKey: editQueryKey });
-          if (wasFirstCreate) {
+          if (wasFirstCreate && !options?.quiet) {
             navigate(buildDashboardPublicationPath(data.id, data.encoded_id), { replace: true });
           }
           return data;
@@ -1399,6 +1403,20 @@ export function PublicationManagePage() {
   const submitValidationError = getSubmitValidationError();
   const readyToSubmit = submitValidationError === null;
   const showSubmitReview = isNew || canSubmit;
+
+  const handleFiguresActivityChange = useCallback(
+    ({ uploading, pendingCount }: { uploading: boolean; pendingCount: number }) => {
+      figuresUploadBusyRef.current = uploading;
+      figuresPendingCountRef.current = pendingCount;
+      setFiguresUploadBusy(uploading);
+      setFiguresPendingCount(pendingCount);
+    },
+    []
+  );
+
+  const registerFlushFigureCaptions = useCallback((flush: (() => Promise<void>) | null) => {
+    flushFigureCaptionsRef.current = flush;
+  }, []);
 
   const ensurePublicationForFigures = async (): Promise<EnsurePublicationIdResult> => {
     if (persistedPublicationId) return { ok: true, id: persistedPublicationId };
@@ -1821,13 +1839,8 @@ export function PublicationManagePage() {
                       figures={figures}
                       onChange={setFigures}
                       ensurePublicationId={ensurePublicationForFigures}
-                      onActivityChange={({ uploading, pendingCount }) => {
-                        setFiguresUploadBusy(uploading);
-                        setFiguresPendingCount(pendingCount);
-                      }}
-                      registerFlushCaptions={(flush) => {
-                        flushFigureCaptionsRef.current = flush;
-                      }}
+                      onActivityChange={handleFiguresActivityChange}
+                      registerFlushCaptions={registerFlushFigureCaptions}
                     />
                   }
                 />

@@ -1,5 +1,6 @@
 import { Building2, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
+import { RankedNameLabel } from "../rankings/RankedNameLabel";
 import { UserAvatar } from "../ui/UserAvatar";
 import type { CoAuthorPerson } from "../../types";
 
@@ -40,16 +41,22 @@ export function CoAuthorCard({ person, highlight = false }: Props) {
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          {profilePath ? (
-            <Link
-              to={profilePath}
-              className="font-semibold text-ink transition hover:text-brand-700"
-            >
-              {person.fullname}
-            </Link>
-          ) : (
-            <p className="font-semibold text-ink">{person.fullname}</p>
-          )}
+          <RankedNameLabel
+            name={
+              profilePath ? (
+                <Link
+                  to={profilePath}
+                  className="font-semibold text-ink transition hover:text-brand-700"
+                >
+                  {person.fullname}
+                </Link>
+              ) : (
+                <span className="font-semibold text-ink">{person.fullname}</span>
+              )
+            }
+            ranking={person.ranking}
+            showBadges={Boolean(person.user_id)}
+          />
           {person.role && (
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
