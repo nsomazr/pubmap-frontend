@@ -180,24 +180,44 @@ export function isExternalAdLink(link: string): boolean {
 
 export const AD_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif";
 
+function adImageApiUrl(adId: number): string {
+  const apiBase = resolveApiBaseUrl().replace(/\/api\/?$/, "");
+  return `${apiBase}/api/ads/${adId}/image/`;
+}
+
+function isUploadedAdAsset(path: string): boolean {
+  const normalized = path.replace(/^\/+/, "").toLowerCase();
+  return (
+    normalized.includes("uploads/ads/") ||
+    normalized.includes("/media/uploads/ads/")
+  );
+}
+
 export function resolveAdImageSrc(
   image?: string | null,
   adId?: number,
   imagePath?: string | null
 ): string {
   const display = (image || "").trim();
+  const stored = (imagePath || display).trim();
+
+  if (adId && (isUploadedAdAsset(display) || isUploadedAdAsset(stored))) {
+    return adImageApiUrl(adId);
+  }
+
   if (display.startsWith("http://") || display.startsWith("https://")) {
     return display;
   }
-  const stored = (imagePath || display).trim();
+
   if (stored) {
     const resolved = mediaUrl(stored);
     if (resolved) return resolved;
   }
+
   if (adId) {
-    const apiBase = resolveApiBaseUrl().replace(/\/api\/?$/, "");
-    return `${apiBase}/api/ads/${adId}/image/`;
+    return adImageApiUrl(adId);
   }
+
   return display;
 }
 
