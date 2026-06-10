@@ -9,7 +9,7 @@ import {
   useAdDetail,
   type AdPlacement,
 } from "../lib/ads";
-import { mediaUrl } from "../lib/mediaUrl";
+import { resolveAdImageSrc } from "../lib/ads";
 
 const PLACEMENT_VALUES = new Set([
   "sidebar",
@@ -58,7 +58,7 @@ export function AdDetailPage() {
     );
   }
 
-  const imageSrc = mediaUrl(ad.image) || ad.image || "";
+  const imageSrc = resolveAdImageSrc(ad.image, ad.id, ad.image_path);
   const destination = adDestination(ad);
   const placementLabel = ad.placement_label || ad.placement.replace(/_/g, " ");
 

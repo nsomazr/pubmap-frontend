@@ -417,8 +417,9 @@ export function AboutPage() {
           {/* CTA */}
           <GreAdPlacement
             placement="institutional_banner"
-            limit={1}
+            limit={4}
             variant="banner"
+            rotate
             className="mb-8"
           />
 

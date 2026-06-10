@@ -21,16 +21,16 @@ import {
   AD_IMAGE_ACCEPT,
   AD_PLACEMENTS,
   buildAdDetailPath,
+  resolveAdImageSrc,
   uploadAdImage,
   type AdAnalyticsRow,
   type AdPlacement,
 } from "../../lib/ads";
-import { mediaUrl } from "../../lib/mediaUrl";
-
 interface Ad {
   id: number;
   title: string;
   image: string;
+  image_path?: string;
   link: string;
   location: string;
   placement: AdPlacement;
@@ -214,7 +214,7 @@ export function AdsPage() {
     setFormError("");
     setForm({
       title: ad.title,
-      image: ad.image,
+      image: ad.image_path || ad.image,
       link: ad.link,
       location: (ad.placement || ad.location) as AdPlacement,
       status: ad.status,
@@ -314,7 +314,10 @@ export function AdsPage() {
           </label>
           {(imagePreview || form.image) && (
             <img
-              src={imagePreview || mediaUrl(form.image) || form.image}
+              src={
+                imagePreview ||
+                resolveAdImageSrc(form.image, editingId ?? undefined, form.image)
+              }
               alt=""
               className="h-32 w-full max-w-sm rounded-xl border border-slate-200 object-cover"
             />
@@ -395,7 +398,7 @@ export function AdsPage() {
             <div key={ad.id} className="gre-card overflow-hidden">
               {ad.image && (
                 <img
-                  src={mediaUrl(ad.image) || ad.image}
+                  src={resolveAdImageSrc(ad.image, ad.id, ad.image_path)}
                   alt=""
                   className="h-32 w-full object-cover"
                 />

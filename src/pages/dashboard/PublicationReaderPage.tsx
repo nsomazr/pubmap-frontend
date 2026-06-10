@@ -103,7 +103,12 @@ export function PublicationReaderPage() {
         <aside className="order-1 space-y-6 lg:order-2">
           <PublicationAuthorsSidebar publication={pub} />
           <GreAdPlacement placement="sidebar" limit={4} rotate />
-          <GreAdPlacement placement="sponsored_publication" limit={1} className="mt-4 space-y-3" />
+          <GreAdPlacement
+            placement="sponsored_publication"
+            limit={4}
+            rotate
+            className="mt-4 space-y-3"
+          />
         </aside>
 
         <div className="gre-section-stack order-2 min-w-0 space-y-5 lg:order-1">

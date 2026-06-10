@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "./api";
+import { resolveApiBaseUrl } from "./apiBaseUrl";
+import { mediaUrl } from "./mediaUrl";
 import { buildPublicationPath } from "./publicationPaths";
 
 export type AdPlacement =
@@ -13,6 +15,7 @@ export interface GreAd {
   id: number;
   title: string;
   image: string;
+  image_path?: string;
   link: string;
   placement: AdPlacement;
   placement_label?: string;
@@ -177,11 +180,30 @@ export function isExternalAdLink(link: string): boolean {
 
 export const AD_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif";
 
+export function resolveAdImageSrc(
+  image?: string | null,
+  adId?: number,
+  imagePath?: string | null
+): string {
+  const display = (image || "").trim();
+  if (display.startsWith("http://") || display.startsWith("https://")) {
+    return display;
+  }
+  const stored = (imagePath || display).trim();
+  if (stored) {
+    const resolved = mediaUrl(stored);
+    if (resolved) return resolved;
+  }
+  if (adId) {
+    const apiBase = resolveApiBaseUrl().replace(/\/api\/?$/, "");
+    return `${apiBase}/api/ads/${adId}/image/`;
+  }
+  return display;
+}
+
 export async function uploadAdImage(file: File): Promise<string> {
   const body = new FormData();
   body.append("image", file);
-  const { data } = await api.post<{ image: string }>("/ads/upload-image/", body, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const { data } = await api.post<{ image: string; url?: string }>("/ads/upload-image/", body);
   return data.image;
 }
