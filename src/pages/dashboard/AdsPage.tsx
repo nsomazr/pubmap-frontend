@@ -8,6 +8,7 @@ import { GreAdAnalyticsPanel } from "../../components/ads/GreAdAnalyticsPanel";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Pagination } from "../../components/ui/Pagination";
 import { Button } from "../../components/ui/Button";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
 import { useToast } from "../../components/ui/ToastProvider";
 import { usePageParam } from "../../hooks/usePageParam";
 import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../../lib/pagination";
@@ -65,6 +66,7 @@ export function AdsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const queryClient = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const pendingDeleteTitleRef = useRef("");
 
   useEffect(() => {
@@ -189,10 +191,21 @@ export function AdsPage() {
     }
   };
 
+  const confirmDeleteAd = async (id: number, title: string) => {
+    const ok = await confirm({
+      title: "Delete advertisement?",
+      description: `Delete "${title}"? This removes the ad from all placements and cannot be undone.`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+      tone: "danger",
+    });
+    if (!ok) return;
+    pendingDeleteTitleRef.current = title;
+    deleteMutation.mutate(id);
+  };
+
   const handleDeleteFromAnalytics = (row: AdAnalyticsRow) => {
-    if (!window.confirm(`Delete ad "${row.title}"?`)) return;
-    pendingDeleteTitleRef.current = row.title;
-    deleteMutation.mutate(row.id);
+    void confirmDeleteAd(row.id, row.title);
   };
 
   const startEdit = (ad: Ad) => {
@@ -414,12 +427,7 @@ export function AdsPage() {
                     type="button"
                     variant="secondary"
                     loading={deleteMutation.isPending}
-                    onClick={() => {
-                      if (window.confirm(`Delete ad "${ad.title}"?`)) {
-                        pendingDeleteTitleRef.current = ad.title;
-                        deleteMutation.mutate(ad.id);
-                      }
-                    }}
+                    onClick={() => void confirmDeleteAd(ad.id, ad.title)}
                   >
                     Delete
                   </Button>
