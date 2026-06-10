@@ -79,6 +79,7 @@ export interface ResearcherRanking {
 }
 
 export type InstitutionRankingSort =
+  | "leading"
   | "publications"
   | "researchers"
   | "discussions"
@@ -104,7 +105,10 @@ export interface InstitutionRanking {
   map_url?: string;
   total_publications: number;
   total_researchers: number;
+  total_conversations?: number;
+  total_responses?: number;
   total_discussions: number;
+  leading_score?: number;
   recent_publications: number;
   growth_rate: number;
   stars: number;

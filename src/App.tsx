@@ -38,6 +38,7 @@ const MeetRoomPage = lazyPage(() => import("./pages/MeetRoomPage"), "MeetRoomPag
 const AboutPage = lazyPage(() => import("./pages/AboutPage"), "AboutPage");
 const DoiRedirectPage = lazyPage(() => import("./pages/DoiRedirectPage"), "DoiRedirectPage");
 const RankingsPage = lazyPage(() => import("./pages/RankingsPage"), "RankingsPage");
+const AdDetailPage = lazyPage(() => import("./pages/AdDetailPage"), "AdDetailPage");
 const StatisticsPage = lazyPage(() => import("./pages/StatisticsPage"), "StatisticsPage");
 const ResearcherProfilePage = lazyPage(
   () => import("./pages/ResearcherProfilePage"),
@@ -176,6 +177,7 @@ function AppRoutes() {
             </PrivateRoute>
           }
         />
+        <Route path="/sponsored/:adId" element={<AdDetailPage />} />
         <Route path="/rankings" element={<RankingsPage />} />
         <Route path="/statistics" element={<StatisticsPage />} />
         <Route path="/about" element={<AboutPage />} />

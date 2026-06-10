@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Building2, GraduationCap, MessageSquare, TrendingUp, Users } from "lucide-react";
+import { Building2, GraduationCap, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../lib/api";
-import { greAccentBadge, greIconBrand, greIconTeal } from "../lib/greTheme";
+import { greAccentBadge, greIconBrand } from "../lib/greTheme";
 import { institutionMapUrl } from "../lib/institutionLinks";
 import { INSTITUTION_SORT_OPTIONS, RESEARCHER_SORT_OPTIONS } from "../lib/rankings";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
@@ -49,7 +49,7 @@ function SortSelect<T extends string>({
 
 export function RankingsPage() {
   const [tab, setTab] = useState<Tab>("institutions");
-  const [instSort, setInstSort] = useState<InstitutionRankingSort>("publications");
+  const [instSort, setInstSort] = useState<InstitutionRankingSort>("leading");
   const [researcherSort, setResearcherSort] = useState<ResearcherRankingSort>("leading");
 
   const { data: institutions = [], isLoading: instLoading } = useQuery({
@@ -164,27 +164,30 @@ export function RankingsPage() {
                         />
                       </Link>
                     </h2>
-                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-600">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 font-semibold">
-                        <Building2 className="h-3.5 w-3.5 text-brand-600" />
-                        {inst.total_publications.toLocaleString()} publications
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 font-semibold">
-                        <Users className="h-3.5 w-3.5 text-teal-600" />
-                        {inst.total_researchers.toLocaleString()} researchers
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 font-semibold">
-                        <MessageSquare className={`h-3.5 w-3.5 ${greIconTeal}`} />
-                        {inst.total_discussions.toLocaleString()} discussions
-                      </span>
-                      {instSort === "growth" && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 font-semibold text-brand-800">
-                          <TrendingUp className={`h-3.5 w-3.5 ${greIconBrand}`} />
-                          {inst.growth_rate > 0 ? "+" : ""}
-                          {inst.growth_rate}% growth
-                        </span>
-                      )}
-                    </div>
+                    <p className="mt-2 text-xs text-slate-500">
+                      {inst.total_publications.toLocaleString()} published ·{" "}
+                      {(inst.total_conversations ?? inst.total_discussions).toLocaleString()}{" "}
+                      {(inst.total_conversations ?? inst.total_discussions) === 1
+                        ? "discussion"
+                        : "discussions"}
+                      {inst.total_responses != null ? (
+                        <>
+                          {" "}
+                          · {inst.total_responses.toLocaleString()}{" "}
+                          {inst.total_responses === 1 ? "response" : "responses"}
+                        </>
+                      ) : null}
+                      {" · "}
+                      {inst.total_researchers.toLocaleString()}{" "}
+                      {inst.total_researchers === 1 ? "researcher" : "researchers"}
+                    </p>
+                    {instSort === "growth" ? (
+                      <p className="mt-1 text-xs font-semibold text-brand-800">
+                        <TrendingUp className={`mr-1 inline h-3.5 w-3.5 ${greIconBrand}`} />
+                        {inst.growth_rate > 0 ? "+" : ""}
+                        {inst.growth_rate}% growth (90-day)
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </article>

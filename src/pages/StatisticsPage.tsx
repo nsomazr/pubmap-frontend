@@ -200,7 +200,10 @@ export function StatisticsPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <Section title="Most active institutions" subtitle="Top contributors by publication count">
+            <Section
+              title="Leading institutions"
+              subtitle="Top institutions by publications, discussions, and responses"
+            >
               {data.top_institutions.length === 0 ? (
                 <p className="rounded-xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
                   Institution data appears when affiliations are linked to publications.
@@ -230,10 +233,20 @@ export function StatisticsPage() {
                             />
                           </h3>
                         </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                          <span>{inst.total_publications} publications</span>
-                          <span>{inst.total_researchers} researchers</span>
-                        </div>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {inst.total_publications} published ·{" "}
+                          {inst.total_conversations ?? inst.total_discussions}{" "}
+                          {(inst.total_conversations ?? inst.total_discussions) === 1
+                            ? "discussion"
+                            : "discussions"}
+                          {inst.total_responses != null ? (
+                            <>
+                              {" "}
+                              · {inst.total_responses}{" "}
+                              {inst.total_responses === 1 ? "response" : "responses"}
+                            </>
+                          ) : null}
+                        </p>
                       </div>
                     </article>
                   ))}

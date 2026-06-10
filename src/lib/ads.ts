@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "./api";
+import { buildPublicationPath } from "./publicationPaths";
 
 export type AdPlacement =
   | "sidebar"
@@ -14,6 +15,7 @@ export interface GreAd {
   image: string;
   link: string;
   placement: AdPlacement;
+  placement_label?: string;
   location: string;
   status: string;
   sponsor_label: string;
@@ -21,6 +23,40 @@ export interface GreAd {
   publication_id: number | null;
   publication_encoded_id?: string | null;
   sort_order: number;
+}
+
+export function buildAdDetailPath(adId: number, placement?: AdPlacement): string {
+  const base = `/sponsored/${adId}`;
+  if (!placement) return base;
+  return `${base}?placement=${encodeURIComponent(placement)}`;
+}
+
+export function adDestination(ad: Pick<GreAd, "link" | "publication_id" | "publication_encoded_id">) {
+  if (ad.publication_id) {
+    return {
+      href: buildPublicationPath(ad.publication_id, ad.publication_encoded_id),
+      external: false,
+      label: "View publication",
+    };
+  }
+  const href = adLinkHref(ad.link);
+  const external = isExternalAdLink(ad.link);
+  return {
+    href,
+    external,
+    label: external ? "Visit sponsor" : ad.link ? "Continue" : "Learn more",
+  };
+}
+
+export function useAdDetail(adId: number | string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ["ads", "public", adId],
+    enabled: enabled && Boolean(adId),
+    queryFn: async () => {
+      const { data } = await api.get<GreAd>(`/ads/${adId}/public/`);
+      return data;
+    },
+  });
 }
 
 export const AD_PLACEMENTS: { value: AdPlacement; label: string; hint: string }[] = [
@@ -51,15 +87,27 @@ export const AD_PLACEMENTS: { value: AdPlacement; label: string; hint: string }[
   },
 ];
 
+export interface AdAnalyticsPlacementRow {
+  placement: AdPlacement;
+  label: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+}
+
 export interface AdAnalyticsRow {
   id: number;
   title: string;
   placement: AdPlacement;
+  placement_label?: string;
   location: string;
   status: string;
+  link?: string;
+  sponsor_label?: string;
   impressions: number;
   clicks: number;
   ctr: number;
+  by_placement?: AdAnalyticsPlacementRow[];
 }
 
 export interface AdAnalytics {
@@ -125,4 +173,15 @@ export function adLinkHref(link: string): string {
 
 export function isExternalAdLink(link: string): boolean {
   return link.startsWith("http://") || link.startsWith("https://");
+}
+
+export const AD_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif";
+
+export async function uploadAdImage(file: File): Promise<string> {
+  const body = new FormData();
+  body.append("image", file);
+  const { data } = await api.post<{ image: string }>("/ads/upload-image/", body, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data.image;
 }

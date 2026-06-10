@@ -1,20 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { ImagePlus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { isPlatformAdmin } from "../../lib/userAccess";
 import { GreAdAnalyticsPanel } from "../../components/ads/GreAdAnalyticsPanel";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Pagination } from "../../components/ui/Pagination";
 import { Button } from "../../components/ui/Button";
+import { useToast } from "../../components/ui/ToastProvider";
 import { usePageParam } from "../../hooks/usePageParam";
 import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../../lib/pagination";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { Textarea } from "../../components/ui/Textarea";
-import api from "../../lib/api";
+import api, { parseApiError } from "../../lib/api";
 import { greFormArtCardClass } from "../../lib/formStyles";
-import { AD_PLACEMENTS, type AdPlacement } from "../../lib/ads";
+import {
+  AD_IMAGE_ACCEPT,
+  AD_PLACEMENTS,
+  buildAdDetailPath,
+  uploadAdImage,
+  type AdAnalyticsRow,
+  type AdPlacement,
+} from "../../lib/ads";
+import { mediaUrl } from "../../lib/mediaUrl";
 
 interface Ad {
   id: number;
@@ -49,8 +59,23 @@ export function AdsPage() {
   if (!isPlatformAdmin(user)) return <Navigate to="/dashboard" replace />;
 
   const [form, setForm] = useState(EMPTY_FORM);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [formError, setFormError] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const queryClient = useQueryClient();
+  const toast = useToast();
+  const pendingDeleteTitleRef = useRef("");
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
 
   const invalidateAdQueries = () => {
     queryClient.invalidateQueries({ queryKey: ["ads"] });
@@ -73,9 +98,16 @@ export function AdsPage() {
   const ads = adsData?.results ?? [];
   const adsTotal = adsData?.count ?? 0;
 
-  const adPayload = () => ({
+  const resetForm = () => {
+    setForm(EMPTY_FORM);
+    setImageFile(null);
+    setFormError("");
+    setEditingId(null);
+  };
+
+  const adPayload = (image: string) => ({
     title: form.title,
-    image: form.image,
+    image,
     link: form.link,
     location: form.location,
     status: form.status,
@@ -85,21 +117,41 @@ export function AdsPage() {
     publication_id: form.publication_id ? Number(form.publication_id) : null,
   });
 
-  const createMutation = useMutation({
-    mutationFn: () => api.post("/ads/", adPayload()),
-    onSuccess: () => {
-      invalidateAdQueries();
-      setForm(EMPTY_FORM);
-      setEditingId(null);
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      let imagePath = form.image.trim();
+      if (imageFile) {
+        imagePath = await uploadAdImage(imageFile);
+      }
+      if (!imagePath) {
+        throw new Error("Add an image file or paste an image URL.");
+      }
+      const payload = adPayload(imagePath);
+      if (editingId) {
+        await api.patch(`/ads/${editingId}/`, payload);
+        return;
+      }
+      await api.post("/ads/", payload);
     },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (id: number) => api.patch(`/ads/${id}/`, adPayload()),
     onSuccess: () => {
       invalidateAdQueries();
-      setForm(EMPTY_FORM);
-      setEditingId(null);
+      toast.success({
+        title: editingId ? "Advertisement updated" : "Advertisement created",
+        description: form.title.trim()
+          ? `"${form.title.trim()}" is saved.`
+          : undefined,
+      });
+      resetForm();
+    },
+    onError: (error: unknown) => {
+      const message =
+        (error as Error)?.message ||
+        parseApiError(error, "Could not save the advertisement.");
+      setFormError(message);
+      toast.error({
+        title: editingId ? "Could not update ad" : "Could not create ad",
+        description: message,
+      });
     },
   });
 
@@ -107,15 +159,46 @@ export function AdsPage() {
     mutationFn: (id: number) => api.delete(`/ads/${id}/`),
     onSuccess: () => {
       invalidateAdQueries();
+      const title = pendingDeleteTitleRef.current;
+      toast.success({
+        title: "Advertisement deleted",
+        description: title ? `"${title}" was removed.` : "The ad was removed from inventory.",
+      });
+      pendingDeleteTitleRef.current = "";
       if (editingId) {
-        setForm(EMPTY_FORM);
-        setEditingId(null);
+        resetForm();
       }
+    },
+    onError: (error: unknown) => {
+      toast.error({
+        title: "Could not delete ad",
+        description: parseApiError(error, "Delete failed."),
+      });
     },
   });
 
+  const startEditById = async (id: number) => {
+    try {
+      const { data } = await api.get<Ad>(`/ads/${id}/`);
+      startEdit(data);
+    } catch (error: unknown) {
+      toast.error({
+        title: "Could not open ad",
+        description: parseApiError(error, "Failed to load advertisement."),
+      });
+    }
+  };
+
+  const handleDeleteFromAnalytics = (row: AdAnalyticsRow) => {
+    if (!window.confirm(`Delete ad "${row.title}"?`)) return;
+    pendingDeleteTitleRef.current = row.title;
+    deleteMutation.mutate(row.id);
+  };
+
   const startEdit = (ad: Ad) => {
     setEditingId(ad.id);
+    setImageFile(null);
+    setFormError("");
     setForm({
       title: ad.title,
       image: ad.image,
@@ -138,7 +221,14 @@ export function AdsPage() {
         title="Advertisements"
       />
 
-      <GreAdAnalyticsPanel days={30} />
+      <GreAdAnalyticsPanel
+        days={30}
+        onEditAd={(id) => void startEditById(id)}
+        onDeleteAd={handleDeleteFromAnalytics}
+        deletePendingId={
+          deleteMutation.isPending ? (deleteMutation.variables ?? null) : null
+        }
+      />
 
       <section className="space-y-4">
         <div>
@@ -162,8 +252,8 @@ export function AdsPage() {
         className={`${greFormArtCardClass} grid gap-4 lg:grid-cols-2`}
         onSubmit={(e) => {
           e.preventDefault();
-          if (editingId) updateMutation.mutate(editingId);
-          else createMutation.mutate();
+          setFormError("");
+          saveMutation.mutate();
         }}
       >
         <div className="lg:col-span-2 flex flex-wrap items-center justify-between gap-2">
@@ -174,10 +264,7 @@ export function AdsPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => {
-                setEditingId(null);
-                setForm(EMPTY_FORM);
-              }}
+              onClick={resetForm}
             >
               Cancel edit
             </Button>
@@ -194,10 +281,37 @@ export function AdsPage() {
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           required
         />
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-slate-700">Ad image</p>
+          <p className="text-xs text-slate-500">
+            Upload a JPG, PNG, WebP, or GIF (up to 4 MB), or paste an image URL below.
+          </p>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-brand-300 hover:bg-brand-50/40">
+            <ImagePlus className="h-4 w-4 text-brand-600" />
+            {imageFile ? imageFile.name : "Choose image file"}
+            <input
+              type="file"
+              accept={AD_IMAGE_ACCEPT}
+              className="hidden"
+              onChange={(e) => {
+                setImageFile(e.target.files?.[0] ?? null);
+                setFormError("");
+              }}
+            />
+          </label>
+          {(imagePreview || form.image) && (
+            <img
+              src={imagePreview || mediaUrl(form.image) || form.image}
+              alt=""
+              className="h-32 w-full max-w-sm rounded-xl border border-slate-200 object-cover"
+            />
+          )}
+        </div>
         <Input
-          label="Image URL"
+          label="Image URL (optional if uploading a file)"
           value={form.image}
           onChange={(e) => setForm({ ...form, image: e.target.value })}
+          placeholder="https://… or uploads/ads/…"
         />
         <Input
           label="Link URL"
@@ -249,11 +363,13 @@ export function AdsPage() {
             rows={3}
           />
         </div>
+        {formError ? (
+          <p className="lg:col-span-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-100">
+            {formError}
+          </p>
+        ) : null}
         <div className="lg:col-span-2">
-          <Button
-            type="submit"
-            loading={createMutation.isPending || updateMutation.isPending}
-          >
+          <Button type="submit" loading={saveMutation.isPending}>
             {editingId ? "Save changes" : "Add advertisement"}
           </Button>
         </div>
@@ -264,7 +380,13 @@ export function AdsPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {ads.map((ad) => (
             <div key={ad.id} className="gre-card overflow-hidden">
-              {ad.image && <img src={ad.image} alt="" className="h-32 w-full object-cover" />}
+              {ad.image && (
+                <img
+                  src={mediaUrl(ad.image) || ad.image}
+                  alt=""
+                  className="h-32 w-full object-cover"
+                />
+              )}
               <div className="space-y-2 p-4">
                 <p className="font-medium text-ink">{ad.title}</p>
                 <p className="text-xs text-slate-500">
@@ -277,6 +399,14 @@ export function AdsPage() {
                   {ad.gre_meta?.sponsor_label || "Sponsored"}
                 </span>
                 <div className="flex flex-wrap gap-2 pt-2">
+                  <Link
+                    to={buildAdDetailPath(ad.id, (ad.placement || ad.location) as AdPlacement)}
+                    className="inline-flex min-h-9 items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-brand-700 transition hover:border-brand-200 hover:bg-brand-50/50"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Preview page
+                  </Link>
                   <Button type="button" variant="secondary" onClick={() => startEdit(ad)}>
                     Edit
                   </Button>
@@ -286,6 +416,7 @@ export function AdsPage() {
                     loading={deleteMutation.isPending}
                     onClick={() => {
                       if (window.confirm(`Delete ad "${ad.title}"?`)) {
+                        pendingDeleteTitleRef.current = ad.title;
                         deleteMutation.mutate(ad.id);
                       }
                     }}

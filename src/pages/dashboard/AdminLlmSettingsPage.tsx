@@ -19,6 +19,7 @@ type LlmSettingsPayload = {
     groq_model_fallbacks: string;
     ollama_base_url: string;
     ollama_model: string;
+    quality_gate_enabled: boolean;
     updated_at: string | null;
   };
   runtime: {
@@ -47,6 +48,7 @@ export function AdminLlmSettingsPage() {
   const [groqFallbacks, setGroqFallbacks] = useState("");
   const [ollamaUrl, setOllamaUrl] = useState("http://127.0.0.1:11434");
   const [ollamaModel, setOllamaModel] = useState("qwen3.5:0.8b");
+  const [qualityGateEnabled, setQualityGateEnabled] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["admin-llm-settings"],
@@ -64,6 +66,7 @@ export function AdminLlmSettingsPage() {
     setGroqFallbacks(data.settings.groq_model_fallbacks);
     setOllamaUrl(data.settings.ollama_base_url);
     setOllamaModel(data.settings.ollama_model);
+    setQualityGateEnabled(Boolean(data.settings.quality_gate_enabled));
   }, [data]);
 
   const refreshOllama = useMutation({
@@ -90,6 +93,7 @@ export function AdminLlmSettingsPage() {
         groq_model_fallbacks: groqFallbacks,
         ollama_base_url: ollamaUrl,
         ollama_model: ollamaModel,
+        quality_gate_enabled: qualityGateEnabled,
       });
       return payload;
     },
@@ -101,6 +105,7 @@ export function AdminLlmSettingsPage() {
         setGroqFallbacks(payload.settings.groq_model_fallbacks);
         setOllamaUrl(payload.settings.ollama_base_url);
         setOllamaModel(payload.settings.ollama_model);
+        setQualityGateEnabled(Boolean(payload.settings.quality_gate_enabled));
       }
       toast.success({ title: "LLM settings saved." });
     },
@@ -119,7 +124,7 @@ export function AdminLlmSettingsPage() {
     <div className="mx-auto max-w-3xl space-y-8">
       <PageHeader
         title="LLM provider"
-        description="Choose Groq (cloud) or local Ollama for GRE Assistant, manuscript autofill, and funder extraction. Default is Ollama with qwen3.5:0.8b when available."
+        description="Choose Groq (cloud) or local Ollama for GRE Assistant, manuscript autofill, and funder extraction. Optionally enable the quality gate so an LLM judge auto-switches provider or model when output is weak."
       />
 
       {isLoading && (
@@ -174,12 +179,39 @@ export function AdminLlmSettingsPage() {
                 </dt>
                 <dd>{health?.ollama_reachable ? "Yes" : "No"}</dd>
               </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Quality gate
+                </dt>
+                <dd>{qualityGateEnabled ? "On (judge fallback)" : "Off"}</dd>
+              </div>
             </dl>
             {health?.hint && !health.available && (
               <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
                 {health.hint}
               </p>
             )}
+          </section>
+
+          <section className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-ink">Auto quality gate</h2>
+                <p className="mt-1 max-w-xl text-xs text-slate-500">
+                  When enabled, GRE uses an LLM judge to score each response. If output is
+                  insufficient, it automatically tries the next provider or Groq fallback model.
+                </p>
+              </div>
+              <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  checked={qualityGateEnabled}
+                  onChange={(e) => setQualityGateEnabled(e.target.checked)}
+                />
+                Enable judge fallback
+              </label>
+            </div>
           </section>
 
           <section className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100">

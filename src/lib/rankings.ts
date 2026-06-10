@@ -6,6 +6,12 @@ export const INSTITUTION_SORT_OPTIONS: {
   description: string;
 }[] = [
   {
+    value: "leading",
+    label: "Leading institutions",
+    description:
+      "Institutions ranked by overall GRE impact: published studies, discussions on linked papers, and community responses.",
+  },
+  {
     value: "publications",
     label: "Highest publications",
     description:

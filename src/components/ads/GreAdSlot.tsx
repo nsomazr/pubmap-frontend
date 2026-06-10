@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  adLinkHref,
-  isExternalAdLink,
+  adDestination,
+  buildAdDetailPath,
   trackAdEvent,
   usePlacementAds,
   type AdPlacement,
   type GreAd,
 } from "../../lib/ads";
 import { mediaUrl } from "../../lib/mediaUrl";
-import { buildPublicationPath } from "../../lib/publicationPaths";
 
 type Variant = "compact" | "banner" | "card";
 
@@ -43,10 +42,8 @@ function AdItem({
   variant: Variant;
 }) {
   const tracked = useRef(false);
-  const href = ad.publication_id
-    ? buildPublicationPath(ad.publication_id, ad.publication_encoded_id)
-    : adLinkHref(ad.link);
-  const external = !ad.publication_id && isExternalAdLink(ad.link);
+  const destination = adDestination(ad);
+  const detailPath = buildAdDetailPath(ad.id, placement);
   const imageSrc = resolveImage(ad.image);
 
   useEffect(() => {
@@ -55,7 +52,7 @@ function AdItem({
     void trackAdEvent(ad.id, placement, "impression");
   }, [ad.id, placement]);
 
-  const onClick = () => {
+  const onVisit = () => {
     void trackAdEvent(ad.id, placement, "click");
   };
 
@@ -68,58 +65,69 @@ function AdItem({
         ? "overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
         : "overflow-hidden rounded-xl border border-slate-200/80 bg-white/95 shadow-sm backdrop-blur";
 
-  const content = (
-    <>
+  return (
+    <article className={`group transition hover:-translate-y-0.5 hover:shadow-md ${shell}`}>
       <div className="flex items-center justify-between gap-2 px-3 pt-2.5">
         <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800 ring-1 ring-amber-200/80">
           {label}
         </span>
       </div>
       {imageSrc && (
-        <div className={variant === "banner" ? "relative h-28 sm:h-32" : "relative mt-2 h-24 px-3"}>
-          <img
-            src={imageSrc}
-            alt=""
-            className={
-              variant === "banner"
-                ? "h-full w-full object-cover"
-                : "h-full w-full rounded-lg object-cover"
-            }
-            loading="lazy"
-          />
-        </div>
+        <Link to={detailPath} className="block">
+          <div className={variant === "banner" ? "relative h-28 sm:h-32" : "relative mt-2 h-24 px-3"}>
+            <img
+              src={imageSrc}
+              alt=""
+              className={
+                variant === "banner"
+                  ? "h-full w-full object-cover transition group-hover:opacity-95"
+                  : "h-full w-full rounded-lg object-cover transition group-hover:opacity-95"
+              }
+              loading="lazy"
+            />
+          </div>
+        </Link>
       )}
-      <div className="space-y-1 px-3 pb-3 pt-2">
-        <p className="text-sm font-semibold leading-snug text-ink">{ad.title}</p>
+      <div className="space-y-2 px-3 pb-3 pt-2">
+        <Link to={detailPath} className="block">
+          <p className="text-sm font-semibold leading-snug text-ink transition group-hover:text-brand-700">
+            {ad.title}
+          </p>
+        </Link>
         {ad.description && (
           <p className="line-clamp-2 text-xs leading-relaxed text-slate-500">{ad.description}</p>
         )}
+        <div className="flex flex-wrap items-center gap-3 pt-0.5">
+          <Link
+            to={detailPath}
+            className="text-xs font-semibold text-brand-700 hover:text-brand-800 hover:underline"
+          >
+            More details
+          </Link>
+          {destination.href && destination.href !== "#" ? (
+            destination.external ? (
+              <a
+                href={destination.href}
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+                onClick={onVisit}
+                className="text-xs font-semibold text-slate-600 hover:text-ink hover:underline"
+              >
+                {destination.label}
+              </a>
+            ) : (
+              <Link
+                to={destination.href}
+                onClick={onVisit}
+                className="text-xs font-semibold text-slate-600 hover:text-ink hover:underline"
+              >
+                {destination.label}
+              </Link>
+            )
+          ) : null}
+        </div>
       </div>
-    </>
-  );
-
-  if (external) {
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer sponsored"
-        onClick={onClick}
-        className={`group block transition hover:-translate-y-0.5 hover:shadow-md ${shell}`}
-      >
-        {content}
-      </a>
-    );
-  }
-
-  return (
-    <Link
-      to={href}
-      onClick={onClick}
-      className={`group block transition hover:-translate-y-0.5 hover:shadow-md ${shell}`}
-    >
-      {content}
-    </Link>
+    </article>
   );
 }
 
