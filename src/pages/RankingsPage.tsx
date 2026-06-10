@@ -50,7 +50,7 @@ function SortSelect<T extends string>({
 export function RankingsPage() {
   const [tab, setTab] = useState<Tab>("institutions");
   const [instSort, setInstSort] = useState<InstitutionRankingSort>("publications");
-  const [researcherSort, setResearcherSort] = useState<ResearcherRankingSort>("publications");
+  const [researcherSort, setResearcherSort] = useState<ResearcherRankingSort>("leading");
 
   const { data: institutions = [], isLoading: instLoading } = useQuery({
     queryKey: ["rankings", "institutions", instSort],
@@ -238,8 +238,18 @@ export function RankingsPage() {
                     <p className="mt-0.5 truncate text-sm text-slate-500">{person.affiliation}</p>
                   )}
                   <p className="mt-2 text-xs text-slate-500">
-                    {person.published_count} published · {person.discussion_count}{" "}
-                    {person.discussion_count === 1 ? "discussion" : "discussions"}
+                    {person.published_count} published ·{" "}
+                    {person.conversation_count ?? person.discussion_count}{" "}
+                    {(person.conversation_count ?? person.discussion_count) === 1
+                      ? "discussion"
+                      : "discussions"}
+                    {person.response_count != null ? (
+                      <>
+                        {" "}
+                        · {person.response_count}{" "}
+                        {person.response_count === 1 ? "response" : "responses"}
+                      </>
+                    ) : null}
                   </p>
                 </div>
               </div>

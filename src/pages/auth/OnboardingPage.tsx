@@ -8,11 +8,13 @@ import {
   getSignupMethod,
   useAuth,
 } from "../../context/AuthContext";
+import { CoAuthorLinkPanel } from "../../components/auth/CoAuthorLinkPanel";
 import { AuthFormCard } from "../../components/auth/AuthFormCard";
 import { AuthLayout } from "../../components/layout/AuthLayout";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { HONORIFIC_OPTIONS } from "../../lib/userDisplay";
+import type { CoAuthorLinkSummary, User } from "../../types";
 
 export function OnboardingPage() {
   const { refreshUser, setOnboardingRequired } = useAuth();
@@ -22,6 +24,8 @@ export function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [coauthorLink, setCoauthorLink] = useState<CoAuthorLinkSummary | null>(null);
+  const [completedUserId, setCompletedUserId] = useState<number | null>(null);
   const [form, setForm] = useState({
     title: "",
     firstname: "",
@@ -56,10 +60,22 @@ export function OnboardingPage() {
         payload.password = form.password;
         payload.confirm_password = form.confirm_password;
       }
-      await api.post("/auth/onboarding/", payload);
+      const { data } = await api.post<{
+        user: User;
+        coauthor_link?: CoAuthorLinkSummary | null;
+      }>("/auth/onboarding/", payload);
       await refreshUser();
       setOnboardingRequired(false);
       clearSignupMethod();
+      const link = data.coauthor_link;
+      if (
+        link &&
+        (link.linked_publication_count > 0 || link.pending_name_matches.length > 0)
+      ) {
+        setCoauthorLink(link);
+        setCompletedUserId(data.user.id);
+        return;
+      }
       navigate("/dashboard");
     } catch (err: unknown) {
       const data = (err as { response?: { data?: Record<string, string[]> } })?.response
@@ -74,6 +90,27 @@ export function OnboardingPage() {
       setLoading(false);
     }
   };
+
+  if (coauthorLink) {
+    return (
+      <AuthLayout
+        variant="onboarding"
+        title="Your GRE co-author profile"
+        subtitle="We matched your new account to publications you already appear on."
+        showBackToMap={false}
+      >
+        <AuthFormCard className="space-y-5">
+          <CoAuthorLinkPanel
+            summary={coauthorLink}
+            profileUserId={completedUserId ?? undefined}
+            onUpdated={setCoauthorLink}
+            showDoneButton
+            onDone={() => navigate("/dashboard")}
+          />
+        </AuthFormCard>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout

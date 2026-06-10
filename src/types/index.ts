@@ -38,6 +38,29 @@ export interface User {
   is_category_manager?: boolean;
 }
 
+export interface CoAuthorPendingMatch {
+  collaborator_id: number;
+  publication_id: number;
+  publication_title: string;
+  listed_name: string;
+  role: string;
+  lead_author_name: string;
+}
+
+export interface CoAuthorLinkedPublication {
+  id: number;
+  title: string;
+  role: string;
+  lead_author_name: string;
+  map_url: string;
+}
+
+export interface CoAuthorLinkSummary {
+  linked_publication_count: number;
+  linked_publications: CoAuthorLinkedPublication[];
+  pending_name_matches: CoAuthorPendingMatch[];
+}
+
 export type ResearcherBadge =
   | "verified_researcher"
   | "top_contributor"
@@ -48,7 +71,10 @@ export interface ResearcherRanking {
   stars: number;
   published_count: number;
   recent_publications?: number;
+  conversation_count?: number;
+  response_count?: number;
   discussion_count: number;
+  leading_score?: number;
   badges: ResearcherBadge[];
 }
 
@@ -58,7 +84,11 @@ export type InstitutionRankingSort =
   | "discussions"
   | "growth";
 
-export type ResearcherRankingSort = "publications" | "discussions" | "stars";
+export type ResearcherRankingSort =
+  | "leading"
+  | "publications"
+  | "discussions"
+  | "stars";
 
 export interface Institution {
   id: number;

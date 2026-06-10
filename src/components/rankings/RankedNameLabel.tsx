@@ -34,7 +34,7 @@ export function resolveRankStars(
   return 0;
 }
 
-/** GRE rank stars immediately before a person or institution name. */
+/** GRE rank stars inline after a person or institution name. */
 export function RankedNameLabel({
   name,
   nameClassName = "",
@@ -49,18 +49,15 @@ export function RankedNameLabel({
 
   return (
     <span className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
+      <span className={`min-w-0 ${nameClassName}`}>{name}</span>
       {stars > 0 && (
         <span
-          className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-gradient-to-br from-amber-50 to-amber-100/90 px-1.5 py-0.5 shadow-sm ring-1 ring-amber-300/90"
+          className="inline-flex shrink-0 items-center"
           title={`${stars} GRE rank star${stars === 1 ? "" : "s"} (10+ published papers each)`}
         >
           <StarRating stars={stars} size={compact ? "sm" : "md"} showCount={false} />
-          <span className="text-[10px] font-extrabold tabular-nums leading-none text-amber-900">
-            {stars}
-          </span>
         </span>
       )}
-      <span className={`min-w-0 ${nameClassName}`}>{name}</span>
       {showBadges && badges.length > 0 && (
         <ResearcherBadges badges={badges} compact={compact} />
       )}

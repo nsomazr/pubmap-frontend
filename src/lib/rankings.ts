@@ -37,6 +37,12 @@ export const RESEARCHER_SORT_OPTIONS: {
   description: string;
 }[] = [
   {
+    value: "leading",
+    label: "Leading researchers",
+    description:
+      "Authors ranked by overall GRE impact: published studies, discussions on their papers, and community responses.",
+  },
+  {
     value: "publications",
     label: "Most publications",
     description: "Authors ranked by how many of their studies are published on the GRE map.",

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
   Calendar,
@@ -12,6 +12,7 @@ import {
   User,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { CoAuthorLinkPanel } from "../../components/auth/CoAuthorLinkPanel";
 import { InfoBanner } from "../../components/dashboard/InfoBanner";
 import { MetricTile } from "../../components/dashboard/MetricTile";
 import { PageHeader } from "../../components/dashboard/PageHeader";
@@ -29,7 +30,7 @@ import {
 } from "../../lib/greTheme";
 import { pickActivityTrend } from "../../lib/sparkline";
 import { canAccessReviewQueue, isPlatformAdmin } from "../../lib/userAccess";
-import type { DashboardStats } from "../../types";
+import type { CoAuthorLinkSummary, DashboardStats } from "../../types";
 import { DashboardSection } from "../../components/dashboard/DashboardSection";
 
 const WORKFLOW_METRICS = [
@@ -108,6 +109,7 @@ const QUICK_LINKS = [
 
 export function DashboardHome() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const isAdmin = isPlatformAdmin(user);
   const canReview = canAccessReviewQueue(user);
 
@@ -117,6 +119,15 @@ export function DashboardHome() {
       const { data } = await api.get<DashboardStats>("/dashboard/stats/");
       return data;
     },
+  });
+
+  const { data: coauthorLink } = useQuery({
+    queryKey: ["coauthor-link"],
+    queryFn: async () => {
+      const { data } = await api.get<CoAuthorLinkSummary>("/auth/me/coauthor-link/");
+      return data;
+    },
+    enabled: Boolean(user?.onboarding_complete),
   });
 
   const greetingName = userFirstName(user);
@@ -166,6 +177,16 @@ export function DashboardHome() {
         title="Overview"
         description="Your publications, workflow status, and shortcuts across GRE."
       />
+
+      {coauthorLink &&
+      (coauthorLink.linked_publication_count > 0 ||
+        coauthorLink.pending_name_matches.length > 0) ? (
+        <CoAuthorLinkPanel
+          summary={coauthorLink}
+          profileUserId={user?.id}
+          onUpdated={(next) => queryClient.setQueryData(["coauthor-link"], next)}
+        />
+      ) : null}
 
       <section className="gre-dashboard-card overflow-hidden">
         <div className="flex flex-col gap-4 border-b border-slate-100 px-4 py-4 sm:px-5 sm:py-5 lg:flex-row lg:items-center lg:justify-between">
