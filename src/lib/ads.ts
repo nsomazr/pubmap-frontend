@@ -179,6 +179,14 @@ export function isExternalAdLink(link: string): boolean {
 }
 
 export const AD_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif";
+export const AD_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
+
+export function validateAdImageFile(file: File): string | null {
+  if (file.size > AD_IMAGE_MAX_BYTES) {
+    return "Image must be 4 MB or smaller.";
+  }
+  return null;
+}
 
 function adImageApiUrl(adId: number): string {
   const apiBase = resolveApiBaseUrl().replace(/\/api\/?$/, "");

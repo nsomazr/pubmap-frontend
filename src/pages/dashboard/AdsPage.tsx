@@ -23,6 +23,7 @@ import {
   buildAdDetailPath,
   resolveAdImageSrc,
   uploadAdImage,
+  validateAdImageFile,
   type AdAnalyticsRow,
   type AdPlacement,
 } from "../../lib/ads";
@@ -126,6 +127,10 @@ export function AdsPage() {
       }
       let imagePath = "";
       if (imageFile) {
+        const fileError = validateAdImageFile(imageFile);
+        if (fileError) {
+          throw new Error(fileError);
+        }
         imagePath = await uploadAdImage(imageFile);
       } else {
         const raw = form.image.trim();
@@ -161,9 +166,7 @@ export function AdsPage() {
       resetForm();
     },
     onError: (error: unknown) => {
-      const message =
-        (error as Error)?.message ||
-        parseApiError(error, "Could not save the advertisement.");
+      const message = parseApiError(error, "Could not save the advertisement.");
       setFormError(message);
       toast.error({
         title: editingId ? "Could not update ad" : "Could not create ad",
@@ -322,7 +325,18 @@ export function AdsPage() {
               accept={AD_IMAGE_ACCEPT}
               className="hidden"
               onChange={(e) => {
-                setImageFile(e.target.files?.[0] ?? null);
+                const file = e.target.files?.[0] ?? null;
+                if (file) {
+                  const fileError = validateAdImageFile(file);
+                  if (fileError) {
+                    setImageFile(null);
+                    setFormError(fileError);
+                    toast.error({ title: "Image too large", description: fileError });
+                    e.target.value = "";
+                    return;
+                  }
+                }
+                setImageFile(file);
                 setFormError("");
               }}
             />

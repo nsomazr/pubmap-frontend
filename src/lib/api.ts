@@ -108,8 +108,15 @@ export function parseApiError(error: unknown, fallback: string): string {
     if (!error.response) {
       return "Could not reach the GRE server. Check your connection or try again shortly.";
     }
+    if (error.response.status === 400) {
+      return fallback;
+    }
   }
-  if (error instanceof Error && error.message) return error.message;
+  if (error instanceof Error && error.message) {
+    if (!axios.isAxiosError(error) || !/^Request failed with status code \d+$/i.test(error.message)) {
+      return error.message;
+    }
+  }
   return fallback;
 }
 
