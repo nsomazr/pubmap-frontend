@@ -7,6 +7,7 @@ import {
   trackAdEvent,
   usePlacementAds,
   type AdPlacement,
+  type AdTargetingContext,
   resolveAdImageSrc,
   type GreAd,
 } from "../../lib/ads";

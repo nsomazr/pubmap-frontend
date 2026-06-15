@@ -277,7 +277,8 @@ export function discussionAuthorRoleLabel(
   coAuthors?: PublicationCoAuthors | null,
   opts?: { authorUserId?: number | null }
 ): string | null {
-  if (!user?.id && !discussionParticipantNameKey(user)) return null;
+  if (!user) return null;
+  if (!user.id && !discussionParticipantNameKey(user)) return null;
 
   for (const person of publicationAuthorRoster(coAuthors)) {
     if (discussionParticipantMatchesAuthor(person, user)) {
