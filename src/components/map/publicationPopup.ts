@@ -3,7 +3,7 @@ import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { assets } from "../../lib/brand";
 import { resolveProfilePhotoSrc } from "../../lib/profilePhoto";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
-import { compactAuthorLineFromPublication } from "../../lib/publicationAuthors";
+import { fullAuthorLineFromPublication } from "../../lib/publicationAuthors";
 import { userInitials } from "../../lib/userDisplay";
 
 export type PublicationPopupVariant = "default" | "detail";
@@ -13,7 +13,7 @@ export function buildPublicationPopupHtml(
   options?: { variant?: PublicationPopupVariant }
 ) {
   const author =
-    compactAuthorLineFromPublication(pub) ||
+    fullAuthorLineFromPublication(pub) ||
     pub.author?.full_name ||
     `${pub.author?.firstname ?? ""} ${pub.author?.lastname ?? ""}`.trim();
   const authorPhoto = resolveProfilePhotoSrc(

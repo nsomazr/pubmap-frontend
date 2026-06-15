@@ -1,6 +1,6 @@
 /** Shared GRE form field styles (brand blue + teal focus). */
 export const greFieldClass =
-  "gre-field w-full min-h-[3rem] rounded-xl border border-slate-200/90 bg-white px-4 py-3 text-base text-ink transition placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-0 sm:min-h-[2.5rem] sm:py-2.5 sm:text-sm";
+  "gre-field w-full min-h-[3rem] rounded-lg border border-slate-200 bg-white px-4 py-3 text-base text-ink transition placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-0 sm:min-h-[2.5rem] sm:py-2.5 sm:text-sm";
 
 /** Single column on phones; two columns from large screens up. */
 export const greFormGridClass = "grid grid-cols-1 gap-4 lg:grid-cols-2";

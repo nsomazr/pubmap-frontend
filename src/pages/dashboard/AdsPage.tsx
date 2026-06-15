@@ -25,7 +25,10 @@ import {
   uploadAdImage,
   validateAdImageFile,
   type AdAnalyticsRow,
+  adTargetingFromForm,
+  adTargetingToForm,
   type AdPlacement,
+  type AdTargeting,
 } from "../../lib/ads";
 interface Ad {
   id: number;
@@ -41,8 +44,17 @@ interface Ad {
     description?: string;
     sort_order?: number;
     publication_id?: number | null;
+    targeting?: AdTargeting;
   } | null;
 }
+
+const EMPTY_TARGETING_FORM = {
+  category_ids: "",
+  sub_category_ids: "",
+  locations: "",
+  affiliations: "",
+  keywords: "",
+};
 
 const EMPTY_FORM = {
   title: "",
@@ -54,6 +66,7 @@ const EMPTY_FORM = {
   description: "",
   sort_order: "0",
   publication_id: "",
+  ...EMPTY_TARGETING_FORM,
 };
 
 export function AdsPage() {
@@ -118,6 +131,13 @@ export function AdsPage() {
     description: form.description,
     sort_order: Number(form.sort_order) || 0,
     publication_id: form.publication_id ? Number(form.publication_id) : null,
+    targeting: adTargetingFromForm({
+      category_ids: form.category_ids,
+      sub_category_ids: form.sub_category_ids,
+      locations: form.locations,
+      affiliations: form.affiliations,
+      keywords: form.keywords,
+    }),
   });
 
   const saveMutation = useMutation({
@@ -240,6 +260,7 @@ export function AdsPage() {
       description: ad.gre_meta?.description || "",
       sort_order: String(ad.gre_meta?.sort_order ?? 0),
       publication_id: ad.gre_meta?.publication_id ? String(ad.gre_meta.publication_id) : "",
+      ...adTargetingToForm(ad.gre_meta?.targeting),
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -400,6 +421,47 @@ export function AdsPage() {
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </Select>
+        <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+          <p className="text-sm font-semibold text-ink">Relevance targeting (optional)</p>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            Leave blank to show everywhere for the chosen placement. When set, the ad only appears
+            when the page matches at least one rule.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Target field IDs"
+              value={form.category_ids}
+              onChange={(e) => setForm({ ...form, category_ids: e.target.value })}
+              placeholder="1, 3"
+            />
+            <Input
+              label="Target subfield IDs"
+              value={form.sub_category_ids}
+              onChange={(e) => setForm({ ...form, sub_category_ids: e.target.value })}
+              placeholder="12, 18"
+            />
+            <Input
+              label="Target locations"
+              value={form.locations}
+              onChange={(e) => setForm({ ...form, locations: e.target.value })}
+              placeholder="Tanzania, Nairobi"
+            />
+            <Input
+              label="Target affiliations"
+              value={form.affiliations}
+              onChange={(e) => setForm({ ...form, affiliations: e.target.value })}
+              placeholder="University of, WHO"
+            />
+            <div className="sm:col-span-2">
+              <Input
+                label="Target keywords"
+                value={form.keywords}
+                onChange={(e) => setForm({ ...form, keywords: e.target.value })}
+                placeholder="malaria, climate health"
+              />
+            </div>
+          </div>
+        </div>
         <div className="lg:col-span-2">
           <Textarea
             label="Description"

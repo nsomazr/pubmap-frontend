@@ -8,6 +8,7 @@ import type { Publication } from "../../types";
 
 interface Props {
   publication: Publication;
+  /** When set, truncates with "et al."; omit to list every author. */
   maxAuthors?: number;
   showAvatars?: boolean;
   className?: string;
@@ -15,7 +16,7 @@ interface Props {
 
 export function PublicationAuthorTeamRow({
   publication,
-  maxAuthors = 4,
+  maxAuthors,
   showAvatars = true,
   className = "",
 }: Props) {
@@ -67,9 +68,7 @@ export function PublicationAuthorTeamRow({
         </div>
       )}
       {line && (
-        <p className="min-w-0 truncate text-xs font-medium text-slate-600" title={line}>
-          {line}
-        </p>
+        <p className="min-w-0 text-xs font-medium leading-snug text-slate-600">{line}</p>
       )}
     </div>
   );

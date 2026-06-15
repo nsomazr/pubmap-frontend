@@ -9,7 +9,28 @@ export type AdPlacement =
   | "sponsored_publication"
   | "research_tool"
   | "institutional_banner"
-  | "event_sponsor";
+  | "event_sponsor"
+  | "forum_sidebar"
+  | "forum_inline"
+  | "rankings_sidebar"
+  | "statistics_banner";
+
+export interface AdTargeting {
+  category_ids?: number[];
+  sub_category_ids?: number[];
+  locations?: string[];
+  affiliations?: string[];
+  keywords?: string[];
+}
+
+export interface AdTargetingContext {
+  categoryId?: number | null;
+  subCategoryId?: number | null;
+  location?: string | null;
+  affiliation?: string | null;
+  areaOfStudy?: string | null;
+  title?: string | null;
+}
 
 export interface GreAd {
   id: number;
@@ -88,6 +109,26 @@ export const AD_PLACEMENTS: { value: AdPlacement; label: string; hint: string }[
     label: "Event sponsorship",
     hint: "Sponsor strip on the events directory.",
   },
+  {
+    value: "forum_sidebar",
+    label: "Forum sidebar",
+    hint: "Side rail on forum index, category, and topic pages.",
+  },
+  {
+    value: "forum_inline",
+    label: "Forum inline",
+    hint: "Inline sponsored cards between forum discussions.",
+  },
+  {
+    value: "rankings_sidebar",
+    label: "Rankings sidebar",
+    hint: "Leaderboard pages for institutions and researchers.",
+  },
+  {
+    value: "statistics_banner",
+    label: "Statistics banner",
+    hint: "Wide banner on the public research statistics page.",
+  },
 ];
 
 export interface AdAnalyticsPlacementRow {
@@ -127,18 +168,87 @@ export interface AdAnalytics {
   }[];
 }
 
+export function adTargetingQueryParams(context?: AdTargetingContext): Record<string, string> {
+  if (!context) return {};
+  const params: Record<string, string> = {};
+  if (context.categoryId) params.category_id = String(context.categoryId);
+  if (context.subCategoryId) params.sub_category_id = String(context.subCategoryId);
+  if (context.location?.trim()) params.location = context.location.trim();
+  if (context.affiliation?.trim()) params.affiliation = context.affiliation.trim();
+  if (context.areaOfStudy?.trim()) params.area_of_study = context.areaOfStudy.trim();
+  if (context.title?.trim()) params.title = context.title.trim();
+  return params;
+}
+
+export function emptyAdTargetingForm(): AdTargeting {
+  return {
+    category_ids: [],
+    sub_category_ids: [],
+    locations: [],
+    affiliations: [],
+    keywords: [],
+  };
+}
+
+export function adTargetingToForm(targeting?: AdTargeting | null) {
+  const value = targeting ?? emptyAdTargetingForm();
+  return {
+    category_ids: (value.category_ids ?? []).join(", "),
+    sub_category_ids: (value.sub_category_ids ?? []).join(", "),
+    locations: (value.locations ?? []).join(", "),
+    affiliations: (value.affiliations ?? []).join(", "),
+    keywords: (value.keywords ?? []).join(", "),
+  };
+}
+
+export function adTargetingFromForm(form: {
+  category_ids: string;
+  sub_category_ids: string;
+  locations: string;
+  affiliations: string;
+  keywords: string;
+}): AdTargeting {
+  const parseIds = (raw: string) =>
+    raw
+      .split(",")
+      .map((part) => Number(part.trim()))
+      .filter((id) => Number.isFinite(id) && id > 0);
+  const parseTokens = (raw: string) =>
+    raw
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+  return {
+    category_ids: parseIds(form.category_ids),
+    sub_category_ids: parseIds(form.sub_category_ids),
+    locations: parseTokens(form.locations),
+    affiliations: parseTokens(form.affiliations),
+    keywords: parseTokens(form.keywords),
+  };
+}
+
 export function usePlacementAds(
   placement: AdPlacement,
   limit = 3,
   enabled = true,
-  rotate = false
+  rotate = false,
+  context?: AdTargetingContext
 ) {
+  const targetingParams = adTargetingQueryParams(context);
   return useQuery({
-    queryKey: ["ads", "placement", placement, limit, rotate],
+    queryKey: ["ads", "placement", placement, limit, rotate, targetingParams],
     queryFn: async () => {
       const { data } = await api.get<{ placement: AdPlacement; ads: GreAd[] }>(
         "/ads/placements/",
-        { params: { placement, limit, rotate: rotate ? 1 : undefined } }
+        {
+          params: {
+            placement,
+            limit,
+            rotate: rotate ? 1 : undefined,
+            ...targetingParams,
+          },
+        }
       );
       return data.ads;
     },

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { buildLoginPath } from "./authRedirect";
 import { ngrokHeaders, resolveApiBaseUrl } from "./apiBaseUrl";
 
 export const API_URL = resolveApiBaseUrl();
@@ -70,7 +71,8 @@ api.interceptors.response.use(
     const access = await refreshAccessToken();
     if (!access) {
       if (!window.location.pathname.startsWith("/login")) {
-        window.location.href = "/login";
+        const returnPath = `${window.location.pathname}${window.location.search}`;
+        window.location.href = buildLoginPath(returnPath);
       }
       return Promise.reject(error);
     }

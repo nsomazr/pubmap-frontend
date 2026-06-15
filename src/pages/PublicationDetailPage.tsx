@@ -21,7 +21,10 @@ import { PublicationPaperDocument } from "../components/publication/PublicationP
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { StudyLocationSection } from "../components/map/StudyLocationSection";
 import { publicationSubcategoryVisual } from "../lib/taxonomyVisuals";
-import { authorBylineFromPublication } from "../lib/publicationAuthors";
+import {
+  authorBylineFromPublication,
+  publicationCoAuthorsFromPublication,
+} from "../lib/publicationAuthors";
 import { publicationMapLocationLabel } from "../lib/publicationMapLocation";
 import { publicationPublicApiPath } from "../lib/publicationPaths";
 import type { Publication } from "../types";
@@ -81,6 +84,13 @@ export function PublicationDetailPage() {
   const subVisual = publicationSubcategoryVisual(pub);
   const locationLabel = publicationMapLocationLabel(pub);
   const headerLocation = pub.coordinates ? undefined : locationLabel || undefined;
+  const adContext = {
+    categoryId: pub.category_id ?? undefined,
+    subCategoryId: pub.sub_category_id ?? undefined,
+    location: pub.coordinates?.location || locationLabel || undefined,
+    affiliation: pub.author?.affiliation || pub.coordinates?.institution || undefined,
+    title: pub.title,
+  };
   const crumbTitle = formatGrePaperTitle(pub.title, pub.short_number);
 
   return (
@@ -99,11 +109,12 @@ export function PublicationDetailPage() {
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_280px]">
         <aside className="order-1 space-y-6 lg:order-2">
           <PublicationAuthorsSidebar publication={pub} />
-          <GreAdPlacement placement="sidebar" limit={4} rotate />
+          <GreAdPlacement placement="sidebar" limit={4} rotate context={adContext} />
           <GreAdPlacement
             placement="sponsored_publication"
             limit={4}
             rotate
+            context={adContext}
             className="mt-4 space-y-3"
           />
         </aside>
@@ -165,7 +176,11 @@ export function PublicationDetailPage() {
           />
 
           <CoAuthorsPanel publication={pub} />
-          <PublicationDiscussions publicationId={pub.id} coAuthors={pub.co_authors} />
+          <PublicationDiscussions
+            publicationId={pub.id}
+            coAuthors={pub.co_authors ?? publicationCoAuthorsFromPublication(pub)}
+            authorUserId={pub.author?.id}
+          />
 
           <PublicationResearchIntegritySection onReport={() => setReportOpen(true)} />
         </div>

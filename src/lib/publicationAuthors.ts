@@ -203,6 +203,100 @@ export function rankingForPublicationTeamMember(
   return undefined;
 }
 
+type DiscussionParticipant = {
+  id?: number;
+  firstname?: string;
+  lastname?: string;
+  full_name?: string;
+  email?: string;
+};
+
+function normalizeDiscussionAuthorRole(
+  role?: string | null,
+  kind?: CoAuthorPerson["kind"]
+): string {
+  const value = (role || "").trim();
+  if (/^lead/i.test(value) || kind === "primary") return "Lead author";
+  if (/^co-?author/i.test(value) || kind === "coauthor") return "Co-author";
+  if (value) return value;
+  return kind === "primary" ? "Lead author" : "Co-author";
+}
+
+function discussionParticipantNameKey(user?: DiscussionParticipant): string {
+  if (!user) return "";
+  const name =
+    user.full_name?.trim() ||
+    `${user.firstname ?? ""} ${user.lastname ?? ""}`.trim();
+  return name ? authorNameKey(name) : "";
+}
+
+function discussionParticipantMatchesAuthor(
+  person: CoAuthorPerson,
+  user: DiscussionParticipant
+): boolean {
+  const userId = user.id;
+  if (userId != null && person.user_id != null && person.user_id === userId) {
+    return true;
+  }
+  const nameKey = discussionParticipantNameKey(user);
+  const personName = (person.fullname || "").trim();
+  if (nameKey && personName && authorNameKey(personName) === nameKey) {
+    return true;
+  }
+  const email = (user.email || "").trim().toLowerCase();
+  const personEmail = (person.email || "").trim().toLowerCase();
+  return Boolean(email && personEmail && email === personEmail);
+}
+
+function publicationAuthorRoster(
+  coAuthors?: PublicationCoAuthors | null
+): CoAuthorPerson[] {
+  const roster: CoAuthorPerson[] = [];
+  const seen = new Set<string>();
+
+  const add = (person?: CoAuthorPerson | null) => {
+    if (!person) return;
+    const key =
+      person.user_id != null
+        ? `u:${person.user_id}`
+        : `n:${authorNameKey(person.fullname || "")}`;
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    roster.push(person);
+  };
+
+  add(coAuthors?.primary_author);
+  for (const person of coAuthors?.co_authors ?? []) add(person);
+  for (const person of coAuthors?.team ?? []) add(person);
+  return roster;
+}
+
+/** Role badge for publication discussion participants (lead, co-author, or member). */
+export function discussionAuthorRoleLabel(
+  user?: DiscussionParticipant,
+  coAuthors?: PublicationCoAuthors | null,
+  opts?: { authorUserId?: number | null }
+): string | null {
+  if (!user?.id && !discussionParticipantNameKey(user)) return null;
+
+  for (const person of publicationAuthorRoster(coAuthors)) {
+    if (discussionParticipantMatchesAuthor(person, user)) {
+      return normalizeDiscussionAuthorRole(person.role, person.kind);
+    }
+  }
+
+  const userId = user.id;
+  if (userId != null && opts?.authorUserId != null && userId === opts.authorUserId) {
+    const primary = coAuthors?.primary_author;
+    if (!primary || primary.user_id == null || primary.user_id === userId) {
+      return "Lead author";
+    }
+  }
+
+  if (userId != null) return "Member";
+  return null;
+}
+
 /** Resolve researcher stars from API ranking only (10 published GRE papers per star). */
 export function researcherRankStars(ranking?: ResearcherRanking | null): number {
   if (!ranking) return 0;
@@ -215,18 +309,25 @@ export function researcherRankStars(ranking?: ResearcherRanking | null): number 
   return 0;
 }
 
-/** Compact comma-separated author line for map cards and list rows. */
+/** Comma-separated author names for a publication (all authors by default). */
 export function compactAuthorLineFromPublication(
   publication: Publication,
-  maxAuthors = 3
+  maxAuthors?: number
 ): string {
   const byline = authorBylineFromPublication(publication);
   const names = byline.authors.map((author) => author.name).filter(Boolean);
   if (!names.length) return "";
-  if (names.length <= maxAuthors) return names.join(", ");
+  if (maxAuthors == null || maxAuthors < 1 || names.length <= maxAuthors) {
+    return names.join(", ");
+  }
   const shown = names.slice(0, maxAuthors);
   const extra = names.length - maxAuthors;
   return `${shown.join(", ")}, et al. (+${extra})`;
+}
+
+/** Full author team as a comma-separated line (paper views). */
+export function fullAuthorLineFromPublication(publication: Publication): string {
+  return compactAuthorLineFromPublication(publication);
 }
 
 /** Build a journal-style byline when only a single author name is available. */

@@ -48,7 +48,7 @@ export function PublicationPaperDocument({
   return (
     <article
       id="publication-paper"
-      className="publication-reading-paper min-w-0 overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.05)]"
+      className="publication-reading-paper gre-public-card min-w-0 overflow-hidden"
     >
       <PublicationPaperHeader
         {...headerProps}

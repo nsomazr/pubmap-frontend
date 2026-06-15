@@ -10,8 +10,8 @@ import { requestPublicationSummary } from "./publicationPopupSummary";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import type { Publication } from "../../types";
+import { PublicationAuthorTeamRow } from "../publication/PublicationAuthorTeamRow";
 import { SubcategoryBadge } from "../taxonomy/SubcategoryBadge";
-import { UserAvatar } from "../ui/UserAvatar";
 
 interface Props {
   publication: Publication;
@@ -19,9 +19,6 @@ interface Props {
 }
 
 export function MapPublicationSheet({ publication, onClose }: Props) {
-  const author =
-    publication.author?.full_name ||
-    `${publication.author?.firstname ?? ""} ${publication.author?.lastname ?? ""}`.trim();
   const subVisual = publicationSubcategoryVisual(publication);
   const views = publication.views_count ?? 0;
   const downloads = publication.downloads_count ?? 0;
@@ -35,7 +32,7 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
       role="dialog"
       aria-label="Publication preview"
     >
-      <article className="gre-dashboard-card pointer-events-auto mx-auto max-w-md overflow-hidden shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)]">
+      <article className="gre-public-card pointer-events-auto mx-auto max-w-md overflow-hidden">
         <header className="relative border-b border-slate-100 px-4 py-4 pr-12 sm:px-5">
           <button
             type="button"
@@ -47,16 +44,7 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
           </button>
 
           <div className="flex flex-wrap items-center gap-2">
-            {author ? (
-              <div className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 py-1 pl-1 pr-2.5">
-                <UserAvatar
-                  user={publication.author}
-                  size="sm"
-                  className="!h-8 !w-8 shrink-0 !border-0 !text-[10px]"
-                />
-                <span className="truncate text-xs font-semibold text-slate-700">{author}</span>
-              </div>
-            ) : null}
+            <PublicationAuthorTeamRow publication={publication} className="min-w-0 max-w-full" />
             {subVisual ? <SubcategoryBadge visual={subVisual} size="xs" variant="chip" /> : null}
           </div>
 

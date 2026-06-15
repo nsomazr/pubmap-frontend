@@ -22,13 +22,10 @@ const circlePadding: Record<Size, string> = {
 };
 
 const plateStyles: Record<Exclude<Variant, "plain">, string> = {
-  light:
-    "rounded-full bg-white shadow-[0_4px_20px_-4px_rgba(15,23,42,0.25)] ring-2 ring-slate-200/90",
-  dark: "rounded-full bg-white shadow-[0_4px_16px_-4px_rgba(0,0,0,0.35)] ring-2 ring-white/40",
-  gradient:
-    "rounded-full bg-white shadow-[0_6px_24px_-6px_rgba(59,91,219,0.35)] ring-2 ring-white/80",
-  float:
-    "rounded-full bg-white shadow-[0_8px_28px_-6px_rgba(15,23,42,0.35)] ring-2 ring-white",
+  light: "rounded-full bg-white border border-slate-200 shadow-sm",
+  dark: "rounded-full bg-white border border-white/30 shadow-sm",
+  gradient: "rounded-full bg-white border border-slate-200 shadow-sm",
+  float: "rounded-full bg-white border border-slate-200 shadow-sm",
 };
 
 interface Props {

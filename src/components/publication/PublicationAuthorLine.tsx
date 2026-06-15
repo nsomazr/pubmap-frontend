@@ -3,16 +3,19 @@ import { compactAuthorLineFromPublication } from "../../lib/publicationAuthors";
 
 interface Props {
   publication: Publication;
+  /** When set, truncates with "et al."; omit to list every author. */
   maxAuthors?: number;
   className?: string;
 }
 
 export function PublicationAuthorLine({
   publication,
-  maxAuthors = 3,
+  maxAuthors,
   className = "",
 }: Props) {
   const line = compactAuthorLineFromPublication(publication, maxAuthors);
   if (!line) return null;
-  return <p className={`truncate text-xs text-slate-500 ${className}`.trim()}>{line}</p>;
+  return (
+    <p className={`text-xs leading-snug text-slate-500 ${className}`.trim()}>{line}</p>
+  );
 }

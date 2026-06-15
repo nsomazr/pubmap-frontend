@@ -1,8 +1,13 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { CountryInstitutionPicker } from "../../components/institutions/CountryInstitutionPicker";
 import { InterestPicker } from "../../components/interests/InterestPicker";
 import api from "../../lib/api";
+import {
+  consumeLoginReturnPath,
+  loginReturnPathFromSearch,
+  storeLoginReturnPath,
+} from "../../lib/authRedirect";
 import {
   clearSignupMethod,
   getSignupMethod,
@@ -19,6 +24,7 @@ import type { CoAuthorLinkSummary, User } from "../../types";
 export function OnboardingPage() {
   const { refreshUser, setOnboardingRequired } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const needsPassword = getSignupMethod() === "otp";
   const totalSteps = needsPassword ? 4 : 3;
   const [step, setStep] = useState(1);
@@ -39,8 +45,17 @@ export function OnboardingPage() {
     confirm_password: "",
   });
 
+  useEffect(() => {
+    const fromQuery = loginReturnPathFromSearch(location.search);
+    if (fromQuery) storeLoginReturnPath(fromQuery);
+  }, [location.search]);
+
   const update = (field: string, value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
+
+  const finishOnboarding = () => {
+    navigate(consumeLoginReturnPath() || "/dashboard");
+  };
 
   const handleSubmit = async () => {
     setError("");
@@ -76,7 +91,7 @@ export function OnboardingPage() {
         setCompletedUserId(data.user.id);
         return;
       }
-      navigate("/dashboard");
+      finishOnboarding();
     } catch (err: unknown) {
       const data = (err as { response?: { data?: Record<string, string[]> } })?.response
         ?.data;
@@ -105,7 +120,7 @@ export function OnboardingPage() {
             profileUserId={completedUserId ?? undefined}
             onUpdated={setCoauthorLink}
             showDoneButton
-            onDone={() => navigate("/dashboard")}
+            onDone={finishOnboarding}
           />
         </AuthFormCard>
       </AuthLayout>

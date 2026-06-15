@@ -60,8 +60,7 @@ export const greStatusStyles: Record<string, string> = {
 
 export const greChipBrand = "bg-brand-50 text-brand-800 ring-brand-200/80";
 export const greChipTeal = "bg-teal-50 text-teal-800 ring-teal-200/80";
-export const greChipTopic =
-  "bg-gradient-to-r from-brand-50 to-teal-50 text-ink ring-brand-100";
+export const greChipTopic = "bg-slate-100 text-slate-700";
 
 export const greAlertInfo = "bg-brand-50 text-brand-900 ring-brand-200";
 export const greAlertWarning = "bg-teal-50 text-teal-900 ring-teal-200";

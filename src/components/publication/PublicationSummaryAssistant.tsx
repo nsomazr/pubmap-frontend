@@ -17,7 +17,7 @@ import {
 } from "../../lib/publicationManuscript";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { buildPublicationFollowUpSuggestions } from "../../lib/publicationFollowUpSuggestions";
-import { compactAuthorLineFromPublication } from "../../lib/publicationAuthors";
+import { fullAuthorLineFromPublication } from "../../lib/publicationAuthors";
 import type { Publication } from "../../types";
 import { ChatComposerSection } from "../chat/ChatComposerSection";
 import { PublicationSummaryActions } from "./PublicationSummaryActions";
@@ -219,13 +219,14 @@ export function PublicationSummaryAssistant({
   const canAskManuscript = !followUpLoading;
   const showComposer = !followUpLoading;
   const isPage = layout === "page";
+  const showPublicationHeader = composerVariant !== "workspace";
 
   const manuscriptDoc = primaryManuscriptDocument(publication?.documents);
   const manuscriptUrl = publicationManuscriptUrl(publication);
   const manuscriptLabel = manuscriptFileLabel(manuscriptDoc);
 
   const manuscriptNotice = (
-    <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-3.5 py-2.5 text-xs leading-relaxed text-slate-600 sm:text-sm">
+    <div className="gre-public-card px-3.5 py-3 text-xs leading-relaxed text-slate-600 sm:text-sm">
       <p>
         This conversation is grounded in this publication&apos;s GRE registry entry
         {manuscriptLabel ? (
@@ -280,13 +281,13 @@ export function PublicationSummaryAssistant({
   );
 
   const authorLine = useMemo(
-    () => (publication ? compactAuthorLineFromPublication(publication) : ""),
+    () => (publication ? fullAuthorLineFromPublication(publication) : ""),
     [publication]
   );
 
   const publicationHeader =
     publicationTitle || authorLine ? (
-      <div className="rounded-xl border border-slate-200/80 bg-white px-3.5 py-3 shadow-sm">
+      <div className="gre-public-card px-4 py-3.5">
         {publicationTitle ? (
           <p className="text-sm font-semibold leading-snug text-ink sm:text-base">
             {publicationTitle}
@@ -398,16 +399,16 @@ export function PublicationSummaryAssistant({
               </button>
             </div>
           ) : summaryLoading && !summary.trim() ? (
-            <div className="rounded-2xl border border-brand-100 bg-white px-4 py-4 shadow-sm ring-1 ring-brand-50">
-              <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-brand-600">
+            <div className="gre-public-card px-4 py-4">
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Overview
               </p>
               <p className="mb-3 text-xs text-slate-500">Generating a summary of this manuscript…</p>
               <AssistantThinkingIndicator />
             </div>
           ) : summary ? (
-            <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm ring-1 ring-brand-50/80">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-600">
+            <div className="gre-public-card min-w-0 px-4 py-3.5">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Overview
               </p>
               <div className="text-sm leading-relaxed text-slate-800">
@@ -424,7 +425,7 @@ export function PublicationSummaryAssistant({
           ref={scrollContainerRef}
           className="gre-chat-thread publication-chat__thread space-y-3 pr-0.5 sm:space-y-4"
         >
-          {publicationHeader}
+          {showPublicationHeader ? publicationHeader : null}
           {summaryBlock}
           {followUpThread}
         </div>

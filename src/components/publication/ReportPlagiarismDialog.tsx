@@ -2,10 +2,11 @@ import { useMutation } from "@tanstack/react-query";
 import { AlertTriangle, Paperclip, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "../ui/Button";
 import { Textarea } from "../ui/Textarea";
 import { useAuth } from "../../context/AuthContext";
+import { buildLoginPath } from "../../lib/authRedirect";
 import {
   submitPlagiarismClaim,
   uploadClaimEvidence,
@@ -26,6 +27,7 @@ export function ReportPlagiarismDialog({
   onSubmitted,
 }: Props) {
   const { user } = useAuth();
+  const location = useLocation();
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState("");
@@ -74,7 +76,7 @@ export function ReportPlagiarismDialog({
             You need a GRE account to submit a plagiarism report.
           </p>
           <div className="mt-5 flex gap-3">
-            <Link to="/login" className="flex-1">
+            <Link to={buildLoginPath(`${location.pathname}${location.search}`)} className="flex-1">
               <Button className="w-full">Sign in</Button>
             </Link>
             <Button variant="secondary" className="flex-1" onClick={onClose}>

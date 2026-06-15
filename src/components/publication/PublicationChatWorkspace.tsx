@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { buildPublicationPath } from "../../lib/publicationPaths";
+import { fullAuthorLineFromPublication } from "../../lib/publicationAuthors";
 import { publicationResearchInstitutionLabel } from "../../lib/publicationMapLocation";
 import { publicationSubcategoryVisual } from "../../lib/taxonomyVisuals";
 import { PublicationSummaryAssistant } from "./PublicationSummaryAssistant";
@@ -24,9 +25,7 @@ interface Props {
 export function PublicationChatWorkspace({ publication, scrollContainerRef }: Props) {
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const author =
-    publication.author?.full_name ||
-    `${publication.author?.firstname ?? ""} ${publication.author?.lastname ?? ""}`.trim();
+  const authorLine = fullAuthorLineFromPublication(publication);
   const subVisual = publicationSubcategoryVisual(publication);
   const institutionLabel = publicationResearchInstitutionLabel(publication);
   const displayTitle = formatGrePaperTitle(publication.title, publication.short_number);
@@ -59,8 +58,8 @@ export function PublicationChatWorkspace({ publication, scrollContainerRef }: Pr
         </div>
       </header>
 
-      <div className="publication-chat-page gre-card flex min-h-0 flex-1 flex-col overflow-hidden sm:rounded-2xl">
-        <header className="shrink-0 border-b border-slate-100 bg-slate-50/80">
+      <div className="publication-chat-page gre-public-card flex min-h-0 flex-1 flex-col overflow-hidden sm:rounded-2xl">
+        <header className="shrink-0 border-b border-slate-100 bg-white">
           <button
             type="button"
             onClick={() => setDetailsOpen((open) => !open)}
@@ -84,8 +83,8 @@ export function PublicationChatWorkspace({ publication, scrollContainerRef }: Pr
             )}
             <span className="min-w-0 flex-1">
               <span className="line-clamp-1 text-sm font-semibold text-ink">{displayTitle}</span>
-              {author && (
-                <span className="line-clamp-1 text-xs text-slate-500">{author}</span>
+              {authorLine && (
+                <span className="line-clamp-2 text-xs leading-snug text-slate-500">{authorLine}</span>
               )}
             </span>
             {detailsOpen ? (
@@ -143,7 +142,9 @@ export function PublicationChatWorkspace({ publication, scrollContainerRef }: Pr
               <h2 className="line-clamp-2 text-base font-semibold leading-snug text-ink">
                 {displayTitle}
               </h2>
-              {author && <p className="mt-0.5 text-sm text-slate-600">{author}</p>}
+              {authorLine && (
+                <p className="mt-0.5 text-sm leading-snug text-slate-600">{authorLine}</p>
+              )}
               {institutionLabel && (
                 <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
                   <Building2 className="h-3.5 w-3.5 shrink-0 text-brand-600" />

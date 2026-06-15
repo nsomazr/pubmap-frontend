@@ -1,8 +1,9 @@
 import { LayoutDashboard, LogIn, LogOut, UserPlus, X } from "lucide-react";
 import { useEffect } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { BrandMark } from "../brand/BrandMark";
 import { GreAvatarSlot } from "../ui/GreHeroBanner";
+import { buildLoginPath, buildRegisterPath } from "../../lib/authRedirect";
 import { userInitials } from "../../lib/userDisplay";
 import type { User } from "../../types";
 
@@ -31,6 +32,10 @@ export function PublicMobileMenu({
   onLogout,
   variant = "default",
 }: Props) {
+  const location = useLocation();
+  const loginPath = buildLoginPath(`${location.pathname}${location.search}`);
+  const registerPath = buildRegisterPath(`${location.pathname}${location.search}`);
+
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
@@ -52,12 +57,10 @@ export function PublicMobileMenu({
   if (!open) return null;
 
   const navLinkClass = (isActive: boolean) =>
-    `flex min-h-[44px] items-center rounded-xl px-4 py-3 text-[15px] font-semibold transition ${
+    `flex min-h-[44px] items-center rounded-lg px-4 py-3 text-[15px] font-medium transition ${
       isActive
-        ? variant === "map"
-          ? "bg-brand-50 text-brand-700 ring-1 ring-brand-100"
-          : "bg-gradient-to-r from-brand-600 to-teal-600 text-white shadow-md"
-        : "text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+        ? "bg-slate-100 text-ink"
+        : "text-slate-600 hover:bg-slate-50 active:bg-slate-100"
     }`;
 
   return (
@@ -70,7 +73,7 @@ export function PublicMobileMenu({
       />
       <div className="public-mobile-menu absolute inset-y-0 right-0 flex w-[min(100%,20rem)] flex-col bg-white shadow-2xl safe-top safe-bottom">
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5">
-          <BrandMark symbol="full" variant="gradient" size="md" />
+          <BrandMark symbol="full" variant="plain" size="md" />
           <button
             type="button"
             onClick={onClose}
@@ -143,7 +146,7 @@ export function PublicMobileMenu({
           ) : (
             <>
               <Link
-                to="/login"
+                to={loginPath}
                 onClick={onClose}
                 className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
@@ -151,7 +154,7 @@ export function PublicMobileMenu({
                 Login
               </Link>
               <Link
-                to="/register"
+                to={registerPath}
                 onClick={onClose}
                 className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-teal-600 py-3 text-sm font-semibold text-white shadow-sm"
               >

@@ -64,8 +64,8 @@ const premiumAccent: Record<
 };
 
 const cleanBadge: Record<PageAccent, string> = {
-  blue: "bg-brand-50 text-brand-800 ring-brand-200/80",
-  teal: "bg-teal-50 text-teal-900 ring-teal-200/80",
+  blue: "bg-slate-100 text-slate-600",
+  teal: "bg-slate-100 text-slate-600",
 };
 
 export function PublicPageLayout({
@@ -89,16 +89,16 @@ export function PublicPageLayout({
   const isClean = heroVariant === "clean";
   const padY =
     compactHero && fillViewport && denseMobileHero
-      ? "pb-3 pt-3 sm:pb-6 sm:pt-6"
+      ? "pb-4 pt-4 sm:pb-5 sm:pt-5"
       : compactHero
-        ? "pb-5 pt-5 sm:pb-6 sm:pt-6"
-        : "pb-10 pt-8 sm:pb-12 sm:pt-10";
+        ? "pb-6 pt-6 sm:pb-7 sm:pt-7"
+        : "pb-10 pt-10 sm:pb-12 sm:pt-12";
 
-  const crumbMargin = compactHero ? "mb-3" : "mb-5";
+  const crumbMargin = compactHero ? "mb-4" : "mb-6";
   const titleSize = compactHero
-    ? "text-2xl sm:text-3xl lg:text-[2rem]"
-    : "text-3xl sm:text-4xl lg:text-5xl";
-  const subtitleSize = compactHero ? "mt-2 text-sm sm:text-base" : "mt-4 text-base sm:text-lg";
+    ? "text-xl font-semibold sm:text-2xl"
+    : "text-2xl font-semibold sm:text-3xl lg:text-4xl";
+  const subtitleSize = compactHero ? "mt-2 text-sm text-slate-500" : "mt-3 text-base text-slate-500";
 
   const heroContent = (
     <div
@@ -150,7 +150,7 @@ export function PublicPageLayout({
         <div className={`min-w-0 ${heroVisual ? "text-center sm:text-left" : ""}`}>
           {badge && (
             <span
-              className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ring-1 ${
+              className={`inline-flex rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
                 isClean ? cleanBadge[accent] : premiumAccent[accent].badge
               } ${compactHero ? "mb-2" : "mb-3"} ${isChatWorkspace ? "hidden md:inline-flex" : ""}`}
             >
@@ -158,7 +158,7 @@ export function PublicPageLayout({
             </span>
           )}
           <h1
-            className={`gre-display max-w-4xl font-bold tracking-tight ${
+            className={`gre-display max-w-4xl tracking-tight ${
               isClean ? "text-ink" : "text-white"
             } ${titleSize} ${isChatWorkspace ? "hidden md:block" : ""}`}
           >
@@ -192,11 +192,10 @@ export function PublicPageLayout({
 
       {isClean ? (
         <section
-          className={`gre-public-hero relative border-b border-slate-200/90 bg-white ${
+          className={`gre-public-hero relative border-b border-slate-200 bg-white ${
             isChatWorkspace ? "hidden md:block" : ""
           }`}
         >
-          <div className="gre-public-hero__accent" aria-hidden />
           {heroContent}
         </section>
       ) : (
@@ -243,8 +242,8 @@ export function PublicPageLayout({
           isChatWorkspace
             ? "min-h-0 overflow-hidden px-0 pb-0 pt-0 sm:px-6 sm:pb-4 sm:pt-5"
             : fillViewport
-              ? "min-h-0 overflow-hidden px-4 pb-3 pt-4 sm:px-6 sm:pb-4 sm:pt-5"
-              : "px-4 pb-16 pt-6 sm:px-6 sm:pt-8"
+              ? "min-h-0 overflow-hidden px-4 pb-4 pt-4 sm:px-6 sm:pb-8 sm:pt-6"
+              : "px-4 pb-20 pt-8 sm:px-6 sm:pt-10"
         }`}
       >
         <div

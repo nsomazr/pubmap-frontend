@@ -5,6 +5,7 @@ import {
   Loader2,
   MessageSquare,
   MoreVertical,
+  Paperclip,
   Search,
   Sparkles,
   Trash2,
@@ -23,8 +24,13 @@ import {
   assistantMessageDraftStream,
   type MessageDraftTask,
 } from "../../lib/assistant";
-import api from "../../lib/api";
+import api, { parseApiError } from "../../lib/api";
 import { looksLikeDialogueScript, sanitizeMessageDraft } from "../../lib/messageDraft";
+import {
+  formatMessageAttachmentSize,
+  MESSAGE_ATTACHMENT_ACCEPT,
+  validateMessageAttachmentFile,
+} from "../../lib/messageAttachments";
 import {
   markMessageThreadRead,
   patchUnreadCountsAfterRead,
@@ -54,6 +60,9 @@ function contactSubtitle(c: User, last?: Message, myId?: number) {
   }
   if (last?.message) {
     return `${last.from_user?.id === myId ? "You: " : ""}${last.message}`;
+  }
+  if (last?.attachment_name) {
+    return `${last.from_user?.id === myId ? "You: " : ""}📎 ${last.attachment_name}`;
   }
   if (c.area_of_study?.trim()) return c.area_of_study.trim();
   return c.affiliation || "";
@@ -105,6 +114,7 @@ export function MessagesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [partnerId, setPartnerId] = useState(() => searchParams.get("partner") ?? "");
   const [text, setText] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sendError, setSendError] = useState("");
@@ -114,6 +124,7 @@ export function MessagesPage() {
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const draftAbortRef = useRef<AbortController | null>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { data: unread } = useUnreadCounts();
   const confirm = useConfirm();
@@ -205,6 +216,10 @@ export function MessagesPage() {
   }, [searchParams]);
 
   useEffect(() => {
+    setPendingFile(null);
+  }, [partnerId]);
+
+  useEffect(() => {
     if (partnerId && myId && Number(partnerId) === myId) {
       selectPartner("");
     }
@@ -237,17 +252,23 @@ export function MessagesPage() {
   }, [partnerId, myId, queryClient]);
 
   const sendMutation = useMutation({
-    mutationFn: () =>
-      api.post("/messages/", { message: text.trim(), to_user_id: Number(partnerId) }),
+    mutationFn: async () => {
+      const form = new FormData();
+      form.append("to_user_id", String(Number(partnerId)));
+      if (text.trim()) form.append("message", text.trim());
+      if (pendingFile) form.append("attachment", pendingFile);
+      return api.post("/messages/", form);
+    },
     onSuccess: () => {
       setText("");
+      setPendingFile(null);
       setSendError("");
       queryClient.invalidateQueries({ queryKey: ["messages", partnerId] });
       queryClient.invalidateQueries({ queryKey: ["messages-inbox"] });
       queryClient.invalidateQueries({ queryKey: ["unread-counts"] });
     },
-    onError: () => {
-      setSendError("Message could not be sent. Try again.");
+    onError: (error) => {
+      setSendError(parseApiError(error, "Message could not be sent. Try again."));
     },
   });
 
@@ -314,9 +335,36 @@ export function MessagesPage() {
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || !partnerId || Number(partnerId) === myId) return;
+    if ((!text.trim() && !pendingFile) || !partnerId || Number(partnerId) === myId) return;
     setSendError("");
     sendMutation.mutate();
+  };
+
+  const handleDownloadAttachment = async (messageId: number, filename?: string | null) => {
+    try {
+      const { data } = await api.get<Blob>(`/messages/${messageId}/attachment/`, {
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(data);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename || "document";
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setSendError("Could not download that document. Try again.");
+    }
+  };
+
+  const handlePickAttachment = (file: File | null) => {
+    if (!file) return;
+    const error = validateMessageAttachmentFile(file);
+    if (error) {
+      setSendError(error);
+      return;
+    }
+    setSendError("");
+    setPendingFile(file);
   };
 
   const runMessageDraft = async (task: MessageDraftTask) => {
@@ -645,16 +693,25 @@ export function MessagesPage() {
                     {thread.map((m) => {
                       const mine = m.from_user?.id === myId;
                       const body = m.message || "";
+                      const attachment = m.attachment_name
+                        ? { name: m.attachment_name }
+                        : null;
                       return (
                         <MessageThreadBubble
                           key={m.id}
                           body={body}
+                          attachment={attachment}
                           deleted={!!m.is_deleted}
                           mine={mine}
                           timeLabel={formatTime(m.created_at)}
                           deletePending={deleteMessageMutation.isPending}
-                          onCopy={() => void handleCopyMessage(body)}
+                          onCopy={() => void handleCopyMessage(body || m.attachment_name || "")}
                           onDelete={() => void handleDeleteMessage(m.id)}
+                          onDownloadAttachment={
+                            attachment
+                              ? () => void handleDownloadAttachment(m.id, m.attachment_name)
+                              : undefined
+                          }
                         />
                       );
                     })}
@@ -672,6 +729,25 @@ export function MessagesPage() {
                 )}
 
                 <div className="gre-field-composer overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition">
+                  {pendingFile && (
+                    <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
+                      <Paperclip className="h-4 w-4 shrink-0 text-brand-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-ink">{pendingFile.name}</p>
+                        <p className="text-[10px] text-slate-400">
+                          {formatMessageAttachmentSize(pendingFile.size)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPendingFile(null)}
+                        className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        aria-label="Remove attachment"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
                   {showDraftMenu && (
                     <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto border-b border-slate-100 px-3 py-2 [-webkit-overflow-scrolling:touch]">
                       <span className="mr-1 text-[10px] font-medium text-slate-400 uppercase">
@@ -722,6 +798,27 @@ export function MessagesPage() {
                     />
 
                     <div className="absolute bottom-2 left-2 flex items-center gap-1">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={MESSAGE_ATTACHMENT_ACCEPT}
+                        className="hidden"
+                        onChange={(e) => {
+                          handlePickAttachment(e.target.files?.[0] ?? null);
+                          e.target.value = "";
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={drafting || sendMutation.isPending}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                        aria-label="Attach document"
+                        title="Attach document (max 25 MB)"
+                      >
+                        <Paperclip className="h-3.5 w-3.5" />
+                        File
+                      </button>
                       <button
                         type="button"
                         disabled={drafting}
@@ -744,7 +841,11 @@ export function MessagesPage() {
 
                     <button
                       type="submit"
-                      disabled={sendMutation.isPending || !text.trim() || drafting}
+                      disabled={
+                        sendMutation.isPending ||
+                        (!text.trim() && !pendingFile) ||
+                        drafting
+                      }
                       aria-label="Send message"
                       className="absolute bottom-2 right-2 inline-flex h-9 min-w-9 items-center justify-center rounded-lg bg-brand-600 px-2.5 text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -758,7 +859,7 @@ export function MessagesPage() {
                 </div>
 
                 <p className="mt-2 hidden text-[10px] text-slate-400 sm:block">
-                  Enter to send · Shift+Enter for new line
+                  Enter to send · Shift+Enter for new line · Attach documents up to 25 MB
                 </p>
               </form>
             </>

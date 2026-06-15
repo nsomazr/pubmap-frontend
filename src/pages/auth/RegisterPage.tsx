@@ -1,15 +1,21 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthFormCard } from "../../components/auth/AuthFormCard";
 import { OtpVerificationPanel } from "../../components/auth/OtpVerificationPanel";
 import { AuthLayout } from "../../components/layout/AuthLayout";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { useAuth, type OtpSendResult } from "../../context/AuthContext";
+import {
+  buildLoginPath,
+  loginReturnPathFromSearch,
+  storeLoginReturnPath,
+} from "../../lib/authRedirect";
 
 export function RegisterPage() {
   const { sendOtp, verifyOtpRegister } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [otpStep, setOtpStep] = useState<"email" | "code">("email");
@@ -80,7 +86,9 @@ export function RegisterPage() {
     setLoading(true);
     try {
       await verifyOtpRegister(email, code.trim());
-      navigate("/onboarding");
+      const returnPath = loginReturnPathFromSearch(location.search);
+      if (returnPath) storeLoginReturnPath(returnPath);
+      navigate("/onboarding", { replace: true });
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
@@ -99,7 +107,7 @@ export function RegisterPage() {
       footer={
         <p className="text-center text-sm text-slate-600">
           Already have an account?{" "}
-          <Link to="/login" className="font-semibold text-brand-600 hover:underline">
+          <Link to={buildLoginPath(location.search)} className="font-semibold text-brand-600 hover:underline">
             Sign in
           </Link>
         </p>

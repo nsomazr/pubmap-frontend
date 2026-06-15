@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthActionChoices } from "../../components/auth/AuthActionChoices";
 import { AuthFormCard } from "../../components/auth/AuthFormCard";
 import { OtpVerificationPanel } from "../../components/auth/OtpVerificationPanel";
@@ -7,10 +7,16 @@ import { AuthLayout } from "../../components/layout/AuthLayout";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { useAuth, type OtpSendResult } from "../../context/AuthContext";
+import {
+  buildRegisterPath,
+  resolvePostAuthPath,
+  storeLoginReturnPath,
+} from "../../lib/authRedirect";
 
 export function LoginPage() {
   const { sendOtp, verifyOtpLogin, loginWithPassword } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -23,6 +29,16 @@ export function LoginPage() {
   const [loadingAction, setLoadingAction] = useState<"code" | "password" | "resend" | null>(
     null
   );
+
+  const finishAuth = (onboardingRequired: boolean) => {
+    const returnPath = resolvePostAuthPath({ search: location.search });
+    if (onboardingRequired) {
+      storeLoginReturnPath(returnPath);
+      navigate("/onboarding", { replace: true });
+      return;
+    }
+    navigate(returnPath, { replace: true });
+  };
 
   const resetOtpFlow = () => {
     setOtpStep("email");
@@ -91,8 +107,8 @@ export function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await verifyOtpLogin(email, code.trim());
-      navigate("/dashboard", { replace: true });
+      const result = await verifyOtpLogin(email, code.trim());
+      finishAuth(result.onboardingRequired);
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
@@ -109,8 +125,8 @@ export function LoginPage() {
     setLoading(true);
     setLoadingAction("password");
     try {
-      await loginWithPassword(email, password);
-      navigate("/dashboard", { replace: true });
+      const result = await loginWithPassword(email, password);
+      finishAuth(result.onboardingRequired);
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
@@ -130,7 +146,7 @@ export function LoginPage() {
       footer={
         <p className="text-center text-sm text-slate-600">
           No account?{" "}
-          <Link to="/register" className="font-semibold text-brand-600 hover:underline">
+          <Link to={buildRegisterPath(location.search)} className="font-semibold text-brand-600 hover:underline">
             Create one free
           </Link>
         </p>

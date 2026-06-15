@@ -11,6 +11,7 @@ import { SummaryNavigationBridge } from "./components/navigation/SummaryNavigati
 import { ConfirmProvider } from "./components/ui/ConfirmDialog";
 import { ToastProvider } from "./components/ui/ToastProvider";
 import { lazyPage } from "./lib/lazyRoute";
+import { buildLoginPath, consumeLoginReturnPath, resolvePostAuthPath } from "./lib/authRedirect";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
@@ -107,6 +108,7 @@ const queryClient = new QueryClient({
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, onboardingRequired } = useAuth();
+  const location = useLocation();
   if (loading) {
     return (
       <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-[#eef1f8] text-slate-500">
@@ -114,7 +116,14 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    return (
+      <Navigate
+        to={buildLoginPath(`${location.pathname}${location.search}`)}
+        replace
+      />
+    );
+  }
   if (onboardingRequired) return <Navigate to="/onboarding" replace />;
   return <>{children}</>;
 }
@@ -122,9 +131,16 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 /** Full-screen auth routes only  -  never render dashboard behind login/register. */
 function AuthRoute() {
   const { user, loading, onboardingRequired } = useAuth();
+  const location = useLocation();
   if (loading) return <AuthScreenLoading />;
   if (user) {
-    return <Navigate to={onboardingRequired ? "/onboarding" : "/dashboard"} replace />;
+    if (onboardingRequired) return <Navigate to="/onboarding" replace />;
+    return (
+      <Navigate
+        to={resolvePostAuthPath({ search: location.search })}
+        replace
+      />
+    );
   }
   return (
     <AuthScreen>
@@ -137,7 +153,9 @@ function OnboardingRoute() {
   const { user, loading, onboardingRequired } = useAuth();
   if (loading) return <AuthScreenLoading />;
   if (!user) return <Navigate to="/login" replace />;
-  if (!onboardingRequired) return <Navigate to="/dashboard" replace />;
+  if (!onboardingRequired) {
+    return <Navigate to={consumeLoginReturnPath() || "/dashboard"} replace />;
+  }
   return (
     <AuthScreen>
       <Outlet />

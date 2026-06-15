@@ -23,6 +23,7 @@ import { formatGrePaperTitle } from "../lib/grePaperTitle";
 import { buildPublicationPath } from "../lib/publicationPaths";
 import api from "../lib/api";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
+import { GreAdPlacement } from "../components/ads/GreAdSlot";
 import { AnimatedCounter } from "../components/stats/AnimatedCounter";
 import { CountryHeatGrid, CountryHeatGridHint } from "../components/stats/CountryHeatGrid";
 import { HorizontalBarChart } from "../components/stats/HorizontalBarChart";
@@ -72,6 +73,13 @@ export function StatisticsPage() {
       title="Research Statistics"
       crumbs={[{ label: "Home", to: "/" }, { label: "Statistics" }]}
     >
+      <GreAdPlacement
+        placement="statistics_banner"
+        variant="banner"
+        limit={2}
+        rotate
+        className="mb-8"
+      />
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (

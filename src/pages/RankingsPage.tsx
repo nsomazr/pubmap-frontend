@@ -7,6 +7,7 @@ import { greAccentBadge, greIconBrand } from "../lib/greTheme";
 import { institutionMapUrl } from "../lib/institutionLinks";
 import { INSTITUTION_SORT_OPTIONS, RESEARCHER_SORT_OPTIONS } from "../lib/rankings";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
+import { PageAdAside } from "../components/ads/PageAdAside";
 import { RankedNameLabel } from "../components/rankings/RankedNameLabel";
 import { UserAvatar } from "../components/ui/UserAvatar";
 import type {
@@ -83,6 +84,7 @@ export function RankingsPage() {
       title="Research Rankings"
       crumbs={[{ label: "Home", to: "/" }, { label: "Rankings" }]}
     >
+      <PageAdAside primaryPlacement="rankings_sidebar" secondaryPlacement="research_tool">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="inline-flex rounded-2xl bg-slate-100 p-1 ring-1 ring-slate-200/80">
           <button
@@ -260,6 +262,7 @@ export function RankingsPage() {
           ))}
         </div>
       )}
+      </PageAdAside>
     </PublicPageLayout>
   );
 }

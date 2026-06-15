@@ -263,6 +263,8 @@ export interface TopicReply {
 export interface Message {
   id: number;
   message?: string | null;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
   is_deleted?: boolean;
   from_user?: User;
   to_user?: User;

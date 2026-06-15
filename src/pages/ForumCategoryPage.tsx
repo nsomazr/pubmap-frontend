@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, Plus } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { PageBackLink } from "../components/ui/PageBackLink";
+import { ForumInlineAd, PageAdAside } from "../components/ads/PageAdAside";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
@@ -15,12 +16,14 @@ import { SubcategoryVisual } from "../components/taxonomy/SubcategoryVisual";
 import { Pagination } from "../components/ui/Pagination";
 import { usePageParam } from "../hooks/usePageParam";
 import api from "../lib/api";
+import { buildLoginPath } from "../lib/authRedirect";
 import { buildForumTopicPath } from "../lib/forumPaths";
 import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../lib/pagination";
 import type { SubCategory, Topic } from "../types";
 
 export function ForumCategoryPage() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [topicTitle, setTopicTitle] = useState("");
@@ -80,6 +83,12 @@ export function ForumCategoryPage() {
     },
   });
 
+  const adContext = sub
+    ? { subCategoryId: sub.id, categoryId: sub.category_id ?? undefined }
+    : id
+      ? { subCategoryId: Number(id) }
+      : undefined;
+
   return (
     <PublicPageLayout
       compactHero
@@ -107,6 +116,8 @@ export function ForumCategoryPage() {
         { label: sub?.name ?? "Subfield" },
       ]}
     >
+      <PageAdAside context={adContext}>
+        <ForumInlineAd context={adContext} />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <PageBackLink to="/forum" label="All forums" />
         {user && (
@@ -155,7 +166,20 @@ export function ForumCategoryPage() {
       ) : topics.length === 0 ? (
         <p className="rounded-3xl bg-white p-12 text-center text-slate-500 ring-1 ring-slate-200/80">
           No discussions yet.
-          {user ? " Start the first topic above." : " Sign in to start a discussion."}
+          {user ? (
+            " Start the first topic above."
+          ) : (
+            <>
+              {" "}
+              <Link
+                to={buildLoginPath(`${location.pathname}${location.search}`)}
+                className="font-semibold text-brand-600 hover:underline"
+              >
+                Sign in
+              </Link>{" "}
+              to start a discussion.
+            </>
+          )}
         </p>
       ) : (
         <div className="space-y-3">
@@ -189,6 +213,7 @@ export function ForumCategoryPage() {
           className="mt-8"
         />
       )}
+      </PageAdAside>
     </PublicPageLayout>
   );
 }

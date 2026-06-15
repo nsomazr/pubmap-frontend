@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import api from "../lib/api";
 import { buildForumTopicPath } from "../lib/forumPaths";
 import { ForumCategoryCard } from "../components/forum/ForumCategoryCard";
+import { ForumInlineAd, PageAdAside } from "../components/ads/PageAdAside";
 import { SubcategoryVisual } from "../components/taxonomy/SubcategoryVisual";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { resolveSubcategoryFromModel, resolveSubcategoryVisual } from "../lib/taxonomyVisuals";
@@ -56,6 +57,8 @@ export function ForumPage() {
   });
 
   const isLoading = catsLoading || subsLoading;
+  const adContext =
+    categoryFilter !== "all" ? { categoryId: Number(categoryFilter) } : undefined;
 
   return (
     <PublicPageLayout
@@ -66,6 +69,8 @@ export function ForumPage() {
       title="Forum Discussions"
       crumbs={[{ label: "Home", to: "/" }, { label: "Forum" }]}
     >
+      <PageAdAside context={adContext}>
+        <ForumInlineAd context={adContext} />
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
           <button
@@ -169,6 +174,7 @@ export function ForumPage() {
           </ul>
         </section>
       )}
+      </PageAdAside>
     </PublicPageLayout>
   );
 }

@@ -39,9 +39,9 @@ interface AuthState {
   loading: boolean;
   onboardingRequired: boolean;
   sendOtp: (email: string, purpose: "login" | "register") => Promise<OtpSendResult>;
-  verifyOtpLogin: (email: string, code: string) => Promise<void>;
+  verifyOtpLogin: (email: string, code: string) => Promise<{ onboardingRequired: boolean }>;
   verifyOtpRegister: (email: string, code: string) => Promise<void>;
-  loginWithPassword: (email: string, password: string) => Promise<void>;
+  loginWithPassword: (email: string, password: string) => Promise<{ onboardingRequired: boolean }>;
   logout: () => void;
   patchUser: (user: User) => void;
   refreshUser: () => Promise<void>;
@@ -119,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     storeTokens(data);
     setUser(data.user);
     setOnboardingRequired(data.onboarding_required);
+    return { onboardingRequired: Boolean(data.onboarding_required) };
   };
 
   const verifyOtpRegister = async (email: string, code: string) => {
@@ -134,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     storeTokens(data);
     setUser(data.user);
     setOnboardingRequired(data.onboarding_required);
+    return { onboardingRequired: Boolean(data.onboarding_required) };
   };
 
   const logout = () => {

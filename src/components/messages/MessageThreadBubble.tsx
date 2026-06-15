@@ -1,24 +1,32 @@
-import { Copy, MoreVertical, Trash2 } from "lucide-react";
+import { Copy, Download, FileText, MoreVertical, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
+interface AttachmentInfo {
+  name: string;
+}
 
 interface Props {
   body: string;
+  attachment?: AttachmentInfo | null;
   deleted: boolean;
   mine: boolean;
   timeLabel: string;
   deletePending: boolean;
   onCopy: () => void;
   onDelete: () => void;
+  onDownloadAttachment?: () => void;
 }
 
 export function MessageThreadBubble({
   body,
+  attachment,
   deleted,
   mine,
   timeLabel,
   deletePending,
   onCopy,
   onDelete,
+  onDownloadAttachment,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -34,7 +42,7 @@ export function MessageThreadBubble({
     return () => document.removeEventListener("pointerdown", close);
   }, [menuOpen]);
 
-  const actionToolbar = !deleted && (
+  const actionToolbar = !deleted && (body || attachment) && (
     <>
       <div
         className="hidden shrink-0 items-center gap-0.5 sm:flex [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/message:opacity-100"
@@ -136,7 +144,22 @@ export function MessageThreadBubble({
                 : "rounded-2xl rounded-bl-md border border-slate-200/70 bg-white text-slate-800 shadow-sm"
             }`}
           >
-            {body}
+            {attachment && (
+              <button
+                type="button"
+                onClick={onDownloadAttachment}
+                className={`mb-2 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium ring-1 ${
+                  mine
+                    ? "bg-white/10 text-white ring-white/20 hover:bg-white/15"
+                    : "bg-slate-50 text-slate-700 ring-slate-200/80 hover:bg-slate-100"
+                }`}
+              >
+                <FileText className="h-4 w-4 shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
+                <Download className="h-4 w-4 shrink-0 opacity-80" />
+              </button>
+            )}
+            {body ? <div className="whitespace-pre-wrap">{body}</div> : null}
           </div>
         )}
 

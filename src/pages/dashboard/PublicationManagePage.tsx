@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import {
   AlertCircle,
+  ArrowDown,
+  ArrowUp,
   Eye,
   Loader2,
   PenLine,
@@ -98,6 +100,26 @@ import { canReviewPublication, isPlatformAdmin } from "../../lib/userAccess";
 import { greFormActionsClass, greFormGridClass, greFormPrimaryButtonClass } from "../../lib/formStyles";
 import { RequiredFieldsLegend } from "../../components/ui/RequiredField";
 import type { Category, Collaborator, Coordinate, Publication, PublicationFigure } from "../../types";
+
+type CollaboratorDraft = Collaborator & { clientKey?: string };
+
+function collaboratorRowKey(collaborator: CollaboratorDraft, index: number): string {
+  if (collaborator.id != null) return `collab-${collaborator.id}`;
+  if (collaborator.clientKey) return collaborator.clientKey;
+  return `collab-new-${index}`;
+}
+
+function moveCollaboratorList(
+  items: CollaboratorDraft[],
+  index: number,
+  direction: -1 | 1
+): CollaboratorDraft[] {
+  const target = index + direction;
+  if (target < 0 || target >= items.length) return items;
+  const next = [...items];
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
+}
 
 const emptyCoord = (): Coordinate => ({
   location: "",
@@ -224,7 +246,7 @@ export function PublicationManagePage() {
   const [subCategoryId, setSubCategoryId] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [coordinates, setCoordinates] = useState<Coordinate>(emptyCoord());
-  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [collaborators, setCollaborators] = useState<CollaboratorDraft[]>([]);
   const [submitterRole, setSubmitterRole] = useState<"lead" | "coauthor">("lead");
   const [leadAuthorName, setLeadAuthorName] = useState("");
   const [leadAuthorAffiliation, setLeadAuthorAffiliation] = useState("");
@@ -1270,7 +1292,20 @@ export function PublicationManagePage() {
     pub && (pub.status === 0 || pub.status === 2) && isOwner && !isReadOnly;
 
   const addCollaborator = () =>
-    setCollaborators([...collaborators, { fullname: "", affiliation: "", email: "", role: "" }]);
+    setCollaborators((items) => [
+      ...items,
+      {
+        fullname: "",
+        affiliation: "",
+        email: "",
+        role: "",
+        clientKey: `collab-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      },
+    ]);
+
+  const moveCollaborator = (index: number, direction: -1 | 1) => {
+    setCollaborators((items) => moveCollaboratorList(items, index, direction));
+  };
 
   const showComposer = accessTypeChosen || !isNew;
 
@@ -1928,12 +1963,20 @@ export function PublicationManagePage() {
           </section>
 
           <section className="mt-8 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-ink">Additional co-authors</h2>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h2 className="font-semibold text-ink">Additional co-authors</h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  {submitterRole === "coauthor"
+                    ? "Listed after the lead author and you on the published paper. Use the arrows to change order."
+                    : "Listed after you as lead author on the published paper. Use the arrows to change order."}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={addCollaborator}
-                className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
+                disabled={isReadOnly}
+                className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
                 Add
@@ -1941,12 +1984,48 @@ export function PublicationManagePage() {
             </div>
             {collaborators.map((c, i) => (
               <div
-                key={i}
-                className="grid grid-cols-1 gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 lg:grid-cols-2 xl:grid-cols-4"
+                key={collaboratorRowKey(c, i)}
+                className="rounded-xl border border-slate-100 bg-slate-50/50 p-4"
               >
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Co-author {i + 1}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      disabled={isReadOnly || i === 0}
+                      onClick={() => moveCollaborator(i, -1)}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-brand-200 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label={`Move co-author ${i + 1} up`}
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isReadOnly || i === collaborators.length - 1}
+                      onClick={() => moveCollaborator(i, 1)}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-brand-200 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label={`Move co-author ${i + 1} down`}
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isReadOnly}
+                      onClick={() => setCollaborators(collaborators.filter((_, j) => j !== i))}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                      aria-label={`Remove co-author ${i + 1}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-4">
                 <Input
                   label="Name"
                   value={c.fullname}
+                  disabled={isReadOnly}
                   onChange={(e) => {
                     const next = [...collaborators];
                     next[i] = { ...c, fullname: e.target.value };
@@ -1967,29 +2046,23 @@ export function PublicationManagePage() {
                   label="Contribution (optional)"
                   placeholder="e.g. Field lead, Data analysis"
                   value={c.role || ""}
+                  disabled={isReadOnly}
                   onChange={(e) => {
                     const next = [...collaborators];
                     next[i] = { ...c, role: e.target.value };
                     setCollaborators(next);
                   }}
                 />
-                <div className="flex items-end gap-2">
-                  <Input
-                    label="Email"
-                    value={c.email || ""}
-                    onChange={(e) => {
-                      const next = [...collaborators];
-                      next[i] = { ...c, email: e.target.value };
-                      setCollaborators(next);
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setCollaborators(collaborators.filter((_, j) => j !== i))}
-                    className="mb-0.5 rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                <Input
+                  label="Email"
+                  value={c.email || ""}
+                  disabled={isReadOnly}
+                  onChange={(e) => {
+                    const next = [...collaborators];
+                    next[i] = { ...c, email: e.target.value };
+                    setCollaborators(next);
+                  }}
+                />
                 </div>
               </div>
             ))}

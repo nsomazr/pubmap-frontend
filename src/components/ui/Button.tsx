@@ -5,13 +5,12 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "light";
 
 const variants: Record<Variant, string> = {
   primary:
-    "gre-gradient-cta text-white hover:opacity-95 border border-brand-700/30 shadow-sm shadow-brand-600/20 focus-visible:ring-brand-500",
+    "bg-brand-600 text-white hover:bg-brand-700 border border-brand-600 focus-visible:ring-brand-500",
   secondary:
-    "bg-white text-ink border border-slate-200 hover:bg-slate-50 focus-visible:ring-slate-400",
+    "bg-white text-ink border border-slate-200 hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-slate-400",
   ghost: "bg-transparent text-slate-600 hover:bg-slate-100 focus-visible:ring-slate-400",
   danger: "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500",
-  light:
-    "bg-white text-brand-600 hover:bg-white/90 border border-white shadow-sm",
+  light: "bg-white text-brand-600 hover:bg-slate-50 border border-slate-200",
 };
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -30,7 +29,7 @@ export function Button({
 }: Props) {
   return (
     <button
-      className={`gre-interactive inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-60 ${variants[variant]} ${className}`}
+      className={`gre-interactive inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-60 ${variants[variant]} ${className}`}
       disabled={disabled || loading}
       {...props}
     >

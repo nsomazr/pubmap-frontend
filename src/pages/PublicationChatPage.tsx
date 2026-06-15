@@ -28,7 +28,7 @@ export function PublicationChatPage() {
     workspaceMode: "chat" as const,
     accent: "blue" as const,
     badge: "GRE Assistant",
-    title: "Research assistant",
+    title: "GRE Assistant",
     subtitle:
       "Summaries and chat use this paper's uploaded manuscript (when available), GRE registry metadata, and structured sections for this study only.",
     back: { to: "/", label: "Back to map" },

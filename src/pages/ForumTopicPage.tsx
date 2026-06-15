@@ -1,18 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { ForumReplyThread } from "../components/forum/ForumReplyThread";
+import { ForumInlineAd, PageAdAside } from "../components/ads/PageAdAside";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
 import { PageBackLink } from "../components/ui/PageBackLink";
 import { DefaultBanner } from "../components/ui/DefaultBanner";
 import { UserAvatar } from "../components/ui/UserAvatar";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
+import { buildLoginPath } from "../lib/authRedirect";
 import { buildForumTopicPath, forumTopicApiSegment } from "../lib/forumPaths";
 import type { Topic, TopicReply } from "../types";
 
 export function ForumTopicPage() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { user } = useAuth();
   const [reply, setReply] = useState("");
   const [postError, setPostError] = useState("");
@@ -115,6 +118,8 @@ export function ForumTopicPage() {
         to: topic.sub_category_id ? `/forum/category/${topic.sub_category_id}` : "/forum",
       }}
     >
+      <PageAdAside context={{ subCategoryId: topic.sub_category_id }}>
+        <ForumInlineAd context={{ subCategoryId: topic.sub_category_id }} />
       <article className="gre-card mb-8 overflow-hidden p-0">
         <div className="h-24 sm:h-28">
           <DefaultBanner kind="forum" seed={topic.id} />
@@ -165,12 +170,16 @@ export function ForumTopicPage() {
 
       {!user && (
         <p className="mt-6 text-center text-sm text-slate-500">
-          <Link to="/login" className="font-medium text-brand-600 hover:underline">
+          <Link
+            to={buildLoginPath(`${location.pathname}${location.search}`)}
+            className="font-medium text-brand-600 hover:underline"
+          >
             Sign in
           </Link>{" "}
           to join the discussion.
         </p>
       )}
+      </PageAdAside>
     </PublicPageLayout>
   );
 }

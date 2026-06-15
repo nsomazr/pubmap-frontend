@@ -288,26 +288,17 @@ export function HomePage() {
   }, [mapDeepLink.affiliation]);
 
   useEffect(() => {
-    if (mapDeepLink.location) {
-      setLocation(mapDeepLink.location);
-      skipAutoSearchRef.current = false;
-      return;
-    }
-    if (!searchPanelOpen) setLocation("");
-  }, [mapDeepLink.location, searchPanelOpen]);
+    setLocation(mapDeepLink.location ?? "");
+    if (mapDeepLink.location) skipAutoSearchRef.current = false;
+  }, [mapDeepLink.location]);
 
   useEffect(() => {
+    setCategoryId(mapDeepLink.categoryId ?? "");
+    setSubCategoryId(mapDeepLink.subCategoryId ?? "");
     if (mapDeepLink.categoryId || mapDeepLink.subCategoryId) {
-      if (mapDeepLink.categoryId) setCategoryId(mapDeepLink.categoryId);
-      if (mapDeepLink.subCategoryId) setSubCategoryId(mapDeepLink.subCategoryId);
       skipAutoSearchRef.current = false;
-      return;
     }
-    if (!searchPanelOpen) {
-      setCategoryId("");
-      setSubCategoryId("");
-    }
-  }, [mapDeepLink.categoryId, mapDeepLink.subCategoryId, searchPanelOpen]);
+  }, [mapDeepLink.categoryId, mapDeepLink.subCategoryId]);
 
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -411,9 +402,16 @@ export function HomePage() {
   }, [clearMapSearchUrl, returnToMapOverview]);
 
   const hasImmediateMapFilters = mapFiltersActive(currentMapFilters());
+  const urlHasSearchFilters = Boolean(
+    mapDeepLink.author ||
+      mapDeepLink.affiliation ||
+      mapDeepLink.location ||
+      mapDeepLink.categoryId ||
+      mapDeepLink.subCategoryId
+  );
 
   useEffect(() => {
-    if (hasImmediateMapFilters) return;
+    if (hasImmediateMapFilters || urlHasSearchFilters) return;
     if (
       results !== null ||
       resultsRailOpen ||
@@ -427,6 +425,7 @@ export function HomePage() {
     }
   }, [
     hasImmediateMapFilters,
+    urlHasSearchFilters,
     results,
     resultsRailOpen,
     authorResearch,
@@ -699,22 +698,33 @@ export function HomePage() {
           />
         )}
 
-        {!resultsRailOpen && (
-          <div className="pointer-events-none absolute bottom-32 z-[1000] hidden w-[min(100%,240px)] md:right-16 md:block lg:bottom-28 lg:right-20">
-            <GreAdPlacement
-              placement="sidebar"
-              limit={4}
-              rotate
-              className="pointer-events-auto space-y-3"
-            />
-            <GreAdPlacement
-              placement="research_tool"
-              limit={2}
-              rotate
-              className="pointer-events-auto mt-3 space-y-3"
-            />
-          </div>
-        )}
+        <div className="pointer-events-none absolute bottom-32 z-[1000] hidden w-[min(100%,240px)] md:right-16 md:block lg:bottom-28 lg:right-20">
+          <GreAdPlacement
+            placement="sidebar"
+            limit={4}
+            rotate
+            context={{
+              categoryId: categoryId ? Number(categoryId) : undefined,
+              subCategoryId: subCategoryId ? Number(subCategoryId) : undefined,
+              location: location.trim() || mapRegion?.label || undefined,
+              affiliation: affiliation.trim() || undefined,
+              title: title.trim() || undefined,
+            }}
+            className="pointer-events-auto space-y-3"
+          />
+          <GreAdPlacement
+            placement="research_tool"
+            limit={2}
+            rotate
+            context={{
+              categoryId: categoryId ? Number(categoryId) : undefined,
+              subCategoryId: subCategoryId ? Number(subCategoryId) : undefined,
+              location: location.trim() || mapRegion?.label || undefined,
+              affiliation: affiliation.trim() || undefined,
+            }}
+            className="pointer-events-auto mt-3 space-y-3"
+          />
+        </div>
       </main>
 
       {!mapExpanded && (

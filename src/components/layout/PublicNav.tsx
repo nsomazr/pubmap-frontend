@@ -1,7 +1,8 @@
 import { LayoutDashboard, LogIn, Menu, UserPlus } from "lucide-react";
 import { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { buildLoginPath, buildRegisterPath } from "../../lib/authRedirect";
 import { BrandMark } from "../brand/BrandMark";
 import { PUBLIC_NAV_LINKS, PublicMobileMenu } from "./PublicMobileMenu";
 
@@ -12,6 +13,9 @@ interface Props {
 export function PublicNav({ variant = "default" }: Props) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const loginPath = buildLoginPath(`${location.pathname}${location.search}`);
+  const registerPath = buildRegisterPath(`${location.pathname}${location.search}`);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {
@@ -23,8 +27,8 @@ export function PublicNav({ variant = "default" }: Props) {
 
   const navLinkClass = (isActive: boolean) =>
     isActive
-      ? "bg-gradient-to-r from-brand-600 to-teal-600 text-white shadow-md"
-      : "text-slate-600 hover:text-ink";
+      ? "text-ink font-semibold"
+      : "text-slate-500 hover:text-ink";
 
   const mobileMenu = (
     <PublicMobileMenu
@@ -52,7 +56,7 @@ export function PublicNav({ variant = "default" }: Props) {
             {user ? (
               <Link
                 to="/dashboard"
-                className="flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full bg-slate-900 px-3.5 text-sm font-semibold text-white shadow-[0_8px_28px_-6px_rgba(15,23,42,0.35)] ring-2 ring-white transition hover:bg-slate-800 sm:px-4"
+                className="flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 text-sm font-medium text-ink transition hover:border-slate-300 hover:bg-slate-50 sm:px-4"
               >
                 <LayoutDashboard className="h-4 w-4 shrink-0" />
                 <span className="hidden min-[380px]:inline">Dashboard</span>
@@ -60,14 +64,14 @@ export function PublicNav({ variant = "default" }: Props) {
             ) : (
               <>
                 <Link
-                  to="/login"
-                  className="hidden h-11 items-center rounded-full bg-white/95 px-3.5 text-sm font-semibold text-slate-700 shadow-lg ring-2 ring-white sm:flex"
+                  to={loginPath}
+                  className="hidden h-10 items-center rounded-lg border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:flex"
                 >
                   Login
                 </Link>
                 <Link
-                  to="/register"
-                  className="hidden h-11 items-center rounded-full bg-brand-600 px-3.5 text-sm font-semibold text-white shadow-lg ring-2 ring-white sm:flex"
+                  to={registerPath}
+                  className="hidden h-10 items-center rounded-lg bg-brand-600 px-3.5 text-sm font-medium text-white transition hover:bg-brand-700 sm:flex"
                 >
                   Join
                 </Link>
@@ -76,7 +80,7 @@ export function PublicNav({ variant = "default" }: Props) {
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
-              className="flex h-11 items-center justify-center gap-2 rounded-full bg-white px-3.5 shadow-[0_8px_28px_-6px_rgba(15,23,42,0.35)] ring-2 ring-white transition hover:scale-[1.02] sm:px-4"
+              className="flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 transition hover:bg-slate-50 sm:px-4"
               aria-label="Open menu"
               aria-expanded={mobileOpen}
             >
@@ -92,31 +96,31 @@ export function PublicNav({ variant = "default" }: Props) {
 
   return (
     <>
-      <header className="sticky top-0 z-[1100] shrink-0 border-b border-slate-200/60 bg-white/90 shadow-sm backdrop-blur-2xl safe-top">
-        <div className="gre-content-wide mx-auto flex h-[3.5rem] items-center justify-between gap-3 px-4 sm:h-[4rem] sm:gap-4 sm:px-6">
+      <header className="sticky top-0 z-[1100] shrink-0 border-b border-slate-200 bg-white safe-top">
+        <div className="gre-content-wide mx-auto flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
           <Link to="/" className="group flex min-w-0 shrink-0 items-center gap-3">
             <BrandMark
               symbol="full"
-              variant="gradient"
+              variant="plain"
               size="md"
-              className="transition group-hover:scale-[1.02]"
+              className="transition group-hover:opacity-90"
             />
             <div className="hidden min-w-0 sm:block">
-              <p className="truncate text-sm font-bold tracking-tight text-ink">GRE</p>
-              <p className="truncate text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+              <p className="truncate text-sm font-semibold tracking-tight text-ink">GRE</p>
+              <p className="truncate text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">
                 Research Exchange
               </p>
             </div>
           </Link>
 
-          <nav className="hidden items-center rounded-2xl bg-slate-100/80 p-1 ring-1 ring-slate-200/80 md:flex">
+          <nav className="hidden items-center gap-1 md:flex">
             {PUBLIC_NAV_LINKS.map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
                 end={to === "/"}
                 className={({ isActive }) =>
-                  `relative rounded-xl px-4 py-2 text-sm font-semibold transition-all ${navLinkClass(isActive)}`
+                  `rounded-lg px-3.5 py-2 text-sm font-medium transition ${navLinkClass(isActive)}`
                 }
               >
                 {label}
@@ -129,7 +133,7 @@ export function PublicNav({ variant = "default" }: Props) {
               <>
                 <Link
                   to="/dashboard"
-                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white"
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-ink transition hover:bg-slate-50"
                 >
                   <LayoutDashboard className="h-4 w-4" />
                   Dashboard
@@ -137,7 +141,7 @@ export function PublicNav({ variant = "default" }: Props) {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-100"
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-ink"
                 >
                   Logout
                 </button>
@@ -145,14 +149,14 @@ export function PublicNav({ variant = "default" }: Props) {
             ) : (
               <>
                 <Link
-                  to="/login"
-                  className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                  to={loginPath}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
                 >
                   Login
                 </Link>
                 <Link
-                  to="/register"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg"
+                  to={registerPath}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700"
                 >
                   <UserPlus className="h-4 w-4" />
                   Join free
@@ -165,7 +169,7 @@ export function PublicNav({ variant = "default" }: Props) {
             {user && (
               <Link
                 to="/dashboard"
-                className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-slate-900 px-3 text-xs font-semibold text-white sm:text-sm"
+                className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-medium text-ink sm:text-sm"
               >
                 <LayoutDashboard className="h-4 w-4" />
                 <span className="hidden min-[380px]:inline">Dashboard</span>
@@ -173,15 +177,15 @@ export function PublicNav({ variant = "default" }: Props) {
             )}
             {!user && (
               <Link
-                to="/login"
-                className="inline-flex h-10 items-center rounded-xl px-3 text-xs font-semibold text-brand-700 ring-1 ring-brand-200 sm:text-sm"
+                to={loginPath}
+                className="inline-flex h-10 items-center rounded-lg px-3 text-xs font-medium text-brand-700 sm:text-sm"
               >
                 Login
               </Link>
             )}
             <button
               type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-ink ring-1 ring-slate-200"
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-ink transition hover:bg-slate-50"
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
               aria-expanded={mobileOpen}

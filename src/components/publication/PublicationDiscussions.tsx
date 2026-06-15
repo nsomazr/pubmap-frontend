@@ -2,18 +2,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare } from "lucide-react";
 import { InputWithSendAddon, TextareaWithSendAddon } from "../ui/FieldSendAddon";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 import { RankedNameLabel } from "../rankings/RankedNameLabel";
 import { UserAvatar } from "../ui/UserAvatar";
-import type { CoAuthorPerson, PublicationCoAuthors, PublicationConversation } from "../../types";
+import type { PublicationCoAuthors, PublicationConversation } from "../../types";
+import { discussionAuthorRoleLabel } from "../../lib/publicationAuthors";
+import { buildLoginPath } from "../../lib/authRedirect";
 import { PublicationPageSection } from "./PublicationPageSection";
 import { grePaperSectionHeadingClass } from "../../lib/publicationPageStyles";
 
 interface Props {
   publicationId: number;
   coAuthors?: PublicationCoAuthors | null;
+  authorUserId?: number | null;
 }
 
 function authorName(user?: { firstname?: string; lastname?: string; full_name?: string }) {
@@ -33,33 +36,18 @@ function formatWhen(iso: string) {
   }
 }
 
-function authorRoleLabel(
-  user?: { id?: number; email?: string },
-  coAuthors?: PublicationCoAuthors | null
-): string | null {
-  if (!user || !coAuthors?.team?.length) return null;
-  const email = (user.email || "").trim().toLowerCase();
-  const match = coAuthors.team.find(
-    (person: CoAuthorPerson) =>
-      (user.id && person.user_id === user.id) ||
-      (email && (person.email || "").trim().toLowerCase() === email)
-  );
-  const role = (match?.role || "").trim();
-  if (!role) return null;
-  if (/^lead/i.test(role)) return "Lead author";
-  if (/^co-?author/i.test(role)) return "Co-author";
-  return role;
-}
-
 function AuthorRoleBadge({ role }: { role: string | null }) {
   if (!role) return null;
   const isLead = role === "Lead author";
+  const isMember = role === "Member";
   return (
     <span
       className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${
         isLead
           ? "bg-brand-50 text-brand-800 ring-brand-200/80"
-          : "bg-teal-50 text-teal-800 ring-teal-200/80"
+          : isMember
+            ? "bg-slate-100 text-slate-600 ring-slate-200/80"
+            : "bg-teal-50 text-teal-800 ring-teal-200/80"
       }`}
     >
       {role}
@@ -67,8 +55,9 @@ function AuthorRoleBadge({ role }: { role: string | null }) {
   );
 }
 
-export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
+export function PublicationDiscussions({ publicationId, coAuthors, authorUserId }: Props) {
   const { user } = useAuth();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState("");
   const [replyDrafts, setReplyDrafts] = useState<Record<number, string>>({});
@@ -120,7 +109,9 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
       ) : (
         <div className="space-y-5">
           {threads.map((thread) => {
-            const threadRole = authorRoleLabel(thread.user, coAuthors);
+            const threadRole = discussionAuthorRoleLabel(thread.user, coAuthors, {
+              authorUserId,
+            });
             return (
               <article
                 key={thread.id}
@@ -151,7 +142,9 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
                 {(thread.replies ?? []).length > 0 && (
                   <ul className="mt-4 space-y-3 border-l-2 border-brand-100 pl-4">
                     {thread.replies!.map((r) => {
-                      const replyRole = authorRoleLabel(r.user, coAuthors);
+                      const replyRole = discussionAuthorRoleLabel(r.user, coAuthors, {
+                        authorUserId,
+                      });
                       return (
                         <li key={r.id} className="flex gap-3 rounded-xl bg-white px-3 py-2.5 ring-1 ring-slate-100">
                           <UserAvatar user={r.user} size="sm" className="h-8 w-8 border text-[10px]" />
@@ -234,7 +227,10 @@ export function PublicationDiscussions({ publicationId, coAuthors }: Props) {
         </div>
       ) : (
         <p className="mt-6 text-center text-sm text-slate-500">
-          <Link to="/login" className="font-semibold text-brand-600 hover:underline">
+          <Link
+            to={buildLoginPath(`${location.pathname}${location.search}`)}
+            className="font-semibold text-brand-600 hover:underline"
+          >
             Sign in
           </Link>{" "}
           to join the discussion.

@@ -296,6 +296,7 @@ interface GreAdPlacementProps {
   className?: string;
   enabled?: boolean;
   rotate?: boolean;
+  context?: AdTargetingContext;
 }
 
 export function GreAdPlacement({
@@ -305,8 +306,9 @@ export function GreAdPlacement({
   className = "space-y-3",
   enabled = true,
   rotate = true,
+  context,
 }: GreAdPlacementProps) {
-  const { data: ads = [] } = usePlacementAds(placement, limit, enabled, rotate);
+  const { data: ads = [] } = usePlacementAds(placement, limit, enabled, rotate, context);
   return (
     <GreAdSlot
       ads={ads}
