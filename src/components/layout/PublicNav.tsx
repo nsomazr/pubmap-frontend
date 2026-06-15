@@ -36,7 +36,6 @@ export function PublicNav({ variant = "default" }: Props) {
       onClose={() => setMobileOpen(false)}
       user={user}
       onLogout={handleLogout}
-      variant={variant}
     />
   );
 

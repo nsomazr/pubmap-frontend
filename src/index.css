@@ -3100,6 +3100,29 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
   }
 }
 
+body[data-gre-mobile-nav-open] .gre-assistant-fab,
+body[data-gre-mobile-nav-open] .gre-assistant-panel {
+  display: none !important;
+}
+
+body[data-gre-mobile-nav-open] .map-expand-control,
+body[data-gre-mobile-nav-open] .landing-page .leaflet-control {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.public-mobile-menu-root {
+  isolation: isolate;
+}
+
+.public-mobile-menu {
+  isolation: isolate;
+}
+
+.public-mobile-menu__footer {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+
 @media (min-width: 768px) and (max-width: 1023px) {
   .map-draggable-panel {
     max-width: min(100%, 28rem);

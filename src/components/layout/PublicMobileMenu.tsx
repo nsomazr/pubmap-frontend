@@ -30,7 +30,6 @@ export function PublicMobileMenu({
   onClose,
   user,
   onLogout,
-  variant = "default",
 }: Props) {
   const location = useLocation();
   const loginPath = buildLoginPath(`${location.pathname}${location.search}`);
@@ -38,10 +37,12 @@ export function PublicMobileMenu({
 
   useEffect(() => {
     if (!open) return;
-    const previous = document.body.style.overflow;
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    document.body.setAttribute("data-gre-mobile-nav-open", "");
     return () => {
-      document.body.style.overflow = previous;
+      document.body.style.overflow = previousOverflow;
+      document.body.removeAttribute("data-gre-mobile-nav-open");
     };
   }, [open]);
 
@@ -57,41 +58,47 @@ export function PublicMobileMenu({
   if (!open) return null;
 
   const navLinkClass = (isActive: boolean) =>
-    `flex min-h-[44px] items-center rounded-lg px-4 py-3 text-[15px] font-medium transition ${
+    `flex min-h-[44px] items-center rounded-lg px-3 py-2.5 text-[15px] font-medium transition ${
       isActive
         ? "bg-slate-100 text-ink"
         : "text-slate-600 hover:bg-slate-50 active:bg-slate-100"
     }`;
 
   return (
-    <div className="fixed inset-0 z-[1200]" role="dialog" aria-modal="true" aria-label="Site menu">
+    <div
+      className="public-mobile-menu-root fixed inset-0 z-[2000]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Site menu"
+    >
       <button
         type="button"
-        className="absolute inset-0 bg-slate-900/45 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/40"
         aria-label="Close menu"
         onClick={onClose}
       />
-      <div className="public-mobile-menu absolute inset-y-0 right-0 flex w-[min(100%,20rem)] flex-col bg-white shadow-2xl safe-top safe-bottom">
-        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5">
+
+      <aside className="public-mobile-menu absolute inset-y-0 right-0 flex w-[min(100%,19rem)] max-w-full flex-col bg-white shadow-xl safe-top">
+        <header className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
           <BrandMark symbol="full" variant="plain" size="md" />
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-ink"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-ink"
             aria-label="Close menu"
           >
             <X className="h-5 w-5" />
           </button>
-        </div>
+        </header>
 
-        {user && (
-          <div className="border-b border-slate-100 px-4 py-4">
+        {user ? (
+          <div className="shrink-0 border-b border-slate-100 px-4 py-4">
             <div className="mb-3 flex items-center gap-3">
               <GreAvatarSlot
                 photoUrl={user.photo}
                 initials={userInitials(user)}
                 size="sm"
-                className="h-11 w-11 border-2 border-brand-200"
+                className="h-10 w-10 border border-slate-200"
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-ink">
@@ -103,34 +110,35 @@ export function PublicMobileMenu({
             <Link
               to="/dashboard"
               onClick={onClose}
-              className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+              className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-slate-50"
             >
               <LayoutDashboard className="h-4 w-4" />
-              Back to dashboard
+              Dashboard
             </Link>
           </div>
-        )}
+        ) : null}
 
-        <nav className="flex-1 overflow-y-auto overscroll-contain px-3 py-3">
-          <p className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Explore GRE
+        <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4">
+          <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Explore
           </p>
-          <div className="space-y-1">
+          <ul className="space-y-0.5">
             {PUBLIC_NAV_LINKS.map(({ to, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === "/"}
-                onClick={onClose}
-                className={({ isActive }) => navLinkClass(isActive)}
-              >
-                {label}
-              </NavLink>
+              <li key={to}>
+                <NavLink
+                  to={to}
+                  end={to === "/"}
+                  onClick={onClose}
+                  className={({ isActive }) => navLinkClass(isActive)}
+                >
+                  {label}
+                </NavLink>
+              </li>
             ))}
-          </div>
+          </ul>
         </nav>
 
-        <div className="space-y-2 border-t border-slate-100 p-4">
+        <footer className="public-mobile-menu__footer shrink-0 border-t border-slate-100 bg-white px-4 pt-3">
           {user ? (
             <button
               type="button"
@@ -138,33 +146,33 @@ export function PublicMobileMenu({
                 onLogout();
                 onClose();
               }}
-              className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
             >
               <LogOut className="h-4 w-4" />
               Sign out
             </button>
           ) : (
-            <>
+            <div className="grid grid-cols-2 gap-2">
               <Link
                 to={loginPath}
                 onClick={onClose}
-                className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
-                <LogIn className="h-4 w-4" />
+                <LogIn className="h-4 w-4 shrink-0" />
                 Login
               </Link>
               <Link
                 to={registerPath}
                 onClick={onClose}
-                className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-teal-600 py-3 text-sm font-semibold text-white shadow-sm"
+                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg bg-brand-600 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700"
               >
-                <UserPlus className="h-4 w-4" />
-                Join free
+                <UserPlus className="h-4 w-4 shrink-0" />
+                Join
               </Link>
-            </>
+            </div>
           )}
-        </div>
-      </div>
+        </footer>
+      </aside>
     </div>
   );
 }
