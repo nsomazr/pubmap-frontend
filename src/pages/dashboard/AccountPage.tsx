@@ -19,6 +19,7 @@ import { AccountProfilePreview, type AccountProfilePreviewData } from "../../com
 import { ProfilePhotoEditor } from "../../components/profile/ProfilePhotoEditor";
 import { InterestPicker } from "../../components/interests/InterestPicker";
 import { CountryInstitutionPicker } from "../../components/institutions/CountryInstitutionPicker";
+import { formatAffiliationInline } from "../../lib/affiliations";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -330,7 +331,9 @@ export function AccountPage() {
               </div>
               {(savedProfile.affiliation || savedProfile.countryLabel) && (
                 <p className="mt-1 line-clamp-2 text-xs text-slate-500">
-                  {[savedProfile.affiliation, savedProfile.countryLabel].filter(Boolean).join(" · ")}
+                  {[formatAffiliationInline(savedProfile.affiliation), savedProfile.countryLabel]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </p>
               )}
             </div>
@@ -352,6 +355,12 @@ export function AccountPage() {
           </div>
         </div>
       </section>
+
+      {user && (
+        <section className="gre-form-panel">
+          <ProfilePhotoEditor user={user} onUpdated={refreshUser} />
+        </section>
+      )}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start">
         <section className="gre-form-panel border-b border-slate-200/90 pb-6">
@@ -397,8 +406,6 @@ export function AccountPage() {
             {profileEditing ? (
               <form id="account-profile-form" className="space-y-4" onSubmit={handleProfileSubmit}>
                 {profileMsg && <Alert type={profileMsg.type} message={profileMsg.text} />}
-
-                {user && <ProfilePhotoEditor user={user} onUpdated={refreshUser} />}
 
                 <Select
                   label="Honorific (optional)"

@@ -1,5 +1,8 @@
-import { Building2, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
+import { parseAffiliationList } from "../../lib/affiliations";
+import { AffiliationList } from "../institutions/AffiliationList";
+import { isRegisteredGreResearcher } from "../../lib/publicationAuthors";
 import { RankedNameLabel } from "../rankings/RankedNameLabel";
 import { UserAvatar } from "../ui/UserAvatar";
 import type { CoAuthorPerson } from "../../types";
@@ -12,6 +15,7 @@ interface Props {
 export function CoAuthorCard({ person, highlight = false }: Props) {
   const profilePath = person.profile_url || (person.user_id ? `/researcher/${person.user_id}` : null);
   const institutionPath = person.institution_map_url || undefined;
+  const registered = isRegisteredGreResearcher(person);
 
   const shellClass = `flex items-start gap-3 rounded-2xl border px-4 py-3 transition ${
     highlight
@@ -55,7 +59,8 @@ export function CoAuthorCard({ person, highlight = false }: Props) {
               )
             }
             ranking={person.ranking}
-            showBadges={Boolean(person.user_id)}
+            registered={registered}
+            showBadges={registered}
           />
           {person.role && (
             <span
@@ -72,20 +77,14 @@ export function CoAuthorCard({ person, highlight = false }: Props) {
 
         {person.affiliation && (
           <div className="mt-2">
-            {institutionPath ? (
-              <Link
-                to={institutionPath}
-                className="flex items-start gap-1.5 text-sm text-slate-600 transition hover:text-brand-700"
-              >
-                <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span className="line-clamp-2">{person.affiliation}</span>
-              </Link>
-            ) : (
-              <p className="flex items-start gap-1.5 text-sm text-slate-600">
-                <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span className="line-clamp-2">{person.affiliation}</span>
-              </p>
-            )}
+            <AffiliationList
+              value={person.affiliation}
+              mapUrl={
+                parseAffiliationList(person.affiliation).length === 1
+                  ? institutionPath
+                  : undefined
+              }
+            />
           </div>
         )}
 

@@ -231,10 +231,10 @@ export function AdminOperationsPage() {
                     className="flex flex-col gap-2 px-5 py-4 transition hover:bg-slate-50 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
                   >
                     <div className="min-w-0">
-                      <PublicationAuthorLine publication={pub} className="text-sm font-medium text-slate-600" />
                       <p className="font-semibold text-ink">
                         {formatGrePaperTitle(pub.title, pub.short_number)}
                       </p>
+                      <PublicationAuthorLine publication={pub} className="mt-1 text-sm font-medium text-slate-600" />
                       {pub.sub_category_name && (
                         <span className="mt-1 inline-block text-xs text-slate-500">
                           {pub.sub_category_name}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpenText, CheckCircle2, Users } from "lucide-react";
+import { BookOpenText, CheckCircle2, Users, X } from "lucide-react";
 import api from "../../lib/api";
 import { Button } from "../ui/Button";
 import type { CoAuthorLinkSummary } from "../../types";
@@ -11,6 +11,14 @@ interface Props {
   onUpdated?: (summary: CoAuthorLinkSummary) => void;
   onDone?: () => void;
   showDoneButton?: boolean;
+  id?: string;
+}
+
+function confidenceLabel(score?: number): string | null {
+  if (score == null) return null;
+  if (score >= 98) return "Very strong name match";
+  if (score >= 90) return "Strong name match";
+  return "Likely name match";
 }
 
 export function CoAuthorLinkPanel({
@@ -19,13 +27,16 @@ export function CoAuthorLinkPanel({
   onUpdated,
   onDone,
   showDoneButton = false,
+  id,
 }: Props) {
   const [data, setData] = useState(summary);
   const [claimingId, setClaimingId] = useState<number | null>(null);
+  const [dismissingId, setDismissingId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   const linkedCount = data.linked_publication_count;
   const pending = data.pending_name_matches;
+  const busy = claimingId != null || dismissingId != null;
 
   const handleClaim = async (collaboratorId: number) => {
     setError("");
@@ -46,12 +57,34 @@ export function CoAuthorLinkPanel({
     }
   };
 
+  const handleDismiss = async (collaboratorId: number) => {
+    setError("");
+    setDismissingId(collaboratorId);
+    try {
+      const { data: response } = await api.post<CoAuthorLinkSummary>(
+        "/auth/me/coauthor-link/dismiss/",
+        { collaborator_id: collaboratorId }
+      );
+      setData(response);
+      onUpdated?.(response);
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data
+        ?.detail;
+      setError(detail || "Could not dismiss this suggestion.");
+    } finally {
+      setDismissingId(null);
+    }
+  };
+
   if (linkedCount === 0 && pending.length === 0) {
     return null;
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-brand-100 bg-gradient-to-b from-brand-50/80 to-white p-4 ring-1 ring-brand-100/80">
+    <div
+      id={id}
+      className="scroll-mt-24 space-y-4 rounded-2xl border border-brand-100 bg-gradient-to-b from-brand-50/80 to-white p-4 ring-1 ring-brand-100/80"
+    >
       <div className="flex items-start gap-3">
         <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
           <Users className="h-5 w-5" />
@@ -69,8 +102,8 @@ export function CoAuthorLinkPanel({
               </>
             ) : (
               <>
-                We found GRE publications that may list you as a co-author. Confirm any matches
-                below to link them to your profile.
+                We found GRE publications that may list you as a co-author based on your name.
+                Confirm any matches to link them to your profile.
               </>
             )}
           </p>
@@ -100,33 +133,62 @@ export function CoAuthorLinkPanel({
       {pending.length > 0 ? (
         <div className="space-y-2">
           <p className="text-xs font-bold uppercase tracking-wide text-brand-700">
-            Confirm your listings
+            Papers that may be linked to you
           </p>
           <ul className="space-y-2">
-            {pending.map((match) => (
-              <li
-                key={match.collaborator_id}
-                className="rounded-xl bg-white px-3 py-3 ring-1 ring-slate-100"
-              >
-                <div className="flex items-start gap-2">
-                  <BookOpenText className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-ink">{match.publication_title}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      Listed as &ldquo;{match.listed_name}&rdquo;
-                      {match.lead_author_name ? ` · lead author ${match.lead_author_name}` : ""}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  className="mt-3 w-full !py-2 text-xs"
-                  loading={claimingId === match.collaborator_id}
-                  onClick={() => handleClaim(match.collaborator_id)}
+            {pending.map((match) => {
+              const confidence = confidenceLabel(match.match_confidence);
+              return (
+                <li
+                  key={match.collaborator_id}
+                  className="rounded-xl bg-white px-3 py-3 ring-1 ring-slate-100"
                 >
-                  Yes, this is me
-                </Button>
-              </li>
-            ))}
+                  <div className="flex items-start gap-2">
+                    <BookOpenText className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-ink">{match.publication_title}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        Listed as &ldquo;{match.listed_name}&rdquo;
+                        {match.lead_author_name ? ` · lead author ${match.lead_author_name}` : ""}
+                      </p>
+                      {confidence ? (
+                        <p className="mt-1 text-[11px] font-semibold text-brand-700">
+                          {confidence}
+                          {match.match_confidence != null ? ` (${Math.round(match.match_confidence)}%)` : ""}
+                        </p>
+                      ) : null}
+                      {match.email_mismatch && match.listed_email_hint ? (
+                        <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
+                          Listed with {match.listed_email_hint}, which differs from your GRE email.
+                          You can still link this paper if the listing is you.
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      className="min-w-0 flex-1 !py-2 text-xs"
+                      loading={claimingId === match.collaborator_id}
+                      disabled={busy && claimingId !== match.collaborator_id}
+                      onClick={() => handleClaim(match.collaborator_id)}
+                    >
+                      Yes, this is me
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="min-w-0 flex-1 !py-2 text-xs"
+                      loading={dismissingId === match.collaborator_id}
+                      disabled={busy && dismissingId !== match.collaborator_id}
+                      onClick={() => handleDismiss(match.collaborator_id)}
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden />
+                      Not me
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}

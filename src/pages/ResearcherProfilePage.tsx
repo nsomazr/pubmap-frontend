@@ -82,6 +82,7 @@ export function ResearcherProfilePage() {
             name={name}
             nameClassName="text-2xl font-bold tracking-tight text-ink sm:text-3xl"
             ranking={ranking}
+            registered
           />
         }
         subtitle={

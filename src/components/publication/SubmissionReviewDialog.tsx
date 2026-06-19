@@ -1,4 +1,4 @@
-import { FileText, Loader2, MapPin, X } from "lucide-react";
+import { FileText, MapPin, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { abstractPlainText } from "../../lib/abstractText";
@@ -8,6 +8,7 @@ import { ManuscriptContent } from "./ManuscriptContent";
 import type { ManuscriptFields } from "./ManuscriptSectionsEditor";
 import type { PublicationFigure } from "../../lib/publicationGre";
 import { PublicationManuscriptBody } from "./PublicationManuscriptBody";
+import { SubmissionLoadingPanel } from "./SubmissionLoadingPanel";
 
 export const AUTHOR_SUBMISSION_DECLARATION =
   "I declare that this work is my own and that the Global Research Explorer (GRE) has no obligation or liability regarding any claims, including complaints from third parties, related to this article.";
@@ -98,6 +99,10 @@ export function SubmissionReviewDialog({
       aria-labelledby="submission-review-title"
     >
       <div className="relative flex max-h-[min(92vh,900px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        {submitting ? (
+          <SubmissionLoadingPanel title={title} manuscriptFileName={manuscriptFileName} />
+        ) : (
+          <>
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
@@ -232,13 +237,7 @@ export function SubmissionReviewDialog({
             Confirm & submit for review
           </Button>
         </div>
-        {submitting && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
-            <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow">
-              <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
-              Submitting for review…
-            </div>
-          </div>
+          </>
         )}
       </div>
     </div>,

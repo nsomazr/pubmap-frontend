@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
-import { userFullName } from "../../lib/userDisplay";
+import { publicationAuthorSearchEntries } from "../../lib/publicationAuthors";
+import type { Publication } from "../../types";
 import { SubcategoryVisual } from "../taxonomy/SubcategoryVisual";
 import { resolveCategoryVisual, resolveSubcategoryFromModel } from "../../lib/taxonomyVisuals";
 import type { Category, SubCategory, SubcategoryVisual as Visual } from "../../types";
@@ -139,19 +140,7 @@ export function MapFilterChips({ chips, onClearAll, className = "" }: ChipsProps
   );
 }
 
-export function buildSearchSuggestions(
-  publications: {
-    title?: string;
-    author?: {
-      firstname?: string;
-      middlename?: string;
-      lastname?: string;
-      full_name?: string;
-      affiliation?: string;
-    };
-    collaborators?: { fullname?: string }[];
-  }[]
-) {
+export function buildSearchSuggestions(publications: Publication[]) {
   const titles = new Set<string>();
   const authors = new Set<string>();
   const institutions = new Set<string>();
@@ -159,14 +148,11 @@ export function buildSearchSuggestions(
   for (const pub of publications.slice(0, 120)) {
     const t = pub.title?.trim();
     if (t && t.length > 2) titles.add(t);
-    const a = userFullName(pub.author);
-    if (a && a !== "Researcher") authors.add(a);
-    for (const collab of pub.collaborators ?? []) {
-      const name = collab.fullname?.trim();
-      if (name) authors.add(name);
+    for (const person of publicationAuthorSearchEntries(pub)) {
+      if (person.name) authors.add(person.name);
+      const aff = person.affiliation?.trim();
+      if (aff) institutions.add(aff);
     }
-    const aff = pub.author?.affiliation?.trim();
-    if (aff) institutions.add(aff);
   }
 
   return {

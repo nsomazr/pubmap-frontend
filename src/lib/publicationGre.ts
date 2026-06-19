@@ -118,9 +118,9 @@ export async function uploadFigure(
 ) {
   const form = new FormData();
   form.append("photo", file);
-  if (meta.caption) form.append("caption", meta.caption);
-  if (meta.title) form.append("title", meta.title);
-  if (meta.figure_number) form.append("figure_number", meta.figure_number);
+  if (meta.caption !== undefined) form.append("caption", meta.caption);
+  if (meta.title !== undefined) form.append("title", meta.title);
+  if (meta.figure_number !== undefined) form.append("figure_number", meta.figure_number);
   const { data } = await api.post(
     `/publications/${pubSeg(publicationId, encodedId)}/upload_figure/`,
     form

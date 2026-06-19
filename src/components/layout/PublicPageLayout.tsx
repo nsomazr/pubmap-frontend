@@ -41,6 +41,8 @@ interface Props {
   fillViewport?: boolean;
   /** Less hero chrome on small screens when fillViewport (more room for chat). */
   denseMobileHero?: boolean;
+  /** Hide the hero band on phones (publication reading pages). */
+  hideMobileHero?: boolean;
   /** Full-height manuscript assistant: minimal hero on mobile, chat fills viewport. */
   workspaceMode?: "chat";
 }
@@ -82,6 +84,7 @@ export function PublicPageLayout({
   heroVisual,
   fillViewport = false,
   denseMobileHero = false,
+  hideMobileHero = false,
   workspaceMode,
 }: Props) {
   const isChatWorkspace = workspaceMode === "chat";
@@ -107,7 +110,7 @@ export function PublicPageLayout({
       {crumbs && crumbs.length > 0 && (
         <nav
           className={`flex flex-wrap items-center gap-1.5 ${crumbMargin} ${
-            isChatWorkspace ? "hidden md:flex" : ""
+            isChatWorkspace || hideMobileHero ? "hidden md:flex" : ""
           }`}
         >
           {crumbs.map((c, i) => (
@@ -160,7 +163,9 @@ export function PublicPageLayout({
           <h1
             className={`gre-display max-w-4xl tracking-tight ${
               isClean ? "text-ink" : "text-white"
-            } ${titleSize} ${isChatWorkspace ? "hidden md:block" : ""}`}
+            } ${titleSize} ${
+              isChatWorkspace || hideMobileHero ? "hidden md:block" : ""
+            }`}
           >
             {title}
           </h1>
@@ -193,7 +198,7 @@ export function PublicPageLayout({
       {isClean ? (
         <section
           className={`gre-public-hero relative border-b border-slate-200 bg-white ${
-            isChatWorkspace ? "hidden md:block" : ""
+            isChatWorkspace || hideMobileHero ? "hidden md:block" : ""
           }`}
         >
           {heroContent}
@@ -243,7 +248,9 @@ export function PublicPageLayout({
             ? "min-h-0 overflow-hidden px-0 pb-0 pt-0 sm:px-6 sm:pb-4 sm:pt-5"
             : fillViewport
               ? "min-h-0 overflow-hidden px-4 pb-4 pt-4 sm:px-6 sm:pb-8 sm:pt-6"
-              : "px-4 pb-20 pt-8 sm:px-6 sm:pt-10"
+              : hideMobileHero
+                ? "px-3 pb-24 pt-3 sm:px-6 sm:pb-20 sm:pt-8"
+                : "px-4 pb-20 pt-8 sm:px-6 sm:pt-10"
         }`}
       >
         <div

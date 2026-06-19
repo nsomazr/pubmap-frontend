@@ -45,6 +45,9 @@ export interface CoAuthorPendingMatch {
   listed_name: string;
   role: string;
   lead_author_name: string;
+  match_confidence?: number;
+  email_mismatch?: boolean;
+  listed_email_hint?: string;
 }
 
 export interface CoAuthorLinkedPublication {

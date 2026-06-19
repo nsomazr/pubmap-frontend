@@ -31,7 +31,9 @@ interface Props {
   ensurePublicationId?: () => Promise<EnsurePublicationIdResult>;
   onActivityChange?: (state: { uploading: boolean; pendingCount: number }) => void;
   /** Parent calls this before save/submit to persist any debounced caption edits. */
-  registerFlushCaptions?: (flush: (() => Promise<void>) | null) => void;
+  registerFlushCaptions?: (
+    flush: ((pubId?: number, encodedId?: string | null) => Promise<void>) | null
+  ) => void;
 }
 
 type PendingUploadStatus = "queued" | "uploading" | "error";
@@ -210,6 +212,10 @@ export function PublicationFiguresEditor({
     { ok: true; id: number } | { ok: false; error: string }
   > => {
     if (publicationId > 0) return { ok: true, id: publicationId };
+    const fromFigure = figuresRef.current.find(
+      (fig) => typeof fig.publication === "number" && fig.publication > 0
+    )?.publication;
+    if (fromFigure) return { ok: true, id: fromFigure };
     if (!ensurePublicationId) {
       return { ok: false, error: "Save a title and abstract before adding figures." };
     }
@@ -353,7 +359,11 @@ export function PublicationFiguresEditor({
   };
 
   const saveCaptionById = useCallback(
-    async (figureId: number) => {
+    async (
+      figureId: number,
+      overridePubId?: number,
+      overrideEncodedId?: string | null
+    ) => {
       const fig = figuresRef.current.find((item) => item.id === figureId);
       if (!fig) return true;
       const nextCaption = (captionsRef.current[figureId] ?? "").trim();
@@ -361,13 +371,18 @@ export function PublicationFiguresEditor({
       if (nextCaption === persisted) return true;
       setSavingCaptionId(figureId);
       try {
-        const resolved = await resolvePublicationId();
-        if (!resolved.ok) return false;
+        let pubId = overridePubId;
+        let encodedId = overrideEncodedId ?? encodedPublicationIdRef.current;
+        if (!pubId || pubId <= 0) {
+          const resolved = await resolvePublicationId();
+          if (!resolved.ok) return false;
+          pubId = resolved.id;
+        }
         const updated = await updateFigure(
-          resolved.id,
+          pubId,
           figureId,
           { caption: nextCaption },
-          encodedPublicationId
+          encodedId
         );
         persistedCaptionsRef.current[figureId] = nextCaption;
         const current = figuresRef.current;
@@ -379,27 +394,32 @@ export function PublicationFiguresEditor({
         setSavingCaptionId(null);
       }
     },
-    [encodedPublicationId, onChange, publicationId]
+    [onChange, publicationId]
   );
 
-  const flushPendingCaptionSaves = useCallback(async () => {
-    for (const timer of Object.values(captionSaveTimersRef.current)) {
-      window.clearTimeout(timer);
-    }
-    captionSaveTimersRef.current = {};
-    const dirtyIds = figuresRef.current
-      .map((fig) => fig.id)
-      .filter((figureId) => {
-        const next = (captionsRef.current[figureId] ?? "").trim();
-        const persisted = (persistedCaptionsRef.current[figureId] ?? "").trim();
-        return next !== persisted;
-      });
-    if (!dirtyIds.length) return;
-    const results = await Promise.all(dirtyIds.map((figureId) => saveCaptionById(figureId)));
-    if (results.some((ok) => !ok)) {
-      throw new Error("CAPTION_SAVE_FAILED");
-    }
-  }, [saveCaptionById]);
+  const flushPendingCaptionSaves = useCallback(
+    async (overridePubId?: number, overrideEncodedId?: string | null) => {
+      for (const timer of Object.values(captionSaveTimersRef.current)) {
+        window.clearTimeout(timer);
+      }
+      captionSaveTimersRef.current = {};
+      const dirtyIds = figuresRef.current
+        .map((fig) => fig.id)
+        .filter((figureId) => {
+          const next = (captionsRef.current[figureId] ?? "").trim();
+          const persisted = (persistedCaptionsRef.current[figureId] ?? "").trim();
+          return next !== persisted;
+        });
+      if (!dirtyIds.length) return;
+      const results = await Promise.all(
+        dirtyIds.map((figureId) => saveCaptionById(figureId, overridePubId, overrideEncodedId))
+      );
+      if (results.some((ok) => !ok)) {
+        throw new Error("CAPTION_SAVE_FAILED");
+      }
+    },
+    [saveCaptionById]
+  );
 
   useEffect(() => {
     registerFlushCaptions?.(flushPendingCaptionSaves);

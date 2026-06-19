@@ -1,4 +1,4 @@
-import { authorDisplayName, userFullName } from "./userDisplay";
+import { publicationAuthorSearchEntries } from "./publicationAuthors";
 import type { Publication } from "../types";
 
 /** Strip accidental filter labels pasted into the author field. */
@@ -30,11 +30,8 @@ export function personNameMatchesAuthorQuery(name: string, query: string): boole
 }
 
 export function publicationMatchesAuthorQuery(pub: Publication, query: string): boolean {
-  const ownerName = authorDisplayName(pub.author) || userFullName(pub.author);
-  if (ownerName && personNameMatchesAuthorQuery(ownerName, query)) return true;
-  for (const collab of pub.collaborators ?? []) {
-    const name = collab.fullname?.trim();
-    if (name && personNameMatchesAuthorQuery(name, query)) return true;
+  for (const person of publicationAuthorSearchEntries(pub)) {
+    if (personNameMatchesAuthorQuery(person.name, query)) return true;
   }
   return false;
 }
@@ -95,31 +92,16 @@ export function collectAuthorMatchedResearchers(
   };
 
   for (const pub of publications) {
-    const ownerName = authorDisplayName(pub.author) || userFullName(pub.author);
-    if (ownerName && personNameMatchesAuthorQuery(ownerName, normalized)) {
+    for (const person of publicationAuthorSearchEntries(pub)) {
+      if (!personNameMatchesAuthorQuery(person.name, normalized)) continue;
       addMatch(
-        pub.author?.id ? `user:${pub.author.id}` : `name:${normalizePersonNameForSearch(ownerName)}`,
+        person.userId ? `user:${person.userId}` : `name:${normalizePersonNameForSearch(person.name)}`,
         pub,
         {
-          userId: pub.author?.id,
-          name: ownerName,
-          affiliation: pub.author?.affiliation || "",
-          photo: pub.author?.photo,
-        }
-      );
-    }
-
-    for (const collab of pub.collaborators ?? []) {
-      const name = collab.fullname?.trim();
-      if (!name || !personNameMatchesAuthorQuery(name, normalized)) continue;
-      addMatch(
-        collab.user_id ? `user:${collab.user_id}` : `name:${normalizePersonNameForSearch(name)}`,
-        pub,
-        {
-          userId: collab.user_id,
-          name,
-          affiliation: collab.affiliation || "",
-          photo: collab.photo,
+          userId: person.userId,
+          name: person.name,
+          affiliation: person.affiliation || "",
+          photo: person.photo,
         }
       );
     }

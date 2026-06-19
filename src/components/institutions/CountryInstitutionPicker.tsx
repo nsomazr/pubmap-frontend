@@ -5,6 +5,7 @@ import {
   normalizeInstitutionLabel,
   useInstitutionsByCountry,
 } from "../../lib/institutions";
+import { MultiInstitutionPicker } from "./MultiInstitutionPicker";
 import { ScrollableSelect } from "../ui/ScrollableSelect";
 import { RequiredMark } from "../ui/RequiredField";
 
@@ -17,6 +18,7 @@ interface Props {
   institutionLabel?: string;
   required?: boolean;
   className?: string;
+  multiple?: boolean;
 }
 
 export function CountryInstitutionPicker({
@@ -28,6 +30,7 @@ export function CountryInstitutionPicker({
   institutionLabel = "Institution / affiliation",
   required,
   className = "",
+  multiple = true,
 }: Props) {
   const { data: countries = [], isLoading: loadingCountries } = useCountries();
   const [filter, setFilter] = useState("");
@@ -38,6 +41,10 @@ export function CountryInstitutionPicker({
   );
 
   useEffect(() => {
+    if (multiple) {
+      setCustomMode(false);
+      return;
+    }
     if (!countryCode) {
       setCustomMode(false);
       return;
@@ -52,7 +59,7 @@ export function CountryInstitutionPicker({
     if (!inCatalog && institution.trim()) {
       setCustomMode(true);
     }
-  }, [countryCode, institution, catalog]);
+  }, [multiple, countryCode, institution, catalog]);
 
   const selectedCountry = useMemo(
     () => countries.find((row) => row.code === countryCode),
@@ -124,7 +131,17 @@ export function CountryInstitutionPicker({
         )}
       </div>
 
-      {countryCode && (
+      {countryCode && multiple ? (
+        <MultiInstitutionPicker
+          value={institution}
+          onChange={onInstitutionChange}
+          label={institutionLabel}
+          countryCode={countryCode}
+          required={required}
+        />
+      ) : null}
+
+      {countryCode && !multiple && (
         <div>
           <label className="mb-1.5 block text-sm font-medium text-ink">
             {institutionLabel}

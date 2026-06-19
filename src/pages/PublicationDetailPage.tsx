@@ -1,11 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { formatGrePaperTitle } from "../lib/grePaperTitle";
 import api from "../lib/api";
 import { ReportPlagiarismDialog } from "../components/publication/ReportPlagiarismDialog";
-import { GreAdPlacement } from "../components/ads/GreAdSlot";
-import { PublicationAuthorsSidebar } from "../components/publication/PublicationAuthorsSidebar";
+import { PublicationViewShell } from "../components/publication/PublicationViewShell";
 import {
   publicationHasGrePaperBody,
   publicationHasReadablePaper,
@@ -97,6 +96,7 @@ export function PublicationDetailPage() {
     <PublicPageLayout
       wide
       compactHero
+      hideMobileHero
       accent="blue"
       title="Publication"
       crumbs={[
@@ -105,21 +105,13 @@ export function PublicationDetailPage() {
           label: crumbTitle.slice(0, 48) + (crumbTitle.length > 48 ? "…" : ""),
         },
       ]}
+      back={{ to: "/", label: "Back to map" }}
     >
-      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_280px]">
-        <aside className="order-1 space-y-6 lg:order-2">
-          <PublicationAuthorsSidebar publication={pub} />
-          <GreAdPlacement placement="sidebar" limit={4} rotate context={adContext} />
-          <GreAdPlacement
-            placement="sponsored_publication"
-            limit={4}
-            rotate
-            context={adContext}
-            className="mt-4 space-y-3"
-          />
-        </aside>
-
-        <div className="gre-section-stack order-2 min-w-0 space-y-5 lg:order-1">
+      <PublicationViewShell
+        publication={pub}
+        adContext={adContext}
+        publicationTitle={crumbTitle}
+      >
           <PublicationPaperDocument
             title={pub.title}
             greNumber={pub.short_number}
@@ -183,8 +175,7 @@ export function PublicationDetailPage() {
           />
 
           <PublicationResearchIntegritySection onReport={() => setReportOpen(true)} />
-        </div>
-      </div>
+      </PublicationViewShell>
 
       {reportOpen && (
         <ReportPlagiarismDialog

@@ -9,8 +9,7 @@ import {
 } from "../../lib/publicationPaths";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { ReportPlagiarismDialog } from "../../components/publication/ReportPlagiarismDialog";
-import { GreAdPlacement } from "../../components/ads/GreAdSlot";
-import { PublicationAuthorsSidebar } from "../../components/publication/PublicationAuthorsSidebar";
+import { PublicationViewShell } from "../../components/publication/PublicationViewShell";
 import {
   publicationHasGrePaperBody,
   publicationHasReadablePaper,
@@ -109,20 +108,11 @@ export function PublicationReaderPage() {
         </Link>
       </div>
 
-      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_280px]">
-        <aside className="order-1 space-y-6 lg:order-2">
-          <PublicationAuthorsSidebar publication={pub} />
-          <GreAdPlacement placement="sidebar" limit={4} rotate context={adContext} />
-          <GreAdPlacement
-            placement="sponsored_publication"
-            limit={4}
-            rotate
-            context={adContext}
-            className="mt-4 space-y-3"
-          />
-        </aside>
-
-        <div className="gre-section-stack order-2 min-w-0 space-y-5 lg:order-1">
+      <PublicationViewShell
+        publication={pub}
+        adContext={adContext}
+        publicationTitle={crumbTitle}
+      >
           <PublicationPaperDocument
             title={pub.title}
             greNumber={pub.short_number}
@@ -186,8 +176,7 @@ export function PublicationReaderPage() {
           />
 
           <PublicationResearchIntegritySection onReport={() => setReportOpen(true)} />
-        </div>
-      </div>
+      </PublicationViewShell>
 
       {reportOpen && (
         <ReportPlagiarismDialog

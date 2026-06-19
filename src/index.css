@@ -2643,6 +2643,34 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
   text-decoration: underline;
 }
 
+@media (max-width: 767px) {
+  .publication-view .gre-public-card {
+    border-radius: 1rem;
+  }
+
+  .publication-reading-paper .gre-manuscript-body {
+    text-align: left;
+    hyphens: manual;
+    font-size: 1.0625rem;
+    line-height: 1.72;
+  }
+
+  .publication-reading-paper .gre-manuscript-body table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .publication-mobile-bar {
+    padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+  }
+
+  .publication-paper-header .publication-paper-category {
+    max-width: 2.75rem;
+  }
+}
+
 /* Rich HTML (CKEditor / CMS output) */
 .gre-html-content p + p {
   margin-top: 1rem;

@@ -43,12 +43,13 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
             <X className="h-4 w-4" />
           </button>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <PublicationAuthorTeamRow publication={publication} className="min-w-0 max-w-full" />
-            {subVisual ? <SubcategoryBadge visual={subVisual} size="xs" variant="chip" /> : null}
-          </div>
+          {subVisual ? (
+            <div className="mb-2">
+              <SubcategoryBadge visual={subVisual} size="xs" variant="chip" />
+            </div>
+          ) : null}
 
-          <div className="mt-3 min-w-0 border-l-[3px] border-brand-500 pl-3">
+          <div className="min-w-0 border-l-[3px] border-brand-500 pl-3">
             {paperCode ? (
               <p className="font-mono text-[10px] font-bold uppercase tracking-wide text-brand-700">
                 {paperCode}
@@ -56,6 +57,8 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
             ) : null}
             <h3 className="mt-0.5 text-base font-semibold leading-snug text-ink">{title}</h3>
           </div>
+
+          <PublicationAuthorTeamRow publication={publication} className="mt-2 min-w-0 max-w-full" />
         </header>
 
         <div className="max-h-[min(42dvh,320px)] overflow-y-auto overscroll-contain">

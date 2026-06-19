@@ -138,9 +138,8 @@ export function resolveProfilePhotoSrc(
   let url: string | null;
   if (raw.startsWith("blob:") || raw.startsWith("http://") || raw.startsWith("https://")) {
     url = raw;
-  } else if (raw.startsWith("/")) {
-    url = raw;
   } else {
+    // Route stored paths through mediaUrl so production SPA hosts resolve API media correctly.
     url = mediaUrl(raw);
   }
 

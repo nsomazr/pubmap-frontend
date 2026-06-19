@@ -182,6 +182,7 @@ export function DashboardHome() {
       (coauthorLink.linked_publication_count > 0 ||
         coauthorLink.pending_name_matches.length > 0) ? (
         <CoAuthorLinkPanel
+          id="coauthor-links"
           summary={coauthorLink}
           profileUserId={user?.id}
           onUpdated={(next) => queryClient.setQueryData(["coauthor-link"], next)}

@@ -102,7 +102,7 @@ export function PublicationReadingPaper({
   );
 
   if (embedded) {
-    return <div className="publication-reading-paper__body min-w-0 px-5 sm:px-8">{body}</div>;
+    return <div className="publication-reading-paper__body min-w-0 px-4 sm:px-8">{body}</div>;
   }
 
   return (

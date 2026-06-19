@@ -228,11 +228,9 @@ function teamRankingForPerson(
   pubs: Publication[],
   person: { userId?: number | null; name: string }
 ) {
+  if (!person.userId) return undefined;
   for (const pub of pubs) {
-    const ranking = rankingForPublicationTeamMember(pub, {
-      userId: person.userId,
-      name: person.name,
-    });
+    const ranking = rankingForPublicationTeamMember(pub, { userId: person.userId });
     if (ranking) return ranking;
   }
   return undefined;
@@ -685,6 +683,7 @@ function ResearcherIdentityCard({
               name={person.name}
               nameClassName="text-base font-semibold leading-snug text-ink"
               ranking={person.ranking}
+              registered={person.has_profile}
               compact
             />
             {person.affiliation && (
@@ -1147,6 +1146,7 @@ export function MapResultsRail({
                                   name={person.name}
                                   nameClassName="truncate text-sm font-semibold text-ink"
                                   ranking={person.ranking}
+                                  registered={Boolean(person.userId)}
                                   compact
                                 />
                                 {person.affiliation && (
@@ -1303,10 +1303,10 @@ export function MapResultsRail({
                             className="flex gap-3 p-3.5 pb-2.5"
                           >
                             <div className="min-w-0 flex-1 text-left">
-                              <PublicationAuthorTeamRow publication={pub} className="mb-1.5" />
                               <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink group-hover:text-brand-700">
                                 {formatGrePaperTitle(pub.title, pub.short_number)}
                               </p>
+                              <PublicationAuthorTeamRow publication={pub} className="mt-1.5" />
                               {location && (
                                 <p className="mt-1 flex items-start gap-1 text-xs text-slate-600">
                                   <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-teal-600" />

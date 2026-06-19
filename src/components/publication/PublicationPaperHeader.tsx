@@ -181,8 +181,26 @@ export function PublicationPaperHeader({
     greDoi,
     greNumber,
   });
-  const leftMetaRows = metaRows.filter((_, index) => index % 2 === 0);
-  const rightMetaRows = metaRows.filter((_, index) => index % 2 === 1);
+
+  const metaList = (
+    <dl className="space-y-1.5">
+      {metaRows.map((row) => (
+        <div key={row.label} className="flex min-w-0 items-start gap-2 text-xs sm:text-sm">
+          <dt className="w-[5.5rem] shrink-0 font-medium text-slate-500 sm:w-[6.25rem]">
+            {row.label}
+          </dt>
+          <dd className="min-w-0 flex-1 font-semibold text-slate-700">
+            <span className="block break-words">{row.value}</span>
+            {row.secondaryValue && (
+              <span className="mt-0.5 block text-[10px] font-normal tracking-wide text-slate-400 sm:text-[11px]">
+                {row.secondaryValue}
+              </span>
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
   const resolvedByline = resolvePaperHeaderByline(authorByline, {
     authorName,
     affiliation,
@@ -196,7 +214,7 @@ export function PublicationPaperHeader({
           : "publication-paper-header overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm"
       }
     >
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-100 bg-white px-2 py-2.5 sm:grid-cols-[3.75rem_minmax(0,1fr)_3.75rem] sm:items-center sm:gap-3 sm:px-6 sm:py-3">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5 border-b border-slate-100 bg-white px-3 py-2 sm:grid-cols-[3.75rem_minmax(0,1fr)_3.75rem] sm:items-center sm:gap-3 sm:px-6 sm:py-3">
         <GreBrandBlock draft={draft} />
         <div className="min-w-0 justify-self-stretch">
           <PlatformNameBadge />
@@ -204,8 +222,8 @@ export function PublicationPaperHeader({
         <CategoryTopBadge visual={subVisual} name={subCategoryName || subVisual?.name} />
       </div>
 
-      <div className="px-5 py-4 sm:px-7 sm:py-5">
-        <h1 className="text-lg font-bold leading-snug text-ink sm:text-2xl lg:text-[1.65rem] lg:leading-tight">
+      <div className="px-4 py-4 sm:px-7 sm:py-5">
+        <h1 className="text-xl font-bold leading-snug text-ink sm:text-2xl lg:text-[1.65rem] lg:leading-tight">
           {displayTitle}
         </h1>
         {resolvedByline ? (
@@ -214,7 +232,7 @@ export function PublicationPaperHeader({
       </div>
 
       {publicationId != null && Number(publicationId) > 0 && (
-        <div className="flex justify-end border-t border-slate-100 bg-white px-5 py-3 sm:px-7">
+        <div className="flex justify-end border-t border-slate-100 bg-white px-4 py-3 sm:px-7">
           <PublicationSummaryButton
             publicationId={Number(publicationId)}
             encodedPublicationId={encodedPublicationId}
@@ -223,44 +241,28 @@ export function PublicationPaperHeader({
       )}
 
       {metaRows.length > 0 && (
-        <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-3 sm:px-7">
-          <div className="publication-paper-meta grid max-w-full gap-3 md:grid-cols-2 md:gap-x-4">
-            <dl className="space-y-1.5">
-              {leftMetaRows.map((row) => (
-                <div key={row.label} className="flex min-w-0 items-start gap-2 text-xs sm:text-sm">
-                  <dt className="w-[4.75rem] shrink-0 font-medium text-slate-500">{row.label}</dt>
-                  <dd className="min-w-0 font-semibold text-slate-700">
-                    <span className="block">{row.value}</span>
-                    {row.secondaryValue && (
-                      <span className="mt-0.5 block text-[10px] font-normal tracking-wide text-slate-400 sm:text-[11px]">
-                        {row.secondaryValue}
-                      </span>
-                    )}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <dl className="space-y-1.5">
-              {rightMetaRows.map((row) => (
-                <div key={row.label} className="flex min-w-0 items-start gap-2 text-xs sm:text-sm">
-                  <dt className="w-[4.75rem] shrink-0 font-medium text-slate-500">{row.label}</dt>
-                  <dd className="min-w-0 font-semibold text-slate-700">
-                    <span className="block">{row.value}</span>
-                    {row.secondaryValue && (
-                      <span className="mt-0.5 block text-[10px] font-normal tracking-wide text-slate-400 sm:text-[11px]">
-                        {row.secondaryValue}
-                      </span>
-                    )}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+        <>
+          <details className="group border-t border-slate-100 bg-slate-50/70 md:hidden">
+            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-700 marker:content-none [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center justify-between gap-2">
+                Publication details
+                <span className="text-xs font-medium text-brand-700 group-open:hidden">Show</span>
+                <span className="hidden text-xs font-medium text-brand-700 group-open:inline">
+                  Hide
+                </span>
+              </span>
+            </summary>
+            <div className="border-t border-slate-100 px-4 py-3">{metaList}</div>
+          </details>
+
+          <div className="hidden border-t border-slate-100 bg-slate-50/70 px-7 py-3 md:block">
+            {metaList}
           </div>
-        </div>
+        </>
       )}
 
       {authorsComment?.trim() && (
-        <div className="border-t border-slate-100 px-5 py-4 sm:px-7">
+        <div className="border-t border-slate-100 px-4 py-4 sm:px-7">
           <h2 className={grePaperSectionHeadingClass}>{AUTHORS_PERSONAL_FEELING_LABEL}</h2>
           <ManuscriptContent
             value={authorsComment.trim()}

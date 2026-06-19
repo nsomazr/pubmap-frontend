@@ -121,6 +121,12 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
     const type = file.type.toLowerCase();
     const ext = file.name.split(".").pop()?.toLowerCase() || "";
     const allowedExt = ["jpg", "jpeg", "png", "webp", "gif"];
+    if (ext === "heic" || ext === "heif" || type === "image/heic" || type === "image/heif") {
+      setError(
+        "HEIC photos from iPhone are not supported here. Use Settings → Camera → Formats → Most Compatible, or save as JPG and try again."
+      );
+      return;
+    }
     if (!type.startsWith("image/") && !allowedExt.includes(ext)) {
       setError("Choose a JPG, PNG, WEBP, or GIF image.");
       return;

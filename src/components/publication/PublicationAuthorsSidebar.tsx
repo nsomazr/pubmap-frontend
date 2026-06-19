@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
+import { AffiliationList } from "../institutions/AffiliationList";
 import { RankedNameLabel } from "../rankings/RankedNameLabel";
 import { UserAvatar } from "../ui/UserAvatar";
-import { publicationAuthorTeam } from "../../lib/publicationAuthors";
+import { isRegisteredGreResearcher, publicationAuthorTeam } from "../../lib/publicationAuthors";
 import type { Publication } from "../../types";
 
 interface Props {
@@ -22,6 +23,7 @@ export function PublicationAuthorsSidebar({ publication }: Props) {
           const profilePath =
             person.profile_url || (person.user_id ? `/researcher/${person.user_id}` : null);
           const isLead = person.kind === "primary" || index === 0;
+          const registered = isRegisteredGreResearcher(person);
           return (
             <li key={person.id ?? `${person.fullname}-${person.user_id ?? index}`}>
               <div className="flex items-start gap-3">
@@ -51,9 +53,13 @@ export function PublicationAuthorsSidebar({ publication }: Props) {
                       )
                     }
                     ranking={person.ranking}
+                    registered={registered}
+                    showBadges={registered}
                   />
                   {person.affiliation && (
-                    <p className="mt-0.5 truncate text-xs text-slate-500">{person.affiliation}</p>
+                    <div className="mt-1">
+                      <AffiliationList value={person.affiliation} className="text-xs" />
+                    </div>
                   )}
                   {person.role && (
                     <span
@@ -66,7 +72,7 @@ export function PublicationAuthorsSidebar({ publication }: Props) {
                       {person.role}
                     </span>
                   )}
-                  {person.ranking && (
+                  {registered && person.ranking && (
                     <p className="mt-2 text-xs text-slate-600">
                       {person.ranking.published_count} published on GRE
                     </p>

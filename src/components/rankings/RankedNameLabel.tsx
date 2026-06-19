@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { ResearcherRanking } from "../../types";
 import { institutionStarsFromPublicationCount } from "../../lib/greStars";
-import { researcherRankStars } from "../../lib/publicationAuthors";
+import { researcherGreRankEligible, researcherRankStars } from "../../lib/publicationAuthors";
 import { ResearcherBadges } from "./ResearcherBadges";
 import { StarRating } from "./StarRating";
 
@@ -15,6 +15,8 @@ interface Props {
   institutionPublicationCount?: number;
   compact?: boolean;
   showBadges?: boolean;
+  /** When false, hides GRE stars and badges (unlinked co-authors). */
+  registered?: boolean;
 }
 
 export function resolveRankStars(
@@ -26,7 +28,7 @@ export function resolveRankStars(
     return starsOverride;
   }
   if (ranking) {
-    return researcherRankStars(ranking);
+    return researcherRankStars(ranking, true);
   }
   if (institutionPublicationCount != null && institutionPublicationCount > 0) {
     return institutionStarsFromPublicationCount(institutionPublicationCount);
@@ -43,9 +45,16 @@ export function RankedNameLabel({
   institutionPublicationCount,
   compact = false,
   showBadges = true,
+  registered,
 }: Props) {
-  const stars = resolveRankStars(ranking, institutionPublicationCount, starsOverride);
-  const badges = ranking?.badges ?? [];
+  const canShowResearcherRank = researcherGreRankEligible(ranking, registered);
+  const eligibleRanking = canShowResearcherRank ? ranking : null;
+  const stars = resolveRankStars(
+    eligibleRanking,
+    institutionPublicationCount,
+    canShowResearcherRank ? starsOverride : undefined
+  );
+  const badges = canShowResearcherRank ? ranking?.badges ?? [] : [];
 
   return (
     <span className="inline-flex min-w-0 flex-wrap items-center gap-1.5">

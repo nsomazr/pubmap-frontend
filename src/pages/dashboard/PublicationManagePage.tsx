@@ -25,7 +25,6 @@ import {
   publicationApiSegment,
   type NewPublicationLocationState,
 } from "../../lib/publicationPaths";
-import { hasValidCoords } from "../../lib/geocode";
 import {
   greFormArtCardClass,
   greFormArtStackClass,
@@ -34,7 +33,7 @@ import {
 import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { Button } from "../../components/ui/Button";
 import { useConfirm } from "../../components/ui/ConfirmDialog";
-import { InstitutionPicker } from "../../components/institutions/InstitutionPicker";
+import { MultiInstitutionPicker } from "../../components/institutions/MultiInstitutionPicker";
 import { Input } from "../../components/ui/Input";
 import { CategorySubcategoryPicker } from "../../components/forms/CategorySubcategoryPicker";
 import { PublicationLifecyclePanel } from "../../components/publication/PublicationLifecyclePanel";
@@ -272,7 +271,9 @@ export function PublicationManagePage() {
   const [figuresPendingCount, setFiguresPendingCount] = useState(0);
   const figuresUploadBusyRef = useRef(false);
   const figuresPendingCountRef = useRef(0);
-  const flushFigureCaptionsRef = useRef<(() => Promise<void>) | null>(null);
+  const flushFigureCaptionsRef = useRef<
+    ((pubId?: number, encodedId?: string | null) => Promise<void>) | null
+  >(null);
   const extractionAbortRef = useRef<AbortController | null>(null);
   const extractionCancelledRef = useRef(false);
   const [documentUploadExtracting, setDocumentUploadExtracting] = useState(false);
@@ -284,7 +285,7 @@ export function PublicationManagePage() {
   const isClosedAccess = gre.access_type === "closed";
 
   type SaveOptions = { thenSubmit?: boolean; quiet?: boolean; minimal?: boolean };
-  type PersistOptions = { quiet?: boolean; minimal?: boolean };
+  type PersistOptions = { quiet?: boolean; minimal?: boolean; skipInvalidate?: boolean };
 
   const manuscript: ManuscriptFields = {
     abstract,
@@ -648,7 +649,19 @@ export function PublicationManagePage() {
     }
     setGre(pub.gre ?? { access_type: "open" });
     if (!figuresUploadBusyRef.current && figuresPendingCountRef.current === 0) {
-      setFigures(pub.figures ?? pub.photos ?? []);
+      setFigures((prev) => {
+        const serverFigures = pub.figures ?? pub.photos ?? [];
+        if (!prev.length) return serverFigures;
+        return serverFigures.map((fig) => {
+          const local = prev.find((item) => item.id === fig.id);
+          const localCaption = local?.caption?.trim() ?? "";
+          const serverCaption = fig.caption?.trim() || "";
+          if (localCaption && localCaption !== serverCaption) {
+            return { ...fig, caption: localCaption };
+          }
+          return fig;
+        });
+      });
     }
     setAccessTypeChosen(true);
     setPendingDocument(null);
@@ -1012,42 +1025,10 @@ export function PublicationManagePage() {
   const getSaveValidationError = (): string | null => {
     const inflight = getInflightWorkError();
     if (inflight) return inflight;
-    const identity = getDraftIdentityError();
-    if (identity) return identity;
-    if (submitterRole === "coauthor" && !leadAuthorName.trim()) {
-      return "Lead author name is required when submitting as a co-author.";
-    }
-    return null;
+    return getDraftIdentityError();
   };
 
-  const getSubmitValidationError = (): string | null => {
-    const inflight = getInflightWorkError();
-    if (inflight) return inflight;
-    const identity = getDraftIdentityError();
-    if (identity) return identity;
-    if (submitterRole === "coauthor" && !leadAuthorName.trim()) {
-      return "Lead author name is required when submitting as a co-author.";
-    }
-    if (!categoryId) return "Research field is required.";
-    if (!subCategoryId) return "Research subfield is required.";
-    if (!coordinates.location.trim()) return "Location of study is required.";
-    if (!coordinates.institution?.trim()) return "Institution / affiliation is required.";
-    if (!hasValidCoords(coordinates.latitude, coordinates.longitude)) {
-      return "Pick a study location on the map (valid coordinates).";
-    }
-    if (isClosedAccess) {
-      if (!hasTextContent(introduction)) return "Introduction is required for restricted access.";
-      if (!hasTextContent(methods)) return "Methods is required for restricted access.";
-      if (!hasTextContent(findings)) {
-        return "Findings is required for restricted access.";
-      }
-      if (!hasTextContent(conclusion)) return "Conclusion is required for restricted access.";
-      if (!gre.external_url?.trim()) return "Publisher access link is required for restricted access.";
-    } else if (!hasDocument && !gre.external_url?.trim()) {
-      return "Upload a manuscript PDF or add an external access link.";
-    }
-    return null;
-  };
+  const getSubmitValidationError = (): string | null => getSaveValidationError();
 
   const persistPublicationDraft = useCallback(
     async (options?: PersistOptions): Promise<Publication | null> => {
@@ -1098,7 +1079,9 @@ export function PublicationManagePage() {
           setCreatedDraftId(data.id);
           if (data.encoded_id) setCreatedDraftEncodedId(data.encoded_id);
           queryClient.invalidateQueries({ queryKey: ["publications"] });
-          queryClient.invalidateQueries({ queryKey: editQueryKey });
+          if (!options?.skipInvalidate) {
+            queryClient.invalidateQueries({ queryKey: editQueryKey });
+          }
           if (wasFirstCreate && !options?.quiet) {
             navigate(buildDashboardPublicationPath(data.id, data.encoded_id), { replace: true });
           }
@@ -1149,6 +1132,7 @@ export function PublicationManagePage() {
       const data = await persistPublicationDraft({
         quiet: options?.quiet,
         minimal: options?.minimal,
+        skipInvalidate: true,
       });
       if (!data) throw new Error("SAVE_FAILED");
 
@@ -1173,11 +1157,14 @@ export function PublicationManagePage() {
 
       let captionWarning: string | null = null;
       try {
-        await flushFigureCaptionsRef.current?.();
+        await flushFigureCaptionsRef.current?.(data.id, data.encoded_id);
       } catch {
         captionWarning =
           "Some figure captions could not be saved. Re-open the draft and save captions again if needed.";
       }
+
+      queryClient.invalidateQueries({ queryKey: ["publications"] });
+      queryClient.invalidateQueries({ queryKey: editQueryKey });
 
       if (options?.thenSubmit) {
         await api.post(
@@ -1449,9 +1436,12 @@ export function PublicationManagePage() {
     []
   );
 
-  const registerFlushFigureCaptions = useCallback((flush: (() => Promise<void>) | null) => {
-    flushFigureCaptionsRef.current = flush;
-  }, []);
+  const registerFlushFigureCaptions = useCallback(
+    (flush: ((pubId?: number, encodedId?: string | null) => Promise<void>) | null) => {
+      flushFigureCaptionsRef.current = flush;
+    },
+    []
+  );
 
   const ensurePublicationForFigures = async (): Promise<EnsurePublicationIdResult> => {
     if (persistedPublicationId) return { ok: true, id: persistedPublicationId };
@@ -1777,14 +1767,12 @@ export function PublicationManagePage() {
           <>
           <div className={greFormArtStackClass}>
             <ComposerStage number="1" title="Research setup">
-              <RequiredFieldsLegend className="mb-4" />
               <CategorySubcategoryPicker
                 categories={categories}
                 categoryId={categoryId}
                 subCategoryId={subCategoryId}
                 onCategoryChange={setCategoryId}
                 onSubCategoryChange={setSubCategoryId}
-                required
               />
             </ComposerStage>
 
@@ -1837,6 +1825,7 @@ export function PublicationManagePage() {
 
             <ComposerStage number="3" title="Manuscript">
               <div className="space-y-6">
+                <RequiredFieldsLegend />
                 {extractionActive && (
                   <ExtractionLoadingPanel
                     fileName={pendingDocument?.name ?? existingDocPath}
@@ -1865,7 +1854,6 @@ export function PublicationManagePage() {
                   onTitleChange={setTitle}
                   fields={manuscript}
                   onChange={setManuscript}
-                  requireNarrativeSections={isClosedAccess}
                   sectionNotes={extractionUi.sectionNotes}
                   afterMethods={
                     <PublicationFiguresEditor
@@ -1898,7 +1886,6 @@ export function PublicationManagePage() {
               accessLocked={isNew && accessTypeChosen}
               onChangeAccess={!isNew ? handleAccessTypeSelect : undefined}
               disabled={isReadOnly}
-              requirePublisherLink={isClosedAccess}
             />
 
             {!isClosedAccess && !isNew && persistedPublicationId && (
@@ -1946,10 +1933,10 @@ export function PublicationManagePage() {
                   onChange={(e) => setLeadAuthorName(e.target.value)}
                   disabled={isReadOnly}
                 />
-                <InstitutionPicker
+                <MultiInstitutionPicker
                   value={leadAuthorAffiliation}
                   onChange={setLeadAuthorAffiliation}
-                  label="Lead author affiliation"
+                  label="Lead author affiliations"
                   hideHint
                 />
                 <Input
@@ -2032,14 +2019,14 @@ export function PublicationManagePage() {
                     setCollaborators(next);
                   }}
                 />
-                <InstitutionPicker
+                <MultiInstitutionPicker
                   value={c.affiliation}
                   onChange={(affiliation) => {
                     const next = [...collaborators];
                     next[i] = { ...c, affiliation };
                     setCollaborators(next);
                   }}
-                  label="Affiliation"
+                  label="Affiliations"
                   hideHint
                 />
                 <Input

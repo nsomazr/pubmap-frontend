@@ -32,6 +32,7 @@ interface Props {
   inputClassName?: string;
   hideLabel?: boolean;
   hideHint?: boolean;
+  countryCode?: string;
 }
 
 export function InstitutionPicker({
@@ -44,6 +45,7 @@ export function InstitutionPicker({
   inputClassName = "",
   hideLabel = false,
   hideHint = false,
+  countryCode,
 }: Props) {
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<Institution[]>([]);
@@ -78,13 +80,13 @@ export function InstitutionPicker({
     }
     setSearching(true);
     const timer = window.setTimeout(() => {
-      searchInstitutions(q, 10)
+      searchInstitutions(q, 10, countryCode)
         .then(setResults)
         .catch(() => setResults([]))
         .finally(() => setSearching(false));
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [query]);
+  }, [query, countryCode]);
 
   const updateMenuRect = useCallback(() => {
     const input = inputRef.current;

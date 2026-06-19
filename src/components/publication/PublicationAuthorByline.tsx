@@ -21,7 +21,7 @@ export function PublicationAuthorByline({ byline, className = "" }: Props) {
     <div className={`publication-author-byline mt-3 border-b border-slate-200 pb-4 ${className}`}>
       <p className="font-serif text-[15px] font-bold leading-relaxed text-slate-900 sm:text-base">
         {byline.authors.map((author, index) => (
-          <span key={`${author.name}-${index}`} className="inline">
+          <span key={`${author.name}-${index}`} className="inline-block max-w-full sm:inline">
             <AuthorSeparator index={index} total={total} />
             {author.profileUrl ? (
               <Link
@@ -45,7 +45,7 @@ export function PublicationAuthorByline({ byline, className = "" }: Props) {
       {byline.affiliations.length > 0 && (
         <div className="mt-2.5 space-y-1 font-serif text-sm leading-snug text-slate-600">
           {byline.affiliations.map((aff) => (
-            <p key={aff.index} className="m-0 pl-[1.35rem] indent-[-1.35rem]">
+            <p key={aff.index} className="m-0 break-words pl-[1.35rem] indent-[-1.35rem]">
               <sup className="mr-1 align-super text-[0.62em] font-normal leading-none text-slate-700">
                 {aff.index}
               </sup>

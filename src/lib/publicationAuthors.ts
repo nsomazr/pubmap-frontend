@@ -1,4 +1,5 @@
 import type { CoAuthorPerson, Publication, PublicationCoAuthors, ResearcherRanking } from "../types";
+import { normalizeAffiliationPart, parseAffiliationList } from "./affiliations";
 
 export type AuthorBylineEntry = {
   name: string;
@@ -12,16 +13,11 @@ export type AuthorByline = {
 };
 
 function normalizeAffiliation(value?: string | null): string {
-  return (value || "").trim().replace(/\s+/g, " ");
+  return normalizeAffiliationPart(value);
 }
 
 function parseAffiliationParts(raw?: string | null): string[] {
-  const text = (raw || "").trim();
-  if (!text) return [];
-  return text
-    .split(/[\n;|]+/)
-    .map((part) => normalizeAffiliation(part))
-    .filter(Boolean);
+  return parseAffiliationList(raw);
 }
 
 function authorNameKey(name: string): string {
@@ -110,12 +106,17 @@ export function publicationCoAuthorsFromPublication(publication: Publication): P
     is_registered: Boolean(author?.id),
     ranking: author?.ranking,
   };
-  const coAuthors: CoAuthorPerson[] = (publication.collaborators || []).map((person) => ({
-    ...person,
-    kind: "coauthor",
-    role: person.role || "Co-author",
-    ranking: (person as CoAuthorPerson).ranking,
-  }));
+  const coAuthors: CoAuthorPerson[] = (publication.collaborators || []).map((person) => {
+    const row = person as CoAuthorPerson;
+    const registered = isRegisteredGreResearcher(row);
+    return {
+      ...row,
+      kind: "coauthor",
+      role: row.role || "Co-author",
+      is_registered: registered,
+      ranking: registered ? row.ranking : undefined,
+    };
+  });
   return {
     primary_author: primary,
     co_authors: coAuthors,
@@ -181,6 +182,25 @@ export function publicationAuthorTeam(publication: Publication): CoAuthorPerson[
   return coAuthors.team;
 }
 
+export type AuthorSearchEntry = {
+  name: string;
+  userId?: number | null;
+  affiliation?: string;
+  photo?: string;
+};
+
+/** All searchable author names on a publication (lead + every co-author). */
+export function publicationAuthorSearchEntries(publication: Publication): AuthorSearchEntry[] {
+  return publicationAuthorTeam(publication)
+    .map((person) => ({
+      name: (person.fullname || "").trim(),
+      userId: person.user_id ?? null,
+      affiliation: person.affiliation || "",
+      photo: person.photo,
+    }))
+    .filter((entry) => entry.name.length > 0);
+}
+
 /** GRE rank for a team member on a publication (never the lead author's rank by mistake). */
 export function rankingForPublicationTeamMember(
   publication: Publication,
@@ -190,10 +210,15 @@ export function rankingForPublicationTeamMember(
   const nameKey = opts.name ? authorNameKey(opts.name) : "";
   for (const person of team.team) {
     if (opts.userId != null && person.user_id === opts.userId) {
-      return person.ranking ?? undefined;
+      return person.user_id ? person.ranking ?? undefined : undefined;
     }
     const personName = (person.fullname || "").trim();
-    if (nameKey && personName && authorNameKey(personName) === nameKey) {
+    if (
+      nameKey &&
+      personName &&
+      authorNameKey(personName) === nameKey &&
+      person.user_id
+    ) {
       return person.ranking ?? undefined;
     }
   }
@@ -201,6 +226,14 @@ export function rankingForPublicationTeamMember(
     return publication.author.ranking ?? undefined;
   }
   return undefined;
+}
+
+/** True when a co-author row is linked to a GRE user account. */
+export function isRegisteredGreResearcher(person: {
+  user_id?: number | null;
+  is_registered?: boolean;
+}): boolean {
+  return Boolean(person.is_registered ?? person.user_id);
 }
 
 type DiscussionParticipant = {
@@ -299,15 +332,26 @@ export function discussionAuthorRoleLabel(
 }
 
 /** Resolve researcher stars from API ranking only (10 published GRE papers per star). */
-export function researcherRankStars(ranking?: ResearcherRanking | null): number {
-  if (!ranking) return 0;
-  if (typeof ranking.stars === "number" && ranking.stars > 0) {
-    return ranking.stars;
+export function researcherRankStars(
+  ranking?: ResearcherRanking | null,
+  registered?: boolean
+): number {
+  if (!researcherGreRankEligible(ranking, registered)) return 0;
+  if (typeof ranking!.stars === "number" && ranking!.stars > 0) {
+    return ranking!.stars;
   }
-  if (typeof ranking.published_count === "number" && ranking.published_count >= 10) {
-    return Math.floor(ranking.published_count / 10);
+  if (typeof ranking!.published_count === "number" && ranking!.published_count >= 10) {
+    return Math.floor(ranking!.published_count / 10);
   }
   return 0;
+}
+
+/** GRE stars and badges apply only to researchers with a linked GRE account. */
+export function researcherGreRankEligible(
+  ranking?: ResearcherRanking | null,
+  registered?: boolean
+): boolean {
+  return Boolean(registered && ranking);
 }
 
 /** Comma-separated author names for a publication (all authors by default). */

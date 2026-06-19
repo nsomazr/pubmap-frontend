@@ -206,9 +206,10 @@ interface Props {
   value: Coordinate;
   onChange: Dispatch<SetStateAction<Coordinate>>;
   institutionDefault?: string;
+  required?: boolean;
 }
 
-export function LocationPicker({ value, onChange, institutionDefault }: Props) {
+export function LocationPicker({ value, onChange, institutionDefault, required = false }: Props) {
   const [mode, setMode] = useState<Mode>("search");
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState(() => value.location?.trim() || "");
@@ -504,11 +505,11 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
         <div className="sm:col-span-2">
           <label className="block text-sm font-medium text-slate-700">
             Location of study
-            <RequiredMark />
+            {required ? <RequiredMark /> : null}
           </label>
           <input
             type="text"
-            required
+            required={required}
             value={value.location}
             onChange={(e) => onChange({ ...value, location: e.target.value })}
             placeholder="e.g. Dar es Salaam Region, Tanzania"
@@ -521,7 +522,7 @@ export function LocationPicker({ value, onChange, institutionDefault }: Props) {
             onChange={(institution) => onChange({ ...value, institution })}
             label="Institution / affiliation"
             placeholder="University, lab, organization, or affiliation…"
-            required
+            required={required}
           />
         </div>
       </div>
