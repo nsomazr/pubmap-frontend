@@ -11,11 +11,11 @@ export function resolveApiBaseUrl(): string {
 
   const host = window.location.hostname;
   const onGreSite =
-    host === "gre.nileagi.com" ||
-    host === "www.gre.nileagi.com" ||
-    host.endsWith(".gre.nileagi.com");
+    host === "globalresearchexchange.com" ||
+    host === "www.globalresearchexchange.com" ||
+    host.endsWith(".globalresearchexchange.com");
 
-  // Production GRE: API lives on api.gre.nileagi.com unless the build explicitly
+  // Production GRE: API lives on api.globalresearchexchange.com unless the build explicitly
   // sets a relative /api path (requires nginx/apache to proxy /api on this host).
   if (onGreSite) {
     if (env?.startsWith("http")) {
@@ -24,7 +24,7 @@ export function resolveApiBaseUrl(): string {
     if (env === "/api" || env?.startsWith("/")) {
       return env.startsWith("/") ? env : `/${env}`;
     }
-    return "https://api.gre.nileagi.com/api";
+    return "https://api.globalresearchexchange.com/api";
   }
 
   const configured = env || "/api";

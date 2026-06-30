@@ -57,8 +57,8 @@ if [[ ! -f .env.production ]]; then
     log "Created .env.production from .env.production.example"
   else
     cat > .env.production <<'EOF'
-VITE_API_URL=https://api.gre.nileagi.com/api
-VITE_APP_URL=https://gre.nileagi.com
+VITE_API_URL=https://api.globalresearchexchange.com/api
+VITE_APP_URL=https://globalresearchexchange.com
 EOF
     log "Created .env.production with default production URLs"
   fi
@@ -132,8 +132,8 @@ ELAPSED=$(( $(date +%s) - START ))
 log "Done in ${ELAPSED}s"
 log "Built files: ${ROOT}/dist"
 log ""
-log "If gre.nileagi.com shows 'Not Found', the WEB SERVER is not serving dist/:"
+log "If globalresearchexchange.com shows 'Not Found', the WEB SERVER is not serving dist/:"
 log "  • Hostinger/Apache: set document root to dist/ OR run:"
-log "      DEPLOY_WEB_ROOT=/home/gre-user/htdocs/gre.nileagi.com/public ./deploy.sh"
+log "      DEPLOY_WEB_ROOT=/home/gre-user/htdocs/globalresearchexchange.com/public ./deploy.sh"
 log "  • Nginx: use deploy/nginx-frontend.example.conf (root + try_files)"
-log "  • Do NOT point gre.nileagi.com at the Django API (port 8099)"
+log "  • Do NOT point globalresearchexchange.com at the Django API (port 8099)"

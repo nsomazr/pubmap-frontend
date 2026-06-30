@@ -2,9 +2,9 @@
 
 React + Vite frontend for **Global Research Exchange**.
 
-- **Production URL:** https://gre.nileagi.com
+- **Production URL:** https://globalresearchexchange.com
 - **Port:** 3099 (development)
-- **API:** https://api.gre.nileagi.com/api
+- **API:** https://api.globalresearchexchange.com/api
 
 ## Quick start
 

@@ -2,9 +2,9 @@ import { resolveApiBaseUrl } from "./apiBaseUrl";
 
 function isGreSiteHost(host: string): boolean {
   return (
-    host === "gre.nileagi.com" ||
-    host === "www.gre.nileagi.com" ||
-    host.endsWith(".gre.nileagi.com")
+    host === "globalresearchexchange.com" ||
+    host === "www.globalresearchexchange.com" ||
+    host.endsWith(".globalresearchexchange.com")
   );
 }
 
@@ -22,7 +22,7 @@ function resolveMediaOrigin(): string {
 
   if (typeof window !== "undefined" && isGreSiteHost(window.location.hostname)) {
     // Figures and profiles are stored on the API host, not the SPA host.
-    return "https://api.gre.nileagi.com";
+    return "https://api.globalresearchexchange.com";
   }
 
   if (typeof window !== "undefined") {
