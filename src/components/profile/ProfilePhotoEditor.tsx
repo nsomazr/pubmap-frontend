@@ -22,6 +22,7 @@ import { Button } from "../ui/Button";
 interface Props {
   user: User;
   onUpdated: () => void | Promise<void>;
+  compact?: boolean;
 }
 
 function parseUploadError(err: unknown, fallback: string): string {
@@ -29,7 +30,7 @@ function parseUploadError(err: unknown, fallback: string): string {
   return fallback;
 }
 
-export function ProfilePhotoEditor({ user, onUpdated }: Props) {
+export function ProfilePhotoEditor({ user, onUpdated, compact = false }: Props) {
   const { patchUser } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
@@ -89,7 +90,7 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
     onSuccess: async (updatedUser) => {
       setPendingPreview(null);
       await applySavedUser(updatedUser);
-      setSuccess("Profile photo saved.");
+      setSuccess("Photo saved.");
       setError("");
       closeEditor();
     },
@@ -100,7 +101,7 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
     mutationFn: () => removeProfilePhoto(),
     onSuccess: async (updatedUser) => {
       await applySavedUser(updatedUser);
-      setSuccess("Profile photo removed.");
+      setSuccess("Photo removed.");
       setError("");
       closeEditor();
     },
@@ -217,8 +218,8 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
   const avatarVersion = pendingPreview ? "pending" : displayVersion;
 
   return (
-    <div className="border-b border-slate-100 pb-5">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+    <div className={compact ? "" : "border-b border-slate-100 pb-5"}>
+      <div className={`flex gap-4 ${compact ? "items-center" : "flex-col sm:flex-row sm:items-center"}`}>
         <button
           type="button"
           onClick={openFilePicker}
@@ -244,17 +245,17 @@ export function ProfilePhotoEditor({ user, onUpdated }: Props) {
           </span>
         </button>
 
-        <div className="min-w-0 flex-1 space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold text-ink">Profile photo</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              Shown on publications, discussions, the research map, and collaborator lists. Saves
-              immediately when you click <span className="font-medium text-ink">Save photo</span> in
-              the crop dialog, not via Update profile.
-            </p>
-          </div>
+        <div className="min-w-0 flex-1">
+          {!compact ? (
+            <h3 className="text-sm font-semibold text-ink">Photo</h3>
+          ) : null}
+          <p className={`text-sm text-slate-500 ${compact ? "" : "mt-1"}`}>
+            {compact
+              ? "Shown on your profile and publications."
+              : "Used on your public profile, publications, and the research map."}
+          </p>
 
-          <div className="flex flex-wrap gap-2">
+          <div className={`flex flex-wrap gap-2 ${compact ? "mt-2" : "mt-3"}`}>
             <input
               ref={inputRef}
               type="file"

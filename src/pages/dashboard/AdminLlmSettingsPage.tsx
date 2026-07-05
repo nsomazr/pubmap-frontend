@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bot, Cloud, HardDrive, RefreshCw } from "lucide-react";
+import { Bot, Cloud, HardDrive, RefreshCw, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
@@ -10,11 +10,12 @@ import { useToast } from "../../components/ui/ToastProvider";
 import api from "../../lib/api";
 import { isPlatformAdmin } from "../../lib/userAccess";
 
-type LlmProviderId = "groq" | "ollama";
+type LlmProviderId = "gemini" | "groq" | "ollama";
 
 type LlmSettingsPayload = {
   settings: {
     provider: LlmProviderId;
+    gemini_model: string;
     groq_model: string;
     groq_model_fallbacks: string;
     ollama_base_url: string;
@@ -28,6 +29,7 @@ type LlmSettingsPayload = {
     active_model: string;
   };
   providers: { id: LlmProviderId; label: string }[];
+  gemini_models: { id: string; label: string }[];
   groq_models: { id: string; label: string }[];
   ollama_models: { name: string; size: string; modified: string }[];
   health: {
@@ -35,6 +37,8 @@ type LlmSettingsPayload = {
     hint?: string;
     model?: string;
     ollama_reachable?: boolean;
+    gemini_api_key_set?: boolean;
+    groq_api_key_set?: boolean;
   };
 };
 
@@ -43,7 +47,8 @@ export function AdminLlmSettingsPage() {
   const toast = useToast();
   const queryClient = useQueryClient();
 
-  const [provider, setProvider] = useState<LlmProviderId>("ollama");
+  const [provider, setProvider] = useState<LlmProviderId>("gemini");
+  const [geminiModel, setGeminiModel] = useState("gemini-2.0-flash");
   const [groqModel, setGroqModel] = useState("");
   const [groqFallbacks, setGroqFallbacks] = useState("");
   const [ollamaUrl, setOllamaUrl] = useState("http://127.0.0.1:11434");
@@ -62,6 +67,7 @@ export function AdminLlmSettingsPage() {
   useEffect(() => {
     if (!data?.settings) return;
     setProvider(data.settings.provider);
+    setGeminiModel(data.settings.gemini_model);
     setGroqModel(data.settings.groq_model);
     setGroqFallbacks(data.settings.groq_model_fallbacks);
     setOllamaUrl(data.settings.ollama_base_url);
@@ -89,6 +95,7 @@ export function AdminLlmSettingsPage() {
     mutationFn: async () => {
       const { data: payload } = await api.patch<LlmSettingsPayload>("/admin/llm-settings/", {
         provider,
+        gemini_model: geminiModel,
         groq_model: groqModel,
         groq_model_fallbacks: groqFallbacks,
         ollama_base_url: ollamaUrl,
@@ -101,45 +108,47 @@ export function AdminLlmSettingsPage() {
       queryClient.setQueryData(["admin-llm-settings"], payload);
       if (payload.settings) {
         setProvider(payload.settings.provider);
+        setGeminiModel(payload.settings.gemini_model);
         setGroqModel(payload.settings.groq_model);
         setGroqFallbacks(payload.settings.groq_model_fallbacks);
         setOllamaUrl(payload.settings.ollama_base_url);
         setOllamaModel(payload.settings.ollama_model);
         setQualityGateEnabled(Boolean(payload.settings.quality_gate_enabled));
       }
-      toast.success({ title: "LLM settings saved." });
+      toast.success({ title: "Assistant settings saved." });
     },
     onError: () => {
-      toast.error({ title: "Could not save LLM settings." });
+      toast.error({ title: "Could not save assistant settings." });
     },
   });
 
   if (!isPlatformAdmin(user)) return <Navigate to="/dashboard" replace />;
 
   const ollamaModels = data?.ollama_models ?? [];
+  const geminiModels = data?.gemini_models ?? [];
   const groqModels = data?.groq_models ?? [];
   const health = data?.health;
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <PageHeader
-        title="LLM provider"
-        description="Choose Groq (cloud) or local Ollama for GRE Assistant, manuscript autofill, and funder extraction. Optionally enable the quality gate so an LLM judge auto-switches provider or model when output is weak."
+        title="Assistant settings"
+        description="Choose Gemini, Groq, or local Ollama for Research Assistant, manuscript autofill, and funder extraction. Optionally enable the quality gate so a judge model auto-switches provider when output is weak."
       />
 
       {isLoading && (
-        <p className="text-sm text-slate-500">Loading LLM configuration…</p>
+        <p className="text-sm text-slate-500">Loading assistant configuration…</p>
       )}
       {isError && (
         <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          Could not load LLM settings. Ensure the API migration has been applied.
+          Could not load assistant settings. Ensure the API migration has been applied.
         </p>
       )}
 
       {data && (
         <>
-          <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <section className="gre-panel">
+            <div className="gre-panel__head flex flex-wrap items-center justify-between gap-3 px-5 py-4">
               <div className="flex items-center gap-2 text-sm font-semibold text-ink">
                 <Bot className="h-4 w-4 text-brand-600" />
                 Runtime status
@@ -154,6 +163,7 @@ export function AdminLlmSettingsPage() {
                 {health?.available ? "Connected" : "Unavailable"}
               </span>
             </div>
+            <div className="gre-panel__body space-y-3 p-5">
             <dl className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -175,6 +185,18 @@ export function AdminLlmSettingsPage() {
               </div>
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Gemini configured
+                </dt>
+                <dd>{health?.gemini_api_key_set ? "Yes" : "No"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Groq configured
+                </dt>
+                <dd>{health?.groq_api_key_set ? "Yes" : "No"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                   Ollama reachable
                 </dt>
                 <dd>{health?.ollama_reachable ? "Yes" : "No"}</dd>
@@ -187,36 +209,41 @@ export function AdminLlmSettingsPage() {
               </div>
             </dl>
             {health?.hint && !health.available && (
-              <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
                 {health.hint}
               </p>
             )}
+            </div>
           </section>
 
-          <section className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100">
+          <section className="gre-panel">
+            <div className="gre-panel__head px-5 py-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-sm font-semibold text-ink">Auto quality gate</h2>
                 <p className="mt-1 max-w-xl text-xs text-slate-500">
-                  When enabled, GRE uses an LLM judge to score each response. If output is
+                  When enabled, GRE uses a judge model to score each response. If output is
                   insufficient, it automatically tries the next provider or Groq fallback model.
                 </p>
               </div>
               <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  className="h-4 w-4 rounded border-gre-border text-brand-600 focus:ring-brand-500"
                   checked={qualityGateEnabled}
                   onChange={(e) => setQualityGateEnabled(e.target.checked)}
                 />
                 Enable judge fallback
               </label>
             </div>
+            </div>
           </section>
 
-          <section className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100">
+          <section className="gre-panel">
+            <div className="gre-panel__head px-5 py-4">
             <h2 className="text-sm font-semibold text-ink">Provider</h2>
-            <div className="flex flex-wrap gap-3">
+            </div>
+            <div className="gre-panel__body flex flex-wrap gap-3 p-5">
               {(data.providers ?? []).map((item) => (
                 <button
                   key={item.id}
@@ -225,10 +252,12 @@ export function AdminLlmSettingsPage() {
                   className={`inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition ${
                     provider === item.id
                       ? "border-brand-500 bg-brand-50 text-brand-800"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                      : "border-gre-border bg-gre-panel text-slate-600 hover:border-slate-300"
                   }`}
                 >
-                  {item.id === "groq" ? (
+                  {item.id === "gemini" ? (
+                    <Sparkles className="h-4 w-4" />
+                  ) : item.id === "groq" ? (
                     <Cloud className="h-4 w-4" />
                   ) : (
                     <HardDrive className="h-4 w-4" />
@@ -239,13 +268,53 @@ export function AdminLlmSettingsPage() {
             </div>
           </section>
 
-          {provider === "groq" && (
-            <section className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100">
-              <h2 className="text-sm font-semibold text-ink">Groq models</h2>
+          {provider === "gemini" && (
+            <section className="gre-panel">
+              <div className="gre-panel__head px-5 py-4">
+              <h2 className="text-sm font-semibold text-ink">Gemini models</h2>
+              </div>
+              <div className="gre-panel__body space-y-4 p-5">
               <label className="block text-sm font-medium text-slate-700">
                 Primary model
                 <select
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
+                  className="mt-1 w-full rounded-xl border border-gre-border px-3 py-2.5 text-sm"
+                  value={geminiModel}
+                  onChange={(e) => setGeminiModel(e.target.value)}
+                >
+                  {geminiModels.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                  {geminiModel && !geminiModels.some((m) => m.id === geminiModel) && (
+                    <option value={geminiModel}>{geminiModel}</option>
+                  )}
+                </select>
+              </label>
+              {!health?.gemini_api_key_set ? (
+                <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  Gemini credentials are not configured on the server yet. Add them before selecting
+                  Gemini as the active provider.
+                </p>
+              ) : (
+                <p className="text-xs text-slate-500">
+                  Gemini is configured on the server. Save to use it as the primary provider.
+                </p>
+              )}
+              </div>
+            </section>
+          )}
+
+          {provider === "groq" && (
+            <section className="gre-panel">
+              <div className="gre-panel__head px-5 py-4">
+              <h2 className="text-sm font-semibold text-ink">Groq models</h2>
+              </div>
+              <div className="gre-panel__body space-y-4 p-5">
+              <label className="block text-sm font-medium text-slate-700">
+                Primary model
+                <select
+                  className="mt-1 w-full rounded-xl border border-gre-border px-3 py-2.5 text-sm"
                   value={groqModel}
                   onChange={(e) => setGroqModel(e.target.value)}
                 >
@@ -266,14 +335,15 @@ export function AdminLlmSettingsPage() {
                 placeholder="llama-3.1-8b-instant, openai/gpt-oss-20b"
               />
               <p className="text-xs text-slate-500">
-                Requires GROQ_API_KEY in the API server environment.
+                Requires GROQ credentials in the server environment.
               </p>
+              </div>
             </section>
           )}
 
           {provider === "ollama" && (
-            <section className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-100">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+            <section className="gre-panel">
+              <div className="gre-panel__head flex flex-wrap items-center justify-between gap-2 px-5 py-4">
                 <h2 className="text-sm font-semibold text-ink">Ollama (local)</h2>
                 <Button
                   type="button"
@@ -288,6 +358,7 @@ export function AdminLlmSettingsPage() {
                   Refresh models
                 </Button>
               </div>
+              <div className="gre-panel__body space-y-4 p-5">
               <Input
                 label="Ollama base URL"
                 value={ollamaUrl}
@@ -297,7 +368,7 @@ export function AdminLlmSettingsPage() {
               <label className="block text-sm font-medium text-slate-700">
                 Model
                 <select
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
+                  className="mt-1 w-full rounded-xl border border-gre-border px-3 py-2.5 text-sm"
                   value={ollamaModel}
                   onChange={(e) => setOllamaModel(e.target.value)}
                 >
@@ -321,6 +392,7 @@ export function AdminLlmSettingsPage() {
                 <code className="rounded bg-slate-100 px-1">ollama pull qwen3.5:0.8b</code> on
                 the server running Ollama.
               </p>
+              </div>
             </section>
           )}
 
@@ -330,7 +402,7 @@ export function AdminLlmSettingsPage() {
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
             >
-              {saveMutation.isPending ? "Saving…" : "Save LLM settings"}
+              {saveMutation.isPending ? "Saving…" : "Save assistant settings"}
             </Button>
           </div>
         </>

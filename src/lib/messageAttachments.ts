@@ -27,3 +27,26 @@ export function isMessageAttachmentImage(name?: string | null): boolean {
   const ext = (name || "").toLowerCase();
   return [".png", ".jpg", ".jpeg", ".webp", ".gif"].some((item) => ext.endsWith(item));
 }
+
+export function isMessageAttachmentPdf(name?: string | null): boolean {
+  return (name || "").toLowerCase().endsWith(".pdf");
+}
+
+export function isMessageAttachmentPreviewable(name?: string | null): boolean {
+  return isMessageAttachmentImage(name) || isMessageAttachmentPdf(name);
+}
+
+export function isPendingFileImage(file: File): boolean {
+  if (file.type.startsWith("image/")) return true;
+  return isMessageAttachmentImage(file.name);
+}
+
+export function isPendingFilePdf(file: File): boolean {
+  if (file.type === "application/pdf") return true;
+  return isMessageAttachmentPdf(file.name);
+}
+
+export function messageAttachmentApiPath(messageId: number, inline = false): string {
+  const base = `/messages/${messageId}/attachment/`;
+  return inline ? `${base}?inline=1` : base;
+}

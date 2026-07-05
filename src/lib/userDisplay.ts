@@ -73,3 +73,15 @@ export function userInitialsFromName(name?: string | null): string {
   if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
   return parts[0].slice(0, 2).toUpperCase();
 }
+
+const ROLE_LABELS: Record<string, string> = {
+  Admin: "Administrator",
+  Adminstrator: "Administrator",
+  Author: "Author",
+};
+
+export function displayRoleName(role?: string | null): string {
+  const raw = role?.trim();
+  if (!raw) return "Author";
+  return ROLE_LABELS[raw] || raw;
+}

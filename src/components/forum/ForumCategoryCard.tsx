@@ -28,12 +28,9 @@ export function ForumCategoryCard({ sub, priorityImage = false }: Props) {
   return (
     <Link
       to={`/forum/category/${sub.id}`}
-      className="gre-card gre-card-hover group flex items-center gap-3 p-3 sm:gap-3.5 sm:p-3.5 md:gap-4 md:p-4"
+      className="gre-interactive gre-public-card group flex items-center gap-3 p-3 sm:p-4"
     >
-      <div
-        className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100 sm:h-16 sm:w-16 md:h-[4.5rem] md:w-[4.5rem]"
-        style={{ boxShadow: `0 4px 14px -4px ${accent}66` }}
-      >
+      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100 sm:h-14 sm:w-14">
         {imageSrc && !imageFailed ? (
           <>
             <div
@@ -85,16 +82,16 @@ export function ForumCategoryCard({ sub, priorityImage = false }: Props) {
             {sub.category_name}
           </span>
         )}
-        <h3 className="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug text-ink group-hover:text-brand-700 sm:text-[15px]">
+        <h3 className="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug text-ink group-hover:text-brand-700">
           {sub.name}
         </h3>
-        <span className="mt-1.5 inline-flex items-center gap-1 text-xs text-slate-500">
-          <MessageSquare className="h-3 w-3 text-teal-600" />
+        <span className="mt-1 inline-flex items-center gap-1 text-xs text-slate-500">
+          <MessageSquare className="h-3 w-3" />
           {count} {count === 1 ? "topic" : "topics"}
         </span>
       </div>
 
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition group-hover:bg-brand-600 group-hover:text-white sm:h-8 sm:w-8">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400 transition group-hover:bg-brand-50 group-hover:text-brand-700">
         <ArrowUpRight className="h-4 w-4" />
       </span>
     </Link>

@@ -81,5 +81,5 @@ export const BADGE_LABELS: Record<ResearcherBadge, string> = {
   rising_researcher: "Rising Researcher",
 };
 
-export const INSTITUTION_PUBS_PER_STAR = 5000;
+export const INSTITUTION_PUBS_PER_STAR = 500;
 export const RESEARCHER_PUBS_PER_STAR = 10;

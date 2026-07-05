@@ -87,7 +87,7 @@ export function MeetingGreAssistantPanel({
       setError("");
     },
     onError: (err) => {
-      setError(parseApiError(err, "GRE Assistant could not answer right now."));
+      setError(parseApiError(err, "Research Assistant could not answer right now."));
     },
   });
 
@@ -113,7 +113,7 @@ export function MeetingGreAssistantPanel({
   if (!enabled) {
     return (
       <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-        GRE Assistant is not enabled for this meeting.
+        Research Assistant is not enabled for this meeting.
       </p>
     );
   }
@@ -146,7 +146,7 @@ export function MeetingGreAssistantPanel({
           <Sparkles className="h-4 w-4 text-cyan-500/75" />
         </span>
         <div className="group/msg min-w-0 max-w-[calc(100%-2.5rem)] flex-1">
-          <p className="mb-1 text-[11px] font-medium text-slate-500">GRE Assistant</p>
+          <p className="mb-1 text-[11px] font-medium text-slate-500">Research Assistant</p>
           <div className={meetDrawer.chatBubbleOther}>
             <FormattedAssistantText content={turn.content} className="!text-slate-100" />
           </div>
@@ -305,7 +305,7 @@ export function MeetingGreAssistantPanel({
       {isDark && (
         <div className="flex shrink-0 items-center gap-2">
           <Bot className="h-4 w-4 text-cyan-500/85" />
-          <p className="text-sm font-semibold text-slate-100">GRE Assistant</p>
+          <p className="text-sm font-semibold text-slate-100">Research Assistant</p>
           {isLive && (
             <span className="rounded-full bg-emerald-900/40 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
               Live

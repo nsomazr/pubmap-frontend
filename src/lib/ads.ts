@@ -68,7 +68,7 @@ export function adDestination(ad: Pick<GreAd, "link" | "publication_id" | "publi
   return {
     href,
     external,
-    label: external ? "Visit sponsor" : ad.link ? "Continue" : "Learn more",
+    label: external || ad.link ? "Visit sponsor" : "Learn more",
   };
 }
 
@@ -238,23 +238,56 @@ export function usePlacementAds(
   const targetingParams = adTargetingQueryParams(context);
   return useQuery({
     queryKey: ["ads", "placement", placement, limit, rotate, targetingParams],
+    queryFn: () => fetchPlacementAds(placement, limit, rotate, context),
+    enabled,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export async function fetchPlacementAds(
+  placement: AdPlacement,
+  limit = 3,
+  rotate = false,
+  context?: AdTargetingContext
+): Promise<GreAd[]> {
+  const targetingParams = adTargetingQueryParams(context);
+  const { data } = await api.get<{ placement: AdPlacement; ads: GreAd[] }>(
+    "/ads/placements/",
+    {
+      params: {
+        placement,
+        limit,
+        rotate: rotate ? 1 : undefined,
+        ...targetingParams,
+      },
+    }
+  );
+  return data.ads;
+}
+
+/** Sidebar + research-tool ads merged into one carousel for the map. */
+export function useMapAdCarousel(enabled = true, context?: AdTargetingContext) {
+  const targetingParams = adTargetingQueryParams(context);
+  return useQuery({
+    queryKey: ["ads", "map-carousel", targetingParams],
     queryFn: async () => {
-      const { data } = await api.get<{ placement: AdPlacement; ads: GreAd[] }>(
-        "/ads/placements/",
-        {
-          params: {
-            placement,
-            limit,
-            rotate: rotate ? 1 : undefined,
-            ...targetingParams,
-          },
-        }
-      );
-      return data.ads;
+      const [sidebarAds, toolAds] = await Promise.all([
+        fetchPlacementAds("sidebar", 4, true, context),
+        fetchPlacementAds("research_tool", 2, true, context),
+      ]);
+      const seen = new Set<number>();
+      const merged: GreAd[] = [];
+      for (const ad of [...sidebarAds, ...toolAds]) {
+        if (seen.has(ad.id)) continue;
+        seen.add(ad.id);
+        merged.push(ad);
+      }
+      return merged;
     },
     enabled,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 }
 

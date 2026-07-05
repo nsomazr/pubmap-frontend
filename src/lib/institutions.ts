@@ -9,7 +9,7 @@ export interface Institution {
   usage_count?: number;
 }
 
-export function usePopularInstitutions(limit = 10) {
+export function usePopularInstitutions(limit = 10, enabled = true) {
   return useQuery({
     queryKey: ["institutions", "popular", limit],
     queryFn: async () => {
@@ -18,7 +18,9 @@ export function usePopularInstitutions(limit = 10) {
       });
       return data.results;
     },
+    enabled,
     staleTime: 120_000,
+    refetchOnWindowFocus: false,
   });
 }
 

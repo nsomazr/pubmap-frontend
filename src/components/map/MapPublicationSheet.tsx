@@ -37,7 +37,7 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-ink sm:right-4 sm:top-4"
+            className="gre-interactive absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50 hover:text-ink sm:right-4 sm:top-4"
             aria-label="Close publication preview"
           >
             <X className="h-4 w-4" />
@@ -65,7 +65,7 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
           {abstractSnippet ? (
             <p className="px-4 py-3 text-sm leading-relaxed text-slate-600 sm:px-5">{abstractSnippet}</p>
           ) : (
-            <p className="px-4 py-3 text-sm italic text-slate-400 sm:px-5">No abstract preview available.</p>
+            <p className="px-4 py-3 text-sm italic text-slate-400 sm:px-5">No abstract.</p>
           )}
 
           <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-4 py-3 sm:px-5">
@@ -99,7 +99,7 @@ export function MapPublicationSheet({ publication, onClose }: Props) {
             className="gre-interactive inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/20 transition hover:bg-brand-700"
           >
             <FileText className="h-4 w-4" />
-            View publication
+            View paper
           </Link>
         </footer>
       </article>

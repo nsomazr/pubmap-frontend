@@ -1,6 +1,15 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { MiniSparkline } from "./MiniSparkline";
+import type { TrendMonthPoint } from "../../lib/sparkline";
+import { MetricRatioBar } from "./MetricRatioBar";
+import { MetricTrendChart } from "./MetricTrendChart";
+
+interface RatioProps {
+  value: number;
+  max: number;
+  label: string;
+  color?: string;
+}
 
 interface Props {
   label: string;
@@ -9,8 +18,9 @@ interface Props {
   icon?: LucideIcon;
   loading?: boolean;
   valueClassName?: string;
-  sparkline?: number[];
-  sparklineColor?: string;
+  trendPoints?: TrendMonthPoint[] | null;
+  chartColor?: string;
+  ratio?: RatioProps;
   className?: string;
 }
 
@@ -22,12 +32,13 @@ export function StatDisplayTile({
   icon: Icon,
   loading = false,
   valueClassName = "text-ink",
-  sparkline,
-  sparklineColor,
+  trendPoints,
+  chartColor,
+  ratio,
   className = "",
 }: Props) {
   return (
-    <article className={`gre-dashboard-card p-4 sm:p-5 ${className}`}>
+    <article className={`gre-dashboard-card flex h-full flex-col p-4 sm:p-5 ${className}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           {Icon && (
@@ -41,14 +52,19 @@ export function StatDisplayTile({
       <p className={`mt-3 text-3xl font-bold tabular-nums leading-none ${valueClassName}`}>
         {loading ? "—" : value}
       </p>
-      {sparkline && sparkline.length > 0 && (
-        <MiniSparkline
-          points={sparkline}
-          className="mt-3 max-h-10"
-          stroke={sparklineColor ?? "#3b5bdb"}
-        />
-      )}
-      {hint && <p className="mt-2 text-[11px] leading-snug text-slate-500">{hint}</p>}
+      <div className="mt-auto">
+        {trendPoints ? (
+          <MetricTrendChart points={trendPoints} color={chartColor ?? "#3b5bdb"} />
+        ) : ratio ? (
+          <MetricRatioBar
+            value={ratio.value}
+            max={ratio.max}
+            label={ratio.label}
+            color={ratio.color ?? chartColor}
+          />
+        ) : null}
+        {hint && <p className="mt-2 text-[11px] leading-snug text-slate-500">{hint}</p>}
+      </div>
     </article>
   );
 }

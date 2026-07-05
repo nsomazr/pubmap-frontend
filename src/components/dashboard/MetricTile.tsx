@@ -1,7 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { MiniSparkline } from "./MiniSparkline";
+import type { TrendMonthPoint } from "../../lib/sparkline";
+import { MetricTrendChart } from "./MetricTrendChart";
 
 interface Props {
   label: string;
@@ -11,8 +12,9 @@ interface Props {
   icon?: LucideIcon;
   loading?: boolean;
   valueClassName?: string;
-  sparkline?: number[];
-  sparklineColor?: string;
+  trendPoints?: TrendMonthPoint[] | null;
+  chartColor?: string;
+  showChart?: boolean;
 }
 
 export function MetricTile({
@@ -23,11 +25,12 @@ export function MetricTile({
   icon: Icon,
   loading = false,
   valueClassName = "text-ink",
-  sparkline,
-  sparklineColor,
+  trendPoints,
+  chartColor,
+  showChart = true,
 }: Props) {
   return (
-    <Link to={to} className="gre-metric-tile group">
+    <Link to={to} className="gre-metric-tile group flex h-full flex-col">
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           {Icon && (
@@ -42,14 +45,12 @@ export function MetricTile({
       <p className={`mt-3 text-3xl font-bold tabular-nums leading-none ${valueClassName}`}>
         {loading ? "—" : value}
       </p>
-      {sparkline && sparkline.length > 0 && (
-        <MiniSparkline
-          points={sparkline}
-          className="mt-3 max-h-10"
-          stroke={sparklineColor ?? "#3b5bdb"}
-        />
-      )}
-      {hint && <p className="mt-2 text-[11px] leading-snug text-slate-500">{hint}</p>}
+      <div className="mt-auto">
+        {showChart && trendPoints !== undefined ? (
+          <MetricTrendChart points={trendPoints} color={chartColor ?? "#3b5bdb"} />
+        ) : null}
+        {hint && <p className={`text-[11px] leading-snug text-slate-500 ${showChart && trendPoints !== undefined ? "mt-2" : ""}`}>{hint}</p>}
+      </div>
     </Link>
   );
 }

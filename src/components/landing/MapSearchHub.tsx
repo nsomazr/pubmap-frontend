@@ -34,6 +34,7 @@ interface Props {
   suggestionSource: Publication[];
   resultCount: number;
   searching: boolean;
+  searchRefreshing?: boolean;
   searchError?: string | null;
   hasResults: boolean;
   /** When true, the mobile results sheet is expanded (hide duplicate results chip). */
@@ -175,6 +176,7 @@ export function MapSearchHub({
   suggestionSource,
   resultCount,
   searching,
+  searchRefreshing = false,
   searchError = null,
   hasResults,
   resultsPanelVisible = false,
@@ -196,6 +198,7 @@ export function MapSearchHub({
   const [showFilters, setShowFilters] = useState(false);
   const [titleFocused, setTitleFocused] = useState(false);
   const [authorFocused, setAuthorFocused] = useState(false);
+  const [locationFocused, setLocationFocused] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const activeFilterCount = [categoryId, subCategoryId].filter(Boolean).length;
@@ -243,7 +246,7 @@ export function MapSearchHub({
     ]
   );
 
-  const { data: popularInstitutions = [] } = usePopularInstitutions(16);
+  const { data: popularInstitutions = [] } = usePopularInstitutions(16, open);
 
   const suggestions = useMemo(() => {
     const base = buildSearchSuggestions(suggestionSource);
@@ -267,6 +270,14 @@ export function MapSearchHub({
       .filter((a) => a.toLowerCase().includes(q) && a.toLowerCase() !== q)
       .slice(0, 6);
   }, [author, suggestions.authors]);
+
+  const locationSuggestions = useMemo(() => {
+    const q = location.trim().toLowerCase();
+    if (!q || q.length < 2) return [];
+    return suggestions.locations
+      .filter((place) => place.toLowerCase().includes(q) && place.toLowerCase() !== q)
+      .slice(0, 6);
+  }, [location, suggestions.locations]);
 
   useEffect(() => {
     if (categoryId || subCategoryId) setShowFilters(true);
@@ -298,7 +309,7 @@ export function MapSearchHub({
   const summary =
     filterChips.map((c) => c.label).join(" · ") ||
     [author, affiliation, title, mapRegionLabel || location].filter(Boolean).join(" · ") ||
-    "Search publications on the map";
+    "Search the map";
 
   const filterChipsRow =
     filterChips.length > 0 ? (
@@ -308,13 +319,13 @@ export function MapSearchHub({
   const emptyResultsHint =
     hasResults && resultCount === 0 && !searching && !open && !resultsPanelVisible ? (
       <div className="rounded-xl bg-slate-800/92 px-3 py-2.5 text-center text-xs font-medium leading-relaxed text-white shadow-md ring-1 ring-slate-900/10">
-        No matches for this search.{" "}
+        No results.{" "}
         <button
           type="button"
           onClick={onClear}
           className="font-semibold underline underline-offset-2"
         >
-          Show all on map
+          Show all
         </button>
       </div>
     ) : null;
@@ -328,15 +339,26 @@ export function MapSearchHub({
 
   const collapsedBar = (
     <div className="map-search-hub-trigger flex w-full flex-col gap-2">
-      <div className="flex w-full items-stretch overflow-hidden rounded-full bg-white/95 text-left shadow-lg shadow-slate-900/10 ring-1 ring-white/90 backdrop-blur-xl transition hover:shadow-xl">
+      <div
+        className={`map-chrome-glass map-search-hub-pill relative flex w-full items-stretch overflow-hidden rounded-full text-left shadow-lg shadow-slate-900/10 ring-1 ring-white/90 transition-[box-shadow,ring-color] duration-[var(--gre-duration)] ease-[var(--gre-ease-out)] hover:shadow-xl${
+          searchRefreshing ? " map-search-hub-pill--refreshing" : ""
+        }`}
+      >
+        {searchRefreshing ? (
+          <span className="map-search-hub-progress" aria-hidden />
+        ) : null}
         <button
           type="button"
           onClick={() => setOpen(true)}
           className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 pr-1"
         >
-          <Search className="h-5 w-5 shrink-0 text-brand-600" />
+          <Search
+            className={`h-5 w-5 shrink-0 text-brand-600${
+              searchRefreshing ? " map-search-hub-icon--refreshing" : ""
+            }`}
+          />
           <span className="min-w-0 flex-1 truncate text-sm text-slate-500">
-            {hasInput ? summary : "Search publications, researchers, institutions…"}
+            {hasInput ? summary : "Publications, researchers, institutions…"}
           </span>
           {(activeFilterCount > 0 || hasInput) && (
             <span className="shrink-0 rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-bold text-white">
@@ -352,7 +374,7 @@ export function MapSearchHub({
         )}
       </div>
       {filterChipsRow && (
-        <div className="rounded-2xl bg-white/95 px-2.5 py-2 shadow-md ring-1 ring-white/90 backdrop-blur-xl">
+        <div className="map-chrome-glass map-search-hub-chips rounded-2xl px-2.5 py-2 shadow-md ring-1 ring-white/90">
           {filterChipsRow}
         </div>
       )}
@@ -371,7 +393,7 @@ export function MapSearchHub({
           setOpen(false);
         }
       }}
-      className={`map-search-hub-form overflow-hidden rounded-2xl bg-white/95 shadow-xl shadow-slate-900/15 ring-1 ring-white/90 backdrop-blur-xl${
+      className={`map-chrome-glass map-search-hub-form overflow-hidden rounded-2xl shadow-xl shadow-slate-900/15 ring-1 ring-white/90${
         isCompact
           ? " max-h-[calc(100dvh-5.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto overscroll-contain"
           : ""
@@ -382,13 +404,13 @@ export function MapSearchHub({
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-ink">Search map</h2>
           <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-            Find publications by title, researcher, or institution
+            By title, researcher, or institution
           </p>
         </div>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-ink"
+          className="gre-interactive shrink-0 rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-ink"
           aria-label="Close search"
         >
           <X className="h-4 w-4" />
@@ -445,6 +467,11 @@ export function MapSearchHub({
             placeholder="Place name or region"
             value={location}
             onChange={onLocationChange}
+            onFocus={() => setLocationFocused(true)}
+            onBlur={() => window.setTimeout(() => setLocationFocused(false), 120)}
+            showSuggestions={locationFocused}
+            suggestions={locationSuggestions}
+            onPickSuggestion={onLocationChange}
           />
           <button
             type="button"
@@ -452,7 +479,7 @@ export function MapSearchHub({
               onLocationChange("");
               onMapPickModeChange(!mapPickMode);
             }}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-semibold transition ${
+            className={`gre-interactive flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-semibold ${
               mapPickMode
                 ? "border-brand-300 bg-brand-50 text-brand-800"
                 : "border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:bg-brand-50/60"
@@ -460,10 +487,10 @@ export function MapSearchHub({
           >
             <MapPin className="h-3.5 w-3.5" />
             {mapPickMode
-              ? "Click the map to set search region…"
+              ? "Click map to set region…"
               : mapRegionLabel
                 ? `Region: ${mapRegionLabel}`
-                : "Select region on map"}
+                : "Pick region on map"}
           </button>
         </div>
       </div>
@@ -528,11 +555,11 @@ export function MapSearchHub({
         <button
           type="submit"
           data-close-panel-on-submit="true"
-          disabled={searching}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-60"
+          disabled={searching && !searchRefreshing}
+          className="gre-interactive flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-60"
         >
-          <Search className="h-4 w-4" />
-          {searching ? "Searching…" : "Search map"}
+          <Search className={`h-4 w-4${searchRefreshing ? " map-search-hub-icon--refreshing" : ""}`} />
+          {searching && !searchRefreshing ? "Searching…" : "Search map"}
         </button>
       </div>
     </form>
@@ -543,7 +570,7 @@ export function MapSearchHub({
     <button
       type="button"
       onClick={onOpenResults}
-      className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-600/95 py-2 text-xs font-semibold text-white shadow-md backdrop-blur-sm transition hover:bg-brand-700"
+      className="map-search-results-btn gre-interactive flex w-full items-center justify-center gap-2 rounded-full bg-brand-600/95 py-2.5 text-xs font-semibold text-white shadow-md backdrop-blur-sm transition hover:bg-brand-700"
     >
       {resultCount} result{resultCount !== 1 ? "s" : ""}
       <ChevronRight className="h-3.5 w-3.5" />

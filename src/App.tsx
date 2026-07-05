@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import axios from "axios";
 import { AuthScreen, AuthScreenLoading } from "./components/auth/AuthScreen";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { RouteErrorBoundary } from "./components/navigation/RouteErrorBoundary";
@@ -103,7 +104,24 @@ const PlagiarismClaimsPage = lazyPage(
 );
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+      retry: (failureCount, error) => {
+        if (axios.isAxiosError(error) && error.response?.status === 429) {
+          return failureCount < 1;
+        }
+        return failureCount < 1;
+      },
+      retryDelay: (attempt, error) => {
+        if (axios.isAxiosError(error) && error.response?.status === 429) {
+          return Math.min(60_000, 5_000 * (attempt + 1));
+        }
+        return 1_000;
+      },
+    },
+  },
 });
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {

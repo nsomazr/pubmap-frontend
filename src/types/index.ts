@@ -397,6 +397,7 @@ export interface InstitutionSearchIdentity {
   name: string;
   map_url: string;
   publication_count: number;
+  stars?: number;
   researcher_count: number;
   discussions_count: number;
   responses_count: number;

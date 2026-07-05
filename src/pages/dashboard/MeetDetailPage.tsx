@@ -572,7 +572,7 @@ export function MeetDetailPage() {
         <div className="gre-dashboard-card space-y-4 p-5 sm:p-6">
           <DetailSectionTitle
             icon={Sparkles}
-            title="GRE Assistant"
+            title="Research Assistant"
             description="Ask about minutes, decisions, and the meeting transcript."
           />
           <MeetingGreAssistantPanel meeting={meeting} compact variant="light" />

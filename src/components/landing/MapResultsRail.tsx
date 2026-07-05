@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { buildMapAffiliationPath, buildMapAuthorPath } from "../../lib/mapSearchLink";
 import { abstractListingSnippet } from "../../lib/abstractText";
 import {
@@ -22,6 +22,9 @@ import {
   publicationsByYearFromList,
   sumDiscussions,
   sumResponses,
+  collectLocationInsights,
+  topPublicationsFromList,
+  type LocationInsights,
 } from "../../lib/mapSearchInsights";
 import {
   GET_PUBLICATION_SUMMARY_LABEL,
@@ -71,6 +74,7 @@ interface Props {
   affiliationQuery?: string;
   titleQuery?: string;
   locationQuery?: string;
+  searchRefreshing?: boolean;
   open: boolean;
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -118,8 +122,8 @@ function TaxonomyMapHighlightButton({
       }`}
       title={
         active
-          ? "Clear green highlight on map"
-          : `Highlight ${kind === "field" ? "field" : "subfield"} on map`
+          ? "Clear highlight"
+          : `Highlight ${kind === "field" ? "field" : "subfield"}`
       }
       aria-pressed={active}
     >
@@ -130,26 +134,23 @@ function TaxonomyMapHighlightButton({
 
 function MapFilterLink({
   label,
-  mapUrl,
   author,
   affiliation,
   onApplyMapFilter,
   className = "mt-3 inline-flex text-xs font-semibold text-brand-600 hover:underline",
 }: {
   label: string;
-  mapUrl: string;
+  mapUrl?: string;
   author?: string;
   affiliation?: string;
   onApplyMapFilter?: (patch: { author?: string; affiliation?: string }) => void;
   className?: string;
 }) {
-  const navigate = useNavigate();
-
   if (!onApplyMapFilter) {
     return (
-      <Link to={mapUrl} className={className}>
+      <span className={className} aria-disabled>
         {label}
-      </Link>
+      </span>
     );
   }
 
@@ -160,7 +161,6 @@ function MapFilterLink({
       onClick={() => {
         if (author) onApplyMapFilter({ author });
         else if (affiliation) onApplyMapFilter({ affiliation });
-        navigate(mapUrl, { replace: true });
       }}
     >
       {label}
@@ -282,7 +282,9 @@ function collectResearcherResults(publications: Publication[]): ResearcherResult
         name: row.name || "Researcher",
         affiliation: row.affiliation,
         photo: row.photo,
-        ranking: teamRankingForPerson(row.pubs, { userId: row.userId, name: row.name }),
+        ranking: row.userId
+          ? teamRankingForPerson(row.pubs, { userId: row.userId, name: row.name })
+          : undefined,
         leadSubfield: topValues(
           row.pubs.map((pub) => pub.subfield_name || pub.sub_category_name || "")
         )[0],
@@ -506,7 +508,7 @@ function InstitutionIdentityCard({
 
   return (
     <article
-      className={`overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/80 shadow-sm ${
+      className={`gre-interactive overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/80 shadow-sm ${
         compact ? "p-3" : "p-4"
       }`}
     >
@@ -518,12 +520,12 @@ function InstitutionIdentityCard({
           <RankedNameLabel
             name={institution.name}
             nameClassName="text-base font-semibold leading-snug text-ink"
-            institutionPublicationCount={institution.publication_count}
+            stars={institution.stars}
             compact
           />
           {institution.latest_publication_year ? (
             <p className="mt-0.5 text-xs text-slate-500">
-              Latest publication: {institution.latest_publication_year}
+              Latest: {institution.latest_publication_year}
             </p>
           ) : null}
         </div>
@@ -543,7 +545,7 @@ function InstitutionIdentityCard({
             Leading field
           </div>
           <p className="mt-1 line-clamp-2 text-sm font-bold leading-snug text-ink">
-            {leadingField.name || "—"}
+            {leadingField.name || "None"}
           </p>
           {leadingField.name ? (
             <p className="text-[11px] font-semibold text-brand-800/80">
@@ -631,7 +633,7 @@ function InstitutionIdentityCard({
       )}
 
       <MapFilterLink
-        label="View all papers on map"
+        label="All papers on map"
         mapUrl={institution.map_url || buildMapAffiliationPath(institution.name)}
         affiliation={institution.name}
         onApplyMapFilter={onApplyMapFilter}
@@ -666,7 +668,7 @@ function ResearcherIdentityCard({
 
   return (
     <article
-      className={`overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/80 shadow-sm ${
+      className={`gre-interactive overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/80 shadow-sm ${
         compact ? "p-3" : "p-4"
       }`}
     >
@@ -691,12 +693,12 @@ function ResearcherIdentityCard({
             )}
             {!person.has_profile && (
               <p className="mt-1 text-[11px] font-medium text-amber-800">
-                Co-author on GRE papers (no platform profile yet)
+                Co-author (no profile)
               </p>
             )}
             {person.latest_publication_year ? (
               <p className="mt-1 text-[11px] text-slate-500">
-                Latest publication: {person.latest_publication_year}
+                Latest: {person.latest_publication_year}
               </p>
             ) : null}
           </div>
@@ -717,7 +719,7 @@ function ResearcherIdentityCard({
             Lead subfield
           </div>
           <p className="mt-1 line-clamp-2 text-sm font-bold leading-snug text-ink">
-            {leadingSubfield.name || "—"}
+            {leadingSubfield.name || "None"}
           </p>
           {leadingSubfield.name ? (
             <p className="text-[11px] font-semibold text-slate-500">
@@ -736,12 +738,12 @@ function ResearcherIdentityCard({
       <div className="mt-3 flex flex-wrap gap-3">
         {profilePath && person.has_profile ? (
           <Link to={profilePath} className="text-xs font-semibold text-brand-600 hover:underline">
-            Open researcher profile
+            Open profile
           </Link>
         ) : null}
         {papersPath && person.name ? (
           <MapFilterLink
-            label="View papers on map"
+            label="Papers on map"
             mapUrl={papersPath}
             author={person.name}
             onApplyMapFilter={onApplyMapFilter}
@@ -758,6 +760,234 @@ function formatLocation(pub: Publication): string | null {
   return location || null;
 }
 
+function LocationIdentityCard({
+  insights,
+  onApplyMapFilter,
+  taxonomyHighlight,
+  onTaxonomyHighlight,
+}: {
+  insights: LocationInsights;
+  onApplyMapFilter?: (patch: { author?: string; affiliation?: string }) => void;
+  taxonomyHighlight?: MapTaxonomyHighlight | null;
+  onTaxonomyHighlight?: (highlight: MapTaxonomyHighlight) => void;
+}) {
+  const leadingField = insights.leadingField;
+  const leadingSubfield = insights.leadingSubfield;
+  const topResearcher = insights.leadingResearchers[0];
+
+  return (
+    <article className="gre-interactive overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/80 p-4 shadow-sm">
+      <div className="flex gap-3">
+        <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+          <MapPin className="h-6 w-6" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-semibold leading-snug text-ink">{insights.label}</p>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
+        <InsightStat
+          icon={BookOpenText}
+          label="Publications"
+          value={insights.totalPublications}
+          tone="brand"
+        />
+        <InsightStat icon={Users} label="Researchers" value={insights.totalResearchers} />
+        <InsightStat
+          icon={Building2}
+          label="Institutions"
+          value={insights.totalInstitutions}
+          tone="teal"
+        />
+        <InsightStat
+          icon={MessageSquare}
+          label="Discussions"
+          value={insights.totalDiscussions}
+          tone="teal"
+        />
+        <InsightStat
+          icon={Reply}
+          label="Responses"
+          value={insights.totalResponses}
+          tone="brand"
+        />
+        <TaxonomyMapHighlightButton
+          kind="field"
+          name={leadingField.name}
+          taxonomyHighlight={taxonomyHighlight}
+          onTaxonomyHighlight={onTaxonomyHighlight}
+          className="rounded-xl border border-brand-100 bg-brand-50/50 px-2.5 py-2 ring-1 ring-brand-100/80"
+        >
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
+            <Sparkles className="h-3 w-3 shrink-0" />
+            Leading field
+          </div>
+          <p className="mt-1 line-clamp-2 text-sm font-bold leading-snug text-ink">
+            {leadingField.name || "None"}
+          </p>
+          {leadingField.name ? (
+            <p className="text-[11px] font-semibold text-brand-800/80">
+              {leadingField.publication_count} paper
+              {leadingField.publication_count === 1 ? "" : "s"}
+            </p>
+          ) : null}
+        </TaxonomyMapHighlightButton>
+      </div>
+
+      {leadingSubfield.name ? (
+        <TaxonomyMapHighlightButton
+          kind="subfield"
+          name={leadingSubfield.name}
+          taxonomyHighlight={taxonomyHighlight}
+          onTaxonomyHighlight={onTaxonomyHighlight}
+          className="mt-2 block w-full rounded-lg bg-white px-2.5 py-2 text-xs ring-1 ring-slate-100"
+        >
+          <span className="font-semibold text-slate-700">Leading subfield:</span>{" "}
+          {leadingSubfield.name}
+          <span className="text-slate-500">
+            {" "}
+            · {leadingSubfield.publication_count} paper
+            {leadingSubfield.publication_count === 1 ? "" : "s"}
+          </span>
+        </TaxonomyMapHighlightButton>
+      ) : null}
+
+      {topResearcher?.name ? (
+        <div className="mt-4 rounded-xl border border-slate-100 bg-white px-3 py-2.5">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
+            Top researcher
+          </p>
+          <div className="mt-1.5 flex items-center justify-between gap-2">
+            {topResearcher.user_id ? (
+              <Link
+                to={`/researcher/${topResearcher.user_id}`}
+                className="min-w-0 truncate text-sm font-semibold text-brand-700 hover:underline"
+              >
+                {topResearcher.name}
+              </Link>
+            ) : (
+              <span className="min-w-0 truncate text-sm font-semibold text-ink">
+                {topResearcher.name}
+              </span>
+            )}
+            <span className="shrink-0 text-xs font-semibold tabular-nums text-slate-600">
+              {topResearcher.publication_count} paper
+              {topResearcher.publication_count === 1 ? "" : "s"}
+            </span>
+          </div>
+          {topResearcher.name && onApplyMapFilter ? (
+            <MapFilterLink
+              label="Their papers on map"
+              mapUrl={buildMapAuthorPath(topResearcher.name)}
+              author={topResearcher.name}
+              onApplyMapFilter={onApplyMapFilter}
+              className="mt-2 inline-flex text-xs font-semibold text-brand-600 hover:underline"
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      {insights.publicationsByYear.length > 0 ? (
+        <MapPublicationYearChart
+          data={insights.publicationsByYear}
+          className="mt-4 border-t border-slate-100 pt-3"
+        />
+      ) : null}
+    </article>
+  );
+}
+
+function PublicationResultCard({
+  pub,
+  index,
+  taxonomyHighlight,
+  onTaxonomyHighlight,
+}: {
+  pub: Publication;
+  index: number;
+  taxonomyHighlight?: MapTaxonomyHighlight | null;
+  onTaxonomyHighlight?: (highlight: MapTaxonomyHighlight) => void;
+}) {
+  const location = formatLocation(pub);
+  const subVisual = publicationSubcategoryVisual(pub);
+
+  return (
+    <article
+      className="gre-interactive gre-dashboard-card group overflow-hidden hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
+      style={{ animationDelay: `${index * 30}ms` }}
+    >
+      <Link
+        to={buildPublicationPath(pub.id, pub.encoded_id)}
+        className="flex gap-3 p-3.5 pb-2.5"
+      >
+        <div className="min-w-0 flex-1 text-left">
+          <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink group-hover:text-brand-700">
+            {formatGrePaperTitle(pub.title, pub.short_number)}
+          </p>
+          <PublicationAuthorTeamRow publication={pub} className="mt-1.5" />
+          {location && (
+            <p className="mt-1 flex items-start gap-1 text-xs text-slate-600">
+              <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-teal-600" />
+              <span className="line-clamp-2">{location}</span>
+            </p>
+          )}
+          {pub.abstract?.trim() && (
+            <p className="mt-2 line-clamp-2 text-xs leading-snug text-slate-600">
+              {abstractListingSnippet(pub.abstract)}
+            </p>
+          )}
+          {subVisual ? (
+            <div className="mt-2">
+              <TaxonomyMapHighlightButton
+                kind="subfield"
+                name={subVisual.name}
+                taxonomyHighlight={taxonomyHighlight}
+                onTaxonomyHighlight={onTaxonomyHighlight}
+                className="inline-flex rounded-lg"
+              >
+                <SubcategoryBadge visual={subVisual} size="xs" />
+              </TaxonomyMapHighlightButton>
+            </div>
+          ) : null}
+          {pub.field_name?.trim() ? (
+            <div className="mt-1.5">
+              <TaxonomyMapHighlightButton
+                kind="field"
+                name={pub.field_name}
+                taxonomyHighlight={taxonomyHighlight}
+                onTaxonomyHighlight={onTaxonomyHighlight}
+                className="inline-flex rounded-md px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200"
+              >
+                {pub.field_name}
+              </TaxonomyMapHighlightButton>
+            </div>
+          ) : null}
+        </div>
+      </Link>
+      <div className="flex flex-col gap-2 border-t border-slate-100 p-3 sm:flex-row">
+        <Link
+          to={buildPublicationChatPath(pub.id, pub.encoded_id)}
+          onClick={(event) => {
+            event.preventDefault();
+            requestPublicationSummary(pub.id, pub.encoded_id);
+          }}
+          className="gre-interactive flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-ink transition hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-800"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-brand-600" />
+          {GET_PUBLICATION_SUMMARY_LABEL}
+        </Link>
+        <Link
+          to={buildPublicationPath(pub.id, pub.encoded_id)}
+          className="gre-interactive flex min-h-10 flex-1 items-center justify-center rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white shadow-sm shadow-brand-600/15 transition hover:bg-brand-700"
+        >
+          View paper
+        </Link>
+      </div>
+    </article>
+  );
+}
+
 export function MapResultsRail({
   publications,
   authorResearch = null,
@@ -768,6 +998,7 @@ export function MapResultsRail({
   affiliationQuery = "",
   titleQuery = "",
   locationQuery = "",
+  searchRefreshing = false,
   open,
   collapsed,
   onToggleCollapse,
@@ -798,7 +1029,7 @@ export function MapResultsRail({
     <button
       type="button"
       onClick={onToggleCollapse}
-      className="absolute top-1/2 z-[1210] hidden -translate-y-1/2 rounded-r-2xl bg-white py-8 pl-1.5 pr-2.5 shadow-xl ring-1 ring-slate-200/80 transition hover:bg-slate-50 md:flex"
+      className="gre-interactive absolute top-1/2 z-[1210] hidden -translate-y-1/2 rounded-r-2xl bg-white py-8 pl-1.5 pr-2.5 shadow-xl ring-1 ring-slate-200/80 hover:bg-slate-50 md:flex"
       style={{ left: collapsed ? 0 : "min(400px, 92vw)" }}
       aria-label={collapsed ? "Expand results" : "Collapse results"}
     >
@@ -814,6 +1045,16 @@ export function MapResultsRail({
   const institutionSearchActive = affiliationQuery.length >= 2 && !authorSearchActive;
   const hasTitleSearch = titleQuery.trim().length >= 2;
   const hasLocationSearch = locationQuery.trim().length >= 2;
+  const locationSearchActive =
+    hasLocationSearch && !authorSearchActive && !institutionSearchActive && !hasTitleSearch;
+
+  const locationInsights = locationSearchActive
+    ? collectLocationInsights(publications, locationQuery)
+    : null;
+  const topLocationPapers = locationSearchActive
+    ? topPublicationsFromList(publications, 5)
+    : [];
+  const topLocationPaperIds = new Set(topLocationPapers.map((pub) => pub.id));
 
   const exactResearcher =
     authorResearch?.match_type === "exact" ? authorResearch.exact : null;
@@ -839,10 +1080,12 @@ export function MapResultsRail({
               name: person.name,
               affiliation: person.affiliation,
               photo: person.photo,
-              ranking: teamRankingForPerson(pubs, {
-                userId: person.userId,
-                name: person.name,
-              }),
+              ranking: person.userId
+                ? teamRankingForPerson(pubs, {
+                    userId: person.userId,
+                    name: person.name,
+                  })
+                : undefined,
               leadSubfield: topValues(
                 pubs.map((pub) => pub.subfield_name || pub.sub_category_name || "")
               )[0],
@@ -876,6 +1119,9 @@ export function MapResultsRail({
       : [];
 
   const paperList = publications;
+  const remainingLocationPapers = locationSearchActive
+    ? paperList.filter((pub) => !topLocationPaperIds.has(pub.id))
+    : paperList;
   const highlightedMapCount = publicationIdsForTaxonomyHighlight(
     publications,
     taxonomyHighlight
@@ -906,7 +1152,9 @@ export function MapResultsRail({
     ? institutionResultsEmpty
     : authorSearchActive
       ? authorResultsEmpty && paperList.length === 0
-      : publications.length === 0;
+      : locationSearchActive
+        ? !locationInsights && paperList.length === 0
+        : publications.length === 0;
 
   const researcherCount = exactResearcher
     ? 1
@@ -920,9 +1168,11 @@ export function MapResultsRail({
     ? "institution"
     : authorSearchActive
       ? "researcher"
-      : hasTitleSearch || hasLocationSearch
+      : locationSearchActive
         ? "paper"
-        : "paper";
+        : hasTitleSearch
+          ? "paper"
+          : "paper";
 
   const countValue =
     countKind === "institution"
@@ -931,7 +1181,9 @@ export function MapResultsRail({
         ? researcherCount
         : publications.length;
 
-  const countLabel = `${countValue} matching ${countKind}${countValue === 1 ? "" : "s"}`;
+  const countLabel = locationSearchActive
+    ? `${countValue} paper${countValue === 1 ? "" : "s"} in ${locationQuery.trim()}`
+    : `${countValue} ${countKind}${countValue === 1 ? "" : "s"}`;
 
   const sheet = (
     <>
@@ -940,14 +1192,14 @@ export function MapResultsRail({
       {!collapsed && isMobile && (
         <button
           type="button"
-          className="fixed inset-0 z-[1290] bg-slate-900/30"
+          className="map-results-rail-backdrop fixed inset-0 z-[1290] bg-slate-900/30"
           onClick={onToggleCollapse}
           aria-label="Hide search results"
         />
       )}
 
       <aside
-        className={`map-results-rail z-[1295] flex flex-col bg-white shadow-2xl transition-all duration-300 ease-out ${
+        className={`map-results-rail z-[1295] flex flex-col bg-white shadow-2xl ${
           isMobile
             ? `map-results-rail--mobile fixed inset-x-0 max-h-[min(68dvh,calc(100dvh-8rem))] rounded-t-2xl ${
                 collapsed ? "pointer-events-none translate-y-full opacity-0" : "translate-y-0 opacity-100"
@@ -957,10 +1209,12 @@ export function MapResultsRail({
                   ? "w-0 -translate-x-full opacity-0 pointer-events-none"
                   : "w-[min(400px,92vw)] translate-x-0 opacity-100"
               }`
-        }`}
+        }${searchRefreshing ? " map-results-rail--refreshing" : ""}`}
+        aria-busy={searchRefreshing}
       >
+        {searchRefreshing ? <span className="map-results-rail-progress" aria-hidden /> : null}
         <div
-          className="map-results-rail-header flex shrink-0 cursor-grab flex-col border-b border-slate-100 bg-white px-4 pb-3 pt-2 active:cursor-grabbing"
+          className="map-results-rail-header relative flex shrink-0 cursor-grab flex-col border-b border-slate-100 bg-white px-4 pb-3 pt-2 active:cursor-grabbing"
           onPointerDown={(e) => isMobile && handleSheetPointerDown(e.clientY)}
           onPointerUp={(e) => isMobile && handleSheetPointerUp(e.clientY)}
           onPointerCancel={(e) => isMobile && handleSheetPointerUp(e.clientY)}
@@ -971,14 +1225,14 @@ export function MapResultsRail({
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 text-left">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-600">
-                Search results
+                Results
               </p>
               <p className="mt-0.5 text-lg font-bold leading-tight text-ink">{countLabel}</p>
               {authorSearchActive && exactResearcher && (
-                <p className="mt-1 text-xs text-slate-500">Exact researcher match</p>
+                <p className="mt-1 text-xs text-slate-500">Exact match</p>
               )}
               {institutionSearchActive && exactInstitution && (
-                <p className="mt-1 text-xs text-slate-500">Exact institution match</p>
+                <p className="mt-1 text-xs text-slate-500">Exact match</p>
               )}
             </div>
             <button
@@ -987,7 +1241,7 @@ export function MapResultsRail({
                 e.stopPropagation();
                 onClose();
               }}
-              className="shrink-0 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-ink"
+              className="gre-interactive shrink-0 rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-ink"
               aria-label="Close search results"
             >
               <X className="h-5 w-5" />
@@ -995,21 +1249,25 @@ export function MapResultsRail({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 pb-4">
+        <div
+          className={`map-results-rail-body flex-1 overflow-y-auto overscroll-contain px-4 py-3 pb-4${
+            searchRefreshing ? " map-results-rail-body--refreshing" : ""
+          }`}
+        >
           {taxonomyHighlight?.name && onTaxonomyHighlight ? (
             <div className="mb-4 flex items-start justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50/90 px-3 py-2.5 text-xs text-emerald-900">
               <p>
                 <span className="font-semibold">
-                  {highlightedMapCount} publication{highlightedMapCount === 1 ? "" : "s"}
+                  {highlightedMapCount} highlighted
                 </span>{" "}
-                highlighted on map for{" "}
+                for{" "}
                 <span className="font-semibold">
                   {taxonomyHighlight.kind === "field" ? "field" : "subfield"} &ldquo;
                   {taxonomyHighlight.name}&rdquo;
                 </span>
                 {highlightedMapCount === 0 ? (
                   <span className="block mt-0.5 text-emerald-800/80">
-                    None in the current results have map coordinates.
+                    None mapped in these results.
                   </span>
                 ) : null}
               </p>
@@ -1035,16 +1293,15 @@ export function MapResultsRail({
                 <MapPin className="mx-auto h-10 w-10 text-slate-300" />
               )}
               <p className="mt-3 text-sm font-medium text-slate-600">
-                {institutionSearchActive ? "No institutions found" : "No matches found"}
+                {institutionSearchActive ? "No institutions" : "No results"}
               </p>
-              <p className="mt-1 text-xs text-slate-400">Try different search terms.</p>
             </div>
           ) : (
             <div className="space-y-6 gre-stagger">
               {authorSearchActive && authorResearchLoading && (
                 <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-600">
                   <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
-                  Looking up researchers…
+                  Finding researchers…
                 </div>
               )}
 
@@ -1100,8 +1357,7 @@ export function MapResultsRail({
                     </h3>
                   </div>
                   <p className="text-xs text-slate-500">
-                    No exact name match for &ldquo;{authorQuery}&rdquo;. Showing close matches from
-                    published papers and co-authors.
+                    No exact match for &ldquo;{authorQuery}&rdquo;. Similar names below.
                   </p>
                   <ul className="space-y-2.5">
                     {fuzzyResearchers.map((person) => (
@@ -1132,7 +1388,7 @@ export function MapResultsRail({
                   <ul className="space-y-2.5">
                     {legacyResearcherResults.map((person) => (
                       <li key={person.key}>
-                        <article className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5 transition hover:border-brand-200 hover:bg-white hover:shadow-md">
+                        <article className="gre-interactive overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5 hover:border-brand-200 hover:bg-white hover:shadow-md">
                           <div className="flex gap-3">
                             <UserAvatar
                               name={person.name}
@@ -1183,7 +1439,7 @@ export function MapResultsRail({
                                   to={`/researcher/${person.userId}`}
                                   className="mt-2 inline-flex text-xs font-semibold text-brand-600 hover:underline"
                                 >
-                                  Open researcher profile
+                                  Open profile
                                 </Link>
                               )}
                             </div>
@@ -1198,7 +1454,7 @@ export function MapResultsRail({
               {institutionSearchActive && institutionResearchLoading && (
                 <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-600">
                   <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
-                  Looking up institutions…
+                  Finding institutions…
                 </div>
               )}
 
@@ -1254,8 +1510,7 @@ export function MapResultsRail({
                     </h3>
                   </div>
                   <p className="text-xs text-slate-500">
-                    No exact match for &ldquo;{affiliationQuery}&rdquo;. Showing close university and
-                    organization matches on GRE.
+                    No exact match for &ldquo;{affiliationQuery}&rdquo;. Similar names below.
                   </p>
                   <ul className="space-y-2.5">
                     {fuzzyInstitutions.map((institution) => (
@@ -1273,13 +1528,57 @@ export function MapResultsRail({
                 </section>
               )}
 
-              {paperList.length > 0 && (
+              {locationSearchActive && locationInsights && (
+                <section className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-teal-600" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-teal-700">
+                      Overview
+                    </h3>
+                  </div>
+                  <LocationIdentityCard
+                    insights={locationInsights}
+                    onApplyMapFilter={onApplyMapFilter}
+                    taxonomyHighlight={taxonomyHighlight}
+                    onTaxonomyHighlight={onTaxonomyHighlight}
+                  />
+                </section>
+              )}
+
+              {locationSearchActive && topLocationPapers.length > 0 && (
+                <section className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <BookOpenText className="h-4 w-4 text-brand-600" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
+                      Top papers
+                    </h3>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {topLocationPapers.map((pub, i) => (
+                      <li key={pub.id}>
+                        <PublicationResultCard
+                          pub={pub}
+                          index={i}
+                          taxonomyHighlight={taxonomyHighlight}
+                          onTaxonomyHighlight={onTaxonomyHighlight}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {(locationSearchActive ? remainingLocationPapers : paperList).length > 0 && (
               <section className="space-y-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <BookOpenText className="h-4 w-4 text-brand-600" />
                     <h3 className="text-xs font-bold uppercase tracking-wider text-brand-600">
-                      {authorSearchActive ? "Top papers" : "Papers"}
+                      {locationSearchActive
+                        ? "More in region"
+                        : authorSearchActive
+                          ? "Top papers"
+                          : "Papers"}
                     </h3>
                   </div>
                   {authorSearchActive && exactResearcher && exactResearcher.publication_count > (paperList.length || 0) && (
@@ -1289,86 +1588,16 @@ export function MapResultsRail({
                   )}
                 </div>
                 <ul className="space-y-2.5">
-                  {paperList.map((pub, i) => {
-                    const location = formatLocation(pub);
-                    const subVisual = publicationSubcategoryVisual(pub);
-                    return (
-                      <li key={pub.id}>
-                        <article
-                          className="gre-dashboard-card group overflow-hidden transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
-                          style={{ animationDelay: `${i * 30}ms` }}
-                        >
-                          <Link
-                            to={buildPublicationPath(pub.id, pub.encoded_id)}
-                            className="flex gap-3 p-3.5 pb-2.5"
-                          >
-                            <div className="min-w-0 flex-1 text-left">
-                              <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink group-hover:text-brand-700">
-                                {formatGrePaperTitle(pub.title, pub.short_number)}
-                              </p>
-                              <PublicationAuthorTeamRow publication={pub} className="mt-1.5" />
-                              {location && (
-                                <p className="mt-1 flex items-start gap-1 text-xs text-slate-600">
-                                  <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-teal-600" />
-                                  <span className="line-clamp-2">{location}</span>
-                                </p>
-                              )}
-                              {pub.abstract?.trim() && (
-                                <p className="mt-2 line-clamp-2 text-xs leading-snug text-slate-600">
-                                  {abstractListingSnippet(pub.abstract)}
-                                </p>
-                              )}
-                              {subVisual ? (
-                                <div className="mt-2">
-                                  <TaxonomyMapHighlightButton
-                                    kind="subfield"
-                                    name={subVisual.name}
-                                    taxonomyHighlight={taxonomyHighlight}
-                                    onTaxonomyHighlight={onTaxonomyHighlight}
-                                    className="inline-flex rounded-lg"
-                                  >
-                                    <SubcategoryBadge visual={subVisual} size="xs" />
-                                  </TaxonomyMapHighlightButton>
-                                </div>
-                              ) : null}
-                              {pub.field_name?.trim() ? (
-                                <div className="mt-1.5">
-                                  <TaxonomyMapHighlightButton
-                                    kind="field"
-                                    name={pub.field_name}
-                                    taxonomyHighlight={taxonomyHighlight}
-                                    onTaxonomyHighlight={onTaxonomyHighlight}
-                                    className="inline-flex rounded-md px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200"
-                                  >
-                                    {pub.field_name}
-                                  </TaxonomyMapHighlightButton>
-                                </div>
-                              ) : null}
-                            </div>
-                          </Link>
-                          <div className="flex flex-col gap-2 border-t border-slate-100 p-3 sm:flex-row">
-                            <Link
-                              to={buildPublicationChatPath(pub.id, pub.encoded_id)}
-                              onClick={(event) => {
-                                event.preventDefault();
-                                requestPublicationSummary(pub.id, pub.encoded_id);
-                              }}
-                              className="gre-interactive flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-ink transition hover:border-brand-200 hover:bg-brand-50/50 hover:text-brand-800"
-                            >
-                              <Sparkles className="h-3.5 w-3.5 text-brand-600" />
-                              {GET_PUBLICATION_SUMMARY_LABEL}
-                            </Link>
-                            <Link
-                              to={buildPublicationPath(pub.id, pub.encoded_id)}
-                              className="gre-interactive flex min-h-10 flex-1 items-center justify-center rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white shadow-sm shadow-brand-600/15 transition hover:bg-brand-700"
-                            >
-                              View paper
-                            </Link>
-                          </div>
-                        </article>
-                      </li>
-                    );
-                  })}
+                  {(locationSearchActive ? remainingLocationPapers : paperList).map((pub, i) => (
+                    <li key={pub.id}>
+                      <PublicationResultCard
+                        pub={pub}
+                        index={i}
+                        taxonomyHighlight={taxonomyHighlight}
+                        onTaxonomyHighlight={onTaxonomyHighlight}
+                      />
+                    </li>
+                  ))}
                 </ul>
               </section>
               )}

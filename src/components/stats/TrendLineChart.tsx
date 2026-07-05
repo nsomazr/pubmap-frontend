@@ -1,21 +1,16 @@
 import type { PublicStatsTrendPoint } from "../../types";
+import { formatTrendMonthLabel, trendSummary } from "../../lib/chartFormat";
+import type { TrendMonthPoint } from "../../lib/sparkline";
 
 interface Props {
   points: PublicStatsTrendPoint[];
   height?: number;
 }
 
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-function formatMonthLabel(ym: string) {
-  const [, mm] = ym.split("-");
-  const idx = Number(mm) - 1;
-  if (idx >= 0 && idx < 12) return MONTH_NAMES[idx];
-  return mm || ym;
-}
-
-export function TrendLineChart({ points, height = 180 }: Props) {
-  const total = points.reduce((sum, p) => sum + p.count, 0);
+export function TrendLineChart({ points, height = 200 }: Props) {
+  const trendPoints: TrendMonthPoint[] = points;
+  const summary = trendSummary(trendPoints);
+  const total = summary.total;
 
   if (points.length === 0 || total === 0) {
     return (
@@ -30,31 +25,32 @@ export function TrendLineChart({ points, height = 180 }: Props) {
   const width = 640;
   const padX = 36;
   const padY = 28;
+  const padBottom = 22;
   const innerW = width - padX * 2;
-  const innerH = height - padY * 2;
+  const innerH = height - padY - padBottom;
   const max = Math.max(...points.map((p) => p.count), 1);
+  const barWidth = innerW / points.length - 6;
 
   const coords = points.map((point, index) => {
-    const x = padX + (index / Math.max(points.length - 1, 1)) * innerW;
+    const x = padX + index * (innerW / Math.max(points.length - 1, 1));
+    const barX = padX + index * (innerW / points.length) + 3;
     const y = padY + innerH - (point.count / max) * innerH;
-    return { ...point, x, y };
+    const barH = (point.count / max) * innerH;
+    return { ...point, x, y, barX, barH };
   });
 
   const line = coords.map((p) => `${p.x},${p.y}`).join(" ");
-  const area = `${coords[0]?.x ?? padX},${padY + innerH} ${line} ${coords[coords.length - 1]?.x ?? padX},${padY + innerH}`;
-
   const labelStep = points.length > 8 ? 2 : 1;
 
   return (
     <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full min-w-[320px]" role="img" aria-label="Publication trend over the last 12 months">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full min-w-[320px]"
+        role="img"
+        aria-label="Publication trend over the last 12 months"
+      >
         <title>Publications per month</title>
-        <defs>
-          <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3b5bdb" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#3b5bdb" stopOpacity="0.02" />
-          </linearGradient>
-        </defs>
         {[0, 0.25, 0.5, 0.75, 1].map((tick) => {
           const y = padY + innerH - tick * innerH;
           const value = Math.round(max * tick);
@@ -67,7 +63,18 @@ export function TrendLineChart({ points, height = 180 }: Props) {
             </g>
           );
         })}
-        <polygon points={area} fill="url(#trendFill)" />
+        {coords.map((point) => (
+          <rect
+            key={`bar-${point.month}`}
+            x={point.barX}
+            y={padY + innerH - Math.max(point.barH, point.count > 0 ? innerH * 0.06 : 0)}
+            width={Math.max(barWidth, 4)}
+            height={Math.max(point.barH, point.count > 0 ? innerH * 0.06 : 0)}
+            rx={3}
+            fill="#3b5bdb"
+            opacity={point.count > 0 ? 0.18 : 0.08}
+          />
+        ))}
         {points.length > 1 && (
           <polyline
             points={line}
@@ -83,8 +90,10 @@ export function TrendLineChart({ points, height = 180 }: Props) {
             <circle
               cx={point.x}
               cy={point.y}
-              r={point.count > 0 ? 4 : 2.5}
+              r={point.count > 0 ? 4.5 : 2.5}
               fill={point.count > 0 ? "#3b5bdb" : "#cbd5e1"}
+              stroke="#fff"
+              strokeWidth="1.5"
             />
             {index % labelStep === 0 && (
               <text
@@ -93,15 +102,13 @@ export function TrendLineChart({ points, height = 180 }: Props) {
                 textAnchor="middle"
                 className="fill-slate-500 text-[10px]"
               >
-                {formatMonthLabel(point.month)}
+                {formatTrendMonthLabel(point.month)}
               </text>
             )}
           </g>
         ))}
       </svg>
-      <p className="mt-2 text-center text-xs text-slate-400">
-        Last 12 months · {total} publication{total === 1 ? "" : "s"} total
-      </p>
+      <p className="mt-2 text-center text-xs text-slate-500">{summary.caption}</p>
     </div>
   );
 }

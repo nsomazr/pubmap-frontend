@@ -1,4 +1,4 @@
-import { Eye, EyeOff } from "lucide-react";
+import { Download, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { PdfPreview } from "./PdfPreview";
 import { manuscriptPdfUrl, summaryPdfUrl } from "../../lib/publicationGre";
@@ -7,9 +7,7 @@ import { PublicationPageSection } from "./PublicationPageSection";
 type Props = {
   publicationId: number | string;
   encodedId?: string | null;
-  /** When false, section is hidden (closed access or no manuscript). */
   show: boolean;
-  /** Prefer GRE formatted PDF when the uploaded file is missing on disk. */
   fallbackToSummaryPdf?: boolean;
 };
 
@@ -24,6 +22,7 @@ export function PublicationManuscriptPdfSection({
   if (!show) return null;
 
   const manuscriptUrl = manuscriptPdfUrl(publicationId, { inline: true, encodedId });
+  const manuscriptDownloadUrl = manuscriptPdfUrl(publicationId, { encodedId });
   const summaryUrl = summaryPdfUrl(publicationId, { inline: true, encodedId });
 
   return (
@@ -31,7 +30,8 @@ export function PublicationManuscriptPdfSection({
       id="uploaded-manuscript"
       title="Uploaded manuscript"
       description="Original PDF as submitted by the author"
-      titleAside={
+    >
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setPreviewOpen((open) => !open)}
@@ -50,10 +50,17 @@ export function PublicationManuscriptPdfSection({
           )}
           {previewOpen ? "Hide manuscript" : "View manuscript"}
         </button>
-      }
-    >
+        <a
+          href={manuscriptDownloadUrl}
+          className="inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-800"
+        >
+          <Download className="h-4 w-4 shrink-0" aria-hidden />
+          Download manuscript
+        </a>
+      </div>
+
       {previewOpen ? (
-        <div id="uploaded-manuscript-preview">
+        <div id="uploaded-manuscript-preview" className="mt-5">
           <PdfPreview
             previewUrl={manuscriptUrl}
             fallbackPreviewUrl={fallbackToSummaryPdf ? summaryUrl : null}

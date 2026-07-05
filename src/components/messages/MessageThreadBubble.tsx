@@ -1,8 +1,10 @@
-import { Copy, Download, FileText, MoreVertical, Trash2 } from "lucide-react";
+import { Copy, MoreVertical, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { MessageAttachmentPreview } from "./MessageAttachmentPreview";
 
 interface AttachmentInfo {
   name: string;
+  messageId: number;
 }
 
 interface Props {
@@ -144,21 +146,14 @@ export function MessageThreadBubble({
                 : "rounded-2xl rounded-bl-md border border-slate-200/70 bg-white text-slate-800 shadow-sm"
             }`}
           >
-            {attachment && (
-              <button
-                type="button"
-                onClick={onDownloadAttachment}
-                className={`mb-2 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium ring-1 ${
-                  mine
-                    ? "bg-white/10 text-white ring-white/20 hover:bg-white/15"
-                    : "bg-slate-50 text-slate-700 ring-slate-200/80 hover:bg-slate-100"
-                }`}
-              >
-                <FileText className="h-4 w-4 shrink-0" />
-                <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
-                <Download className="h-4 w-4 shrink-0 opacity-80" />
-              </button>
-            )}
+            {attachment && onDownloadAttachment ? (
+              <MessageAttachmentPreview
+                messageId={attachment.messageId}
+                filename={attachment.name}
+                mine={mine}
+                onDownload={onDownloadAttachment}
+              />
+            ) : null}
             {body ? <div className="whitespace-pre-wrap">{body}</div> : null}
           </div>
         )}

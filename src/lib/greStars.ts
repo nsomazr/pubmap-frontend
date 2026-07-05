@@ -1,5 +1,5 @@
 /** Match backend `core.rankings` star thresholds. */
-export const INSTITUTION_PUBS_PER_STAR = 5000;
+export const INSTITUTION_PUBS_PER_STAR = 500;
 export const RESEARCHER_PUBS_PER_STAR = 10;
 
 export function institutionStarsFromPublicationCount(publicationCount: number): number {

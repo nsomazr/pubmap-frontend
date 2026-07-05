@@ -5,6 +5,7 @@ import {
   adDestination,
   buildAdDetailPath,
   trackAdEvent,
+  useMapAdCarousel,
   usePlacementAds,
   type AdPlacement,
   type AdTargetingContext,
@@ -39,19 +40,18 @@ function AdItem({
 }) {
   const tracked = useRef(false);
   const destination = adDestination(ad);
-  const detailPath = buildAdDetailPath(ad.id, placement);
+  const detailPath = buildAdDetailPath(ad.id, ad.placement || placement);
   const imageSrc = resolveAdImageSrc(ad.image, ad.id, ad.image_path);
+  const trackPlacement = ad.placement || placement;
 
   useEffect(() => {
     if (tracked.current) return;
     tracked.current = true;
-    void trackAdEvent(ad.id, placement, "impression");
-  }, [ad.id, placement]);
+    void trackAdEvent(ad.id, trackPlacement, "impression");
+  }, [ad.id, trackPlacement]);
 
-  const onVisit = (event: { preventDefault: () => void; stopPropagation: () => void }) => {
-    event.preventDefault();
-    event.stopPropagation();
-    void trackAdEvent(ad.id, placement, "click");
+  const onVisit = () => {
+    void trackAdEvent(ad.id, trackPlacement, "click");
   };
 
   const label = ad.sponsor_label || "Sponsored";
@@ -71,7 +71,7 @@ function AdItem({
       : "h-full w-full rounded-lg object-cover transition group-hover:opacity-95";
 
   return (
-    <article className={`group h-full transition hover:-translate-y-0.5 hover:shadow-md ${shell}`}>
+    <article className={`gre-interactive group h-full hover:-translate-y-0.5 hover:shadow-md ${shell}`}>
       <Link
         to={detailPath}
         className="block rounded-[inherit] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
@@ -97,7 +97,7 @@ function AdItem({
             <p className="line-clamp-2 text-xs leading-relaxed text-slate-500">{ad.description}</p>
           ) : null}
           <p className="text-xs font-semibold text-brand-700 group-hover:text-brand-800">
-            More details →
+            Details →
           </p>
         </div>
       </Link>
@@ -201,7 +201,7 @@ function GreAdCarousel({
     >
       <div className="relative overflow-hidden" aria-live="polite">
         <div
-          className="flex transition-transform ease-out"
+          className="flex transition-transform ease-[var(--gre-ease-out)]"
           style={{
             transform: `translateX(calc(-${index * 100}% + ${dragOffset}px))`,
             transitionDuration: dragOffset ? "0ms" : `${SLIDE_MS}ms`,
@@ -209,7 +209,7 @@ function GreAdCarousel({
         >
           {ads.map((ad) => (
             <div key={ad.id} className="w-full shrink-0">
-              <AdItem ad={ad} placement={placement} variant={variant} />
+              <AdItem ad={ad} placement={ad.placement || placement} variant={variant} />
             </div>
           ))}
         </div>
@@ -221,7 +221,7 @@ function GreAdCarousel({
             type="button"
             aria-label="Previous sponsored ad"
             onClick={goPrev}
-            className="absolute left-1 top-[42%] z-10 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-slate-600 shadow-sm transition hover:bg-white hover:text-ink"
+            className="gre-interactive absolute left-1 top-[42%] z-10 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-slate-600 shadow-sm hover:bg-white hover:text-ink"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -229,7 +229,7 @@ function GreAdCarousel({
             type="button"
             aria-label="Next sponsored ad"
             onClick={goNext}
-            className="absolute right-1 top-[42%] z-10 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-slate-600 shadow-sm transition hover:bg-white hover:text-ink"
+            className="gre-interactive absolute right-1 top-[42%] z-10 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-slate-600 shadow-sm hover:bg-white hover:text-ink"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -248,7 +248,7 @@ function GreAdCarousel({
             ))}
           </div>
           <p className="mt-1 text-center text-[10px] font-medium text-slate-400">
-            {index + 1} of {ads.length} · tap card for details
+            {index + 1} / {ads.length}
           </p>
         </>
       )}
@@ -284,7 +284,7 @@ export function GreAdSlot({
           autoRotate={rotate}
         />
       ) : (
-        <AdItem ad={ads[0]} placement={placement} variant={variant} />
+        <AdItem ad={ads[0]} placement={ads[0].placement || placement} variant={variant} />
       )}
     </aside>
   );
@@ -317,6 +317,27 @@ export function GreAdPlacement({
       variant={variant}
       className={className}
       rotate={rotate}
+    />
+  );
+}
+
+/** Single sliding carousel for map sidebar + research-tool ads. */
+export function MapAdRail({
+  enabled = true,
+  context,
+  className = "pointer-events-auto",
+}: {
+  enabled?: boolean;
+  context?: AdTargetingContext;
+  className?: string;
+}) {
+  const { data: ads = [] } = useMapAdCarousel(enabled, context);
+  return (
+    <GreAdSlot
+      ads={ads}
+      placement="sidebar"
+      className={className}
+      rotate
     />
   );
 }

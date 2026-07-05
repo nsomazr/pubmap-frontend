@@ -98,10 +98,8 @@ export function ForumTopicPage() {
   return (
     <PublicPageLayout
       compactHero
-      accent="blue"
-      badge="Discussion"
       title={topic.topic}
-      subtitle={topic.sub_category_name}
+      subtitle={topic.sub_category_name ?? undefined}
       crumbs={[
         { label: "Forum", to: "/forum" },
         ...(topic.sub_category_id
@@ -120,11 +118,11 @@ export function ForumTopicPage() {
     >
       <PageAdAside context={{ subCategoryId: topic.sub_category_id }}>
         <ForumInlineAd context={{ subCategoryId: topic.sub_category_id }} />
-      <article className="gre-card mb-8 overflow-hidden p-0">
-        <div className="h-24 sm:h-28">
+      <article className="gre-public-card mb-6 overflow-hidden p-0">
+        <div className="h-20 sm:h-24">
           <DefaultBanner kind="forum" seed={topic.id} />
         </div>
-        <div className="p-6 sm:p-8">
+        <div className="p-5 sm:p-6">
           {topic.author && (
             <div className="flex items-center gap-3">
               <UserAvatar user={topic.author} size="sm" className="border-2" />
@@ -142,7 +140,7 @@ export function ForumTopicPage() {
       </article>
 
       {postError && (
-        <p className="gre-card mb-4 border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="gre-public-card mb-4 border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-700">
           {postError}
         </p>
       )}

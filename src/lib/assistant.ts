@@ -33,12 +33,12 @@ function parseApiError(res: Response, bodyText: string): string {
     /* ignore */
   }
   if (res.status === 401) {
-    return "Sign in to use GRE Assistant chat, or ask your admin to enable public chat.";
+    return "Sign in to use Research Assistant chat, or ask your admin to enable public chat.";
   }
   if (res.status === 429) {
     return "Too many requests. Please wait a minute and try again.";
   }
-  return "GRE Assistant is temporarily unavailable. Please try again in a moment.";
+  return "Research Assistant is temporarily unavailable. Please try again in a moment.";
 }
 
 async function consumeAssistantStream(

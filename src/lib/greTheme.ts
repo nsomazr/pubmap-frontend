@@ -29,8 +29,13 @@ export const greBtnOnDarkSecondary =
 export const greAvatarInitials = "gre-avatar-initials";
 export const greAccentBadge = "gre-accent-badge";
 
-/* Cards */
+/* Cards & dashboard panels */
 export const greCardAccent = "gre-card-accent";
+export const grePanelClass = "gre-panel";
+export const grePanelHeadClass = "gre-panel__head";
+export const grePanelBodyClass = "gre-panel__body";
+export const greStatTileClass = "gre-stat-tile";
+export const greCalloutMutedClass = "gre-callout-muted";
 
 /* Stat / dashboard cards */
 export const greStatBgBrand = "from-brand-50 to-white";

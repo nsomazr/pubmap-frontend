@@ -27,7 +27,7 @@ function breadcrumbLabel(pathname: string): string {
   if (pathname.includes("/plagiarism")) return "Plagiarism";
   if (pathname.includes("/ads")) return "Ads";
   if (pathname.includes("/operations")) return "Operations";
-  if (pathname.includes("/llm-settings")) return "LLM provider";
+  if (pathname.includes("/llm-settings")) return "Assistant settings";
   return "Overview";
 }
 
@@ -63,7 +63,6 @@ export function DashboardLayout() {
   };
 
   const closeMobile = () => setMobileOpen(false);
-  const showLabels = isMobile ? mobileOpen : !collapsed;
   const sidebarW = isMobile ? EXPANDED_W : collapsed ? COLLAPSED_W : EXPANDED_W;
 
   useEffect(() => {
@@ -94,7 +93,6 @@ export function DashboardLayout() {
 
       <DashboardSidebar
         collapsed={collapsed}
-        showLabels={showLabels}
         isAdmin={isAdmin}
         canReview={canReview}
         user={user}
@@ -107,7 +105,7 @@ export function DashboardLayout() {
       />
 
       <main
-        className="flex min-h-screen min-w-0 flex-1 flex-col transition-[margin] duration-300"
+        className="gre-dashboard-main flex min-h-screen min-w-0 flex-1 flex-col"
         style={{ marginLeft: isMobile ? 0 : sidebarW }}
       >
         <header className="dashboard-topbar sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 overflow-visible px-3 backdrop-blur-xl safe-top sm:gap-3 sm:px-6">

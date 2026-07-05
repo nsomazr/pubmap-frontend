@@ -14,7 +14,10 @@
   --color-accent-light: #ccfbf1;
   --color-dashboard: #0c1017;
   --color-dashboard-accent: #14b8a6;
-  --color-surface: #f7f8fa;
+  --color-surface: #f8f9fb;
+  --color-gre-panel: #ffffff;
+  --color-gre-panel-muted: #f8f9fb;
+  --color-gre-border: #e2e4e9;
   --color-ink: #0f172a;
   --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
 
@@ -289,7 +292,7 @@ body {
 }
 
 .gre-card {
-  @apply relative rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)];
+  @apply relative rounded-2xl border border-gre-border bg-gre-panel shadow-[0_1px_2px_rgba(15,23,42,0.04)];
 }
 
 .gre-card::before {
@@ -327,7 +330,7 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  border-bottom: 1px solid rgb(241 245 249);
+  border-bottom: 1px solid var(--color-gre-border);
   padding-bottom: 1rem;
   margin-bottom: 1rem;
 }
@@ -979,6 +982,46 @@ body {
   background-image: none;
 }
 
+.gre-dashboard-sidebar {
+  transition:
+    width 320ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gre-dashboard-sidebar__fade-label,
+.gre-dashboard-sidebar__fade-block {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 12rem;
+  opacity: 1;
+  transition:
+    max-width 320ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 180ms ease,
+    margin 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gre-dashboard-sidebar__fade-block {
+  white-space: normal;
+  max-width: 14rem;
+}
+
+.gre-dashboard-sidebar--icon-only .gre-dashboard-sidebar__fade-label,
+.gre-dashboard-sidebar--icon-only .gre-dashboard-sidebar__fade-block {
+  max-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gre-dashboard-sidebar:not(.gre-dashboard-sidebar--icon-only) .gre-dashboard-sidebar__fade-label,
+.gre-dashboard-sidebar:not(.gre-dashboard-sidebar--icon-only) .gre-dashboard-sidebar__fade-block {
+  transition-delay: 60ms;
+}
+
+.gre-dashboard-main {
+  transition: margin-left 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .gre-dashboard-sidebar nav {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
@@ -994,8 +1037,8 @@ body {
 }
 
 .dashboard-topbar {
-  border-bottom: 1px solid rgb(226 232 240);
-  background: #fff;
+  border-bottom: 1px solid var(--color-gre-border);
+  background: var(--color-gre-panel);
 }
 
 /* Open dashboard canvas — content cards float on gray bg (Hostinger-style) */
@@ -1032,16 +1075,47 @@ body {
 
 .gre-dashboard-card {
   border-radius: 1rem;
-  border: 1px solid rgb(226 232 240);
-  background: #fff;
+  border: 1px solid var(--color-gre-border);
+  background: var(--color-gre-panel);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* Two-tone dashboard panels — muted header, white body */
+.gre-panel {
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--color-gre-border);
+  background: var(--color-gre-panel);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.gre-panel__head {
+  border-bottom: 1px solid var(--color-gre-border);
+  background: var(--color-gre-panel-muted);
+}
+
+.gre-panel__body {
+  background: var(--color-gre-panel);
+}
+
+.gre-stat-tile {
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-gre-border);
+  background: var(--color-gre-panel);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.gre-callout-muted {
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-gre-border);
+  background: var(--color-gre-panel-muted);
 }
 
 /* Flat form layout — sections use dividers instead of nested cards */
 .gre-form-stage {
   padding-bottom: 2rem;
   margin-bottom: 2rem;
-  border-bottom: 1px solid rgb(226 232 240 / 0.95);
+  border-bottom: 1px solid var(--color-gre-border);
 }
 
 .gre-form-stage:last-child {
@@ -1057,13 +1131,13 @@ body {
   gap: 0.75rem;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgb(241 245 249);
+  border-bottom: 1px solid var(--color-gre-border);
 }
 
 .gre-form-section {
   padding-bottom: 1.75rem;
   margin-bottom: 1.75rem;
-  border-bottom: 1px solid rgb(241 245 249);
+  border-bottom: 1px solid var(--color-gre-border);
 }
 
 .gre-form-section:last-child {
@@ -1468,7 +1542,51 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
 }
 
 .map-publication-sheet {
-  animation: fade-up 0.2s ease-out;
+  animation: map-sheet-in var(--gre-duration-slow) var(--gre-ease-out) forwards;
+}
+
+.map-publication-sheet article {
+  transition:
+    transform var(--gre-duration) var(--gre-ease-out),
+    box-shadow var(--gre-duration) var(--gre-ease-out);
+}
+
+@keyframes map-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.map-pick-banner {
+  animation: map-pick-banner-in var(--gre-duration-slow) var(--gre-ease-out) forwards;
+}
+
+@keyframes map-pick-banner-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.map-layers-panel {
+  animation: map-panel-in var(--gre-duration) var(--gre-ease-out) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-layers-panel,
+  .map-draggable-panel {
+    transition: none;
+    animation: none !important;
+  }
 }
 
 .landing-page main {
@@ -1578,6 +1696,199 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
 .map-summary-dock-body {
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
+}
+
+/* ── Map chrome: glass panels, motion, loading ───────────────────────────── */
+
+.map-chrome-glass {
+  background: rgb(255 255 255 / 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.map-canvas-enter {
+  animation: map-canvas-in var(--gre-duration-slow) var(--gre-ease-out) forwards;
+}
+
+@keyframes map-canvas-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.map-canvas-loading {
+  animation: map-canvas-in var(--gre-duration) var(--gre-ease-out) forwards;
+}
+
+.map-search-hub-trigger {
+  animation: fade-up var(--gre-duration-slow) var(--gre-ease-out) forwards;
+}
+
+.map-search-hub-pill--refreshing {
+  box-shadow:
+    0 8px 28px -6px rgb(59 91 219 / 0.22),
+    0 0 0 1px rgb(59 91 219 / 0.28);
+}
+
+.map-search-hub-progress {
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-brand-500),
+    var(--color-accent),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: map-progress-slide 1.4s var(--gre-ease-in-out) infinite;
+}
+
+.map-search-hub-icon--refreshing {
+  animation: map-icon-pulse 1.2s var(--gre-ease-in-out) infinite;
+}
+
+@keyframes map-progress-slide {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes map-icon-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+}
+
+.map-search-results-btn {
+  animation: fade-up var(--gre-duration-slow) var(--gre-ease-out) forwards;
+}
+
+.map-search-hub-form {
+  animation: map-panel-in var(--gre-duration-slow) var(--gre-ease-out) forwards;
+}
+
+@keyframes map-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.map-results-rail-backdrop {
+  animation: map-backdrop-in var(--gre-duration) var(--gre-ease-out) forwards;
+}
+
+@keyframes map-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.map-results-rail {
+  transition:
+    transform var(--gre-duration-slow) var(--gre-ease-out),
+    opacity var(--gre-duration) var(--gre-ease-out),
+    width var(--gre-duration-slow) var(--gre-ease-out);
+  will-change: transform, opacity;
+}
+
+.map-results-rail-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-brand-600),
+    var(--color-accent),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: map-progress-slide 1.4s var(--gre-ease-in-out) infinite;
+}
+
+.map-results-rail-body {
+  transition: opacity var(--gre-duration) var(--gre-ease-out);
+}
+
+.map-results-rail-body--refreshing {
+  opacity: 0.72;
+}
+
+.map-results-rail--refreshing .map-results-rail-header {
+  opacity: 0.85;
+  transition: opacity var(--gre-duration) var(--gre-ease-out);
+}
+
+.map-ad-rail {
+  animation: fade-up var(--gre-duration-slow) var(--gre-ease-out) forwards;
+  animation-delay: 120ms;
+  opacity: 0;
+}
+
+.map-ad-rail article {
+  transition:
+    transform var(--gre-duration) var(--gre-ease-out),
+    box-shadow var(--gre-duration) var(--gre-ease-out);
+}
+
+.map-search-field {
+  transition:
+    border-color var(--gre-duration-fast) var(--gre-ease-out),
+    background-color var(--gre-duration-fast) var(--gre-ease-out),
+    box-shadow var(--gre-duration-fast) var(--gre-ease-out);
+}
+
+.map-search-field:focus-within {
+  box-shadow: 0 0 0 3px rgb(59 91 219 / 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-canvas-enter,
+  .map-search-hub-trigger,
+  .map-search-results-btn,
+  .map-search-hub-form,
+  .map-ad-rail,
+  .map-search-hub-icon--refreshing,
+  .map-search-hub-progress,
+  .map-results-rail-progress,
+  .map-results-rail-backdrop,
+  .map-publication-sheet,
+  .map-pick-banner {
+    animation: none !important;
+  }
+
+  .map-ad-rail {
+    opacity: 1;
+  }
+
+  .map-results-rail {
+    transition: none;
+  }
 }
 
 .map-summary-dock-card {
@@ -1812,55 +2123,35 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
   max-height: 100%;
 }
 
-.publication-chat-workspace__toolbar {
-  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+.publication-chat-workspace__header {
+  padding-top: max(0.25rem, env(safe-area-inset-top, 0px));
 }
 
-.publication-chat-page {
-  flex: 1 1 0%;
-  min-height: 0;
-  max-height: 100%;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  box-shadow: none;
-  background: #fff;
+.publication-chat-summary {
+  border-bottom: 1px solid #f1f5f9;
 }
 
-@media (min-width: 640px) {
-  .publication-chat-page {
-    border-radius: 1rem;
-    border: 1px solid rgb(226 232 240);
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  }
-}
-
-.publication-chat-page__body {
-  display: flex;
-  min-height: 0;
-  flex: 1 1 0%;
-  flex-direction: column;
+.publication-chat-summary--error {
+  background: #fffbeb;
 }
 
 .publication-chat-workspace .gre-chat-thread {
-  padding: 0.75rem 0.875rem 0.5rem;
-}
-
-@media (min-width: 640px) {
-  .publication-chat-workspace .gre-chat-thread {
-    padding: 0.25rem 0.5rem 0.5rem;
-  }
-}
-
-.gre-chat-composer--workspace {
-  padding-left: 0.875rem;
-  padding-right: 0.875rem;
-  box-shadow: 0 -8px 24px -12px rgb(15 23 42 / 0.12);
+  padding: 0.5rem 0 0.75rem;
 }
 
 .publication-chat__thread {
+  padding-left: 0;
+  padding-right: 0;
   -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable;
+}
+
+.gre-chat-composer--workspace {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.625rem;
+  background: #fff;
+  border-top: 1px solid #f1f5f9;
 }
 
 .map-summary-dock-body--chat {
@@ -1929,13 +2220,7 @@ body:has(.landing-page--summary-open) .gre-assistant-fab--on-map {
 }
 
 .landing-page .leaflet-bottom.leaflet-right .leaflet-control-attribution {
-  pointer-events: auto;
-  max-width: min(11rem, calc(100vw - 6rem));
-  font-size: 9px;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: none !important;
 }
 
 .landing-page .leaflet-top.leaflet-right {

@@ -144,10 +144,13 @@ export function buildSearchSuggestions(publications: Publication[]) {
   const titles = new Set<string>();
   const authors = new Set<string>();
   const institutions = new Set<string>();
+  const locations = new Set<string>();
 
   for (const pub of publications.slice(0, 120)) {
     const t = pub.title?.trim();
     if (t && t.length > 2) titles.add(t);
+    const place = pub.coordinates?.location?.trim();
+    if (place && place.length > 2) locations.add(place);
     for (const person of publicationAuthorSearchEntries(pub)) {
       if (person.name) authors.add(person.name);
       const aff = person.affiliation?.trim();
@@ -159,5 +162,6 @@ export function buildSearchSuggestions(publications: Publication[]) {
     titles: [...titles].slice(0, 24),
     authors: [...authors].slice(0, 16),
     institutions: [...institutions].slice(0, 16),
+    locations: [...locations].slice(0, 16),
   };
 }

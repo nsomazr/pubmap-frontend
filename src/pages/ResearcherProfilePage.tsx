@@ -1,19 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { Building2, FileText, Users } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { formatGrePaperTitle } from "../lib/grePaperTitle";
 import { buildPublicationPath } from "../lib/publicationPaths";
 import api from "../lib/api";
 import { institutionMapUrl } from "../lib/institutionLinks";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
-import { CollaborationNetwork } from "../components/publication/CollaborationNetwork";
+import { CollaboratorsList } from "../components/publication/CollaboratorsList";
 import { RankedNameLabel } from "../components/rankings/RankedNameLabel";
 import { GreHeroBanner } from "../components/ui/GreHeroBanner";
+import { frequentCollaboratorsFromNetwork } from "../lib/collaboratorsList";
 import type { PublicResearcherProfile } from "../types";
 
 export function ResearcherProfilePage() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const userId = id && /^\d+$/.test(id) ? Number(id) : null;
 
   const { data, isLoading, isError } = useQuery({
@@ -61,13 +61,12 @@ export function ResearcherProfilePage() {
   const name = user.full_name || `${user.firstname} ${user.lastname}`.trim();
   const initials = `${user.firstname?.[0] ?? ""}${user.lastname?.[0] ?? ""}`.toUpperCase() || "?";
   const institutionLink = data.institution_map_url || institutionMapUrl(user.affiliation);
+  const frequentCollaborators = frequentCollaboratorsFromNetwork(collaboration_network, 8);
 
   return (
     <PublicPageLayout
       wide
       compactHero
-      accent="teal"
-      badge="Researcher profile"
       title={name}
       subtitle={user.area_of_study || user.affiliation || "Global Research Exchange contributor"}
       crumbs={[{ label: "Home", to: "/" }, { label: "Researcher" }]}
@@ -106,28 +105,25 @@ export function ResearcherProfilePage() {
         }
       />
 
-      {collaboration_network.nodes.length > 1 && (
-        <section className="mb-8 rounded-3xl bg-white p-6 ring-1 ring-slate-200/80 sm:p-8">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-ink">
-            <Users className="h-5 w-5 text-brand-600" />
-            Collaboration network
-          </h2>
+      {frequentCollaborators.length > 0 && (
+        <section className="gre-public-card mb-6 p-5 sm:p-6">
+          <h2 className="text-base font-semibold text-ink">Frequent collaborators</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            GRE researchers this person has published with most often.
+          </p>
           <div className="mt-4">
-            <CollaborationNetwork
-              network={{
-                publication_id: 0,
-                publication_title: name,
-                nodes: collaboration_network.nodes,
-                edges: collaboration_network.edges,
-              }}
-              onNodeClick={(path) => navigate(path)}
+            <CollaboratorsList
+              network={collaboration_network}
+              minShared={2}
+              limit={8}
+              emptyMessage="No other shared publications yet."
             />
           </div>
         </section>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section className="rounded-3xl bg-white p-6 ring-1 ring-slate-200/80">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="gre-public-card p-5 sm:p-6">
           <h2 className="flex items-center gap-2 font-semibold text-ink">
             <FileText className="h-5 w-5 text-brand-600" />
             Authored publications
@@ -155,7 +151,7 @@ export function ResearcherProfilePage() {
           </ul>
         </section>
 
-        <section className="rounded-3xl bg-white p-6 ring-1 ring-slate-200/80">
+        <section className="gre-public-card p-5 sm:p-6">
           <h2 className="flex items-center gap-2 font-semibold text-ink">
             <Users className="h-5 w-5 text-teal-600" />
             Co-authored publications
@@ -187,7 +183,7 @@ export function ResearcherProfilePage() {
       </div>
 
       {user.interests && user.interests.length > 0 && (
-        <section className="mt-8 rounded-3xl bg-white p-6 ring-1 ring-slate-200/80">
+        <section className="mt-6 gre-public-card p-5 sm:p-6">
           <h2 className="font-semibold text-ink">Research interests</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {user.interests.map((interest) => (

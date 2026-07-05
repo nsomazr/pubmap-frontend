@@ -36,11 +36,11 @@ export function buildPublicationFollowUpSuggestions(
 ): string[] {
   if (!pub) {
     return [
-      "What are the main takeaways from this study?",
+      "What are the main takeaways?",
       "What methods were used?",
       "What were the key findings?",
       "Who are the authors?",
-      "Where was this study conducted?",
+      "Where was this conducted?",
     ].slice(0, MAX_SUGGESTIONS);
   }
 
@@ -52,43 +52,42 @@ export function buildPublicationFollowUpSuggestions(
   };
 
   if (hasText(pub.methods)) {
-    push("What methods were used in this study?");
+    push("What methods were used?");
   }
 
   if (hasText(pub.findings)) {
     push("What were the key findings?");
   }
 
-  const institution =
+  if (
     pub.coordinates?.institution?.trim() ||
-    pub.co_authors?.primary_author?.affiliation?.trim();
-  if (institution) {
-    push(`What institution or affiliation is associated with this research (${institution})?`);
+    pub.co_authors?.primary_author?.affiliation?.trim()
+  ) {
+    push("What institution is affiliated?");
   }
 
   if (pub.coordinates?.location?.trim()) {
-    const place = pub.coordinates.location.trim();
-    push(place ? `Where was this study conducted (${place})?` : "Where was this study conducted?");
+    push("Where was the study conducted?");
   }
 
   if (authorCount(pub) > 1) {
-    push("Who are the authors and their affiliations?");
+    push("Who are the authors?");
   } else if (pub.co_authors?.primary_author?.fullname) {
-    push("Who is the lead author and what is their affiliation?");
+    push("Who is the lead author?");
   }
 
   if (hasText(pub.introduction)) {
-    push("What research problem does this study address?");
+    push("What problem does this study address?");
   }
 
   if (pub.sub_category_name) {
-    push(`How does this study contribute to ${pub.sub_category_name}?`);
+    push(`How does this contribute to ${pub.sub_category_name}?`);
   } else if (pub.keywords?.length) {
-    push(`How does this study relate to ${pub.keywords[0]}?`);
+    push(`How does this relate to ${pub.keywords[0]}?`);
   }
 
   if (hasText(pub.conclusion)) {
-    push("What conclusions or recommendations does the study offer?");
+    push("What are the conclusions?");
   }
 
   if (hasText(pub.funder)) {
@@ -96,15 +95,14 @@ export function buildPublicationFollowUpSuggestions(
   }
 
   if (pub.figures && pub.figures.length > 0) {
-    push("What do the figures or maps illustrate?");
+    push("What do the figures show?");
   }
 
   if (hasText(pub.gre?.author_summary)) {
-    push("What did the authors highlight in their own summary?");
+    push("What did the authors highlight?");
   }
 
-  push("What are the main takeaways from this study?");
-  push("What are the practical implications of this research?");
+  push("What are the main takeaways?");
 
   return suggestions.slice(0, MAX_SUGGESTIONS);
 }

@@ -11,7 +11,6 @@ import {
   publicationHasUploadedManuscriptPdf,
   publicationHasViewablePdf,
 } from "../lib/publicationReadable";
-import { PublicationManuscriptPdfSection } from "../components/publication/PublicationManuscriptPdfSection";
 import { PublicationDiscussions } from "../components/publication/PublicationDiscussions";
 import { CoAuthorsPanel } from "../components/publication/CoAuthorsPanel";
 import { PublicationDownloadPanel } from "../components/publication/PublicationDownloadPanel";
@@ -158,13 +157,8 @@ export function PublicationDetailPage() {
             initialLikedByMe={pub.liked_by_me ?? false}
             initialShareCount={pub.share_count ?? 0}
             showViewPaper={showViewPaperPdf}
-          />
-
-          <PublicationManuscriptPdfSection
-            publicationId={pub.id}
-            encodedId={pub.encoded_id}
-            show={showUploadedManuscriptPdf}
-            fallbackToSummaryPdf={false}
+            showManuscript={showUploadedManuscriptPdf}
+            manuscriptFallbackToSummaryPdf={false}
           />
 
           <CoAuthorsPanel publication={pub} />

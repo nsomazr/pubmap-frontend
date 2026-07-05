@@ -1,4 +1,4 @@
-import { Copy, RefreshCw, Share2, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Copy, Link2, RefreshCw, Share2, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { submitSummaryFeedback, type SummaryFeedbackRating } from "../../lib/assistant";
 import { useToast } from "../ui/ToastProvider";
@@ -13,16 +13,16 @@ interface Props {
   className?: string;
 }
 
-const actionClass =
-  "inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm";
+const iconBtn =
+  "gre-interactive inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-40";
 
-const feedbackClass = (active: boolean, tone: "up" | "down") =>
-  `inline-flex h-8 w-8 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+const feedbackBtn = (active: boolean, tone: "up" | "down") =>
+  `${iconBtn} ${
     active
       ? tone === "up"
-        ? "border-brand-300 bg-brand-50 text-brand-700"
-        : "border-red-200 bg-red-50 text-red-700"
-      : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+        ? "bg-brand-50 text-brand-700"
+        : "bg-red-50 text-red-700"
+      : ""
   }`;
 
 export function PublicationSummaryActions({
@@ -52,30 +52,18 @@ export function PublicationSummaryActions({
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
-      toast.success({
-        title: "Summary copied",
-        description: "The assistant summary is ready to paste.",
-      });
+      toast.success({ title: "Copied" });
     } catch {
-      toast.error({
-        title: "Could not copy summary",
-        description: "Clipboard access was blocked. Select the text and copy manually.",
-      });
+      toast.error({ title: "Copy failed" });
     }
   };
 
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(publicationHref);
-      toast.success({
-        title: "Link copied",
-        description: "The publication link is ready to paste.",
-      });
+      toast.success({ title: "Link copied" });
     } catch {
-      toast.error({
-        title: "Could not copy link",
-        description: "Clipboard access was blocked. Copy the page URL manually.",
-      });
+      toast.error({ title: "Copy failed" });
     }
   };
 
@@ -84,7 +72,7 @@ export function PublicationSummaryActions({
     const text = summary.trim();
     try {
       await navigator.share({
-        title: publicationTitle || "GRE research summary",
+        title: publicationTitle || "Research summary",
         text: text ? `${text.slice(0, 500)}${text.length > 500 ? "…" : ""}` : undefined,
         url: publicationHref,
       });
@@ -99,15 +87,8 @@ export function PublicationSummaryActions({
     try {
       await submitSummaryFeedback(publicationId, rating, summary);
       setFeedback(rating);
-      toast.success({
-        title: rating === "up" ? "Thanks for the feedback" : "Feedback recorded",
-        description: "This helps us improve GRE Assistant summaries.",
-      });
     } catch {
-      toast.error({
-        title: "Could not save feedback",
-        description: "Please try again in a moment.",
-      });
+      toast.error({ title: "Feedback failed" });
     } finally {
       setFeedbackBusy(false);
     }
@@ -115,47 +96,62 @@ export function PublicationSummaryActions({
 
   return (
     <div
-      className={`flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 ${className}`}
+      className={`mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 ${className}`}
       role="toolbar"
       aria-label="Summary actions"
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={() => void copySummary()} className={actionClass}>
-          <Copy className="h-3.5 w-3.5" />
-          Copy summary
+      <div className="flex items-center gap-0.5">
+        <button
+          type="button"
+          onClick={() => void copySummary()}
+          className={iconBtn}
+          aria-label="Copy summary"
+          title="Copy summary"
+        >
+          <Copy className="h-4 w-4" />
         </button>
-        <button type="button" onClick={() => void copyLink()} className={actionClass}>
-          <Copy className="h-3.5 w-3.5" />
-          Copy link
+        <button
+          type="button"
+          onClick={() => void copyLink()}
+          className={iconBtn}
+          aria-label="Copy link"
+          title="Copy link"
+        >
+          <Link2 className="h-4 w-4" />
         </button>
-        {canNativeShare && (
-          <button type="button" onClick={() => void shareSummary()} className={actionClass}>
-            <Share2 className="h-3.5 w-3.5" />
-            Share
+        {canNativeShare ? (
+          <button
+            type="button"
+            onClick={() => void shareSummary()}
+            className={iconBtn}
+            aria-label="Share"
+            title="Share"
+          >
+            <Share2 className="h-4 w-4" />
           </button>
-        )}
-        {onRegenerate && (
+        ) : null}
+        {onRegenerate ? (
           <button
             type="button"
             onClick={onRegenerate}
             disabled={regenerating}
-            className={actionClass}
+            className={iconBtn}
+            aria-label="Regenerate summary"
+            title="Regenerate"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${regenerating ? "animate-spin" : ""}`} />
-            Regenerate
+            <RefreshCw className={`h-4 w-4 ${regenerating ? "animate-spin" : ""}`} />
           </button>
-        )}
+        ) : null}
       </div>
 
-      <div className="flex items-center gap-2">
-        <span className="text-[11px] font-medium text-slate-500">Was this helpful?</span>
+      <div className="flex items-center gap-0.5">
         <button
           type="button"
           disabled={feedbackBusy || feedback === "up"}
           onClick={() => void sendFeedback("up")}
-          className={feedbackClass(feedback === "up", "up")}
-          aria-label="Like this summary"
-          title="Helpful summary"
+          className={feedbackBtn(feedback === "up", "up")}
+          aria-label="Helpful"
+          title="Helpful"
         >
           <ThumbsUp className="h-4 w-4" />
         </button>
@@ -163,8 +159,8 @@ export function PublicationSummaryActions({
           type="button"
           disabled={feedbackBusy || feedback === "down"}
           onClick={() => void sendFeedback("down")}
-          className={feedbackClass(feedback === "down", "down")}
-          aria-label="Dislike this summary"
+          className={feedbackBtn(feedback === "down", "down")}
+          aria-label="Not helpful"
           title="Not helpful"
         >
           <ThumbsDown className="h-4 w-4" />

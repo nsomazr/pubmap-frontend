@@ -1,5 +1,6 @@
 import type { CoAuthorPerson, Publication, PublicationCoAuthors, ResearcherRanking } from "../types";
 import { normalizeAffiliationPart, parseAffiliationList } from "./affiliations";
+import { RESEARCHER_PUBS_PER_STAR, researcherStarsFromPublishedCount } from "./greStars";
 
 export type AuthorBylineEntry = {
   name: string;
@@ -115,6 +116,7 @@ export function publicationCoAuthorsFromPublication(publication: Publication): P
       role: row.role || "Co-author",
       is_registered: registered,
       ranking: registered ? row.ranking : undefined,
+      user_id: registered ? row.user_id : null,
     };
   });
   return {
@@ -340,18 +342,22 @@ export function researcherRankStars(
   if (typeof ranking!.stars === "number" && ranking!.stars > 0) {
     return ranking!.stars;
   }
-  if (typeof ranking!.published_count === "number" && ranking!.published_count >= 10) {
-    return Math.floor(ranking!.published_count / 10);
-  }
-  return 0;
+  return researcherStarsFromPublishedCount(ranking!.published_count ?? 0);
 }
 
-/** GRE stars and badges apply only to researchers with a linked GRE account. */
+/** GRE stars and badges apply only to registered researchers with 10+ published GRE papers. */
 export function researcherGreRankEligible(
   ranking?: ResearcherRanking | null,
   registered?: boolean
 ): boolean {
-  return Boolean(registered && ranking);
+  if (!registered || !ranking) return false;
+  const published = ranking.published_count ?? 0;
+  if (published < RESEARCHER_PUBS_PER_STAR) return false;
+  const stars =
+    typeof ranking.stars === "number" && ranking.stars > 0
+      ? ranking.stars
+      : researcherStarsFromPublishedCount(published);
+  return stars > 0;
 }
 
 /** Comma-separated author names for a publication (all authors by default). */

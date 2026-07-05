@@ -21,7 +21,7 @@ import { QuickLinkTile } from "../../components/dashboard/QuickLinkTile";
 import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
-import { pickActivityTrend } from "../../lib/sparkline";
+import { pickActivityTrendPoints } from "../../lib/sparkline";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { PublicationAuthorLine } from "../../components/publication/PublicationAuthorLine";
 import type { DashboardStats, Publication } from "../../types";
@@ -29,8 +29,8 @@ import type { DashboardStats, Publication } from "../../types";
 const QUICK_LINKS = [
   {
     to: "/dashboard/llm-settings",
-    label: "LLM provider",
-    description: "Groq cloud or local Ollama models",
+    label: "Assistant settings",
+    description: "Gemini, Groq, or local Ollama for the assistant",
     icon: Bot,
   },
   {
@@ -168,7 +168,7 @@ export function AdminOperationsPage() {
         description="Platform moderation, review queue, and quick admin tools."
       />
 
-      <DashboardSection title="At a glance" subtitle="Monthly activity (last 8 months)">
+      <DashboardSection title="At a glance" subtitle="Monthly counts · last 8 months">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {ADMIN_METRICS.map(
             ({ label, statKey, trendKey, icon, to, sparkColor, valueClass }) => (
@@ -179,12 +179,13 @@ export function AdminOperationsPage() {
                 value={stats?.[statKey] ?? 0}
                 valueClassName={valueClass}
                 to={to}
-                sparkline={
+                trendPoints={
                   trendKey
-                    ? pickActivityTrend(stats?.activity_trend, trendKey)
+                    ? pickActivityTrendPoints(stats?.activity_trend, trendKey)
                     : undefined
                 }
-                sparklineColor={sparkColor}
+                showChart={Boolean(trendKey)}
+                chartColor={sparkColor}
               />
             )
           )}

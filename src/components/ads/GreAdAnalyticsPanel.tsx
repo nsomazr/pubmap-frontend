@@ -20,6 +20,8 @@ import {
   downloadAdAnalyticsReport,
   downloadSingleAdAnalytics,
 } from "../../lib/adAnalyticsExport";
+import { HorizontalBarChart } from "../stats/HorizontalBarChart";
+import { MetricRatioBar } from "../dashboard/MetricRatioBar";
 import { Button } from "../ui/Button";
 
 interface Props {
@@ -102,53 +104,58 @@ export function GreAdAnalyticsPanel({
 
       <div className="grid gap-4 sm:grid-cols-3">
         {cards.map(({ label, value, icon: Icon, tone }) => (
-          <div key={label} className="gre-card flex items-center gap-4 p-5">
-            <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${tone}`}>
+          <div key={label} className="gre-card flex items-start gap-4 p-5">
+            <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone}`}>
               <Icon className="h-5 w-5" />
             </span>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {label}
               </p>
               <p className="text-2xl font-bold text-ink">{value}</p>
+              {label === "CTR" && data.summary.impressions > 0 ? (
+                <MetricRatioBar
+                  value={data.summary.clicks}
+                  max={data.summary.impressions}
+                  label="Click-through rate"
+                  color="#d97706"
+                  className="!mt-2"
+                  caption={`${data.summary.clicks.toLocaleString()} clicks from ${data.summary.impressions.toLocaleString()} impressions`}
+                />
+              ) : null}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="gre-card overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4">
-          <h3 className="font-semibold text-ink">By placement</h3>
-          <button
-            type="button"
-            onClick={() => downloadAdAnalyticsReport(data)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-800"
-          >
-            <Download className="h-3.5 w-3.5" />
-            CSV
-          </button>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="gre-card p-5">
+          <h3 className="font-semibold text-ink">Impressions by placement</h3>
+          <p className="mt-1 text-xs text-slate-500">Share of total views in the last {data.days} days</p>
+          <div className="mt-4">
+            <HorizontalBarChart
+              items={data.by_placement.map((row) => ({
+                label: row.label,
+                value: row.impressions,
+              }))}
+              colorClass="from-brand-600 to-brand-400"
+              emptyMessage="No impressions recorded yet"
+            />
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-5 py-3 font-semibold">Placement</th>
-                <th className="px-5 py-3 font-semibold">Impressions</th>
-                <th className="px-5 py-3 font-semibold">Clicks</th>
-                <th className="px-5 py-3 font-semibold">CTR</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {data.by_placement.map((row) => (
-                <tr key={row.placement}>
-                  <td className="px-5 py-3 font-medium text-ink">{row.label}</td>
-                  <td className="px-5 py-3 text-slate-600">{row.impressions.toLocaleString()}</td>
-                  <td className="px-5 py-3 text-slate-600">{row.clicks.toLocaleString()}</td>
-                  <td className="px-5 py-3 text-slate-600">{row.ctr}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="gre-card p-5">
+          <h3 className="font-semibold text-ink">Clicks by placement</h3>
+          <p className="mt-1 text-xs text-slate-500">Where visitors engage most</p>
+          <div className="mt-4">
+            <HorizontalBarChart
+              items={data.by_placement.map((row) => ({
+                label: row.label,
+                value: row.clicks,
+              }))}
+              colorClass="from-teal-600 to-teal-400"
+              emptyMessage="No clicks recorded yet"
+            />
+          </div>
         </div>
       </div>
 

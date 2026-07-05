@@ -26,18 +26,13 @@ export function PublicationChatPage() {
     fillViewport: true as const,
     denseMobileHero: true as const,
     workspaceMode: "chat" as const,
-    accent: "blue" as const,
-    badge: "GRE Assistant",
-    title: "GRE Assistant",
-    subtitle:
-      "Summaries and chat use this paper's uploaded manuscript (when available), GRE registry metadata, and structured sections for this study only.",
-    back: { to: "/", label: "Back to map" },
+    title: "Research Assistant",
   };
 
   if (isLoading) {
     return (
       <PublicPageLayout {...layoutProps} crumbs={[{ label: "Home", to: "/" }, { label: "Loading…" }]}>
-        <p className="px-4 text-slate-500 sm:px-0">Loading study…</p>
+        <p className="px-4 py-8 text-sm text-slate-500 sm:px-0">Loading…</p>
       </PublicPageLayout>
     );
   }
@@ -48,7 +43,7 @@ export function PublicationChatPage() {
         {...layoutProps}
         crumbs={[{ label: "Home", to: "/" }, { label: "Not found" }]}
       >
-        <p className="px-4 text-slate-600 sm:px-0">Publication not found or not yet published.</p>
+        <p className="px-4 py-8 text-sm text-slate-600 sm:px-0">Publication not found.</p>
       </PublicPageLayout>
     );
   }
@@ -64,7 +59,7 @@ export function PublicationChatPage() {
           label: crumbTitle.slice(0, 48) + (crumbTitle.length > 48 ? "…" : ""),
           to: buildPublicationPath(pub.id, pub.encoded_id),
         },
-        { label: "Manuscript chat" },
+        { label: "Assistant" },
       ]}
     >
       <PublicationChatWorkspace publication={pub} scrollContainerRef={scrollRef} />

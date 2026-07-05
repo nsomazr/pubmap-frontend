@@ -976,7 +976,7 @@ export function MeetRoomPage() {
 
     const health = await assistantHealth();
     if (!health.available) {
-      setCopilotError(health.hint || health.error || "GRE Assistant is not available right now.");
+      setCopilotError(health.hint || health.error || "Research Assistant is not available right now.");
       setCopilotLoading(false);
       return;
     }

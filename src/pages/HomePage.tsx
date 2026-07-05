@@ -2,12 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../lib/api";
+import axios from "axios";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { parseMapDeepLink } from "../lib/mapDeepLink";
 import { buildPublicationChatPath, publicationPublicApiPath } from "../lib/publicationPaths";
 import { DraggableMapPanel } from "../components/landing/DraggableMapPanel";
 import { MapResultsRail } from "../components/landing/MapResultsRail";
 import { MapSearchHub } from "../components/landing/MapSearchHub";
-import { GreAdPlacement } from "../components/ads/GreAdSlot";
+import { MapAdRail } from "../components/ads/GreAdSlot";
 import { PublicFooter } from "../components/layout/PublicFooter";
 import { EagerRouteComplete } from "../components/navigation/EagerRouteComplete";
 import { PublicNav } from "../components/layout/PublicNav";
@@ -58,6 +61,7 @@ export function HomePage() {
   const [categoryId, setCategoryId] = useState("");
   const [subCategoryId, setSubCategoryId] = useState("");
   const [searching, setSearching] = useState(false);
+  const [searchRefreshing, setSearchRefreshing] = useState(false);
   const [results, setResults] = useState<Publication[] | null>(null);
   const [resultsRailOpen, setResultsRailOpen] = useState(false);
   const [resultsRailCollapsed, setResultsRailCollapsed] = useState(false);
@@ -77,6 +81,15 @@ export function HomePage() {
   const mapChromeBoundsRef = useRef<HTMLElement | null>(null);
   const skipAutoSearchRef = useRef(true);
   const userDismissedResultsRailRef = useRef(false);
+  const suppressDeepLinkApplyRef = useRef(false);
+  const pendingSearchKeyRef = useRef<string | null>(null);
+  const completedSearchKeyRef = useRef<string | null>(null);
+  const debouncedLocation = useDebouncedValue(location, 700);
+  const debouncedAdLocation = useDebouncedValue(
+    location.trim() || mapRegion?.label || "",
+    1200
+  );
+  const showMapSidebarAds = useMediaQuery("(min-width: 1024px)");
   const [mapViewResetToken, setMapViewResetToken] = useState(0);
   const [taxonomyHighlight, setTaxonomyHighlight] = useState<MapTaxonomyHighlight | null>(null);
 
@@ -98,7 +111,7 @@ export function HomePage() {
       filters.author.trim() ||
         filters.affiliation.trim() ||
         filters.title.trim() ||
-        filters.location.trim() ||
+        filters.location.trim().length >= 2 ||
         filters.mapRegion ||
         filters.categoryId ||
         filters.subCategoryId
@@ -127,7 +140,7 @@ export function HomePage() {
     }
   }, [mapDeepLink.publicationRef, mapDeepLink.panel, navigate]);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, refetch, error: mapLoadError } = useQuery({
     queryKey: ["map"],
     queryFn: async () => {
       const { data } = await api.get<{
@@ -138,8 +151,21 @@ export function HomePage() {
       }>("/map/");
       return data;
     },
-    retry: 2,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    retry: (failureCount, error) => {
+      if (axios.isAxiosError(error) && error.response?.status === 429) {
+        return failureCount < 1;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: (attempt, error) => {
+      if (axios.isAxiosError(error) && error.response?.status === 429) return 8_000;
+      return 1_000 * (attempt + 1);
+    },
   });
+  const mapRateLimited =
+    axios.isAxiosError(mapLoadError) && mapLoadError.response?.status === 429;
 
   const syncMapUrlFromFilters = useCallback(
     (filters: MapSearchFilters) => {
@@ -153,20 +179,47 @@ export function HomePage() {
       if (filters.categoryId) params.set("category", filters.categoryId);
       if (filters.subCategoryId) params.set("sub_category", filters.subCategoryId);
       if (mapDeepLink.publicationRef) params.set("pub", mapDeepLink.publicationRef);
+      suppressDeepLinkApplyRef.current = true;
       setSearchParams(params, { replace: true });
+      queueMicrotask(() => {
+        suppressDeepLinkApplyRef.current = false;
+      });
     },
     [mapDeepLink.publicationRef, setSearchParams]
   );
 
+  const filtersSearchKey = useCallback((filters: MapSearchFilters) => {
+    return JSON.stringify({
+      author: normalizeAuthorSearchQuery(filters.author),
+      affiliation: filters.affiliation.trim(),
+      title: filters.title.trim(),
+      location: filters.location.trim(),
+      mapRegion: filters.mapRegion
+        ? `${filters.mapRegion.lat},${filters.mapRegion.lng},${filters.mapRegion.radiusKm}`
+        : null,
+      categoryId: filters.categoryId,
+      subCategoryId: filters.subCategoryId,
+    });
+  }, []);
+
   const runSearch = useCallback(
     async (
       filters?: MapSearchFilters,
-      options?: { revealResults?: boolean }
+      options?: { revealResults?: boolean; force?: boolean }
     ) => {
       const active = filters ?? currentMapFilters();
+      const searchKey = filtersSearchKey(active);
+      if (pendingSearchKeyRef.current === searchKey) return;
+      if (!options?.force && completedSearchKeyRef.current === searchKey) return;
+      pendingSearchKeyRef.current = searchKey;
       setTaxonomyHighlight(null);
-      setSearching(true);
       setSearchError(null);
+      const isInitialSearch = results === null;
+      if (isInitialSearch) {
+        setSearching(true);
+      } else {
+        setSearchRefreshing(true);
+      }
       const authorQuery = normalizeAuthorSearchQuery(active.author);
       const affiliationQuery = active.affiliation.trim();
       const authorSearch = authorQuery.length >= 2;
@@ -197,8 +250,8 @@ export function HomePage() {
               })
             : Promise.resolve(null);
 
-        setAuthorResearchLoading(authorSearch);
-        setInstitutionResearchLoading(institutionSearch);
+        setAuthorResearchLoading(authorSearch && authorResearch === null);
+        setInstitutionResearchLoading(institutionSearch && institutionResearch === null);
         const [pubsResponse, researcherResponse, institutionResponse] = await Promise.all([
           pubsRequest,
           researcherRequest,
@@ -213,6 +266,7 @@ export function HomePage() {
         setInstitutionResearch(
           institutionResponse ? institutionResponse.data : null
         );
+        completedSearchKeyRef.current = searchKey;
         syncMapUrlFromFilters(active);
         if (options?.revealResults) {
           userDismissedResultsRailRef.current = false;
@@ -226,23 +280,55 @@ export function HomePage() {
         setAuthorResearch(null);
         setInstitutionResearch(null);
       } finally {
+        if (pendingSearchKeyRef.current === searchKey) {
+          pendingSearchKeyRef.current = null;
+        }
         setSearching(false);
+        setSearchRefreshing(false);
         setAuthorResearchLoading(false);
         setInstitutionResearchLoading(false);
       }
     },
-    [currentMapFilters, data?.publications, syncMapUrlFromFilters]
+    [
+      currentMapFilters,
+      data?.publications,
+      syncMapUrlFromFilters,
+      filtersSearchKey,
+      results,
+      authorResearch,
+      institutionResearch,
+    ]
   );
 
   const applyDeepLinkSearch = useCallback(
     (patch: { author?: string; affiliation?: string; location?: string }) => {
-      skipAutoSearchRef.current = false;
       userDismissedResultsRailRef.current = false;
       const nextAuthor = patch.author !== undefined ? patch.author : author;
       const nextAffiliation =
         patch.affiliation !== undefined ? patch.affiliation : affiliation;
       const nextLocation = patch.location !== undefined ? patch.location : location;
       const nextRegion = patch.location !== undefined ? null : mapRegion;
+      const nextFilters: MapSearchFilters = {
+        author: patch.author !== undefined ? patch.author : nextAuthor,
+        affiliation:
+          patch.affiliation !== undefined ? patch.affiliation : nextAffiliation,
+        title,
+        location: nextLocation,
+        mapRegion: nextRegion,
+        categoryId,
+        subCategoryId,
+      };
+      const filtersUnchanged =
+        filtersSearchKey(nextFilters) === filtersSearchKey(currentMapFilters());
+
+      if (filtersUnchanged && results !== null) {
+        setResultsRailOpen(true);
+        setResultsRailCollapsed(false);
+        syncMapUrlFromFilters(nextFilters);
+        return;
+      }
+
+      skipAutoSearchRef.current = true;
 
       if (patch.author !== undefined) {
         setAuthor(patch.author);
@@ -257,42 +343,47 @@ export function HomePage() {
         setMapRegion(null);
       }
 
-      void runSearch(
-        {
-          author: patch.author !== undefined ? patch.author : nextAuthor,
-          affiliation:
-            patch.affiliation !== undefined ? patch.affiliation : nextAffiliation,
-          title,
-          location: nextLocation,
-          mapRegion: nextRegion,
-          categoryId,
-          subCategoryId,
-        },
-        { revealResults: true }
-      );
+      void runSearch(nextFilters, { revealResults: true });
     },
-    [author, affiliation, title, location, mapRegion, categoryId, subCategoryId, runSearch]
+    [
+      author,
+      affiliation,
+      title,
+      location,
+      mapRegion,
+      categoryId,
+      subCategoryId,
+      results,
+      runSearch,
+      syncMapUrlFromFilters,
+      filtersSearchKey,
+      currentMapFilters,
+    ]
   );
 
   const applyDeepLinkSearchRef = useRef(applyDeepLinkSearch);
   applyDeepLinkSearchRef.current = applyDeepLinkSearch;
 
   useEffect(() => {
+    if (suppressDeepLinkApplyRef.current) return;
     if (!mapDeepLink.author) return;
     applyDeepLinkSearchRef.current({ author: mapDeepLink.author });
   }, [mapDeepLink.author]);
 
   useEffect(() => {
+    if (suppressDeepLinkApplyRef.current) return;
     if (!mapDeepLink.affiliation) return;
     applyDeepLinkSearchRef.current({ affiliation: mapDeepLink.affiliation });
   }, [mapDeepLink.affiliation]);
 
   useEffect(() => {
+    if (suppressDeepLinkApplyRef.current) return;
     setLocation(mapDeepLink.location ?? "");
     if (mapDeepLink.location) skipAutoSearchRef.current = false;
   }, [mapDeepLink.location]);
 
   useEffect(() => {
+    if (suppressDeepLinkApplyRef.current) return;
     setCategoryId(mapDeepLink.categoryId ?? "");
     setSubCategoryId(mapDeepLink.subCategoryId ?? "");
     if (mapDeepLink.categoryId || mapDeepLink.subCategoryId) {
@@ -361,6 +452,7 @@ export function HomePage() {
     setAuthorResearchLoading(false);
     setInstitutionResearch(null);
     setInstitutionResearchLoading(false);
+    setSearchRefreshing(false);
     setResultsRailOpen(false);
     setResultsRailCollapsed(false);
     setSelectedPublicationId(null);
@@ -380,7 +472,9 @@ export function HomePage() {
       if (patch.categoryId !== undefined) setCategoryId(patch.categoryId);
       if (patch.subCategoryId !== undefined) setSubCategoryId(patch.subCategoryId);
 
-      if (searchPanelOpen) return;
+      const realtimeLocationChange =
+        patch.location !== undefined || patch.mapRegion !== undefined;
+      if (searchPanelOpen && !realtimeLocationChange) return;
       skipAutoSearchRef.current = false;
     },
     [searchPanelOpen]
@@ -398,6 +492,7 @@ export function HomePage() {
     setDeepLinkPub(null);
     returnToMapOverview();
     skipAutoSearchRef.current = true;
+    completedSearchKeyRef.current = null;
     clearMapSearchUrl();
   }, [clearMapSearchUrl, returnToMapOverview]);
 
@@ -437,29 +532,54 @@ export function HomePage() {
 
   useEffect(() => {
     if (skipAutoSearchRef.current) return;
-    if (searchPanelOpen) return;
-    if (!hasImmediateMapFilters) return;
-    void runSearch({
+
+    const filters: MapSearchFilters = {
       author,
       affiliation,
       title,
-      location,
+      location: debouncedLocation,
       mapRegion,
       categoryId,
       subCategoryId,
-    });
+    };
+    if (!mapFiltersActive(filters)) return;
+
+    const locationTypingRealtime =
+      searchPanelOpen && (location.trim().length >= 2 || mapRegion);
+    if (searchPanelOpen && !locationTypingRealtime) return;
+    if (
+      searchPanelOpen &&
+      !mapRegion &&
+      location.trim().toLowerCase() !== debouncedLocation.trim().toLowerCase()
+    ) {
+      return;
+    }
+
+    void runSearch(filters);
   }, [
-    hasImmediateMapFilters,
     author,
     affiliation,
     title,
+    debouncedLocation,
     location,
     mapRegion,
     categoryId,
     subCategoryId,
     searchPanelOpen,
     runSearch,
+    mapFiltersActive,
   ]);
+
+  const adTargetingContext = useMemo(
+    () => ({
+      categoryId: categoryId ? Number(categoryId) : undefined,
+      subCategoryId: subCategoryId ? Number(subCategoryId) : undefined,
+      location: debouncedAdLocation || undefined,
+      affiliation: affiliation.trim() || undefined,
+      title: title.trim() || undefined,
+    }),
+    [categoryId, subCategoryId, debouncedAdLocation, affiliation, title]
+  );
 
   const mapPublications = data?.publications ?? [];
 
@@ -553,12 +673,13 @@ export function HomePage() {
       {!mapExpanded && <PublicNav variant="map" />}
 
       <main ref={mapChromeBoundsRef} className="relative min-h-0 flex-1">
-        <div className="absolute inset-0">
+        <div className={`absolute inset-0 ${isLoading ? "" : "map-canvas-enter"}`}>
           {isLoading ? (
-            <div className="flex h-full items-center justify-center bg-slate-100">
-              <div className="animate-pulse opacity-40">
+            <div className="map-canvas-loading flex h-full flex-col items-center justify-center gap-4 bg-gradient-to-b from-slate-100 to-slate-200/80">
+              <div className="animate-pulse opacity-50">
                 <BrandMark symbol="full" variant="light" size="md" />
               </div>
+              <p className="text-xs font-medium text-slate-500">Loading map…</p>
             </div>
           ) : (
             <ResearchMap
@@ -584,10 +705,18 @@ export function HomePage() {
         {isError && !isLoading && (
           <div className="pointer-events-none absolute left-1/2 top-24 z-[1001] -translate-x-1/2 max-w-md px-4 md:top-20">
             <p className="pointer-events-auto rounded-2xl bg-red-600 px-4 py-3 text-center text-sm text-white shadow-lg">
-              Cannot load the map. Start the API (
-              <code className="text-xs">pubmap-backend ./start.sh</code>). For ngrok, use{" "}
-              <code className="text-xs">VITE_API_URL=/api</code> and tunnel port{" "}
-              <code className="text-xs">3099</code>.
+              {mapRateLimited ? (
+                <>
+                  Too many requests. Retry shortly.
+                </>
+              ) : (
+                <>
+                  Cannot load the map. Start the API (
+                  <code className="text-xs">pubmap-backend ./start.sh</code>). For ngrok, use{" "}
+                  <code className="text-xs">VITE_API_URL=/api</code> and tunnel port{" "}
+                  <code className="text-xs">3099</code>.
+                </>
+              )}
               <button
                 type="button"
                 className="mt-2 block w-full rounded-lg bg-white/20 py-1.5 text-xs font-semibold hover:bg-white/30"
@@ -625,6 +754,7 @@ export function HomePage() {
             suggestionSource={mapPublications}
             resultCount={publications.length}
             searching={searching}
+            searchRefreshing={searchRefreshing}
             searchError={searchError}
             hasResults={hasSearched}
             resultsPanelVisible={resultsRailOpen && !resultsRailCollapsed}
@@ -673,7 +803,7 @@ export function HomePage() {
             onClick={() => setMapExpanded(false)}
             className="pointer-events-auto absolute left-4 top-[max(0.75rem,env(safe-area-inset-top))] z-[1300] rounded-full bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-sm hover:bg-slate-900"
           >
-            Exit expanded map
+            Exit map
           </button>
         )}
 
@@ -688,6 +818,7 @@ export function HomePage() {
             affiliationQuery={affiliation.trim()}
             titleQuery={title.trim()}
             locationQuery={location.trim() || mapRegion?.label || ""}
+            searchRefreshing={searchRefreshing}
             open={resultsRailOpen}
             collapsed={resultsRailCollapsed}
             onToggleCollapse={() => setResultsRailCollapsed((c) => !c)}
@@ -698,33 +829,14 @@ export function HomePage() {
           />
         )}
 
-        <div className="pointer-events-none absolute bottom-32 z-[1000] hidden w-[min(100%,240px)] md:right-16 md:block lg:bottom-28 lg:right-20">
-          <GreAdPlacement
-            placement="sidebar"
-            limit={4}
-            rotate
-            context={{
-              categoryId: categoryId ? Number(categoryId) : undefined,
-              subCategoryId: subCategoryId ? Number(subCategoryId) : undefined,
-              location: location.trim() || mapRegion?.label || undefined,
-              affiliation: affiliation.trim() || undefined,
-              title: title.trim() || undefined,
-            }}
-            className="pointer-events-auto space-y-3"
-          />
-          <GreAdPlacement
-            placement="research_tool"
-            limit={2}
-            rotate
-            context={{
-              categoryId: categoryId ? Number(categoryId) : undefined,
-              subCategoryId: subCategoryId ? Number(subCategoryId) : undefined,
-              location: location.trim() || mapRegion?.label || undefined,
-              affiliation: affiliation.trim() || undefined,
-            }}
-            className="pointer-events-auto mt-3 space-y-3"
-          />
-        </div>
+        {showMapSidebarAds && (
+          <div className="map-ad-rail pointer-events-none absolute bottom-32 right-16 z-[1000] w-[min(100%,240px)] lg:bottom-28 lg:right-20">
+            <MapAdRail
+              enabled={Boolean(data) && !isError}
+              context={adTargetingContext}
+            />
+          </div>
+        )}
       </main>
 
       {!mapExpanded && (

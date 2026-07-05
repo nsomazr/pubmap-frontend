@@ -28,7 +28,7 @@ import {
   greAccountStatPublished,
   greAccountStatRevision,
 } from "../../lib/greTheme";
-import { pickActivityTrend } from "../../lib/sparkline";
+import { pickActivityTrendPoints } from "../../lib/sparkline";
 import { canAccessReviewQueue, isPlatformAdmin } from "../../lib/userAccess";
 import type { CoAuthorLinkSummary, DashboardStats } from "../../types";
 import { DashboardSection } from "../../components/dashboard/DashboardSection";
@@ -196,7 +196,7 @@ export function DashboardHome() {
               user={user}
               name={displayName}
               size="lg"
-              className="!h-14 !w-14 shrink-0 !rounded-xl !text-base sm:!h-16 sm:!w-16"
+              className="!h-14 !w-14 shrink-0 !rounded-full !text-base sm:!h-16 sm:!w-16"
             />
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -273,12 +273,12 @@ export function DashboardHome() {
         </div>
       </section>
 
-      <DashboardSection title="Workflow" subtitle="Last 8 months of activity">
+      <DashboardSection title="Workflow" subtitle="Monthly counts · last 8 months">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {WORKFLOW_METRICS.map(
             ({ id, label, hint, icon, status, statKey, trendKey, colors, sparkColor }) => {
               const value = stats?.[statKey] ?? 0;
-              const sparkline = pickActivityTrend(stats?.activity_trend, trendKey);
+              const trendPoints = pickActivityTrendPoints(stats?.activity_trend, trendKey);
               return (
                 <MetricTile
                   key={id}
@@ -289,8 +289,8 @@ export function DashboardHome() {
                   loading={isLoading}
                   valueClassName={colors.color}
                   to={`/dashboard/publications?status=${status}`}
-                  sparkline={sparkline}
-                  sparklineColor={sparkColor}
+                  trendPoints={trendPoints}
+                  chartColor={sparkColor}
                 />
               );
             }

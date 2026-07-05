@@ -1,12 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
-import { ArrowLeft, PencilLine } from "lucide-react";
+import { Navigate, useParams } from "react-router-dom";
 import api from "../../lib/api";
-import {
-  buildDashboardPublicationPath,
-  publicationApiSegment,
-} from "../../lib/publicationPaths";
+import { publicationApiSegment } from "../../lib/publicationPaths";
+import { useAuth } from "../../context/AuthContext";
+import { PublicationOwnerToolbar } from "../../components/publication/PublicationOwnerToolbar";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
 import { ReportPlagiarismDialog } from "../../components/publication/ReportPlagiarismDialog";
 import { PublicationViewShell } from "../../components/publication/PublicationViewShell";
@@ -16,7 +14,6 @@ import {
   publicationHasUploadedManuscriptPdf,
   publicationHasViewablePdf,
 } from "../../lib/publicationReadable";
-import { PublicationManuscriptPdfSection } from "../../components/publication/PublicationManuscriptPdfSection";
 import { PublicationDiscussions } from "../../components/publication/PublicationDiscussions";
 import { CoAuthorsPanel } from "../../components/publication/CoAuthorsPanel";
 import { PublicationDownloadPanel } from "../../components/publication/PublicationDownloadPanel";
@@ -44,6 +41,7 @@ function formatPublishedDate(value?: string): string | undefined {
 
 export function PublicationReaderPage() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [reportOpen, setReportOpen] = useState(false);
   const { data: pub, isLoading, isError } = useQuery({
     queryKey: ["publication-reader", id],
@@ -89,24 +87,11 @@ export function PublicationReaderPage() {
     title: pub.title,
   };
 
+  const isOwner = user?.id != null && pub.author?.id === user.id;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <Link
-          to="/dashboard/publications"
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-200"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to publications
-        </Link>
-        <Link
-          to={buildDashboardPublicationPath(pub.id, pub.encoded_id)}
-          className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
-        >
-          <PencilLine className="h-4 w-4" />
-          Edit publication
-        </Link>
-      </div>
+      <PublicationOwnerToolbar publication={pub} isOwner={isOwner} />
 
       <PublicationViewShell
         publication={pub}
@@ -159,13 +144,8 @@ export function PublicationReaderPage() {
             initialLikedByMe={pub.liked_by_me ?? false}
             initialShareCount={pub.share_count ?? 0}
             showViewPaper={showViewPaperPdf}
-          />
-
-          <PublicationManuscriptPdfSection
-            publicationId={pub.id}
-            encodedId={pub.encoded_id}
-            show={showUploadedManuscriptPdf}
-            fallbackToSummaryPdf={false}
+            showManuscript={showUploadedManuscriptPdf}
+            manuscriptFallbackToSummaryPdf={false}
           />
 
           <CoAuthorsPanel publication={pub} />

@@ -34,7 +34,7 @@ export function MapAdvancedControls({
     <div className="gre-map-advanced pointer-events-none absolute bottom-14 left-3 z-[1002] flex max-w-[min(92vw,20rem)] flex-col gap-2">
       <button
         type="button"
-        className="pointer-events-auto flex w-fit flex-col items-start gap-0.5 rounded-2xl bg-white/95 px-3 py-2 text-left shadow-md ring-1 ring-slate-200/90 backdrop-blur-sm transition hover:bg-white"
+        className="map-chrome-glass gre-interactive pointer-events-auto flex w-fit flex-col items-start gap-0.5 rounded-2xl px-3 py-2 text-left shadow-md ring-1 ring-slate-200/90 hover:bg-white"
         onClick={() => onCollapsedChange?.(!collapsed)}
         aria-expanded={!collapsed}
       >
@@ -53,7 +53,7 @@ export function MapAdvancedControls({
       </button>
 
       {!collapsed && (
-        <div className="pointer-events-auto rounded-2xl bg-white/95 p-3 shadow-lg ring-1 ring-slate-200/90 backdrop-blur-sm">
+        <div className="map-chrome-glass map-layers-panel pointer-events-auto rounded-2xl p-3 shadow-lg ring-1 ring-slate-200/90">
           <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
             Basemap
           </p>
@@ -86,7 +86,7 @@ export function MapAdvancedControls({
                 onChange={(e) => set({ showHeat: e.target.checked })}
               />
               <Flame className="h-3.5 w-3.5 text-orange-500" aria-hidden />
-              Density heatmap
+              Heatmap
             </label>
             <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-700 hover:bg-slate-50">
               <input
@@ -96,7 +96,7 @@ export function MapAdvancedControls({
                 onChange={(e) => set({ showClusters: e.target.checked })}
               />
               <CircleDot className="h-3.5 w-3.5 text-brand-600" aria-hidden />
-              Cluster markers
+              Clusters
             </label>
           </div>
 

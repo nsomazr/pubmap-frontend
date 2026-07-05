@@ -3,10 +3,11 @@ import { Building2, GraduationCap, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../lib/api";
-import { greAccentBadge, greIconBrand } from "../lib/greTheme";
 import { institutionMapUrl } from "../lib/institutionLinks";
 import { INSTITUTION_SORT_OPTIONS, RESEARCHER_SORT_OPTIONS } from "../lib/rankings";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
+import { PublicEmptyState } from "../components/layout/PublicEmptyState";
+import { PublicPageTabs } from "../components/layout/PublicPageTabs";
 import { PageAdAside } from "../components/ads/PageAdAside";
 import { RankedNameLabel } from "../components/rankings/RankedNameLabel";
 import { UserAvatar } from "../components/ui/UserAvatar";
@@ -26,24 +27,22 @@ function SortSelect<T extends string>({
 }: {
   value: T;
   onChange: (v: T) => void;
-  options: { value: T; label: string; description?: string }[];
+  options: { value: T; label: string }[];
 }) {
   return (
-    <label className="inline-flex max-w-full flex-col gap-1.5 text-sm text-slate-600 sm:items-end">
-      <span className="inline-flex items-center gap-2 font-medium">
-        Sort by
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value as T)}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-ink shadow-sm focus:border-brand-500 gre-field focus:outline-none focus:ring-0"
-        >
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </span>
+    <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+      <span className="font-medium">Sort</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-ink focus:border-brand-500 gre-field focus:outline-none focus:ring-0"
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }
@@ -79,189 +78,165 @@ export function RankingsPage() {
     <PublicPageLayout
       wide
       compactHero
-      accent="teal"
-      badge="Community & impact"
-      title="Research Rankings"
+      title="Rankings"
+      subtitle="Institutions and researchers by publications and community impact. Stars: 1 per 500 institution papers, 1 per 10 researcher papers."
       crumbs={[{ label: "Home", to: "/" }, { label: "Rankings" }]}
     >
       <PageAdAside primaryPlacement="rankings_sidebar" secondaryPlacement="research_tool">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="inline-flex rounded-2xl bg-slate-100 p-1 ring-1 ring-slate-200/80">
-          <button
-            type="button"
-            onClick={() => setTab("institutions")}
-            className={`gre-interactive inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold ${
-              tab === "institutions"
-                ? "bg-white text-brand-700 shadow-sm"
-                : "text-slate-600 hover:text-ink"
-            }`}
-          >
-            <Building2 className="h-4 w-4" />
-            Institution rankings
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("researchers")}
-            className={`gre-interactive inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold ${
-              tab === "researchers"
-                ? "bg-white text-brand-700 shadow-sm"
-                : "text-slate-600 hover:text-ink"
-            }`}
-          >
-            <GraduationCap className="h-4 w-4" />
-            Researcher rankings
-          </button>
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <PublicPageTabs
+            active={tab}
+            onSelect={(id) => setTab(id as Tab)}
+            tabs={[
+              {
+                kind: "button",
+                id: "institutions",
+                label: "Institutions",
+                icon: <Building2 className="h-4 w-4" />,
+              },
+              {
+                kind: "button",
+                id: "researchers",
+                label: "Researchers",
+                icon: <GraduationCap className="h-4 w-4" />,
+              },
+            ]}
+          />
+
+          {tab === "institutions" ? (
+            <SortSelect
+              value={instSort}
+              onChange={setInstSort}
+              options={INSTITUTION_SORT_OPTIONS.map((row) => ({
+                value: row.value,
+                label: row.label,
+              }))}
+            />
+          ) : (
+            <SortSelect
+              value={researcherSort}
+              onChange={setResearcherSort}
+              options={RESEARCHER_SORT_OPTIONS.map((row) => ({
+                value: row.value,
+                label: row.label,
+              }))}
+            />
+          )}
         </div>
 
         {tab === "institutions" ? (
-          <SortSelect value={instSort} onChange={setInstSort} options={INSTITUTION_SORT_OPTIONS} />
-        ) : (
-          <SortSelect
-            value={researcherSort}
-            onChange={setResearcherSort}
-            options={RESEARCHER_SORT_OPTIONS}
-          />
-        )}
-      </div>
-
-      {tab === "institutions" ? (
-        instLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-200/70" />
-            ))}
-          </div>
-        ) : institutions.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-10 text-center">
-            <Building2 className="mx-auto h-10 w-10 text-slate-300" />
-            <p className="mt-3 font-medium text-slate-600">No institution data yet</p>
-            <p className="mt-1 text-sm text-slate-400">
-              Rankings appear as published studies include affiliations.
-            </p>
-          </div>
-        ) : (
-          <div className="gre-stagger space-y-3">
-            {institutions.map((inst, index) => (
-              <article
-                key={inst.slug}
-                className="gre-card gre-card-hover group flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="flex min-w-0 items-start gap-4">
-                  <div
-                    className={`${greAccentBadge} h-12 w-12 shrink-0 rounded-2xl text-lg shadow-md`}
-                  >
+          instLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="gre-skeleton h-20 rounded-xl" />
+              ))}
+            </div>
+          ) : institutions.length === 0 ? (
+            <PublicEmptyState
+              icon={Building2}
+              title="No institution data yet"
+              description="Rankings appear as published studies include affiliations."
+            />
+          ) : (
+            <div className="space-y-2">
+              {institutions.map((inst, index) => (
+                <article
+                  key={inst.slug}
+                  className="gre-interactive gre-public-card flex items-start gap-3 p-4 sm:gap-4"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-sm font-bold text-brand-700">
                     {index + 1}
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="text-lg font-semibold text-ink group-hover:text-brand-700">
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-base font-semibold text-ink">
                       <Link
                         to={inst.map_url || institutionMapUrl(inst.name)}
-                        className="hover:underline"
+                        className="hover:text-brand-700"
                       >
                         <RankedNameLabel
                           name={inst.name}
                           stars={inst.stars}
-                          nameClassName="text-lg font-semibold text-ink group-hover:text-brand-700"
+                          nameClassName="text-base font-semibold text-ink"
                           showBadges={false}
                         />
                       </Link>
                     </h2>
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-slate-500">
                       {inst.total_publications.toLocaleString()} published ·{" "}
                       {(inst.total_conversations ?? inst.total_discussions).toLocaleString()}{" "}
-                      {(inst.total_conversations ?? inst.total_discussions) === 1
-                        ? "discussion"
-                        : "discussions"}
-                      {inst.total_responses != null ? (
-                        <>
-                          {" "}
-                          · {inst.total_responses.toLocaleString()}{" "}
-                          {inst.total_responses === 1 ? "response" : "responses"}
-                        </>
-                      ) : null}
+                      discussions
+                      {inst.total_responses != null
+                        ? ` · ${inst.total_responses.toLocaleString()} responses`
+                        : ""}
                       {" · "}
-                      {inst.total_researchers.toLocaleString()}{" "}
-                      {inst.total_researchers === 1 ? "researcher" : "researchers"}
+                      {inst.total_researchers.toLocaleString()} researchers
                     </p>
                     {instSort === "growth" ? (
-                      <p className="mt-1 text-xs font-semibold text-brand-800">
-                        <TrendingUp className={`mr-1 inline h-3.5 w-3.5 ${greIconBrand}`} />
+                      <p className="mt-1 text-xs font-medium text-brand-800">
+                        <TrendingUp className="mr-1 inline h-3.5 w-3.5" />
                         {inst.growth_rate > 0 ? "+" : ""}
-                        {inst.growth_rate}% growth (90-day)
+                        {inst.growth_rate}% (90-day)
                       </p>
                     ) : null}
                   </div>
-                </div>
-              </article>
+                </article>
+              ))}
+            </div>
+          )
+        ) : resLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="gre-skeleton h-20 rounded-xl" />
             ))}
           </div>
-        )
-      ) : resLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-200/70" />
-          ))}
-        </div>
-      ) : researchers.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-10 text-center">
-          <GraduationCap className="mx-auto h-10 w-10 text-slate-300" />
-          <p className="mt-3 font-medium text-slate-600">No researcher rankings yet</p>
-        </div>
-      ) : (
-        <div className="gre-stagger space-y-3">
-          {researchers.map((person, index) => (
-            <article
-              key={person.user_id}
-              className="gre-card gre-card-hover flex flex-col gap-4 p-5 sm:flex-row sm:items-center"
-            >
-              <div className="flex min-w-0 flex-1 items-start gap-4">
+        ) : researchers.length === 0 ? (
+          <PublicEmptyState
+            icon={GraduationCap}
+            title="No researcher rankings yet"
+            description="Rankings appear for registered authors with published GRE papers."
+          />
+        ) : (
+          <div className="space-y-2">
+            {researchers.map((person, index) => (
+              <article
+                key={person.user_id}
+                className="gre-interactive gre-public-card flex items-start gap-3 p-4 sm:gap-4"
+              >
                 <div className="relative shrink-0">
                   <UserAvatar
                     name={person.name}
                     photoUrl={person.photo}
                     size="md"
-                    className="h-14 w-14 border-2 border-white text-lg shadow-md"
+                    className="h-11 w-11 border border-slate-200"
                   />
-                  <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-[10px] font-bold text-brand-700 ring-2 ring-brand-100">
+                  <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[9px] font-bold text-brand-700 ring-1 ring-slate-200">
                     {index + 1}
                   </span>
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <h2 className="font-semibold text-ink">
-                    <Link
-                      to={`/researcher/${person.user_id}`}
-                      className="transition hover:text-brand-700"
-                    >
+                    <Link to={`/researcher/${person.user_id}`} className="hover:text-brand-700">
                       <RankedNameLabel
                         name={person.name}
                         ranking={person}
-                        nameClassName="font-semibold text-ink transition group-hover:text-brand-700"
+                        registered
+                        nameClassName="font-semibold text-ink"
                       />
                     </Link>
                   </h2>
                   {person.affiliation && (
                     <p className="mt-0.5 truncate text-sm text-slate-500">{person.affiliation}</p>
                   )}
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-slate-500">
                     {person.published_count} published ·{" "}
-                    {person.conversation_count ?? person.discussion_count}{" "}
-                    {(person.conversation_count ?? person.discussion_count) === 1
-                      ? "discussion"
-                      : "discussions"}
-                    {person.response_count != null ? (
-                      <>
-                        {" "}
-                        · {person.response_count}{" "}
-                        {person.response_count === 1 ? "response" : "responses"}
-                      </>
-                    ) : null}
+                    {person.conversation_count ?? person.discussion_count} discussions
+                    {person.response_count != null ? ` · ${person.response_count} responses` : ""}
                   </p>
                 </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
+              </article>
+            ))}
+          </div>
+        )}
       </PageAdAside>
     </PublicPageLayout>
   );

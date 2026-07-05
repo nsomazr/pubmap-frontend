@@ -4,26 +4,14 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
-  FileText,
-  MessageSquare,
-  MoreHorizontal,
   Share2,
   ThumbsUp,
 } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { greDoiDisplayPath } from "../../lib/publicationGre";
 import { grePaperCode } from "../../lib/grePaperTitle";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import { createPortal } from "react-dom";
 import api from "../../lib/api";
-import { summaryPdfUrl } from "../../lib/publicationGre";
+import { manuscriptPdfUrl, summaryPdfUrl } from "../../lib/publicationGre";
 import { PdfPreview } from "./PdfPreview";
 import { PublicationPageSection } from "./PublicationPageSection";
 import { mediaUrl } from "../../lib/mediaUrl";
@@ -31,6 +19,7 @@ import type { GreDocument, PublicationGre } from "../../lib/publicationGre";
 import { buildPublicationPath } from "../../lib/publicationPaths";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../ui/ToastProvider";
+
 interface Props {
   publicationId: number;
   gre?: PublicationGre;
@@ -44,45 +33,64 @@ interface Props {
   initialLikesCount?: number;
   initialLikedByMe?: boolean;
   initialShareCount?: number;
-  /** Show “View paper” to toggle inline PDF preview (uploaded manuscript, else GRE PDF). */
   showViewPaper?: boolean;
+  showManuscript?: boolean;
+  manuscriptFallbackToSummaryPdf?: boolean;
 }
 
-function MenuSection({ title, children }: { title: string; children: ReactNode }) {
+const actionBtn =
+  "inline-flex min-h-[2.75rem] w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition";
+
+function DocumentGroup({
+  label,
+  hint,
+  columns = 2,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  columns?: 1 | 2;
+  children: ReactNode;
+}) {
   return (
-    <div className="py-1">
-      <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-        {title}
-      </p>
-      <div className="space-y-0.5">{children}</div>
+    <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4">
+      <div>
+        <p className="text-sm font-semibold text-slate-800">{label}</p>
+        {hint ? <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{hint}</p> : null}
+      </div>
+      <div
+        className={`mt-3 grid gap-2 ${
+          columns === 2 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
+        }`}
+      >
+        {children}
+      </div>
     </div>
   );
 }
 
-function MenuItem({
-  children,
+function ShareIconButton({
+  label,
   onClick,
   href,
   external,
-  icon: Icon,
+  disabled,
+  active,
+  children,
 }: {
-  children: ReactNode;
+  label: string;
   onClick?: () => void;
   href?: string;
   external?: boolean;
-  icon: React.ComponentType<{ className?: string }>;
+  disabled?: boolean;
+  active?: boolean;
+  children: ReactNode;
 }) {
-  const className =
-    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-brand-50 hover:text-brand-800";
-
-  const inner = (
-    <>
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-        <Icon className="h-4 w-4" />
-      </span>
-      <span className="min-w-0 flex-1">{children}</span>
-    </>
-  );
+  const className = `inline-flex h-10 w-10 items-center justify-center rounded-xl border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+    active
+      ? "border-brand-200 bg-brand-50 text-brand-700"
+      : "border-slate-200 bg-white text-slate-600 hover:border-brand-200 hover:text-brand-700"
+  }`;
 
   if (href) {
     return (
@@ -91,16 +99,25 @@ function MenuItem({
         target={external ? "_blank" : undefined}
         rel={external ? "noopener noreferrer" : undefined}
         onClick={onClick}
+        aria-label={label}
+        title={label}
         className={className}
       >
-        {inner}
+        {children}
       </a>
     );
   }
 
   return (
-    <button type="button" onClick={onClick} className={className}>
-      {inner}
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={className}
+    >
+      {children}
     </button>
   );
 }
@@ -119,20 +136,13 @@ export function PublicationDownloadPanel({
   initialLikedByMe = false,
   initialShareCount = 0,
   showViewPaper = true,
+  showManuscript = false,
+  manuscriptFallbackToSummaryPdf = true,
 }: Props) {
   const { user } = useAuth();
   const toast = useToast();
-  const menuWrapRef = useRef<HTMLDivElement>(null);
-  const menuTriggerRef = useRef<HTMLButtonElement>(null);
-  const menuPanelRef = useRef<HTMLDivElement>(null);
-  const [menuRect, setMenuRect] = useState<{
-    left: number;
-    top: number;
-    width: number;
-    openUp: boolean;
-  } | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [pdfOpen, setPdfOpen] = useState(false);
+  const [grePdfOpen, setGrePdfOpen] = useState(false);
+  const [manuscriptOpen, setManuscriptOpen] = useState(false);
   const [likesCount, setLikesCount] = useState(initialLikesCount);
   const [likedByMe, setLikedByMe] = useState(initialLikedByMe);
   const [shareCount, setShareCount] = useState(initialShareCount);
@@ -140,7 +150,7 @@ export function PublicationDownloadPanel({
 
   const manuscript = documents.find((d) => !d.kind || d.kind === "manuscript") ?? documents[0];
   const supplementary = documents.filter((d) => d.kind === "supplementary");
-  const fullUrl = manuscript?.document ? mediaUrl(manuscript.document) : null;
+  const uploadedPdfUrl = manuscript?.document ? mediaUrl(manuscript.document) : null;
   const closedAccess = isClosed || gre?.access_type === "closed";
   const doi = greDoi || gre?.gre_doi || null;
   const doiHref = greDoiUrl || gre?.gre_doi_url || (doi ? greDoiDisplayPath(doi) : null);
@@ -150,8 +160,10 @@ export function PublicationDownloadPanel({
     [publicationId, encodedId]
   );
 
-  const summaryPdfPreviewUrl = summaryPdfUrl(publicationId, { inline: true, encodedId });
-  const pdfPreviewPrimaryUrl = summaryPdfPreviewUrl;
+  const grePdfPreviewUrl = summaryPdfUrl(publicationId, { inline: true, encodedId });
+  const manuscriptPreviewUrl = manuscriptPdfUrl(publicationId, { inline: true, encodedId });
+  const manuscriptDownloadUrl = manuscriptPdfUrl(publicationId, { encodedId });
+  const summaryFallbackUrl = summaryPdfUrl(publicationId, { inline: true, encodedId });
 
   useEffect(() => {
     setLikesCount(initialLikesCount);
@@ -164,64 +176,6 @@ export function PublicationDownloadPanel({
   useEffect(() => {
     setShareCount(initialShareCount);
   }, [initialShareCount]);
-
-  const updateMenuRect = useCallback(() => {
-    const trigger = menuTriggerRef.current;
-    if (!trigger) return;
-    const rect = trigger.getBoundingClientRect();
-    const gap = 8;
-    const width = Math.min(288, window.innerWidth - 16);
-    const left = Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8));
-    const panelHeight = menuPanelRef.current?.offsetHeight ?? 280;
-    const spaceBelow = window.innerHeight - rect.bottom - gap;
-    const spaceAbove = rect.top - gap;
-    const openUp = spaceBelow < panelHeight && spaceAbove > spaceBelow;
-    setMenuRect({
-      left,
-      top: openUp ? rect.top - gap : rect.bottom + gap,
-      width,
-      openUp,
-    });
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!menuOpen) {
-      setMenuRect(null);
-      return;
-    }
-    updateMenuRect();
-    const raf = requestAnimationFrame(() => updateMenuRect());
-    window.addEventListener("resize", updateMenuRect);
-    window.addEventListener("scroll", updateMenuRect, true);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", updateMenuRect);
-      window.removeEventListener("scroll", updateMenuRect, true);
-    };
-  }, [menuOpen, updateMenuRect]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onPointer = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (
-        menuWrapRef.current?.contains(target) ||
-        menuPanelRef.current?.contains(target)
-      ) {
-        return;
-      }
-      setMenuOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onPointer);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onPointer);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menuOpen]);
 
   const recordDownload = () => {
     api.post("/stats/record/", { publication_id: publicationId, type: "download" }).catch(() => {});
@@ -256,7 +210,6 @@ export function PublicationDownloadPanel({
       title: "Publication link copied",
       description: "The publication link is ready to paste.",
     });
-    setMenuOpen(false);
     void recordShare("copy_link");
   };
 
@@ -290,21 +243,18 @@ export function PublicationDownloadPanel({
         title: publicationTitle || "GRE publication",
         url: publicationHref,
       });
-      setMenuOpen(false);
       void recordShare("native_share");
     } catch {
       /* user cancelled */
     }
   };
 
-  const closeMenu = () => setMenuOpen(false);
-
   const accessMeta = [doi, paperCode ? `Publication ${paperCode}` : null].filter(Boolean).join(" · ");
 
   return (
     <PublicationPageSection
       id="publication-access"
-      title="Publication access"
+      title="Downloads & sharing"
       description={
         accessMeta ? (
           <>
@@ -322,229 +272,244 @@ export function PublicationDownloadPanel({
             {paperCode ? <span>Publication {paperCode}</span> : null}
           </>
         ) : (
-          "Download the GRE PDF or use more options for uploads and sharing."
+          "Download PDFs or share this publication with colleagues."
         )
       }
     >
-      <div className="flex flex-wrap items-stretch gap-2">
-        <a
-          href={summaryPdfUrl(publicationId)}
-          onClick={() => recordDownload()}
-          className="inline-flex min-h-[2.75rem] min-w-[10rem] flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/15 transition hover:bg-brand-700 sm:flex-[1.2]"
+      <div className="space-y-3">
+        <DocumentGroup
+          label="GRE publication PDF"
+          hint={
+            closedAccess
+              ? "Open-access summary formatted for GRE."
+              : "Formatted GRE version of this study."
+          }
+          columns={showViewPaper ? 2 : 1}
         >
-          <Download className="h-4 w-4 shrink-0" aria-hidden />
-          Download GRE PDF
-        </a>
-
-        {showViewPaper ? (
-          <button
-            type="button"
-            onClick={() => setPdfOpen((open) => !open)}
-            className={`inline-flex min-h-[2.75rem] flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition sm:flex-1 ${
-              pdfOpen
-                ? "border-brand-300 bg-brand-50 text-brand-800"
-                : "border-slate-200 bg-white text-slate-700 hover:border-brand-200"
-            }`}
-            aria-expanded={pdfOpen}
+          <a
+            href={
+              closedAccess
+                ? summaryPdfUrl(publicationId, { discussions: true, encodedId })
+                : summaryPdfUrl(publicationId, { encodedId })
+            }
+            onClick={() => recordDownload()}
+            className={`${actionBtn} bg-brand-600 text-white shadow-sm shadow-brand-600/15 hover:bg-brand-700`}
           >
-            {pdfOpen ? (
-              <EyeOff className="h-4 w-4 shrink-0" aria-hidden />
-            ) : (
-              <Eye className="h-4 w-4 shrink-0" aria-hidden />
-            )}
-            {pdfOpen ? "Hide PDF" : "View GRE PDF"}
-          </button>
+            <Download className="h-4 w-4 shrink-0" aria-hidden />
+            Download
+          </a>
+          {showViewPaper ? (
+            <button
+              type="button"
+              onClick={() => setGrePdfOpen((open) => !open)}
+              className={`${actionBtn} border ${
+                grePdfOpen
+                  ? "border-brand-300 bg-brand-50 text-brand-800"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-brand-200"
+              }`}
+              aria-expanded={grePdfOpen}
+            >
+              {grePdfOpen ? (
+                <EyeOff className="h-4 w-4 shrink-0" aria-hidden />
+              ) : (
+                <Eye className="h-4 w-4 shrink-0" aria-hidden />
+              )}
+              {grePdfOpen ? "Hide preview" : "View preview"}
+            </button>
+          ) : null}
+        </DocumentGroup>
+
+        {showManuscript ? (
+          <DocumentGroup
+            label="Uploaded manuscript"
+            hint="Original PDF as submitted by the author."
+          >
+            <a
+              href={manuscriptDownloadUrl}
+              onClick={() => recordDownload()}
+              className={`${actionBtn} border border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:text-brand-800`}
+            >
+              <Download className="h-4 w-4 shrink-0" aria-hidden />
+              Download
+            </a>
+            <button
+              type="button"
+              onClick={() => setManuscriptOpen((open) => !open)}
+              className={`${actionBtn} border ${
+                manuscriptOpen
+                  ? "border-brand-300 bg-brand-50 text-brand-800"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-brand-200"
+              }`}
+              aria-expanded={manuscriptOpen}
+            >
+              {manuscriptOpen ? (
+                <EyeOff className="h-4 w-4 shrink-0" aria-hidden />
+              ) : (
+                <Eye className="h-4 w-4 shrink-0" aria-hidden />
+              )}
+              {manuscriptOpen ? "Hide preview" : "View preview"}
+            </button>
+          </DocumentGroup>
         ) : null}
 
-        <div ref={menuWrapRef} className="relative shrink-0">
-          <button
-            ref={menuTriggerRef}
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-expanded={menuOpen}
-            aria-haspopup="menu"
-            aria-label="More download and share options"
-            className={`inline-flex h-[2.75rem] w-[2.75rem] items-center justify-center rounded-xl border transition ${
-              menuOpen
-                ? "border-brand-300 bg-brand-50 text-brand-800"
-                : "border-slate-200 bg-white text-slate-600 hover:border-brand-200 hover:text-brand-700"
-            }`}
-          >
-            <MoreHorizontal className="h-5 w-5" aria-hidden />
-          </button>
+        {!closedAccess && uploadedPdfUrl && !showManuscript ? (
+          <DocumentGroup label="Uploaded PDF" hint="Author-uploaded file." columns={1}>
+            <a
+              href={uploadedPdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => recordDownload()}
+              className={`${actionBtn} border border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:text-brand-800`}
+            >
+              <Download className="h-4 w-4 shrink-0" aria-hidden />
+              Download uploaded PDF
+            </a>
+          </DocumentGroup>
+        ) : null}
 
-            {menuOpen &&
-              typeof document !== "undefined" &&
-              createPortal(
-                <div
-                  ref={menuPanelRef}
-                  role="menu"
-                  className="fixed z-[10000] max-h-[min(70vh,24rem)] overflow-y-auto overscroll-contain rounded-2xl border border-slate-200/90 bg-white py-2 shadow-xl shadow-slate-900/15 ring-1 ring-slate-100"
-                  style={
-                    menuRect
-                      ? {
-                          left: menuRect.left,
-                          top: menuRect.top,
-                          width: menuRect.width,
-                          transform: menuRect.openUp ? "translateY(-100%)" : undefined,
-                        }
-                      : { visibility: "hidden", left: 0, top: 0, width: 288 }
-                  }
+        {supplementary.length > 0 ? (
+          <div className="rounded-xl border border-slate-200/80 bg-white px-4 py-3">
+            <p className="text-sm font-semibold text-slate-800">Supplementary files</p>
+            <ul className="mt-2 space-y-1.5">
+              {supplementary.map((doc) => {
+                const href = doc.document.startsWith("http")
+                  ? doc.document
+                  : mediaUrl(doc.document);
+                if (!href) return null;
+                return (
+                  <li key={doc.id}>
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => recordDownload()}
+                      className="inline-flex items-center gap-2 text-sm font-medium text-brand-700 hover:underline"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {doc.label || "Supplementary file"}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
+
+        {gre?.external_url ? (
+          <p className="text-sm text-slate-600">
+            <span className="font-medium text-slate-700">Publisher: </span>
+            <a
+              href={gre.external_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-semibold text-brand-700 hover:underline"
+            >
+              {closedAccess ? "Request access" : "External publication"}
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </p>
+        ) : null}
+      </div>
+
+      <div className="mt-5 rounded-xl border border-slate-200/80 bg-white p-3 sm:p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-800">Share this publication</p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {likesCount > 0 || shareCount > 0
+                ? [
+                    likesCount > 0 ? `${likesCount} like${likesCount === 1 ? "" : "s"}` : null,
+                    shareCount > 0 ? `${shareCount} share${shareCount === 1 ? "" : "s"}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                : "Copy the link or share on social media."}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {user ? (
+              <button
+                type="button"
+                disabled={engagementBusy === "like"}
+                onClick={() => void handleToggleLike()}
+                className={`inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition disabled:opacity-50 ${
+                  likedByMe
+                    ? "border-brand-200 bg-brand-50 text-brand-800"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-brand-200"
+                }`}
+              >
+                <ThumbsUp className="h-4 w-4" />
+                {likedByMe ? "Liked" : "Like"}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void handleCopyLink()}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-800"
+            >
+              <Copy className="h-4 w-4" />
+              Copy link
+            </button>
+            <div className="flex items-center gap-1.5">
+              <ShareIconButton
+                label="Share on LinkedIn"
+                href={linkedInShareUrl}
+                external
+                onClick={() => void recordShare("linkedin")}
+              >
+                <Share2 className="h-4 w-4" />
+              </ShareIconButton>
+              <ShareIconButton
+                label="Share on WhatsApp"
+                href={whatsappShareUrl}
+                external
+                onClick={() => void recordShare("whatsapp")}
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden>
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.75.75 0 0 0 .917.917l4.458-1.495A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.367l-.357-.212-2.647.888.888-2.647-.212-.357A9.818 9.818 0 1 1 12 21.818z" />
+                </svg>
+              </ShareIconButton>
+              {"share" in navigator ? (
+                <ShareIconButton
+                  label="System share"
+                  disabled={engagementBusy === "share"}
+                  onClick={() => void handleNativeShare()}
                 >
-                <MenuSection title="Documents">
-                  <MenuItem
-                    icon={FileText}
-                    href={summaryPdfUrl(publicationId)}
-                    onClick={() => {
-                      recordDownload();
-                      closeMenu();
-                    }}
-                  >
-                    GRE publication PDF
-                  </MenuItem>
-                  {!closedAccess && fullUrl && (
-                    <MenuItem
-                      icon={Download}
-                      href={fullUrl}
-                      external
-                      onClick={() => {
-                        recordDownload();
-                        closeMenu();
-                      }}
-                    >
-                      Full publication (uploaded PDF)
-                    </MenuItem>
-                  )}
-                  {closedAccess && (
-                    <MenuItem
-                      icon={MessageSquare}
-                      href={summaryPdfUrl(publicationId, { discussions: true })}
-                      onClick={() => {
-                        recordDownload();
-                        closeMenu();
-                      }}
-                    >
-                      GRE PDF + discussions
-                    </MenuItem>
-                  )}
-                  {supplementary.map((doc) => {
-                    const href = doc.document.startsWith("http")
-                      ? doc.document
-                      : mediaUrl(doc.document);
-                    if (!href) return null;
-                    return (
-                      <MenuItem
-                        key={doc.id}
-                        icon={Download}
-                        href={href}
-                        external
-                        onClick={() => {
-                          recordDownload();
-                          closeMenu();
-                        }}
-                      >
-                        {doc.label || "Supplementary file"}
-                      </MenuItem>
-                    );
-                  })}
-                </MenuSection>
-
-                {gre?.external_url && (
-                  <MenuSection title="Publisher">
-                    <MenuItem
-                      icon={ExternalLink}
-                      href={gre.external_url}
-                      external
-                      onClick={closeMenu}
-                    >
-                      {closedAccess ? "Publisher access" : "External publication"}
-                    </MenuItem>
-                  </MenuSection>
-                )}
-
-                <MenuSection title="Share">
-                  <MenuItem
-                    icon={ThumbsUp}
-                    onClick={() => {
-                      void handleToggleLike();
-                      closeMenu();
-                    }}
-                  >
-                    {likedByMe ? "Unlike" : "Like"}
-                    {likesCount > 0 ? ` (${likesCount})` : ""}
-                  </MenuItem>
-                  <MenuItem icon={Copy} onClick={() => void handleCopyLink()}>
-                    Copy publication link
-                  </MenuItem>
-                  <MenuItem
-                    icon={Share2}
-                    href={linkedInShareUrl}
-                    external
-                    onClick={() => {
-                      void recordShare("linkedin");
-                      closeMenu();
-                    }}
-                  >
-                    Share on LinkedIn
-                  </MenuItem>
-                  <MenuItem
-                    icon={Share2}
-                    href={whatsappShareUrl}
-                    external
-                    onClick={() => {
-                      void recordShare("whatsapp");
-                      closeMenu();
-                    }}
-                  >
-                    Share on WhatsApp
-                  </MenuItem>
-                  {"share" in navigator && (
-                    <MenuItem
-                      icon={Share2}
-                      onClick={() => void handleNativeShare()}
-                    >
-                      System share…
-                    </MenuItem>
-                  )}
-                </MenuSection>
-                </div>,
-                document.body
-              )}
+                  <Share2 className="h-4 w-4" />
+                </ShareIconButton>
+              ) : null}
+            </div>
+          </div>
         </div>
       </div>
 
-      {(likesCount > 0 || shareCount > 0) && (
-        <p className="mt-2 text-xs text-slate-500">
-          {likesCount > 0 && (
-            <>
-              {likesCount} like{likesCount === 1 ? "" : "s"}
-            </>
-          )}
-          {likesCount > 0 && shareCount > 0 ? " · " : null}
-          {shareCount > 0 && (
-            <>
-              {shareCount} share{shareCount === 1 ? "" : "s"}
-            </>
-          )}
-        </p>
-      )}
-
-      {showViewPaper && pdfOpen && (
+      {showViewPaper && grePdfOpen ? (
         <div className="mt-5 space-y-2">
-          <p className="text-xs text-slate-500">
-            {closedAccess
-              ? "GRE publication PDF (open-access summary)"
-              : "GRE publication PDF"}
-          </p>
           <PdfPreview
-            previewUrl={pdfPreviewPrimaryUrl}
-            title={publicationTitle ? `${publicationTitle} · PDF` : "Publication PDF"}
+            previewUrl={grePdfPreviewUrl}
+            title={publicationTitle ? `${publicationTitle} · GRE PDF` : "GRE publication PDF"}
             emptyState="publication"
             layout="page"
             className="w-full"
           />
         </div>
-      )}
+      ) : null}
+
+      {showManuscript && manuscriptOpen ? (
+        <div className="mt-5 space-y-2">
+          <PdfPreview
+            previewUrl={manuscriptPreviewUrl}
+            fallbackPreviewUrl={
+              manuscriptFallbackToSummaryPdf ? summaryFallbackUrl : null
+            }
+            title={publicationTitle ? `${publicationTitle} · Manuscript` : "Uploaded manuscript"}
+            emptyState="publication"
+            layout="page"
+            className="min-h-[min(50vh,420px)] sm:min-h-[min(70vh,720px)]"
+          />
+        </div>
+      ) : null}
     </PublicationPageSection>
   );
 }

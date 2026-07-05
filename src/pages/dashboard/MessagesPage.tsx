@@ -15,6 +15,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { MessageThreadBubble } from "../../components/messages/MessageThreadBubble";
+import { PendingAttachmentPreview } from "../../components/messages/PendingAttachmentPreview";
 import { GreAvatarSlot } from "../../components/ui/GreHeroBanner";
 import { Button } from "../../components/ui/Button";
 import { useConfirm } from "../../components/ui/ConfirmDialog";
@@ -27,7 +28,6 @@ import {
 import api, { parseApiError } from "../../lib/api";
 import { looksLikeDialogueScript, sanitizeMessageDraft } from "../../lib/messageDraft";
 import {
-  formatMessageAttachmentSize,
   MESSAGE_ATTACHMENT_ACCEPT,
   validateMessageAttachmentFile,
 } from "../../lib/messageAttachments";
@@ -88,9 +88,15 @@ function partnerIdForMessage(m: Message, myId: number): number | undefined {
   return undefined;
 }
 
+function isThreadHiddenFromInbox(messages: Message[], myId: number, partnerId: number): boolean {
+  const threadMsgs = messages.filter((m) => partnerIdForMessage(m, myId) === partnerId);
+  if (threadMsgs.length === 0) return true;
+  return threadMsgs.every((m) => m.is_deleted);
+}
+
 const DRAFT_OPTIONS: { task: MessageDraftTask; label: string; needsText?: boolean; needsThread?: boolean }[] =
   [
-    { task: "draft", label: "Write intro" },
+    { task: "draft", label: "Draft intro" },
     { task: "polish", label: "Polish", needsText: true },
     { task: "shorter", label: "Shorter", needsText: true },
     { task: "follow_up", label: "Follow-up", needsThread: true },
@@ -170,6 +176,7 @@ export function MessagesPage() {
     for (const m of allMessages) {
       const pid = partnerIdForMessage(m, myId);
       if (!pid || pid === myId) continue;
+      if (isThreadHiddenFromInbox(allMessages, myId, pid)) continue;
       const prev = map.get(pid);
       if (!prev || new Date(m.created_at) > new Date(prev.created_at)) {
         map.set(pid, m);
@@ -303,7 +310,7 @@ export function MessagesPage() {
     if (!person || !pid) return;
     const ok = await confirm({
       title: "Delete conversation?",
-      description: `Delete your conversation with ${displayName(person)}? Message text will be cleared; deleted notices may remain in the thread.`,
+      description: `Remove your conversation with ${displayName(person)}? It will disappear from your message list for both of you.`,
       confirmLabel: "Delete",
       cancelLabel: "Cancel",
       tone: "danger",
@@ -394,7 +401,7 @@ export function MessagesPage() {
       const raw = accumulated.trim();
       if (looksLikeDialogueScript(raw)) {
         setDraftError(
-          "AI returned a full conversation instead of one message. Try again or write your follow-up manually."
+          "The assistant returned a full conversation instead of one message. Try again or write your follow-up manually."
         );
         setText("");
       } else {
@@ -685,7 +692,7 @@ export function MessagesPage() {
                       className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-brand-700 shadow-sm ring-1 ring-brand-200/80 transition hover:bg-brand-50"
                     >
                       <Sparkles className="h-3.5 w-3.5" />
-                      Draft intro with AI
+                      Draft intro with assistant
                     </button>
                   </div>
                 ) : (
@@ -694,7 +701,7 @@ export function MessagesPage() {
                       const mine = m.from_user?.id === myId;
                       const body = m.message || "";
                       const attachment = m.attachment_name
-                        ? { name: m.attachment_name }
+                        ? { name: m.attachment_name, messageId: m.id }
                         : null;
                       return (
                         <MessageThreadBubble
@@ -729,29 +736,16 @@ export function MessagesPage() {
                 )}
 
                 <div className="gre-field-composer overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition">
-                  {pendingFile && (
-                    <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
-                      <Paperclip className="h-4 w-4 shrink-0 text-brand-600" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-medium text-ink">{pendingFile.name}</p>
-                        <p className="text-[10px] text-slate-400">
-                          {formatMessageAttachmentSize(pendingFile.size)}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setPendingFile(null)}
-                        className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                        aria-label="Remove attachment"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
+                  {pendingFile ? (
+                    <PendingAttachmentPreview
+                      file={pendingFile}
+                      onRemove={() => setPendingFile(null)}
+                    />
+                  ) : null}
                   {showDraftMenu && (
                     <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto border-b border-slate-100 px-3 py-2 [-webkit-overflow-scrolling:touch]">
                       <span className="mr-1 text-[10px] font-medium text-slate-400 uppercase">
-                        AI
+                        Assistant
                       </span>
                       {DRAFT_OPTIONS.map((opt) => {
                         const disabled =
@@ -774,7 +768,7 @@ export function MessagesPage() {
                         type="button"
                         onClick={() => setShowDraftMenu(false)}
                         className="ml-auto rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                        aria-label="Close AI options"
+                        aria-label="Close assistant options"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -828,6 +822,7 @@ export function MessagesPage() {
                             ? "bg-brand-50 text-brand-700 ring-1 ring-brand-200/70"
                             : "text-slate-600 hover:bg-slate-50"
                         }`}
+                        aria-label="Use assistant"
                         aria-expanded={showDraftMenu}
                       >
                         {drafting ? (
@@ -835,7 +830,7 @@ export function MessagesPage() {
                         ) : (
                           <Sparkles className="h-3.5 w-3.5 text-brand-600" />
                         )}
-                        AI
+                        Use assistant
                       </button>
                     </div>
 

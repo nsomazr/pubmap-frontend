@@ -198,7 +198,7 @@ export function PublicPageLayout({
       {isClean ? (
         <section
           className={`gre-public-hero relative border-b border-slate-200 bg-white ${
-            isChatWorkspace || hideMobileHero ? "hidden md:block" : ""
+            isChatWorkspace || hideMobileHero ? "hidden" : ""
           }`}
         >
           {heroContent}
@@ -245,7 +245,7 @@ export function PublicPageLayout({
       <main
         className={`relative z-10 mx-auto flex w-full flex-1 flex-col ${contentShell} ${
           isChatWorkspace
-            ? "min-h-0 overflow-hidden px-0 pb-0 pt-0 sm:px-6 sm:pb-4 sm:pt-5"
+            ? "min-h-0 overflow-hidden px-0 pb-0 pt-0 sm:px-4 sm:pb-3 sm:pt-3"
             : fillViewport
               ? "min-h-0 overflow-hidden px-4 pb-4 pt-4 sm:px-6 sm:pb-8 sm:pt-6"
               : hideMobileHero
@@ -258,7 +258,7 @@ export function PublicPageLayout({
             fillViewport ? "flex min-h-0 flex-1 flex-col" : ""
           }`}
         >
-          {back && (
+          {back && !isChatWorkspace && (
             <PageBackLink
               to={back.to}
               label={back.label}

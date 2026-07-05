@@ -24,10 +24,13 @@ export function HorizontalBarChart({
   }
 
   const max = Math.max(...items.map((item) => item.value), 1);
+  const total = items.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <div className="space-y-3">
-      {items.map((item) => (
+      {items.map((item) => {
+        const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
+        return (
         <div key={`${item.label}-${item.hint ?? ""}`}>
           <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
             <span className="min-w-0 truncate font-medium text-ink" title={item.label}>
@@ -35,6 +38,9 @@ export function HorizontalBarChart({
             </span>
             <span className="shrink-0 font-semibold tabular-nums text-slate-600">
               {item.value.toLocaleString()}
+              {total > 0 ? (
+                <span className="ml-1 text-xs font-medium text-slate-400">({pct}%)</span>
+              ) : null}
             </span>
           </div>
           {item.hint && <p className="mb-1 truncate text-xs text-slate-400">{item.hint}</p>}
@@ -45,7 +51,8 @@ export function HorizontalBarChart({
             />
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

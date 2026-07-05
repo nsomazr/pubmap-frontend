@@ -15,6 +15,13 @@ interface Props {
   onChanged?: () => void;
 }
 
+const STATUS_DRAFT = 0;
+const STATUS_PENDING = 1;
+const STATUS_COMMENTED = 2;
+const STATUS_PUBLISHED = 3;
+const STATUS_ARCHIVED = 4;
+const STATUS_DELETED = 6;
+
 export function PublicationLifecyclePanel({
   publication,
   isOwner,
@@ -24,9 +31,13 @@ export function PublicationLifecyclePanel({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toast = useToast();
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const pubSeg = publicationApiSegment(publication.id, publication.encoded_id);
   const status = publication.status;
+  const isDraft = status === STATUS_DRAFT;
+  const isPrePublication = status === STATUS_PENDING || status === STATUS_COMMENTED;
+  const isPublished = status === STATUS_PUBLISHED;
+  const canAuthorRemove = isDraft || isPrePublication;
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["publications"] });
@@ -70,21 +81,23 @@ export function PublicationLifecyclePanel({
     },
   });
 
-  const deleteMutation = useMutation({
+  const removeMutation = useMutation({
     mutationFn: () => api.delete(`/publications/${pubSeg}/`),
     onSuccess: () => {
       invalidate();
       toast.success({
-        title: "Publication deleted",
-        description: "It was moved to the admin recovery queue.",
+        title: isDraft ? "Draft discarded" : "Submission withdrawn",
+        description: isDraft
+          ? "The draft was removed from your account."
+          : "It was withdrawn before publication.",
       });
-      navigate(isAdmin ? "/dashboard/publications?status=6" : "/dashboard/publications");
+      navigate("/dashboard/publications");
     },
     onError: (error) => {
-      setConfirmDelete(false);
+      setConfirmRemove(false);
       toast.error({
-        title: "Could not delete",
-        description: parseApiError(error, "Delete failed."),
+        title: isDraft ? "Could not discard draft" : "Could not withdraw",
+        description: parseApiError(error, "Request failed."),
       });
     },
   });
@@ -111,37 +124,18 @@ export function PublicationLifecyclePanel({
   if (!canManage) return null;
   if (isAdmin) return null;
 
-  if (status === 6) {
-    if (!isAdmin) return null;
-    return (
-      <section className="mb-6 rounded-2xl border border-red-200 bg-red-50/50 p-5">
-        <h2 className="text-sm font-semibold text-red-900">Deleted publication</h2>
-        <p className="mt-1 text-sm text-red-800/90">
-          This study was soft-deleted and is hidden from authors and the public map. Restore it to
-          return it to its previous workflow state.
-        </p>
-        <div className="mt-4">
-          <Button
-            type="button"
-            loading={restoreMutation.isPending}
-            onClick={() => restoreMutation.mutate()}
-          >
-            <RotateCcw className="h-4 w-4" />
-            Restore publication
-          </Button>
-        </div>
-      </section>
-    );
+  if (status === STATUS_DELETED) {
+    return null;
   }
 
-  if (status === 4) {
+  if (status === STATUS_ARCHIVED) {
     return (
       <section className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
         <h2 className="text-sm font-semibold text-ink">Archived</h2>
         <p className="mt-1 text-sm text-slate-600">
-          This publication is off the public map but preserved in your account.
+          This publication is off the public map. To remove it from GRE entirely, contact an admin.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4">
           <Button
             type="button"
             variant="secondary"
@@ -151,29 +145,103 @@ export function PublicationLifecyclePanel({
             <RotateCcw className="h-4 w-4" />
             Restore from archive
           </Button>
-          {canManage && (
-            <Button
-              type="button"
-              variant="secondary"
-              loading={deleteMutation.isPending}
-              onClick={() => deleteMutation.mutate()}
-            >
+        </div>
+      </section>
+    );
+  }
+
+  if (isDraft) {
+    return (
+      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5">
+        <h2 className="text-sm font-semibold text-ink">Draft</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Discard removes this unfinished draft from your account. It cannot be recovered.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {!confirmRemove ? (
+            <Button type="button" variant="secondary" onClick={() => setConfirmRemove(true)}>
               <Trash2 className="h-4 w-4" />
-              Delete permanently
+              Discard draft
             </Button>
+          ) : (
+            <>
+              <Button
+                type="button"
+                loading={removeMutation.isPending}
+                onClick={() => removeMutation.mutate()}
+              >
+                Confirm discard
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setConfirmRemove(false)}>
+                Cancel
+              </Button>
+            </>
           )}
         </div>
       </section>
     );
   }
 
+  if (isPrePublication) {
+    return (
+      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5">
+        <h2 className="text-sm font-semibold text-ink">Under review</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Withdraw pulls this submission from review. It has not been published on the map.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {!confirmRemove ? (
+            <Button type="button" variant="secondary" onClick={() => setConfirmRemove(true)}>
+              Withdraw submission
+            </Button>
+          ) : (
+            <>
+              <Button
+                type="button"
+                loading={removeMutation.isPending}
+                onClick={() => removeMutation.mutate()}
+              >
+                Confirm withdraw
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setConfirmRemove(false)}>
+                Cancel
+              </Button>
+            </>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  if (isPublished) {
+    return (
+      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5">
+        <h2 className="text-sm font-semibold text-ink">Published on GRE</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Published studies stay in the research record. Archive removes this study from the public
+          map while keeping it in your account. Only GRE admins can delete published work.
+        </p>
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant="secondary"
+            loading={archiveMutation.isPending}
+            onClick={() => archiveMutation.mutate()}
+          >
+            <Archive className="h-4 w-4" />
+            Archive
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5">
       <h2 className="text-sm font-semibold text-ink">Publication lifecycle</h2>
       <p className="mt-1 text-sm text-slate-500">
-        Archive removes a study from the public map while keeping your files. Delete moves it to the
-        admin recovery queue (GRE admins can remove it permanently). After you click Delete, choose
-        Confirm delete to finish.
+        Archive removes a study from the public map. Contact GRE admin if you need a published record
+        removed.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button
@@ -185,25 +253,12 @@ export function PublicationLifecyclePanel({
           <Archive className="h-4 w-4" />
           Archive
         </Button>
-        {!confirmDelete ? (
-          <Button type="button" variant="secondary" onClick={() => setConfirmDelete(true)}>
+        {canAuthorRemove && !confirmRemove ? (
+          <Button type="button" variant="secondary" onClick={() => setConfirmRemove(true)}>
             <Trash2 className="h-4 w-4" />
-            Delete
+            {isDraft ? "Discard draft" : "Withdraw"}
           </Button>
-        ) : (
-          <>
-            <Button
-              type="button"
-              loading={deleteMutation.isPending}
-              onClick={() => deleteMutation.mutate()}
-            >
-              Confirm delete
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => setConfirmDelete(false)}>
-              Cancel
-            </Button>
-          </>
-        )}
+        ) : null}
       </div>
     </section>
   );

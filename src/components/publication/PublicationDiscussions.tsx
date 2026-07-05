@@ -125,6 +125,7 @@ export function PublicationDiscussions({ publicationId, coAuthors, authorUserId 
                         name={authorName(thread.user)}
                         nameClassName="text-sm font-semibold text-ink"
                         ranking={thread.user?.ranking}
+                        registered={Boolean(thread.user?.id)}
                         compact
                         showBadges={false}
                       />
@@ -154,6 +155,7 @@ export function PublicationDiscussions({ publicationId, coAuthors, authorUserId 
                                 name={authorName(r.user)}
                                 nameClassName="text-xs font-semibold text-slate-600"
                                 ranking={r.user?.ranking}
+                                registered={Boolean(r.user?.id)}
                                 compact
                                 showBadges={false}
                               />

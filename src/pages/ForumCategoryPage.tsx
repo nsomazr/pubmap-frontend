@@ -1,16 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Plus } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
+import { ForumNewTopicForm } from "../components/forum/ForumNewTopicForm";
 import { PublicPageLayout } from "../components/layout/PublicPageLayout";
+import { PublicEmptyState } from "../components/layout/PublicEmptyState";
 import { PageBackLink } from "../components/ui/PageBackLink";
 import { ForumInlineAd, PageAdAside } from "../components/ads/PageAdAside";
-import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
-import { Textarea } from "../components/ui/Textarea";
 import { useAuth } from "../context/AuthContext";
-import { DefaultBanner } from "../components/ui/DefaultBanner";
-import { greFormPanelClass } from "../lib/formStyles";
 import { resolveSubcategoryFromModel } from "../lib/taxonomyVisuals";
 import { SubcategoryVisual } from "../components/taxonomy/SubcategoryVisual";
 import { Pagination } from "../components/ui/Pagination";
@@ -93,9 +90,8 @@ export function ForumCategoryPage() {
     <PublicPageLayout
       compactHero
       wide
-      accent="blue"
-      badge={sub?.field_name || sub?.category_name}
       title={sub?.name ?? "Forum"}
+      subtitle={sub?.category_name ?? undefined}
       heroVisual={(() => {
         const visual = sub ? resolveSubcategoryFromModel(sub) : null;
         return visual ? (
@@ -118,101 +114,116 @@ export function ForumCategoryPage() {
     >
       <PageAdAside context={adContext}>
         <ForumInlineAd context={adContext} />
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <PageBackLink to="/forum" label="All forums" />
-        {user && (
-          <Button type="button" onClick={() => setShowForm((s) => !s)}>
-            <Plus className="h-4 w-4" />
-            New topic
-          </Button>
-        )}
-      </div>
 
-      {showForm && user && (
-        <form
-          className={`${greFormPanelClass} mb-8`}
-          onSubmit={(e) => {
-            e.preventDefault();
-            setPostError("");
-            if (topicTitle.trim() && topicContent.trim()) createMutation.mutate();
-          }}
-        >
-          {postError && (
-            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {postError}
-            </p>
-          )}
-          <Input
-            label="Topic title"
-            value={topicTitle}
-            onChange={(e) => setTopicTitle(e.target.value)}
-            required
-          />
-          <Textarea
-            label="Content"
-            value={topicContent}
-            onChange={(e) => setTopicContent(e.target.value)}
-            rows={4}
-            required
-          />
-          <Button type="submit" loading={createMutation.isPending}>
-            Post topic
-          </Button>
-        </form>
-      )}
+        <PageBackLink to="/forum" label="All forums" className="mb-5" />
 
-      {isLoading ? (
-        <p className="text-slate-500">Loading topics…</p>
-      ) : topics.length === 0 ? (
-        <p className="rounded-3xl bg-white p-12 text-center text-slate-500 ring-1 ring-slate-200/80">
-          No discussions yet.
-          {user ? (
-            " Start the first topic above."
-          ) : (
-            <>
-              {" "}
-              <Link
-                to={buildLoginPath(`${location.pathname}${location.search}`)}
-                className="font-semibold text-brand-600 hover:underline"
-              >
-                Sign in
-              </Link>{" "}
-              to start a discussion.
-            </>
-          )}
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {topics.map((topic) => (
+        {user ? (
+          <ForumNewTopicForm
+            open={showForm}
+            onToggle={() => setShowForm((value) => !value)}
+            title={topicTitle}
+            content={topicContent}
+            onTitleChange={setTopicTitle}
+            onContentChange={setTopicContent}
+            posting={createMutation.isPending}
+            error={postError}
+            onSubmit={() => {
+              setPostError("");
+              if (topicTitle.trim() && topicContent.trim()) createMutation.mutate();
+            }}
+          />
+        ) : (
+          <p className="mb-5 text-sm text-slate-500">
             <Link
-              key={topic.id}
-              to={buildForumTopicPath(topic)}
-              className="flex items-start gap-3 rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:shadow-md sm:p-4"
+              to={buildLoginPath(`${location.pathname}${location.search}`)}
+              className="font-medium text-brand-700 hover:underline"
             >
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl">
-                <DefaultBanner kind="forum" seed={topic.id} compact />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold text-ink sm:text-[15px]">{topic.topic}</h3>
-                <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 sm:text-sm">{topic.content}</p>
-                <p className="mt-1.5 text-[11px] text-slate-400 sm:text-xs">
-                  {topic.replies_count ?? 0} replies · {topic.views_count ?? 0} views
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+              Sign in
+            </Link>{" "}
+            to start a topic.
+          </p>
+        )}
 
-      {!isLoading && topicsTotal > 0 && (
-        <Pagination
-          page={page}
-          totalCount={topicsTotal}
-          onPageChange={setPage}
-          itemLabel="topics"
-          className="mt-8"
-        />
-      )}
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="gre-skeleton h-16 rounded-xl" />
+            ))}
+          </div>
+        ) : topics.length === 0 ? (
+          <PublicEmptyState
+            icon={MessageSquare}
+            title="No discussions yet"
+            description={user ? "Open New topic above to post the first one." : "Sign in to start a discussion."}
+            action={
+              !user ? (
+                <Link
+                  to={buildLoginPath(`${location.pathname}${location.search}`)}
+                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+                >
+                  Sign in
+                </Link>
+              ) : !showForm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowForm(true)}
+                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+                >
+                  New topic
+                </button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <ul className="space-y-2">
+            {topics.map((topic) => {
+              const replies = topic.replies_count ?? 0;
+              const views = topic.views_count ?? 0;
+              const author =
+                topic.author?.full_name?.trim() ||
+                [topic.author?.firstname, topic.author?.lastname].filter(Boolean).join(" ").trim();
+
+              return (
+                <li key={topic.id}>
+                  <Link
+                    to={buildForumTopicPath(topic)}
+                    className="gre-interactive group block rounded-xl border border-slate-100 bg-white px-4 py-3 transition hover:border-brand-200 hover:bg-brand-50/30"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ink group-hover:text-brand-800">
+                          {topic.topic}
+                        </h3>
+                        {topic.content ? (
+                          <p className="mt-1 line-clamp-2 text-xs text-slate-500">{topic.content}</p>
+                        ) : null}
+                        {author ? (
+                          <p className="mt-1 text-xs text-slate-400">{author}</p>
+                        ) : null}
+                      </div>
+                      <div className="shrink-0 text-right text-[11px] font-medium tabular-nums text-slate-500">
+                        <p>
+                          {replies} {replies === 1 ? "reply" : "replies"}
+                        </p>
+                        <p className="mt-0.5 text-slate-400">{views} views</p>
+                      </div>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {!isLoading && topicsTotal > 0 && (
+          <Pagination
+            page={page}
+            totalCount={topicsTotal}
+            onPageChange={setPage}
+            itemLabel="topics"
+            className="mt-6"
+          />
+        )}
       </PageAdAside>
     </PublicPageLayout>
   );

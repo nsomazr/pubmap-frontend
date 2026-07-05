@@ -568,7 +568,7 @@ export function MeetingArchivePage() {
             <div className="gre-dashboard-card flex flex-col gap-4 p-5 sm:p-6 xl:sticky xl:top-4">
               <ArchiveSectionTitle
                 icon={Sparkles}
-                title="Chat with GRE Assistant"
+                title="Chat with Research Assistant"
                 description="Ask follow-up questions about the minutes, decisions, and transcript from this meeting."
               />
               <MeetingGreAssistantPanel meeting={meeting} variant="light" />

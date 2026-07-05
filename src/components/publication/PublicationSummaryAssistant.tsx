@@ -1,4 +1,4 @@
-import { ExternalLink, FileText, Sparkles } from "lucide-react";
+import { ExternalLink, FileText } from "lucide-react";
 import { AssistantThinkingIndicator } from "../assistant/AssistantThinkingIndicator";
 import { InputWithSendAddon } from "../ui/FieldSendAddon";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
@@ -71,7 +71,7 @@ export function PublicationSummaryAssistant({
     const health = await assistantHealth();
     if (!health.available) {
       setSummaryError(
-        health.hint || health.error || "GRE Assistant is not available right now."
+        health.hint || health.error || "Research Assistant is not available right now."
       );
       setSummaryLoading(false);
       return;
@@ -322,7 +322,7 @@ export function PublicationSummaryAssistant({
             type="button"
             disabled={!canAskManuscript}
             onClick={() => void submitFollowUp(suggestion)}
-            className="rounded-full bg-slate-100 px-2.5 py-1.5 text-left text-[11px] font-medium leading-snug text-slate-600 transition hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 sm:text-xs"
+            className="gre-interactive rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:border-brand-200 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {suggestion}
           </button>
@@ -335,7 +335,7 @@ export function PublicationSummaryAssistant({
       value={question}
       onChange={setQuestion}
       onSubmit={() => askFollowUp()}
-      placeholder="Ask about this publication's methods, findings, authors…"
+      placeholder="Ask about this paper…"
       disabled={!canAskManuscript}
       loading={followUpLoading}
       submitAriaLabel="Ask follow-up question"
@@ -343,17 +343,15 @@ export function PublicationSummaryAssistant({
   );
 
   const followUpThread = followUps.map((item) => (
-    <div key={item.id} className="space-y-2.5">
+    <div key={item.id} className="space-y-2">
       <div className="flex justify-end">
-        <p className="max-w-[92%] rounded-2xl rounded-br-md bg-brand-600 px-3.5 py-2.5 text-sm leading-relaxed text-white">
+        <p className="max-w-[88%] rounded-2xl rounded-br-sm bg-brand-600 px-3 py-2 text-sm leading-relaxed text-white">
           {item.question}
         </p>
       </div>
       {item.error ? (
         <div className="space-y-2">
-          <p className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-sm text-amber-900 ring-1 ring-amber-100">
-            {item.error}
-          </p>
+          <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">{item.error}</p>
           <button
             type="button"
             onClick={() => {
@@ -366,64 +364,49 @@ export function PublicationSummaryAssistant({
             }}
             className="text-xs font-semibold text-brand-700 hover:text-brand-800"
           >
-            Retry this question
+            Retry
           </button>
         </div>
       ) : item.loading && !item.answer.trim() ? (
         <AssistantThinkingIndicator />
       ) : (
-        <div className="flex gap-2.5">
-          <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-            <Sparkles className="h-3.5 w-3.5" />
-          </span>
-          <div className="min-w-0 flex-1 rounded-2xl rounded-tl-md bg-white px-3.5 py-2.5 text-sm leading-relaxed text-slate-800 ring-1 ring-slate-200/80">
-            <FormattedAssistantText content={item.answer} streaming={item.loading} />
-          </div>
+        <div className="rounded-2xl rounded-tl-sm bg-slate-50 px-3 py-2.5 text-sm leading-relaxed text-slate-800">
+          <FormattedAssistantText content={item.answer} streaming={item.loading} />
         </div>
       )}
     </div>
   ));
 
   const summaryBlock = summaryError ? (
-            <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3.5 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
-                Summary
-              </p>
-              <p className="text-sm text-amber-900">{summaryError}</p>
-              <button
-                type="button"
-                onClick={() => void runSummary()}
-                className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-brand-700 ring-1 ring-brand-200 transition hover:bg-brand-50"
-              >
-                Try again
-              </button>
-            </div>
-          ) : summaryLoading && !summary.trim() ? (
-            <div className="gre-public-card px-4 py-4">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Overview
-              </p>
-              <p className="mb-3 text-xs text-slate-500">Generating a summary of this manuscript…</p>
-              <AssistantThinkingIndicator />
-            </div>
-          ) : summary ? (
-            <div className="gre-public-card min-w-0 px-4 py-3.5">
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Overview
-              </p>
-              <div className="text-sm leading-relaxed text-slate-800">
-                <FormattedAssistantText content={summary} streaming={summaryLoading} />
-              </div>
-              {summaryActions}
-            </div>
-          ) : null;
+    <div className="publication-chat-summary publication-chat-summary--error px-4 py-4 sm:px-5">
+      <p className="text-sm text-amber-900">{summaryError}</p>
+      <button
+        type="button"
+        onClick={() => void runSummary()}
+        className="gre-interactive mt-3 text-sm font-semibold text-brand-700 hover:text-brand-800"
+      >
+        Try again
+      </button>
+    </div>
+  ) : summaryLoading && !summary.trim() ? (
+    <div className="publication-chat-summary px-4 py-6 sm:px-5">
+      <AssistantThinkingIndicator />
+    </div>
+  ) : summary ? (
+    <div className="publication-chat-summary min-w-0 px-4 py-4 sm:px-5">
+      <div className="text-[15px] leading-relaxed text-slate-800">
+        <FormattedAssistantText content={summary} streaming={summaryLoading} />
+      </div>
+      {summaryActions}
+    </div>
+  ) : null;
 
   if (isPage) {
     return (
       <div className={`gre-chat-shell publication-chat ${className}`}>
         <div
           ref={scrollContainerRef}
-          className="gre-chat-thread publication-chat__thread space-y-3 pr-0.5 sm:space-y-4"
+          className="gre-chat-thread publication-chat__thread space-y-4"
         >
           {showPublicationHeader ? publicationHeader : null}
           {summaryBlock}

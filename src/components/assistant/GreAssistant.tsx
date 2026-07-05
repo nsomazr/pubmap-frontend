@@ -110,7 +110,7 @@ export function GreAssistant() {
       if ((err as Error).name === "AbortError") return;
       const detail =
         (err as Error).message ||
-        "GRE Assistant is temporarily unavailable. Please try again in a moment.";
+        "Research Assistant is temporarily unavailable. Please try again in a moment.";
       setError(detail);
       setHealth((h) => (h ? { ...h, available: false } : { available: false }));
       setMessages((prev) => {
@@ -167,10 +167,10 @@ export function GreAssistant() {
           type="button"
           onClick={() => setOpen(true)}
           className={`gre-assistant-fab ${fabPlacementClass} fixed flex h-12 w-12 items-center justify-center rounded-full border border-brand-500/30 bg-brand-600 text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 hover:shadow-xl sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:font-bold`}
-          aria-label="Open GRE Assistant"
+          aria-label="Open Research Assistant"
         >
           <Sparkles className="h-5 w-5" />
-          <span className="hidden sm:inline">GRE Assistant</span>
+          <span className="hidden sm:inline">Research Assistant</span>
         </button>
       )}
 
@@ -178,14 +178,14 @@ export function GreAssistant() {
         <div
           className={`gre-assistant-panel gre-dashboard-card fixed mx-auto w-auto max-w-[380px] overflow-hidden shadow-[0_12px_40px_-12px_rgba(15,23,42,0.2)] ${panelPositionClass}`}
           role="dialog"
-          aria-label="GRE Assistant"
+          aria-label="Research Assistant"
         >
           <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 bg-white px-4 py-3">
             <div className="flex min-w-0 items-center gap-2.5">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 ring-1 ring-brand-100">
                 <Bot className="h-4 w-4" />
               </span>
-              <p className="truncate text-sm font-semibold text-ink">GRE Assistant</p>
+              <p className="truncate text-sm font-semibold text-ink">Research Assistant</p>
             </div>
             <div className="flex shrink-0 items-center gap-0.5">
               <button
@@ -268,7 +268,7 @@ export function GreAssistant() {
               value={input}
               onChange={setInput}
               onSubmit={() => send(input)}
-              placeholder="Ask GRE Assistant…"
+              placeholder="Ask Research Assistant…"
               loading={loading}
               disabled={loading}
               submitAriaLabel="Send message"

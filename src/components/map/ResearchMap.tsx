@@ -157,8 +157,8 @@ export function ResearchMap({
       className={`gre-map ts-map relative w-full ${embedded ? "gre-map--embedded" : "gre-map--landing"} ${darkBasemap ? "gre-map--dark-basemap" : ""} ${mapPickMode ? "gre-map--pick-mode" : ""} ${className || "rounded-none border-0 shadow-none"}`}
     >
       {mapPickMode && (
-        <div className="pointer-events-none absolute left-1/2 top-3 z-[1002] max-w-[min(92vw,22rem)] -translate-x-1/2 rounded-full bg-brand-600/95 px-4 py-2 text-center text-xs font-semibold text-white shadow-lg">
-          Click the map to set a search region ({formatRegionRadiusLabel()})
+        <div className="map-pick-banner pointer-events-none absolute left-1/2 top-3 z-[1002] max-w-[min(92vw,22rem)] -translate-x-1/2 rounded-full bg-brand-600/95 px-4 py-2 text-center text-xs font-semibold text-white shadow-lg">
+          Click map to set region ({formatRegionRadiusLabel()})
         </div>
       )}
 
@@ -181,6 +181,7 @@ export function ResearchMap({
         touchZoom
         doubleClickZoom
         zoomControl={false}
+        attributionControl={false}
       >
         <MapInteractionHandlers />
         <ZoomControl position={mapZoomPosition} />

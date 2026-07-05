@@ -3,14 +3,13 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  ExternalLink,
   FileText,
   KeyRound,
   Mail,
   Map,
   PenLine,
-  Phone,
   Shield,
-  User,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -19,7 +18,6 @@ import { AccountProfilePreview, type AccountProfilePreviewData } from "../../com
 import { ProfilePhotoEditor } from "../../components/profile/ProfilePhotoEditor";
 import { InterestPicker } from "../../components/interests/InterestPicker";
 import { CountryInstitutionPicker } from "../../components/institutions/CountryInstitutionPicker";
-import { formatAffiliationInline } from "../../lib/affiliations";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -33,7 +31,7 @@ import {
   greAccountStatPublished,
   greAccountStatRevision,
 } from "../../lib/greTheme";
-import { HONORIFIC_OPTIONS, userFormalName } from "../../lib/userDisplay";
+import { displayRoleName, HONORIFIC_OPTIONS, userFormalName } from "../../lib/userDisplay";
 import type { DashboardStats, User as AppUser } from "../../types";
 import { UserAvatar } from "../../components/ui/UserAvatar";
 
@@ -46,10 +44,10 @@ function Alert({
 }) {
   return (
     <p
-      className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm ${
+      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
         type === "success"
-          ? "bg-teal-50 text-teal-800 ring-1 ring-teal-100"
-          : "bg-brand-50 text-brand-800 ring-1 ring-brand-200"
+          ? "bg-teal-50 text-teal-800"
+          : "bg-brand-50 text-brand-800"
       }`}
     >
       {type === "success" ? (
@@ -62,12 +60,13 @@ function Alert({
   );
 }
 
-function ProfileDetail({ label, value }: { label: string; value?: string | null }) {
+function ProfileField({ label, value }: { label: string; value?: string | null }) {
   const text = value?.trim();
+  if (!text) return null;
   return (
-    <div className="min-w-0">
-      <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className={`mt-0.5 text-sm ${text ? "text-ink" : "text-slate-400"}`}>{text || "—"}</dd>
+    <div className="min-w-0 border-b border-slate-100 py-3 last:border-0">
+      <dt className="text-xs text-slate-500">{label}</dt>
+      <dd className="mt-0.5 text-sm text-ink">{text}</dd>
     </div>
   );
 }
@@ -203,13 +202,13 @@ export function AccountPage() {
       }),
     onSuccess: async () => {
       await refreshUser();
-      setProfileMsg({ type: "success", text: "Profile updated successfully." });
+      setProfileMsg({ type: "success", text: "Profile saved." });
       setProfileEditing(false);
     },
     onError: (err) => {
       setProfileMsg({
         type: "error",
-        text: parseApiError(err, "Could not update profile. Check your details."),
+        text: parseApiError(err, "Could not save profile."),
       });
     },
   });
@@ -229,7 +228,7 @@ export function AccountPage() {
       setPasswordOpen(false);
     },
     onError: () => {
-      setPasswordMsg({ type: "error", text: "Could not change password. Check your current password." });
+      setPasswordMsg({ type: "error", text: "Could not change password." });
     },
   });
 
@@ -253,30 +252,10 @@ export function AccountPage() {
   }, [user, title, firstname, middlename, lastname, affiliation, countryCode, phone, interests]);
 
   const statItems = [
-    {
-      label: "Published",
-      value: stats?.published ?? 0,
-      ...greAccountStatPublished,
-      status: "3",
-    },
-    {
-      label: "Pending",
-      value: stats?.pending ?? 0,
-      ...greAccountStatPending,
-      status: "1",
-    },
-    {
-      label: "Revision",
-      value: stats?.commented ?? 0,
-      ...greAccountStatRevision,
-      status: "2",
-    },
-    {
-      label: "Drafts",
-      value: stats?.drafts ?? 0,
-      ...greAccountStatDraft,
-      status: "0",
-    },
+    { label: "Published", value: stats?.published ?? 0, ...greAccountStatPublished, status: "3" },
+    { label: "Pending", value: stats?.pending ?? 0, ...greAccountStatPending, status: "1" },
+    { label: "Revision", value: stats?.commented ?? 0, ...greAccountStatRevision, status: "2" },
+    { label: "Drafts", value: stats?.drafts ?? 0, ...greAccountStatDraft, status: "0" },
   ];
 
   const handleProfileSubmit = (e?: React.FormEvent) => {
@@ -286,126 +265,102 @@ export function AccountPage() {
   };
 
   return (
-    <div className={`animate-fade-up space-y-5${profileEditing ? " pb-24 xl:pb-0" : ""}`}>
-      <PageHeader
-        title="Account"
-        description="Manage your GRE profile, security, and publication workflow."
-      />
+    <div className={`animate-fade-up space-y-6${profileEditing ? " pb-24 xl:pb-0" : ""}`}>
+      <PageHeader title="Account" />
 
-      {statsError && (
-        <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-100">
-          Could not load publication stats. If this persists, sign out and sign in again.
+      {statsError ? (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Could not load publication stats.
         </p>
-      )}
+      ) : null}
 
-      {/* Identity + publication stats in one compact band */}
-      <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-        <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-            {user && (
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            {user ? (
               <UserAvatar
                 user={user}
                 name={displayName}
                 size="lg"
-                className="!h-14 !w-14 shrink-0 !rounded-xl !text-base sm:!h-16 sm:!w-16"
+                className="!h-14 !w-14 shrink-0 !rounded-full !text-base"
               />
-            )}
+            ) : null}
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-bold text-ink sm:text-xl">{displayName}</h2>
-              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
-                {savedProfile.roleName && (
-                  <span className="font-medium text-slate-500">{savedProfile.roleName}</span>
-                )}
-                {savedProfile.email && (
-                  <span className="flex min-w-0 items-center gap-1 truncate">
-                    <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                    {savedProfile.email}
-                  </span>
-                )}
-                {savedProfile.phone?.trim() && (
-                  <span className="flex items-center gap-1">
-                    <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                    {savedProfile.phone.trim()}
-                  </span>
-                )}
-              </div>
-              {(savedProfile.affiliation || savedProfile.countryLabel) && (
-                <p className="mt-1 line-clamp-2 text-xs text-slate-500">
-                  {[formatAffiliationInline(savedProfile.affiliation), savedProfile.countryLabel]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              )}
+              <h2 className="truncate text-lg font-semibold text-ink">{displayName}</h2>
+              <p className="mt-0.5 text-sm text-slate-500">
+                {displayRoleName(savedProfile.roleName)}
+                {savedProfile.email ? (
+                  <>
+                    {" · "}
+                    <span className="text-slate-600">{savedProfile.email}</span>
+                  </>
+                ) : null}
+              </p>
+              {user?.id ? (
+                <Link
+                  to={`/researcher/${user.id}`}
+                  className="gre-interactive mt-1 inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline"
+                >
+                  View public profile
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              ) : null}
             </div>
           </div>
 
-          <div className="flex shrink-0 divide-x divide-slate-200 overflow-hidden rounded-xl border border-slate-200/90 bg-slate-50/50">
+          <div className="flex gap-1 overflow-x-auto">
             {statItems.map(({ label, value, color, status }) => (
               <Link
                 key={label}
                 to={`/dashboard/publications?status=${status}`}
-                className="gre-interactive flex min-w-[4.5rem] flex-col items-center px-3 py-2 transition hover:bg-white sm:min-w-[5rem] sm:px-4"
+                className="gre-interactive flex min-w-[4.25rem] flex-col items-center rounded-lg px-3 py-2 hover:bg-slate-50"
               >
                 <span className={`text-lg font-bold tabular-nums leading-none ${color}`}>{value}</span>
-                <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  {label}
-                </span>
+                <span className="mt-0.5 text-[10px] font-medium text-slate-500">{label}</span>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {user && (
-        <section className="gre-form-panel">
-          <ProfilePhotoEditor user={user} onUpdated={refreshUser} />
-        </section>
-      )}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_240px] xl:items-start">
+        <div className="space-y-6">
+          {user ? (
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+              <ProfilePhotoEditor user={user} onUpdated={refreshUser} compact />
+            </section>
+          ) : null}
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start">
-        <section className="gre-form-panel border-b border-slate-200/90 pb-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                <User className="h-4 w-4" />
-              </span>
-              <div>
-                <h2 className="text-sm font-semibold text-ink">
-                  {profileEditing ? "Edit profile" : "Profile details"}
-                </h2>
-                <p className="text-xs text-slate-500">
-                  {profileEditing
-                    ? "Changes appear in the public preview before you save."
-                    : "Shown on publications and researcher pages."}
-                </p>
-              </div>
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-ink">
+                {profileEditing ? "Edit profile" : "Profile"}
+              </h2>
+              {!profileEditing ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="!px-3 !py-1.5 text-xs"
+                  onClick={startProfileEdit}
+                >
+                  <PenLine className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={cancelProfileEdit}
+                  className="gre-interactive inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Cancel
+                </button>
+              )}
             </div>
-            {!profileEditing ? (
-              <Button
-                type="button"
-                variant="secondary"
-                className="!px-3 !py-2 text-xs"
-                onClick={startProfileEdit}
-              >
-                <PenLine className="h-3.5 w-3.5" />
-                Edit
-              </Button>
-            ) : (
-              <button
-                type="button"
-                onClick={cancelProfileEdit}
-                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-              >
-                <X className="h-3.5 w-3.5" />
-                Cancel
-              </button>
-            )}
-          </div>
 
-          <div>
             {profileEditing ? (
               <form id="account-profile-form" className="space-y-4" onSubmit={handleProfileSubmit}>
-                {profileMsg && <Alert type={profileMsg.type} message={profileMsg.text} />}
+                {profileMsg ? <Alert type={profileMsg.type} message={profileMsg.text} /> : null}
 
                 <Select
                   label="Honorific (optional)"
@@ -455,36 +410,39 @@ export function AccountPage() {
                 />
 
                 <Input
-                  label="Phone number"
+                  label="Phone"
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                 />
 
-                <p className="text-xs text-slate-400">
-                  Email ({user?.email}) cannot be changed here.
-                </p>
+                <p className="text-xs text-slate-400">Email ({user?.email}) cannot be changed here.</p>
+
+                <div className="hidden xl:block">
+                  <Button
+                    type="submit"
+                    loading={profileMutation.isPending}
+                    disabled={!isDirty && !profileMutation.isPending}
+                  >
+                    Save profile
+                  </Button>
+                </div>
               </form>
             ) : (
-              <div className="space-y-4">
-                {profileMsg && <Alert type={profileMsg.type} message={profileMsg.text} />}
+              <div>
+                {profileMsg ? <Alert type={profileMsg.type} message={profileMsg.text} /> : null}
 
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
-                  <ProfileDetail label="Honorific" value={savedProfile.title} />
-                  <ProfileDetail label="First name" value={savedProfile.firstname} />
-                  <ProfileDetail label="Middle name" value={savedProfile.middlename} />
-                  <ProfileDetail label="Last name" value={savedProfile.lastname} />
-                  <ProfileDetail label="Affiliation" value={savedProfile.affiliation} />
-                  <ProfileDetail label="Country" value={savedProfile.countryLabel} />
-                  <ProfileDetail label="Phone" value={savedProfile.phone} />
-                  <ProfileDetail label="Email" value={savedProfile.email} />
+                <dl>
+                  <ProfileField label="Name" value={displayName} />
+                  <ProfileField label="Affiliation" value={savedProfile.affiliation} />
+                  <ProfileField label="Country" value={savedProfile.countryLabel} />
+                  <ProfileField label="Phone" value={savedProfile.phone} />
+                  <ProfileField label="Email" value={savedProfile.email} />
                 </dl>
 
-                <div className="border-t border-slate-100 pt-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    Research interests
-                  </p>
-                  {savedProfile.interests.length > 0 ? (
+                {savedProfile.interests.length > 0 ? (
+                  <div className="border-t border-slate-100 pt-3">
+                    <p className="text-xs text-slate-500">Research interests</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {savedProfile.interests.map((interest) => (
                         <span
@@ -495,52 +453,55 @@ export function AccountPage() {
                         </span>
                       ))}
                     </div>
-                  ) : (
-                    <p className="mt-1 text-sm text-slate-400">—</p>
-                  )}
-                </div>
+                  </div>
+                ) : null}
+
+                {!savedProfile.affiliation &&
+                !savedProfile.countryLabel &&
+                !savedProfile.phone?.trim() &&
+                savedProfile.interests.length === 0 ? (
+                  <p className="py-2 text-sm text-slate-500">
+                    Add affiliation, country, and interests to complete your profile.
+                  </p>
+                ) : null}
               </div>
             )}
-          </div>
-        </section>
+          </section>
+        </div>
 
-        <aside className="space-y-3 xl:sticky xl:top-6">
-          <AccountProfilePreview
-            user={user}
-            draft={previewProfile}
-            publishedCount={stats?.published ?? 0}
-            live={profileEditing}
-          />
-
-          {profileEditing && (
-            <div className="space-y-2 rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm">
+        <aside className="space-y-4 xl:sticky xl:top-6">
+          {profileEditing ? (
+            <>
+              <AccountProfilePreview
+                user={user}
+                draft={previewProfile}
+                publishedCount={stats?.published ?? 0}
+                live
+              />
               <Button
                 type="submit"
                 form="account-profile-form"
-                className="w-full"
+                className="hidden w-full xl:flex"
                 loading={profileMutation.isPending}
                 disabled={!isDirty && !profileMutation.isPending}
               >
                 Save profile
               </Button>
-              {isDirty && (
-                <p className="text-center text-[11px] text-amber-700">Unsaved changes</p>
-              )}
-            </div>
-          )}
+            </>
+          ) : null}
 
-          <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white">
             <button
               type="button"
               onClick={() => {
                 setPasswordOpen((open) => !open);
                 setPasswordMsg(null);
               }}
-              className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="gre-interactive flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               <span className="flex items-center gap-2">
                 <KeyRound className="h-4 w-4 text-brand-600" />
-                Change password
+                Password
               </span>
               {passwordOpen ? (
                 <ChevronUp className="h-4 w-4 text-slate-400" />
@@ -549,16 +510,16 @@ export function AccountPage() {
               )}
             </button>
 
-            {passwordOpen && (
+            {passwordOpen ? (
               <form
-                className="mt-3 space-y-3 border-t border-slate-100 pt-3"
+                className="space-y-3 border-t border-slate-100 px-4 py-3"
                 onSubmit={(e) => {
                   e.preventDefault();
                   setPasswordMsg(null);
                   passwordMutation.mutate();
                 }}
               >
-                {passwordMsg && <Alert type={passwordMsg.type} message={passwordMsg.text} />}
+                {passwordMsg ? <Alert type={passwordMsg.type} message={passwordMsg.text} /> : null}
                 <Input
                   label="Current password"
                   type="password"
@@ -577,7 +538,7 @@ export function AccountPage() {
                   minLength={6}
                 />
                 <Input
-                  label="Confirm new password"
+                  label="Confirm password"
                   type="password"
                   autoComplete="new-password"
                   value={confirmPassword}
@@ -590,51 +551,40 @@ export function AccountPage() {
                   className="w-full !py-2 text-xs"
                   loading={passwordMutation.isPending}
                 >
-                  Save password
+                  Update password
                 </Button>
               </form>
-            )}
+            ) : null}
           </div>
 
-          <nav className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm">
-            <p className="px-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-              Quick links
-            </p>
-            <ul className="mt-1 divide-y divide-slate-100">
-              <li>
-                <Link
-                  to="/dashboard/publications"
-                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-brand-700"
-                >
-                  <FileText className="h-4 w-4 shrink-0" />
-                  My publications
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/dashboard/messages"
-                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-brand-700"
-                >
-                  <Mail className="h-4 w-4 shrink-0" />
-                  Messages
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/"
-                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-brand-700"
-                >
-                  <Map className="h-4 w-4 shrink-0" />
-                  Research map
-                </Link>
-              </li>
-            </ul>
+          <nav className="rounded-xl border border-slate-200 bg-white p-2">
+            <Link
+              to="/dashboard/publications"
+              className="gre-interactive flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-700"
+            >
+              <FileText className="h-4 w-4 shrink-0" />
+              Publications
+            </Link>
+            <Link
+              to="/dashboard/messages"
+              className="gre-interactive flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-700"
+            >
+              <Mail className="h-4 w-4 shrink-0" />
+              Messages
+            </Link>
+            <Link
+              to="/"
+              className="gre-interactive flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-700"
+            >
+              <Map className="h-4 w-4 shrink-0" />
+              Research map
+            </Link>
           </nav>
         </aside>
       </div>
 
-      {profileEditing && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 p-4 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm xl:hidden pb-[max(1rem,env(safe-area-inset-bottom))]">
+      {profileEditing ? (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white p-4 xl:hidden pb-[max(1rem,env(safe-area-inset-bottom))]">
           <Button
             type="submit"
             form="account-profile-form"
@@ -645,7 +595,7 @@ export function AccountPage() {
             Save profile
           </Button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
