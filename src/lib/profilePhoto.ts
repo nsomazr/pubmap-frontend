@@ -1,5 +1,5 @@
 import api from "./api";
-import { mediaUrl } from "./mediaUrl";
+import { mediaUrl, resolveMediaOrigin } from "./mediaUrl";
 import type { User } from "../types";
 
 export const PROFILE_CROP_VIEWPORT = 280;
@@ -127,6 +127,7 @@ export function isDefaultProfilePhoto(photo?: string | null): boolean {
   if (!photo?.trim()) return true;
   const value = photo.trim().toLowerCase();
   if (value.includes("uploads/profiles/")) return false;
+  if (value.includes("/api/users/") && value.includes("/photo")) return false;
   return value.includes("avatar-.jpg") || value.endsWith("/avatar.jpg");
 }
 
@@ -147,6 +148,10 @@ export function resolveProfilePhotoSrc(
   let url: string | null;
   if (raw.startsWith("blob:") || raw.startsWith("http://") || raw.startsWith("https://")) {
     url = raw;
+  } else if (raw.startsWith("/api/users/") && raw.includes("/photo")) {
+    // API-served profile photos — prefix with API origin when the path is relative.
+    const origin = resolveMediaOrigin();
+    url = origin ? `${origin}${raw}` : raw;
   } else {
     // Route stored paths through mediaUrl so production SPA hosts resolve API media correctly.
     url = mediaUrl(raw);
@@ -155,6 +160,7 @@ export function resolveProfilePhotoSrc(
   if (!url) return url;
   const version = cacheVersion || (raw.startsWith("blob:") ? null : raw);
   if (!version) return url;
+  if (url.includes("?v=") || url.includes("&v=")) return url;
   const sep = url.includes("?") ? "&" : "?";
   return `${url}${sep}v=${encodeURIComponent(version)}`;
 }

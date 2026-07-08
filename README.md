@@ -36,4 +36,5 @@ Builds `dist/`, serves it on port **3099** via PM2 (`gre-frontend`). Put Nginx i
 - Simple registration (email + password) + onboarding wizard
 - Author dashboard (publications workflow)
 - Admin panel (authors, categories, events, ads, CMS)
+- Admin Analytics dashboard (`/dashboard/analytics`)
 - Forum, events, about/contact pages

@@ -8,8 +8,8 @@ function isGreSiteHost(host: string): boolean {
   );
 }
 
-/** Origin that serves uploaded files (/media, /storage). */
-function resolveMediaOrigin(): string {
+/** Origin that serves uploaded files (/media, /storage) and API photo routes. */
+export function resolveMediaOrigin(): string {
   const configured = (import.meta.env.VITE_MEDIA_ORIGIN as string | undefined)?.trim();
   if (configured?.startsWith("http")) {
     return configured.replace(/\/$/, "");
