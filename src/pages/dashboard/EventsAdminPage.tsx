@@ -168,12 +168,14 @@ export function EventsAdminPage() {
         ) : events.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 py-12 text-center text-slate-500">
             <Calendar className="mx-auto h-10 w-10 text-slate-300" />
-            <p className="mt-3">No events yet. Create one above or run seed data.</p>
-            <p className="mt-2 text-xs text-slate-400">
-              <code className="rounded bg-slate-100 px-1.5 py-0.5">
-                python manage.py seed_sample_data --force
-              </code>
-            </p>
+            <p className="mt-3">No events yet. Create one using the form above.</p>
+            {import.meta.env.DEV ? (
+              <p className="mt-2 text-xs text-slate-400">
+                <code className="rounded bg-slate-100 px-1.5 py-0.5">
+                  python manage.py seed_sample_data --force
+                </code>
+              </p>
+            ) : null}
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">

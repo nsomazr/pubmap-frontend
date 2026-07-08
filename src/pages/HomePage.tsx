@@ -706,15 +706,18 @@ export function HomePage() {
           <div className="pointer-events-none absolute left-1/2 top-24 z-[1001] -translate-x-1/2 max-w-md px-4 md:top-20">
             <p className="pointer-events-auto rounded-2xl bg-red-600 px-4 py-3 text-center text-sm text-white shadow-lg">
               {mapRateLimited ? (
-                <>
-                  Too many requests. Retry shortly.
-                </>
+                <>Too many requests. Please wait a moment and try again.</>
               ) : (
                 <>
-                  Cannot load the map. Start the API (
-                  <code className="text-xs">pubmap-backend ./start.sh</code>). For ngrok, use{" "}
-                  <code className="text-xs">VITE_API_URL=/api</code> and tunnel port{" "}
-                  <code className="text-xs">3099</code>.
+                  Could not load the map. Please check your connection and try again.
+                  {import.meta.env.DEV ? (
+                    <span className="mt-2 block text-xs opacity-90">
+                      Dev: start the API (
+                      <code className="text-xs">pubmap-backend ./start.sh</code>). For ngrok, use{" "}
+                      <code className="text-xs">VITE_API_URL=/api</code> on port{" "}
+                      <code className="text-xs">3099</code>.
+                    </span>
+                  ) : null}
                 </>
               )}
               <button
@@ -731,10 +734,19 @@ export function HomePage() {
         {!isLoading && !isError && totalOnMap === 0 && !hasSearched && (
           <div className="pointer-events-none absolute left-1/2 top-1/2 z-[1001] -translate-x-1/2 -translate-y-1/2 px-4">
             <p className="pointer-events-auto max-w-sm rounded-2xl bg-white px-5 py-4 text-center text-sm text-slate-600 shadow-xl ring-1 ring-slate-200">
-              <strong className="text-ink">No studies on the map yet.</strong>
-              <br />
-              Load demo data:{" "}
-              <code className="text-xs">python manage.py seed_sample_data --force</code>
+              <strong className="text-ink">No published studies on the map yet.</strong>
+              {import.meta.env.DEV ? (
+                <>
+                  <br />
+                  Load demo data:{" "}
+                  <code className="text-xs">python manage.py seed_sample_data --force</code>
+                </>
+              ) : (
+                <>
+                  <br />
+                  Studies appear here after they are reviewed and published.
+                </>
+              )}
             </p>
           </div>
         )}

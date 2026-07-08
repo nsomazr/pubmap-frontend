@@ -141,7 +141,10 @@ export function AdminLlmSettingsPage() {
       )}
       {isError && (
         <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          Could not load assistant settings. Ensure the API migration has been applied.
+          Could not load assistant settings. Please try again shortly.
+          {import.meta.env.DEV
+            ? " Ensure the API migration has been applied."
+            : null}
         </p>
       )}
 
