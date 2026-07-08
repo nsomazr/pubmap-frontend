@@ -1,8 +1,5 @@
 /** Brand tokens and asset paths from the Laravel PublicationMap project */
 
-/** Current GRE institutional partner (shown in footer, auth, and partner banners). */
-export const partneringUniversity = "University of Dar es Salaam";
-
 export const assets = {
   logo: "/assets/icons/logo.png",
   logoBlack: "/assets/icons/logo_black.png",

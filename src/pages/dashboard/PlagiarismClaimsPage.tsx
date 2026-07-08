@@ -8,10 +8,11 @@ import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 import { fetchPlagiarismStats, type PlagiarismClaim } from "../../lib/plagiarism";
 import { DEFAULT_PAGE_SIZE, unwrapPaginated, type Paginated } from "../../lib/pagination";
+import { isPlatformAdmin } from "../../lib/userAccess";
 
 export function PlagiarismClaimsPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role_id === 1;
+  const isAdmin = isPlatformAdmin(user);
   const [tab, setTab] = useState<"mine" | "moderation" | "publisher">(
     isAdmin ? "moderation" : "publisher"
   );

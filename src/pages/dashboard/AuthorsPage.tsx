@@ -122,7 +122,7 @@ export function AuthorsPage() {
                 <p className="mt-1 text-sm text-slate-500">{a.affiliation}</p>
               ) : null}
               <span className="mt-2 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                {a.role_id === 1 ? "Admin" : "Author"}
+                {a.is_admin || a.role_name?.toLowerCase() === "admin" ? "Admin" : "Author"}
               </span>
               <div className="mt-4 flex flex-wrap gap-2">
                 {a.status === 1 ? (
@@ -144,7 +144,7 @@ export function AuthorsPage() {
                     Activate
                   </Button>
                 )}
-                {a.role_id === 2 ? (
+                {!(a.is_admin || a.role_name?.toLowerCase() === "admin") ? (
                   <Button
                     variant="ghost"
                     className="!px-2 !py-1.5 text-xs"
@@ -199,7 +199,7 @@ export function AuthorsPage() {
                   <td className="px-4 py-3 text-slate-500">{a.affiliation || "-"}</td>
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                      {a.role_id === 1 ? "Admin" : "Author"}
+                      {a.is_admin || a.role_name?.toLowerCase() === "admin" ? "Admin" : "Author"}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -221,7 +221,7 @@ export function AuthorsPage() {
                           Activate
                         </Button>
                       )}
-                      {a.role_id === 2 ? (
+                      {!(a.is_admin || a.role_name?.toLowerCase() === "admin") ? (
                         <Button
                           variant="ghost"
                           onClick={() => roleChange.mutate({ id: a.id, action: "make_admin" })}

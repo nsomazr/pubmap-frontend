@@ -20,6 +20,7 @@ import { PageHeader } from "../../components/dashboard/PageHeader";
 import { QuickLinkTile } from "../../components/dashboard/QuickLinkTile";
 import { StatusBadge } from "../../components/dashboard/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
+import { isPlatformAdmin } from "../../lib/userAccess";
 import api from "../../lib/api";
 import { pickActivityTrendPoints } from "../../lib/sparkline";
 import { formatGrePaperTitle } from "../../lib/grePaperTitle";
@@ -127,7 +128,7 @@ const ADMIN_METRICS = [
 
 export function AdminOperationsPage() {
   const { user } = useAuth();
-  if (user?.role_id !== 1) return <Navigate to="/dashboard" replace />;
+  if (!isPlatformAdmin(user)) return <Navigate to="/dashboard" replace />;
 
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],

@@ -6,7 +6,10 @@ export interface ManagedCategory {
 }
 
 export function isPlatformAdmin(user: User | null | undefined): boolean {
-  return user?.role_id === 1;
+  if (!user) return false;
+  if (user.is_admin === true) return true;
+  if (user.role_name?.toLowerCase() === "admin") return true;
+  return false;
 }
 
 export function isCategoryManager(user: User | null | undefined): boolean {

@@ -25,6 +25,7 @@ export interface User {
   photo?: string;
   role_id: number;
   role_name?: string;
+  is_admin?: boolean;
   status: number;
   onboarding_complete: boolean;
   updated_at?: string;
