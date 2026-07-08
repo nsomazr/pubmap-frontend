@@ -94,8 +94,17 @@ export async function uploadProfilePhoto(blob: Blob): Promise<User> {
     const { data } = await api.post<User>("/auth/me/photo/", form);
     return data;
   } catch (err: unknown) {
-    const axiosErr = err as { response?: { data?: { detail?: string } } };
+    const axiosErr = err as {
+      response?: { status?: number; data?: { detail?: string } };
+    };
     const detail = axiosErr.response?.data?.detail;
+    const status = axiosErr.response?.status;
+    if (status === 413) {
+      throw new Error("Image is too large. Try a smaller photo.");
+    }
+    if (status === 503 && detail) {
+      throw new Error(detail);
+    }
     throw new Error(detail || "Could not save profile photo. Try again.");
   }
 }
