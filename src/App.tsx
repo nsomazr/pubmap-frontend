@@ -94,6 +94,10 @@ const AdminOperationsPage = lazyPage(
   () => import("./pages/dashboard/AdminOperationsPage"),
   "AdminOperationsPage"
 );
+const AdminAnalyticsPage = lazyPage(
+  () => import("./pages/dashboard/AdminAnalyticsPage"),
+  "AdminAnalyticsPage"
+);
 const AdminLlmSettingsPage = lazyPage(
   () => import("./pages/dashboard/AdminLlmSettingsPage"),
   "AdminLlmSettingsPage"
@@ -245,6 +249,7 @@ function AppRoutes() {
           <Route path="meetings/:id/edit" element={<MeetManagePage />} />
           <Route path="ads" element={<AdsPage />} />
           <Route path="operations" element={<AdminOperationsPage />} />
+          <Route path="analytics" element={<AdminAnalyticsPage />} />
           <Route path="llm-settings" element={<AdminLlmSettingsPage />} />
           <Route path="plagiarism" element={<PlagiarismClaimsPage />} />
           <Route path="cms" element={<Navigate to="/dashboard/operations" replace />} />

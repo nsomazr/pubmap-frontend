@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Bot,
+  BarChart3,
   Calendar,
   ChevronDown,
   ChevronLeft,
@@ -41,6 +42,7 @@ const mainNav: { to: string; label: string; icon: LucideIcon; end?: boolean }[] 
 ];
 
 const adminNav: { to: string; label: string; icon: LucideIcon }[] = [
+  { to: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/dashboard/operations", label: "Operations", icon: Shield },
   { to: "/dashboard/llm-settings", label: "Assistant settings", icon: Bot },
   { to: "/dashboard/review", label: "Review", icon: ClipboardCheck },
